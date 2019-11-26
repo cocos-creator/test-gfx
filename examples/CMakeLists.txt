@@ -1,0 +1,7 @@
+if(COCOS_PLATFORM_WIN32)
+	add_subdirectory(GFXTestWin)
+elseif(COCOS_PLATFORM_IOS)
+	add_subdirectory(GFXTestIOS)
+elseif(COCOS_PLATFORM_OSX)
+	add_subdirectory(GFXTestIOS)
+endif()
