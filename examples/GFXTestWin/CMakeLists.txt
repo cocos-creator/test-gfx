@@ -8,8 +8,8 @@ message(STATUS "Target: ${TARGET_NAME}...")
 set(INCLUDE_FILES
   ${COCOS_EXTERNAL_PATH}/khronos
   ${COCOS_SRC_PATH}/renderer/core
-  # ${COCOS_SRC_PATH}/renderer/gfx-gles2
-  # ${COCOS_SRC_PATH}/renderer/gfx-gles3
+  ${COCOS_SRC_PATH}/renderer/gfx-gles2
+  ${COCOS_SRC_PATH}/renderer/gfx-gles3
   ./GFXTest
 )
 
