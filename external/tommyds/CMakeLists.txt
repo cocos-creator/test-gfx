@@ -3,7 +3,7 @@ message(STATUS "Add dependence target: tommyds...")
 set(TARGET_NAME tommyds)
 
 set(INCLUDE_FILES 
-  ${COCOS_EXTERNAL_PATH}/tommyds
+  ${GFX_EXTERNAL_PATH}/tommyds
 )
 
 include_directories( ${INCLUDE_FILES} )
