@@ -169,5 +169,5 @@ foreach(TARGET ${COCOS_EXTERNAL_TARGETS})
 	add_subdirectory(${GFX_EXTERNAL_PATH}/${TARGET})
 endforeach()
 
-add_subdirectory("cocos2d-x-lite/cocos")
+add_subdirectory("cocos2d-x-lite/cocos/renderer")
 add_subdirectory("src/win")
