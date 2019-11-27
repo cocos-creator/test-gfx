@@ -3,9 +3,9 @@ message(STATUS "Add dependence target: jemalloc ...")
 set(TARGET_NAME jemalloc)
 
 if(MSVC)
-	set(INCLUDE_FILES ${COCOS_EXTERNAL_PATH}/jemalloc/include-win ${COCOS_EXTERNAL_PATH}/jemalloc/include-win/msvc_compat)
+	set(INCLUDE_FILES ${GFX_EXTERNAL_PATH}/jemalloc/include-win ${GFX_EXTERNAL_PATH}/jemalloc/include-win/msvc_compat)
 else()
-	set(INCLUDE_FILES ${COCOS_EXTERNAL_PATH}/jemalloc/include-linux)
+	set(INCLUDE_FILES ${GFX_EXTERNAL_PATH}/jemalloc/include-linux)
 endif()
 
 include_directories( ${INCLUDE_FILES} )

@@ -6,10 +6,10 @@ message(STATUS "Target: ${TARGET_NAME}...")
 # set include files
 
 set(INCLUDE_FILES
-  ${COCOS_EXTERNAL_PATH}/khronos
+  ${GFX_EXTERNAL_PATH}/khronos
   ${COCOS_SRC_PATH}/renderer/core
-  # ${COCOS_SRC_PATH}/renderer/gfx-gles2
-  # ${COCOS_SRC_PATH}/renderer/gfx-gles3
+  ${COCOS_SRC_PATH}/renderer/gfx-gles2
+  ${COCOS_SRC_PATH}/renderer/gfx-gles3
   ./GFXTest
 )
 
@@ -30,9 +30,9 @@ endif()
 add_executable(${TARGET_NAME} WIN32 ${ALL_FILES})
 
 if(COCOS_CPU_X64)
-  set(PVRSDK_LIB_DIR ${COCOS_EXTERNAL_PATH}/pvrsdk/lib/Windows_x86_64)
+  set(PVRSDK_LIB_DIR ${GFX_EXTERNAL_PATH}/pvrsdk/lib/Windows_x86_64)
 else()
-  set(PVRSDK_LIB_DIR ${COCOS_EXTERNAL_PATH}/pvrsdk/lib/Windows_x86_32)
+  set(PVRSDK_LIB_DIR ${GFX_EXTERNAL_PATH}/pvrsdk/lib/Windows_x86_32)
 endif()
 
 # Gather list of all .dll files
