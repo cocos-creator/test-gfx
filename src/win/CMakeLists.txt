@@ -5,6 +5,8 @@ message(STATUS "Target: ${TARGET_NAME}...")
 # ---------------------------------------------------------------------
 # set include files
 
+include(${PROJECT_SOURCE_DIR}/tests/CMakeLists.txt)
+
 set(INCLUDE_FILES
   ${GFX_EXTERNAL_PATH}/khronos
   ${COCOS_SRC_PATH}/renderer/core
@@ -21,8 +23,7 @@ file(GLOB_RECURSE HEADER_FILES *.h)
 file(GLOB_RECURSE SOURCE_CPP_FILES *.cpp *.cc)
 file(GLOB_RECURSE SOURCE_C_FILES *.c)
 
-set(ALL_FILES ${HEADER_FILES} ${SOURCE_CPP_FILES} ${SOURCE_C_FILES})
-
+set(ALL_FILES ${HEADER_FILES} ${SOURCE_CPP_FILES} ${SOURCE_C_FILES} ${GFX_TESTCASE_HEADER} ${GFX_TESTCASE_SOURCE})
 if(COCOS_UNICODE)
 	add_definitions("-DUNICODE -D_UNICODE")
 endif()
@@ -44,6 +45,7 @@ foreach(PVRDLL ${PVRDLLS})
                          copy ${PVRDLL} $<TARGET_FILE_DIR:${TARGET_NAME}>)
 endforeach()
 
+target_include_directories(${TARGET_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/src/win ${PROJECT_SOURCE_DIR})
 target_link_libraries(${TARGET_NAME} Core GFXGLES2 GFXGLES3)
 
 message(STATUS "${TARGET_NAME} configuration completed.") 
