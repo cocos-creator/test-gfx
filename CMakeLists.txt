@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.14)
 
-project(Native)
+set(APP_NAME gfx-tests)
+
+project(${APP_NAME})
 
 set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
 set_property(GLOBAL PROPERTY USE_FOLDERS TRUE)
@@ -79,9 +81,9 @@ elseif(ANDROID)
 	message(STATUS "Platform: Android")
 	set(COCOS_STATIC TRUE CACHE BOOL "Forcing static build for android" FORCE)
 	#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall" CACHE STRING "" FORCE)
-	#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fno-rtti -std=c++11" CACHE STRING "" FORCE)
+	#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fno-rtti -std=c++14" CACHE STRING "" FORCE)
 elseif(APPLE)
-	if(COCOS_BUILD_PLATFORM_IOS)
+	if(IOS)
 		set(COCOS_PLATFORM_IOS TRUE)
 		message(STATUS "Platform: Mac iOS")
 		set(COCOS_STATIC TRUE CACHE BOOL "Forcing static build for iPhone" FORCE)
@@ -96,7 +98,7 @@ elseif(APPLE)
 		message(STATUS "Platform: Mac OSX")
 	endif()
 
-	set(CMAKE_CXX_FLAGS "-std=c++11 -fstrict-aliasing -Wno-expansion-to-defined -Wno-multichar -Wall -Wextra -Wno-unused-parameter -Wno-unknown-pragmas -Wno-ignored-qualifiers -Wno-long-long -Wno-overloaded-virtual -Wno-unused-volatile-lvalue -Wno-deprecated-writable-strings")
+	set(CMAKE_CXX_FLAGS "-std=c++14 -fstrict-aliasing -Wno-expansion-to-defined -Wno-multichar -Wall -Wextra -Wno-unused-parameter -Wno-unknown-pragmas -Wno-ignored-qualifiers -Wno-long-long -Wno-overloaded-virtual -Wno-unused-volatile-lvalue -Wno-deprecated-writable-strings")
 	set(CMAKE_CXX_FLAGS_RELEASE "-O3 -msse3 -DNDEBUG")
 	set(CMAKE_CXX_FLAGS_DEBUG "-O0 -D_DEBUG_ -D_DEBUG -DFIPS_DEBUG=1 -ggdb")
 
@@ -109,7 +111,7 @@ elseif(APPLE)
 	set(CMAKE_EXE_LINKER_FLAGS_RELEASE "")
 
 	# need to set some flags directly as Xcode attributes
-	set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++11")
+	set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++14")
 	set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
 
 	# disable ARC
@@ -120,7 +122,7 @@ else()
 	message(STATUS "Platform: Linux")
 endif()
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -170,4 +172,10 @@ foreach(TARGET ${COCOS_EXTERNAL_TARGETS})
 endforeach()
 
 add_subdirectory("cocos2d-x-lite/cocos/renderer")
-add_subdirectory("src/win")
+
+if(WIN32)
+add_subdirectory(src/win)
+elseif(IOS)
+add_subdirectory(src/ios)
+else()
+endif()

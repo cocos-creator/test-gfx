@@ -1,11 +1,11 @@
 set(GFX_TESTCASE_HEADER
-    ${PROJECT_SOURCE_DIR}/tests/TestBase.h
-    ${PROJECT_SOURCE_DIR}/tests/ClearScreenTest.h
-    ${PROJECT_SOURCE_DIR}/tests/BasicTriangleTest.h
+    ${COCOS_ROOT_PATH}/tests/TestBase.h
+    ${COCOS_ROOT_PATH}/tests/ClearScreenTest.h
+    ${COCOS_ROOT_PATH}/tests/BasicTriangleTest.h
 )
 
 set(GFX_TESTCASE_SOURCE
-    ${PROJECT_SOURCE_DIR}/tests/TestBase.cpp
-    ${PROJECT_SOURCE_DIR}/tests/ClearScreenTest.cc
-    ${PROJECT_SOURCE_DIR}/tests/BasicTriangleTest.cc
+    ${COCOS_ROOT_PATH}/tests/TestBase.cpp
+    ${COCOS_ROOT_PATH}/tests/ClearScreenTest.cc
+    ${COCOS_ROOT_PATH}/tests/BasicTriangleTest.cc
 )
