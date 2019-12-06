@@ -28,10 +28,9 @@ public:
     virtual ~TestBaseI() = default;
 
 protected:
-    GFXDevice* _device               = nullptr;
-    GFXFramebuffer* _fbo             = nullptr;
-    GFXCommandBuffer* _commandBuffer = nullptr;
-
+    static GFXDevice* _device;
+    static GFXFramebuffer* _fbo;
+    static GFXCommandBuffer* _commandBuffer;
 };
 
 NS_CC_END

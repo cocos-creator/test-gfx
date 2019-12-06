@@ -17,6 +17,7 @@ using namespace cocos2d;
 
 namespace
 {
+    int g_nextTextIndex = 0;
     using createFunc = TestBaseI * (*)(const WindowInfo& info);
     std::vector<createFunc> g_tests;
     TestBaseI* g_test    = nullptr;
@@ -94,6 +95,13 @@ namespace
 
 -(void)loop:(id)sender {
     g_test->tick(1.0f / 60);
+}
+
+- (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
+{
+    g_nextTextIndex = (++g_nextTextIndex) % g_tests.size();
+    delete g_test;
+    g_test = g_tests[g_nextTextIndex](g_windowInfo);
 }
 
 

@@ -3,28 +3,43 @@
 #include "gfx-gles3/GFXGLES3.h"
 
 NS_CC_BEGIN
+
+GFXDevice* TestBaseI::_device                = nullptr;
+GFXFramebuffer* TestBaseI::_fbo              = nullptr;
+GFXCommandBuffer* TestBaseI::_commandBuffer  = nullptr;
+
 TestBaseI::TestBaseI(const WindowInfo& info)
 {
+    if(_device == nullptr)
+    {
 #if (CC_PLATFORM == CC_PLATFORM_MAC_IOS)
-    _device = CC_NEW(GLES2Device);
+        _device = CC_NEW(GLES2Device);
 #else
-    _device = CC_NEW(GLES2Device);
+        _device = CC_NEW(GLES2Device);
 #endif
 
-    GFXDeviceInfo dev_info;
-    dev_info.window_handle = info.windowHandle;
-    dev_info.width = info.screen.width;
-    dev_info.height = info.screen.height;
-    dev_info.native_width = info.physicalWidth;
-    dev_info.native_height = info.physicalHeight;
-    _device->Initialize(dev_info);
+    
+        GFXDeviceInfo dev_info;
+        dev_info.window_handle = info.windowHandle;
+        dev_info.width = info.screen.width;
+        dev_info.height = info.screen.height;
+        dev_info.native_width = info.physicalWidth;
+        dev_info.native_height = info.physicalHeight;
+        _device->Initialize(dev_info);
+    }
 
-    GFXCommandBufferInfo cmd_buff_info;
-    cmd_buff_info.allocator = _device->cmd_allocator();
-    cmd_buff_info.type = GFXCommandBufferType::PRIMARY;
-    _commandBuffer = _device->CreateGFXCommandBuffer(cmd_buff_info);
-
-    _fbo = _device->window()->framebuffer();
+    if(_commandBuffer == nullptr)
+    {
+        GFXCommandBufferInfo cmd_buff_info;
+        cmd_buff_info.allocator = _device->cmd_allocator();
+        cmd_buff_info.type = GFXCommandBufferType::PRIMARY;
+        _commandBuffer = _device->CreateGFXCommandBuffer(cmd_buff_info);
+    }
+    
+    if(_fbo == nullptr)
+    {
+        _fbo = _device->window()->framebuffer();
+    }
 }
 
 void TestBaseI::Destroy()
