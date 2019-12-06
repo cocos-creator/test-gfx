@@ -5,8 +5,8 @@
 NS_CC_BEGIN
 TestBaseI::TestBaseI(const WindowInfo& info)
 {
-#if 0
-    device_ = CC_NEW(GLES3Device);
+#if (CC_PLATFORM == CC_PLATFORM_MAC_IOS)
+    _device = CC_NEW(GLES2Device);
 #else
     _device = CC_NEW(GLES2Device);
 #endif

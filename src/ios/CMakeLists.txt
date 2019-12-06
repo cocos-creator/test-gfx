@@ -28,9 +28,6 @@ file(GLOB_RECURSE SOURCE_C_FILES *.c)
 file(GLOB_RECURSE SOURCE_MM_FILES *.m *.mm)
 
 set(APP_UI_RES
-    Info.plist
-    Base.lproj/LaunchScreen.storyboard
-    Base.lproj/Main.storyboard
     )
 
 set(ALL_FILES 
@@ -55,10 +52,13 @@ set_xcode_property(${APP_NAME} INFOPLIST_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Info.p
 # Locate system libraries on iOS
 find_library(UIKIT_LIBRARY UIKit)
 find_library(OPENGLES_LIBRARY OpenGLES)
+find_library(QUARTZCORE_LIBRARY QuartzCore)
 list(APPEND PLATFORM_SPECIFIC_LIBS
      ${UIKIT_LIBRARY}
      ${OPENGLES_LIBRARY}
+     ${QUARTZCORE_LIBRARY}
      )
-target_link_libraries(${APP_NAME} ${PLATFORM_SPECIFIC_LIBS} Core GFXGLES3)
+target_link_libraries(${APP_NAME} ${PLATFORM_SPECIFIC_LIBS} Core GFXGLES3 GFXGLES2)
+target_include_directories(${APP_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
 
 message(STATUS "${APP_NAME} configuration completed.") 
