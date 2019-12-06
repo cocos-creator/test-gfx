@@ -59,6 +59,7 @@ namespace
     if ( [view respondsToSelector:@selector(setContentScaleFactor:)] )
     {
         scale = [[UIScreen mainScreen] scale];
+        view.contentScaleFactor = scale;
     }
     
     g_windowInfo.screen.x = rect.origin.x * scale;
