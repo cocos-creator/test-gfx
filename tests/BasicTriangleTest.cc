@@ -30,8 +30,7 @@ void BasicTriangle::createShader()
     GFXShaderStage vertexShaderStage;
     vertexShaderStage.type = GFXShaderType::VERTEX;
     vertexShaderStage.source = R"(
-        #version 300 es
-        in vec2 a_position;
+        attribute vec2 a_position;
         void main()
         {
             gl_Position = vec4(a_position, 0.0, 1.0);
@@ -42,34 +41,33 @@ void BasicTriangle::createShader()
     GFXShaderStage fragmentShaderStage;
     fragmentShaderStage.type = GFXShaderType::FRAGMENT;
     fragmentShaderStage.source = R"(
-        #version 300 es
         #ifdef GL_ES
         precision highp float;
         #endif
-        out vec4 color;
+        uniform vec4 u_color;
         void main()
         {
-            color = vec4(1.0);
+            gl_FragColor = u_color;
         }
     )";
     shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
-    /*GFXUniformList uniformList = { { "u_color", GFXType::FLOAT4, 1 } };
-    GFXUniformBlockList uniformBlockList = { {0, "UniformColor", uniformList} };*/
+    GFXUniformList uniformList = { { "u_color", GFXType::FLOAT4, 1 } };
+    GFXUniformBlockList uniformBlockList = { {0, "UniformColor", uniformList} };
 
     GFXShaderInfo shaderInfo;
     shaderInfo.name = "Basic Triangle";
     shaderInfo.stages = std::move(shaderStageList);
-    //shaderInfo.blocks = std::move(uniformBlockList);
+    shaderInfo.blocks = std::move(uniformBlockList);
     _shader = _device->CreateGFXShader(shaderInfo);
 }
 
 void BasicTriangle::createVertexBuffer()
 {
     float vertexData[] = {
-        -1.0f, 0.0f,
-        0.0f, -1.0f,
-        1.0f, 1.0f
+        -1.0f, -1.0f,
+        1.0f, -1.0f,
+        0.0f, 1.0f
     };
 
     GFXBufferInfo vertexBufferInfo = {
@@ -82,13 +80,13 @@ void BasicTriangle::createVertexBuffer()
     _vertexBuffer = _device->CreateGFXBuffer(vertexBufferInfo);
     _vertexBuffer->Update(vertexData, 0, sizeof(vertexData));
 
-    /* GFXBufferInfo uniformBufferInfo = {
+    GFXBufferInfo uniformBufferInfo = {
            GFXBufferUsage::UNIFORM,
            GFXMemoryUsage::HOST,
            4 * sizeof(float),
            sizeof(GFXColor),
            GFXBufferFlagBit::BAKUP_BUFFER };
-     _uniformBuffer = _device->CreateGFXBuffer(uniformBufferInfo);*/
+     _uniformBuffer = _device->CreateGFXBuffer(uniformBufferInfo);
 }
 
 void BasicTriangle::createInputAssembler()
@@ -102,12 +100,12 @@ void BasicTriangle::createInputAssembler()
 
 void BasicTriangle::createPipeline()
 {
-    /*GFXBindingList bindingList = { {0, GFXBindingType::UNIFORM_BUFFER, "u_color"} };
+    GFXBindingList bindingList = { {0, GFXBindingType::UNIFORM_BUFFER, "u_color"} };
     GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
-    _bindingLayout = _device->CreateGFXBindingLayout(bindingLayoutInfo);*/
+    _bindingLayout = _device->CreateGFXBindingLayout(bindingLayoutInfo);
 
     GFXPipelineLayoutInfo pipelineLayoutInfo;
-    //pipelineLayoutInfo.layouts = { _bindingLayout };
+    pipelineLayoutInfo.layouts = { _bindingLayout };
     auto pipelineLayout = _device->CreateGFXPipelieLayout(pipelineLayoutInfo);
 
     GFXPipelineStateInfo pipelineInfo;
@@ -126,21 +124,22 @@ void BasicTriangle::tick(float dt) {
 
     GFXRect render_area = {0, 0, _device->width(), _device->height() };
     _time += dt;
-    GFXColor clear_color = {0.3f, 0.1f, 0.1f, 1.0f};
-    /*GFXColor uniformColor;
-    uniformColor.r = 1.0f;
-    uniformColor.g = std::abs(std::sin(_time));
+    GFXColor clear_color = {0.1f, 0.1f, 0.1f, 1.0f};
+    
+    GFXColor uniformColor;
+    uniformColor.r = std::abs(std::sin(_time));
+    uniformColor.g = 1.0f;
     uniformColor.b = 0.0f;
     uniformColor.a = 1.0f;
 
     _uniformBuffer->Update(&uniformColor, 0, sizeof(uniformColor));
     _bindingLayout->BindBuffer(0, _uniformBuffer);
-    _bindingLayout->Update();*/
+    _bindingLayout->Update();
 
     _commandBuffer->Begin();
     _commandBuffer->BeginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, &clear_color, 1, 1.0f, 0);
     _commandBuffer->BindInputAssembler(_inputAssembler);
-    //_commandBuffer->BindBindingLayout(_bindingLayout);
+    _commandBuffer->BindBindingLayout(_bindingLayout);
     _commandBuffer->BindPipelineState(_pipelineState);
     _commandBuffer->Draw(_inputAssembler);
     _commandBuffer->EndRenderPass();
