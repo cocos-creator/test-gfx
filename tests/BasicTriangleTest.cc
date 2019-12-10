@@ -45,9 +45,10 @@ void BasicTriangle::createShader()
         precision highp float;
         #endif
         uniform vec4 u_color;
+        out vec4 color;
         void main()
         {
-            gl_FragColor = u_color;
+            color = u_color;
         }
     )";
     shaderStageList.emplace_back(std::move(fragmentShaderStage));
@@ -124,7 +125,7 @@ void BasicTriangle::tick(float dt) {
 
     GFXRect render_area = {0, 0, _device->width(), _device->height() };
     _time += dt;
-    GFXColor clear_color = {0.1f, 0.1f, 0.1f, 1.0f};
+    GFXColor clear_color = {1.0f, 0, 0, 1.0f};
     
     GFXColor uniformColor;
     uniformColor.r = std::abs(std::sin(_time));
