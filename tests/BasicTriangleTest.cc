@@ -29,8 +29,7 @@ void BasicTriangle::createShader()
     GFXShaderStageList shaderStageList;
     GFXShaderStage vertexShaderStage;
     vertexShaderStage.type = GFXShaderType::VERTEX;
-    vertexShaderStage.source = R"(
-        #version 300 es
+    vertexShaderStage.source = R"(#version 300 es
         in vec2 a_position;
         void main()
         {
@@ -41,8 +40,7 @@ void BasicTriangle::createShader()
 
     GFXShaderStage fragmentShaderStage;
     fragmentShaderStage.type = GFXShaderType::FRAGMENT;
-    fragmentShaderStage.source = R"(
-        #version 300 es
+    fragmentShaderStage.source = R"(#version 300 es
         #ifdef GL_ES
         precision highp float;
         #endif

@@ -1,0 +1,47 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 29
+
+    defaultConfig {
+        applicationId = 'com.example.gfx_tests'
+        minSdkVersion 25
+        targetSdkVersion 28
+        externalNativeBuild {
+            cmake {
+                targets "gfx_tests"
+                arguments '-DANDROID_STL=c++_static'
+                cppFlags "-std=c++14"
+            }
+        }
+
+        ndk {
+            abiFilters = ["armeabi-v7a"]
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'),
+                    'proguard-rules.pro'
+        }
+
+        debug {
+            debuggable true
+            jniDebuggable true
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            //version '3.10.2'
+            path "../../../CMakeLists.txt"
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'androidx.appcompat:appcompat:1.0.2'
+    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
+}

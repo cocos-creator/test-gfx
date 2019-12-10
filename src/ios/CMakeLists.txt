@@ -22,22 +22,15 @@ include_directories( ${INCLUDE_FILES} )
 
 # ---------------------------------------------------------------------
 
-file(GLOB_RECURSE HEADER_FILES *.h)
-file(GLOB_RECURSE SOURCE_CPP_FILES *.cpp *.cc)
-file(GLOB_RECURSE SOURCE_C_FILES *.c)
-file(GLOB_RECURSE SOURCE_MM_FILES *.m *.mm)
-
 set(APP_UI_RES
     )
 
 set(ALL_FILES 
     ${HEADER_FILES} 
-    ${SOURCE_CPP_FILES} 
-    ${SOURCE_C_FILES} 
-    ${SOURCE_MM_FILES} 
     ${GFX_TESTCASE_HEADER} 
     ${GFX_TESTCASE_SOURCE} 
     ${APP_UI_RES}
+    main.cpp
     )
 
 if(COCOS_UNICODE)

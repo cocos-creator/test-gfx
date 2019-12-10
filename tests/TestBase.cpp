@@ -8,7 +8,7 @@ TestBaseI::TestBaseI(const WindowInfo& info)
 #if (CC_PLATFORM == CC_PLATFORM_MAC_IOS)
     _device = CC_NEW(GLES2Device);
 #else
-    _device = CC_NEW(GLES2Device);
+    _device = CC_NEW(GLES3Device);
 #endif
 
     GFXDeviceInfo dev_info;

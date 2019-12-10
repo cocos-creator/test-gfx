@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.6)
 
-set(APP_NAME gfx-tests)
+set(APP_NAME gfx_tests)
 
 project(${APP_NAME})
 
@@ -180,8 +180,9 @@ endforeach()
 add_subdirectory("cocos2d-x-lite/cocos/renderer")
 
 if(WIN32)
-add_subdirectory(src/win)
+    add_subdirectory(src/win)
 elseif(IOS)
-add_subdirectory(src/ios)
-else()
+	add_subdirectory(src/ios)
+elseif(ANDROID)
+	add_subdirectory(src/android/app/src/main/cpp)
 endif()

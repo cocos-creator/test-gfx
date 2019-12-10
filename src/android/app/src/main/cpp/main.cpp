@@ -1,0 +1,136 @@
+#include <jni.h>
+#include <android_native_app_glue.h>
+#include "tests/ClearScreenTest.h"
+#include "tests/BasicTriangleTest.h"
+#include "tests/TestBase.h"
+
+using namespace cocos2d;
+
+namespace
+{
+    /**
+     * Shared state for our app.
+     */
+    struct SavedState {
+        struct android_app* app;
+
+        int animating;
+        int32_t width;
+        int32_t height;
+    };
+
+    using createFunc = TestBaseI * (*)(const WindowInfo& info);
+    std::vector<createFunc> g_tests;
+    TestBaseI* g_test    = nullptr;
+    WindowInfo g_windowInfo;
+
+    void initTests()
+    {
+        static bool first = true;
+        if (first)
+        {
+            g_tests = {
+                    ClearScreen::create,
+                    BasicTriangle::create,
+            };
+            g_test = g_tests[1](g_windowInfo);
+            if (g_test == nullptr)
+                return;
+
+            first = false;
+        }
+    }
+
+    void destroyTests()
+    {
+        g_test = nullptr;
+        //TODO: delete created test case.
+    }
+
+    void engineHandleCmd(struct android_app* app, int32_t cmd)
+    {
+        struct SavedState* state = (struct SavedState*)app->userData;
+        switch (cmd)
+        {
+            case APP_CMD_INIT_WINDOW:
+                if (state->app->window)
+                {
+                    g_windowInfo.windowHandle = (intptr_t)state->app->window;
+                    g_windowInfo.physicalWidth = g_windowInfo.screen.width = ANativeWindow_getWidth(app->window);
+                    g_windowInfo.physicalHeight = g_windowInfo.screen.height = ANativeWindow_getHeight(app->window);
+                    g_windowInfo.screen.x = g_windowInfo.screen.y = 0;
+
+                    initTests();
+                }
+
+                break;
+            case APP_CMD_TERM_WINDOW:
+                destroyTests();
+                state->animating = 0;
+                break;
+            case APP_CMD_GAINED_FOCUS:
+                state->animating = 1;
+                break;
+            case APP_CMD_LOST_FOCUS:
+                state->animating = 0;
+            default:
+                break;
+        }
+    }
+
+    /**
+     * Process the next input event.
+     */
+    int32_t engineHandleInput(struct android_app* app, AInputEvent* event) {
+//        struct engine* engine = (struct engine*)app->userData;
+//        if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION) {
+//            engine->animating = 1;
+//            engine->state.x = AMotionEvent_getX(event, 0);
+//            engine->state.y = AMotionEvent_getY(event, 0);
+//            return 1;
+//        }
+//        return 0;
+        return 1;
+    }
+}
+
+void android_main(struct android_app* state) {
+    struct SavedState savedState;
+
+    memset(&savedState, 0, sizeof(savedState));
+    state->userData = &savedState;
+    state->onAppCmd = engineHandleCmd;
+    state->onInputEvent = engineHandleInput;
+    savedState.app = state;
+
+    while (1)
+    {
+        // Read all pending events.
+        int ident;
+        int events;
+        struct android_poll_source* source;
+
+        // If not animating, we will block forever waiting for events.
+        // If animating, we loop until all events are read, then continue
+        // to draw the next frame of animation.
+        while ((ident = ALooper_pollAll(savedState.animating ? 0 : -1, NULL, &events,
+                                      (void**)&source)) >= 0)
+        {
+
+            // Process this event.
+            if (source != nullptr)
+                source->process(state, source);
+        }
+
+        if (state->destroyRequested != 0)
+        {
+            return;
+        }
+
+        if (savedState.animating)
+        {
+            //TODO: calculate dt
+            g_test->tick(1.0f / 60);
+        }
+    }
+}
