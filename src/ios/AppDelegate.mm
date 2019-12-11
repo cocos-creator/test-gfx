@@ -80,7 +80,7 @@ namespace
             ClearScreen::create,
             BasicTriangle::create,
         };
-        g_test = g_tests[0](g_windowInfo);
+        g_test = g_tests[g_nextTextIndex](g_windowInfo);
         if (g_test == nullptr)
             return;
         first = false;
@@ -100,7 +100,7 @@ namespace
 - (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
 {
     g_nextTextIndex = (++g_nextTextIndex) % g_tests.size();
-    delete g_test;
+    CC_SAFE_DESTROY(g_test);
     g_test = g_tests[g_nextTextIndex](g_windowInfo);
 }
 

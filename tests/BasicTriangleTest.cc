@@ -29,28 +29,49 @@ void BasicTriangle::createShader()
     GFXShaderStageList shaderStageList;
     GFXShaderStage vertexShaderStage;
     vertexShaderStage.type = GFXShaderType::VERTEX;
-    vertexShaderStage.source = R"(#version 300 es
-        in vec2 a_position;
+#ifdef USE_GLES2
+    vertexShaderStage.source = R"(
+        attribute vec2 a_position;
         void main()
         {
             gl_Position = vec4(a_position, 0.0, 1.0);
         }
     )";
+#else
+    vertexShaderStage.source = R"(#version 300 es
+    in vec2 a_position;
+    void main()
+    {
+    gl_Position = vec4(a_position, 0.0, 1.0);
+    }
+    )";
+#endif
     shaderStageList.emplace_back(std::move(vertexShaderStage));
 
     GFXShaderStage fragmentShaderStage;
     fragmentShaderStage.type = GFXShaderType::FRAGMENT;
-    fragmentShaderStage.source = R"(#version 300 es
-        #ifdef GL_ES
+#ifdef USE_GLES2
+    fragmentShaderStage.source = R"(
         precision highp float;
-        #endif
         uniform vec4 u_color;
-        out vec4 color;
         void main()
         {
-            color = u_color;
+            gl_FragColor = u_color;
         }
     )";
+#else
+    fragmentShaderStage.source = R"(#version 300 es
+    #ifdef GL_ES
+    precision highp float;
+    #endif
+    uniform vec4 u_color;
+    out vec4 color;
+    void main()
+    {
+    color = u_color;
+    }
+    )";
+#endif
     shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
     GFXUniformList uniformList = { { "u_color", GFXType::FLOAT4, 1 } };

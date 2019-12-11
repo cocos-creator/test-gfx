@@ -1,6 +1,8 @@
 #pragma once
 #include "Core.h"
 
+#define USE_GLES2
+
 NS_CC_BEGIN
 
 typedef struct WindowInfo

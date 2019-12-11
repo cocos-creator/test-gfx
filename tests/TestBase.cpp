@@ -12,7 +12,7 @@ TestBaseI::TestBaseI(const WindowInfo& info)
 {
     if(_device == nullptr)
     {
-#if (CC_PLATFORM == CC_PLATFORM_MAC_IOS)
+#ifdef USE_GLES2
         _device = CC_NEW(GLES2Device);
 #else
     _device = CC_NEW(GLES3Device);
@@ -44,9 +44,9 @@ TestBaseI::TestBaseI(const WindowInfo& info)
 
 void TestBaseI::Destroy()
 {
-    CC_SAFE_DESTROY(_device);
-    CC_SAFE_DESTROY(_fbo);
-    CC_SAFE_DESTROY(_commandBuffer);
+//    CC_SAFE_DESTROY(_device);
+//    CC_SAFE_DESTROY(_fbo);
+//    CC_SAFE_DESTROY(_commandBuffer);
 }
 
 NS_CC_END
