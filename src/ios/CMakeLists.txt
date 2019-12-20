@@ -53,10 +53,14 @@ set_xcode_property(${APP_NAME} INFOPLIST_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Info.p
 find_library(UIKIT_LIBRARY UIKit)
 find_library(OPENGLES_LIBRARY OpenGLES)
 find_library(QUARTZCORE_LIBRARY QuartzCore)
+find_library(METAL_LIBRARY Metal)
+find_library(METALKIT_LIBRARY MetalKit)
 list(APPEND PLATFORM_SPECIFIC_LIBS
      ${UIKIT_LIBRARY}
      ${OPENGLES_LIBRARY}
      ${QUARTZCORE_LIBRARY}
+     ${METAL_LIBRARY}
+     ${METAL_KIT}
      )
 target_link_libraries(${APP_NAME} ${PLATFORM_SPECIFIC_LIBS} Core GFXGLES3 GFXGLES2)
 target_include_directories(${APP_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
