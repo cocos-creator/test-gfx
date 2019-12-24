@@ -11,6 +11,7 @@
 #import "View.h"
 #include "tests/ClearScreenTest.h"
 #include "tests/BasicTriangleTest.h"
+#include "tests/BasicTextureTest.h"
 #include "tests/TestBase.h"
 
 using namespace cocos2d;
@@ -79,6 +80,7 @@ namespace
         g_tests = {
             ClearScreen::create,
             BasicTriangle::create,
+            BasicTexture::create,
         };
         g_test = g_tests[g_nextTextIndex](g_windowInfo);
         if (g_test == nullptr)
