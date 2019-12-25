@@ -1,6 +1,11 @@
 #include "ClearScreenTest.h"
+
+#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+#include "gfx-metal/GFXMTL.h"
+#else
 #include "gfx-gles2/GFXGLES2.h"
 #include "gfx-gles3/GFXGLES3.h"
+#endif
 
 NS_CC_BEGIN
 

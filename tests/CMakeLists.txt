@@ -11,3 +11,8 @@ set(GFX_TESTCASE_SOURCE
     ${COCOS_ROOT_PATH}/tests/BasicTriangleTest.cc
     ${COCOS_ROOT_PATH}/tests/BasicTextureTest.cc
 )
+
+if(APPLE AND NOT IOS)
+list(REMOVE_ITEM GFX_TESTCASE_HEADER ${COCOS_ROOT_PATH}/tests/BasicTextureTest.h)
+list(REMOVE_ITEM GFX_TESTCASE_SOURCE ${COCOS_ROOT_PATH}/tests/BasicTextureTest.cc)
+endif()

@@ -1,6 +1,11 @@
 #include "TestBase.h"
+
+#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+#include "gfx-metal/GFXMTL.h"
+#else
 #include "gfx-gles2/GFXGLES2.h"
 #include "gfx-gles3/GFXGLES3.h"
+#endif
 
 NS_CC_BEGIN
 
@@ -12,11 +17,17 @@ TestBaseI::TestBaseI(const WindowInfo& info)
 {
     if(_device == nullptr)
     {
+#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+        _device = CC_NEW(CCMTLDevice);
+#else
+        
 #ifdef USE_GLES2
         _device = CC_NEW(GLES2Device);
 #else
     _device = CC_NEW(GLES3Device);
 #endif
+        
+#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
 
     
         GFXDeviceInfo dev_info;
