@@ -89,18 +89,30 @@ namespace
      * Process the next input event.
      */
     int32_t engineHandleInput(struct android_app* app, AInputEvent* event) {
-//        struct engine* engine = (struct engine*)app->userData;
-//        if (AInputEvent_getType(event) == AINPUT_EVENT_TYPE_MOTION) {
-//            engine->animating = 1;
-//            engine->state.x = AMotionEvent_getX(event, 0);
-//            engine->state.y = AMotionEvent_getY(event, 0);
-//            return 1;
-//        }
-//        return 0;
-        g_nextTestIndex = (++g_nextTestIndex) % g_tests.size();
-        CC_SAFE_DESTROY(g_test);
-        g_test = g_tests[g_nextTestIndex](g_windowInfo);
-        return 1;
+        struct engine* engine = (struct engine*)app->userData;
+        int type = AInputEvent_getType(event);
+        int src = AInputEvent_getSource(event);
+        if(type == AINPUT_EVENT_TYPE_KEY){
+            return 1;
+        } else if(type == AINPUT_EVENT_TYPE_MOTION){
+            int action = AMotionEvent_getAction(event);
+            switch (action)
+            {
+                case AMOTION_EVENT_ACTION_DOWN:
+                case AMOTION_EVENT_ACTION_POINTER_DOWN:
+                    return 1;
+                    break;
+                case AMOTION_EVENT_ACTION_UP:
+                case AMOTION_EVENT_ACTION_POINTER_UP:
+                    g_nextTestIndex = (++g_nextTestIndex) % g_tests.size();
+                    CC_SAFE_DESTROY(g_test);
+                    g_test = g_tests[g_nextTestIndex](g_windowInfo);
+                    return 1;
+                    break;
+            }
+            return 1;
+        }
+        return 0;
     }
 }
 
