@@ -1,9 +1,15 @@
 #include <jni.h>
 #include <android_native_app_glue.h>
+#include "platform/android/CCFileUtils-android.h"
 #include "tests/ClearScreenTest.h"
 #include "tests/BasicTriangleTest.h"
+#include "tests/BasicTextureTest.h"
 #include "tests/TestBase.h"
+#include <android/log.h>
+//#include "AppDelegate.h"
 
+#define LOG_TAG "main"
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 using namespace cocos2d;
 
 namespace
@@ -23,7 +29,7 @@ namespace
     std::vector<createFunc> g_tests;
     TestBaseI* g_test    = nullptr;
     WindowInfo g_windowInfo;
-
+    int g_nextTestIndex = 0;
     void initTests()
     {
         static bool first = true;
@@ -32,8 +38,9 @@ namespace
             g_tests = {
                     ClearScreen::create,
                     BasicTriangle::create,
+                    BasicTexture::create,
             };
-            g_test = g_tests[1](g_windowInfo);
+            g_test = g_tests[2](g_windowInfo);
             if (g_test == nullptr)
                 return;
 
@@ -90,19 +97,21 @@ namespace
 //            return 1;
 //        }
 //        return 0;
+        g_nextTestIndex = (++g_nextTestIndex) % g_tests.size();
+        CC_SAFE_DESTROY(g_test);
+        g_test = g_tests[g_nextTestIndex](g_windowInfo);
         return 1;
     }
 }
 
 void android_main(struct android_app* state) {
     struct SavedState savedState;
-
     memset(&savedState, 0, sizeof(savedState));
     state->userData = &savedState;
     state->onAppCmd = engineHandleCmd;
     state->onInputEvent = engineHandleInput;
     savedState.app = state;
-
+    static_cast<FileUtilsAndroid*>(FileUtils::getInstance())->setassetmanager(state->activity->assetManager);
     while (1)
     {
         // Read all pending events.

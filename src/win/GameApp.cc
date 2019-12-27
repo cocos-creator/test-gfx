@@ -1,7 +1,9 @@
-#include "GameApp.h"
+﻿#include "GameApp.h"
 #include "base/ccMacros.h"
+#include "platform/CCFileUtils.h"
 #include "tests/ClearScreenTest.h"
 #include "tests/BasicTriangleTest.h"
+#include "tests/BasicTextureTest.h"
 
 NS_CC_BEGIN
 
@@ -28,6 +30,8 @@ GameApp::GameApp()
     _windowInfo.screen.height = 768;
     is_paused_ = false;
     is_device_inited_ = false;
+    std::vector<std::string> path = { "Resources" };
+    FileUtils::getInstance()->setSearchPaths(path);
 }
 
 GameApp::~GameApp()
@@ -124,8 +128,9 @@ bool GameApp::Initialize()
         _tests = {
             ClearScreen::create,
             BasicTriangle::create,
+            BasicTexture::create,
         };
-        _test = _tests[1](_windowInfo);
+        _test = _tests[_nextIndex](_windowInfo);
         if (_test == nullptr)
             return false;
         first = false;
@@ -303,7 +308,7 @@ bool GameApp::InitAppWindow(int screenWidth, int screenHeight, bool bFullscreen)
     instance_handlw_ = GetModuleHandle(NULL);
 
     // Give the application a name.
-    app_name_ = "Cocos GFX Test";
+    app_name_ = L"Cocos GFX Test";
 
     // Setup the windows class with default settings.
     wc.style         = CS_HREDRAW | CS_VREDRAW /*| CS_OWNDC*/;

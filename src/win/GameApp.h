@@ -45,8 +45,8 @@ protected:
     void DestroyAppWindow();
 
 protected:
-    String              app_name_;
-    String              root_path_;
+    std::wstring              app_name_;
+    std::wstring              root_path_;
     HINSTANCE           instance_handlw_;
     bool                is_fullscreen_;
     bool                is_paused_;

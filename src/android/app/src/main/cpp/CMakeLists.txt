@@ -29,8 +29,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -G -std=gnu++11 -Wall")
 set(CMAKE_SHARED_LINKER_FLAGS
     "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
 
-include(${COCOS_ROOT_PATH}/tests/CMakeLists.txt)
-
 # ---------------------------------------------------------------------
 # set include files
 
@@ -50,7 +48,17 @@ include_directories( ${INCLUDE_FILES} )
 set(ALL_FILES
         ${GFX_TESTCASE_HEADER}
         ${GFX_TESTCASE_SOURCE}
+        ${CC_PLATFORM_SOURCES}
+        ${CC_BASE_HEADERS} 
+        ${CC_BASE_SOURCES}
+        ${CC_MATH_HEADERS}
+        ${CC_MATH_SOURCES}
+        ${CC_EXTERNAL_SROUCES}
+        ${COCOS_SRC_PATH}/cocos2d.h
+        ${COCOS_SRC_PATH}/cocos2d.cpp
         main.cpp
+        JniImp.cpp
+        JniImp.h
         )
 
 if(COCOS_UNICODE)
@@ -71,8 +79,15 @@ add_library( # Sets the name of the library.
         ${ALL_FILES})
 
 target_include_directories(${APP_NAME} PRIVATE
-    ${ANDROID_NDK}/sources/android/native_app_glue)
-
+    ${ANDROID_NDK}/sources/android/native_app_glue
+    
+)
+target_include_directories(${APP_NAME} PUBLIC
+    ${COCOS_SRC_PATH}/platform
+    ${COCOS_EXTERNAL_PATH}/sources
+    ${CC_EXTERNAL_INCLUDES}
+    ${CC_EXTERNAL_INCLUDES}/v8
+)
 # add lib dependencies
 target_link_libraries(${APP_NAME}
     android
@@ -83,4 +98,20 @@ target_link_libraries(${APP_NAME}
     log
     Core
     GFXGLES3
-    GFXGLES2)
+    GFXGLES2
+    ${CC_EXTERNAL_LIBS}
+)
+
+# setup default flags
+target_compile_definitions(${APP_NAME} PUBLIC 
+    $<$<NOT:$<BOOL:${USE_VIDEO}>>:USE_VIDEO=0>
+    $<$<NOT:$<BOOL:${USE_WEB_VIEW}>>:USE_WEB_VIEW=0>
+    $<$<NOT:$<BOOL:${USE_AUDIO}>>:USE_AUDIO=0>
+    $<$<NOT:$<BOOL:${USE_SOCKET}>>:USE_SOCKET=0>
+    $<$<NOT:$<BOOL:${USE_MIDDLEWARE}>>:USE_MIDDLEWARE=0>
+    $<$<NOT:$<BOOL:${USE_SPINE}>>:USE_SPINE=0>
+    $<$<NOT:$<BOOL:${USE_DRAGONBONES}>>:USE_DRAGONBONES=0>
+    $<$<NOT:$<BOOL:${USE_TIFF}>>:CC_USE_TIFF=0>
+    $<$<BOOL:${USE_GFX_RENDERER}>:USE_GFX_RENDERER=1>
+    $<$<NOT:$<BOOL:${USE_V8_DEBUGGER}>>:USE_V8_DEBUGGER=0>
+)
