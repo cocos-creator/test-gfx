@@ -69,18 +69,22 @@ void BasicTriangle::createShader()
     #ifdef GL_ES
     precision highp float;
     #endif
-    uniform vec4 u_color;
-    out vec4 color;
+    layout(std140) uniform Color
+    {
+        vec4 u_color;
+    };
+    out vec4 o_color;
+    
     void main()
     {
-    color = u_color;
+        o_color = u_color;
     }
     )";
 #endif
     shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
     GFXUniformList uniformList = { { "u_color", GFXType::FLOAT4, 1 } };
-    GFXUniformBlockList uniformBlockList = { {0, "UniformColor", uniformList} };
+    GFXUniformBlockList uniformBlockList = { {0, "Color", uniformList} };
 
     GFXShaderInfo shaderInfo;
     shaderInfo.name = "Basic Triangle";
@@ -112,7 +116,7 @@ void BasicTriangle::createVertexBuffer()
            GFXMemoryUsage::HOST,
            4 * sizeof(float),
            sizeof(GFXColor),
-           GFXBufferFlagBit::BAKUP_BUFFER };
+           GFXBufferFlagBit::NONE };
      _uniformBuffer = _device->CreateGFXBuffer(uniformBufferInfo);
 }
 
