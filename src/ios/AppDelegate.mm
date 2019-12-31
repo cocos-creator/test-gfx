@@ -12,7 +12,7 @@
 #include "tests/ClearScreenTest.h"
 #include "tests/BasicTriangleTest.h"
 #include "tests/BasicTextureTest.h"
-#include "tests/TestBase.h"
+#include "tests/DepthTest.h"
 
 using namespace cocos2d;
 
@@ -81,6 +81,7 @@ namespace
             ClearScreen::create,
             BasicTriangle::create,
             BasicTexture::create,
+            DepthTexture::create
         };
         g_test = g_tests[g_nextTextIndex](g_windowInfo);
         if (g_test == nullptr)

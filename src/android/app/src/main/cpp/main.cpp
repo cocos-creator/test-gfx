@@ -4,7 +4,7 @@
 #include "tests/ClearScreenTest.h"
 #include "tests/BasicTriangleTest.h"
 #include "tests/BasicTextureTest.h"
-#include "tests/TestBase.h"
+#include "tests/DepthTest.h"
 #include <android/log.h>
 //#include "AppDelegate.h"
 
@@ -39,8 +39,9 @@ namespace
                     ClearScreen::create,
                     BasicTriangle::create,
                     BasicTexture::create,
+                    DepthTexture::create,
             };
-            g_test = g_tests[2](g_windowInfo);
+            g_test = g_tests[g_nextTestIndex](g_windowInfo);
             if (g_test == nullptr)
                 return;
 

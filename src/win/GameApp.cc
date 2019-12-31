@@ -4,6 +4,7 @@
 #include "tests/ClearScreenTest.h"
 #include "tests/BasicTriangleTest.h"
 #include "tests/BasicTextureTest.h"
+#include "tests/DepthTest.h"
 
 NS_CC_BEGIN
 
@@ -129,6 +130,7 @@ bool GameApp::Initialize()
             ClearScreen::create,
             BasicTriangle::create,
             BasicTexture::create,
+            DepthTexture::create,
         };
         _test = _tests[_nextIndex](_windowInfo);
         if (_test == nullptr)
