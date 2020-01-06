@@ -34,6 +34,33 @@ void BasicTriangle::createShader()
     GFXShaderStageList shaderStageList;
     GFXShaderStage vertexShaderStage;
     vertexShaderStage.type = GFXShaderType::VERTEX;
+    
+#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+    vertexShaderStage.source = R"(
+        #include <metal_stdlib>
+        #include <simd/simd.h>
+        
+        using namespace metal;
+        
+        struct main0_out
+        {
+            float4 gl_Position [[position]];
+        };
+        
+        struct main0_in
+        {
+            float2 a_position [[attribute(0)]];
+        };
+        
+        vertex main0_out main0(main0_in in [[stage_in]])
+        {
+            main0_out out = {};
+            out.gl_Position = float4(in.a_position, 0.0, 1.0);
+            return out;
+        }
+    )";
+#else
+    
 #ifdef USE_GLES2
     vertexShaderStage.source = R"(
         attribute vec2 a_position;
@@ -50,11 +77,40 @@ void BasicTriangle::createShader()
     gl_Position = vec4(a_position, 0.0, 1.0);
     }
     )";
-#endif
+#endif // USE_GLES2
+    
+#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
     shaderStageList.emplace_back(std::move(vertexShaderStage));
 
     GFXShaderStage fragmentShaderStage;
     fragmentShaderStage.type = GFXShaderType::FRAGMENT;
+    
+#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+    fragmentShaderStage.source = R"(
+        #include <metal_stdlib>
+        #include <simd/simd.h>
+        
+        using namespace metal;
+        
+        struct Color
+        {
+            float4 u_color;
+        };
+        
+        struct main0_out
+        {
+            float4 o_color [[color(0)]];
+        };
+        
+        fragment main0_out main0(constant Color& _12 [[buffer(0)]])
+        {
+            main0_out out = {};
+            out.o_color = _12.u_color;
+            return out;
+        }
+    )";
+#else
+    
 #ifdef USE_GLES2
     fragmentShaderStage.source = R"(
         precision highp float;
@@ -80,7 +136,9 @@ void BasicTriangle::createShader()
         o_color = u_color;
     }
     )";
-#endif
+#endif // #ifdef USE_GLES2
+    
+#endif // #if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
     shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
     GFXUniformList uniformList = { { "u_color", GFXType::FLOAT4, 1 } };

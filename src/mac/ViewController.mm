@@ -16,7 +16,7 @@ using namespace cocos2d;
 
 namespace
 {
-    int g_nextTextIndex = 0;
+    int g_nextTextIndex = 1;
     using createFunc = TestBaseI * (*)(const WindowInfo& info);
     std::vector<createFunc> g_tests;
     TestBaseI* g_test    = nullptr;
@@ -35,6 +35,7 @@ namespace
     
     // Set the view to use the default device
     _view = (MTKView *)self.view;
+    _view.depthStencilPixelFormat = MTLPixelFormatDepth24Unorm_Stencil8;
     _view.device = MTLCreateSystemDefaultDevice();
     
     NSAssert(_view.device, @"Metal is not supported on this device");
