@@ -1,6 +1,12 @@
 #include "BasicTextureTest.h"
+
+#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+#include "gfx-metal/GFXMTL.h"
+#else
 #include "gfx-gles2/GFXGLES2.h"
 #include "gfx-gles3/GFXGLES3.h"
+#endif
+
 #include "cocos2d.h"
 
 NS_CC_BEGIN
@@ -34,6 +40,39 @@ void BasicTexture::createShader()
     GFXShaderStageList shaderStageList;
     GFXShaderStage vertexShaderStage;
     vertexShaderStage.type = GFXShaderType::VERTEX;
+#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+    vertexShaderStage.source = R"(#include <metal_stdlib>
+    #include <simd/simd.h>
+    
+    using namespace metal;
+    
+    struct MVP_Matrix
+    {
+        float4x4 u_mvpMatrix;
+    };
+    
+    struct main0_out
+    {
+        float2 texcoord [[user(locn0)]];
+        float4 gl_Position [[position]];
+    };
+    
+    struct main0_in
+    {
+        float2 a_position [[attribute(0)]];
+    };
+    
+    vertex main0_out main0(main0_in in [[stage_in]], constant MVP_Matrix& _16 [[buffer(0)]])
+    {
+        main0_out out = {};
+        out.gl_Position = _16.u_mvpMatrix * float4(in.a_position, 0.0, 1.0);
+        out.texcoord = (in.a_position * 0.5) + float2(0.5);
+        out.texcoord = float2(out.texcoord.x, 1.0 - out.texcoord.y);
+        return out;
+    })";
+    
+#else
+    
 #ifdef USE_GLES2
     vertexShaderStage.source = R"(
     attribute vec2 a_position;
@@ -62,11 +101,40 @@ void BasicTexture::createShader()
         texcoord = vec2(texcoord.x, 1.0 - texcoord.y);
     }
     )";
-#endif
+#endif // USE_GLES2
+    
+#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
     shaderStageList.emplace_back(std::move(vertexShaderStage));
 
     GFXShaderStage fragmentShaderStage;
     fragmentShaderStage.type = GFXShaderType::FRAGMENT;
+    
+#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+    fragmentShaderStage.source = R"(
+    #include <metal_stdlib>
+    #include <simd/simd.h>
+    
+    using namespace metal;
+    
+    struct main0_out
+    {
+        float4 o_color [[color(0)]];
+    };
+    
+    struct main0_in
+    {
+        float2 texcoord [[user(locn0)]];
+    };
+    
+    fragment main0_out main0(main0_in in [[stage_in]], texture2d<float> u_texture [[texture(0)]], sampler u_textureSmplr [[sampler(0)]])
+    {
+        main0_out out = {};
+        out.o_color = u_texture.sample(u_textureSmplr, in.texcoord);
+        return out;
+    }
+    )";
+#else
+    
 #ifdef USE_GLES2
     fragmentShaderStage.source = R"(
     #ifdef GL_ES
@@ -90,7 +158,9 @@ void BasicTexture::createShader()
         o_color = texture(u_texture, texcoord);
     }
     )";
-#endif
+#endif // USE_GLES2
+    
+#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
     shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
     GFXUniformList mvpMatrix = { { "u_mvpMatrix", GFXType::MAT4, 1} };

@@ -9,14 +9,17 @@
 #import "ViewController.h"
 #include "tests/ClearScreenTest.h"
 #include "tests/BasicTriangleTest.h"
-//#include "tests/BasicTextureTest.h"
+#include "tests/BasicTextureTest.h"
 #include "tests/TestBase.h"
+
+#import <AppKit/NSTouch.h>
+#import <AppKit/NSEvent.h>
 
 using namespace cocos2d;
 
 namespace
 {
-    int g_nextTextIndex = 1;
+    int g_nextTextIndex = 0;
     using createFunc = TestBaseI * (*)(const WindowInfo& info);
     std::vector<createFunc> g_tests;
     TestBaseI* g_test    = nullptr;
@@ -74,6 +77,23 @@ namespace
     
 }
 
+- (void)viewDidAppear
+{
+    // Make the view controller the window's first responder so that it can handle the Key events
+    [_view.window makeFirstResponder:self];
+}
+
+- (void)keyDown:(NSEvent *)event {
+    g_nextTextIndex = (++g_nextTextIndex) % g_tests.size();
+    CC_SAFE_DESTROY(g_test);
+    g_test = g_tests[g_nextTextIndex](g_windowInfo);
+}
+
+- (BOOL)acceptsFirstResponder
+{
+    return YES;
+}
+
 - (void)initTests {
     static bool first = true;
     if (first)
@@ -81,7 +101,7 @@ namespace
         g_tests = {
             ClearScreen::create,
             BasicTriangle::create,
-            //BasicTexture::create,
+            BasicTexture::create,
         };
         g_test = g_tests[g_nextTextIndex](g_windowInfo);
         if (g_test == nullptr)
