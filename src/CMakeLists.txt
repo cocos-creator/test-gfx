@@ -2,7 +2,7 @@
 
 # include modules
 if(WIN32)
-    set(CMAKE_MODULE_PATH ${COCOS_EXTERNAL_PATH}/cmake)
+    set(CMAKE_MODULE_PATH ${GFX_EXTERNAL_PATH}/cmake)
     include(CocosBuildSet)
 endif()
 
