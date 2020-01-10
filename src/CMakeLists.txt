@@ -50,9 +50,10 @@ elseif(ANDROID)
 elseif(APPLE)
     list(APPEND CC_PLATFORM_SOURCES
         ${COCOS_SRC_PATH}/platform/apple/CCFileUtils-apple.h
-        ${COCOS_SRC_PATH}/platform/apple/CCDevice-apple.mm
+        
         ${COCOS_SRC_PATH}/platform/apple/CCFileUtils-apple.mm
-        ${COCOS_SRC_PATH}/platform/apple/CCDevice-apple.h
+        
+        
     )
 endif()
 
@@ -144,6 +145,11 @@ set(GAME_RES_FOLDER "${CMAKE_CURRENT_SOURCE_DIR}/Resources")
 if(VS)
     cocos_mark_multi_resources(cc_common_res RES_TO "Resources" FOLDERS ${GAME_RES_FOLDER})
 endif()
+set(APP_UI_RES
+    "${GAME_RES_FOLDER}/uv_checker_01.jpg"
+    "${GAME_RES_FOLDER}/uv_checker_02.jpg"
+    "${GAME_RES_FOLDER}/stencil.jpg"
+)
 
 # add test cases
 include(${PROJECT_SOURCE_DIR}/tests/CMakeLists.txt)
