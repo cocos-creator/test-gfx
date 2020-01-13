@@ -5,6 +5,7 @@
 #include "tests/BasicTriangleTest.h"
 #include "tests/BasicTextureTest.h"
 #include "tests/DepthTest.h"
+#include "tests/StencilTest.h"
 
 NS_CC_BEGIN
 
@@ -131,6 +132,7 @@ bool GameApp::Initialize()
             BasicTriangle::create,
             BasicTexture::create,
             DepthTexture::create,
+            StencilTest::create,
         };
         _test = _tests[_nextIndex](_windowInfo);
         if (_test == nullptr)
