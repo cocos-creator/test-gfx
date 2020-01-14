@@ -25,9 +25,11 @@ public:
     TestBaseI(const WindowInfo& info);
     virtual void tick(float dt) = 0;
 
-    virtual bool initialize() { return true; };
+    virtual bool initialize() { return true; }
     virtual void Destroy();
     virtual ~TestBaseI() = default;
+
+    static GFXDevice* getDevice() { return _device; }
 
 protected:
     static GFXDevice* _device;

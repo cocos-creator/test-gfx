@@ -150,6 +150,7 @@ void GameApp::Destroy()
 
 void GameApp::Resize(uint width, uint height)
 {
+    TestBaseI::getDevice()->Resize(width, height);
 }
 
 void GameApp::OnKeyDown(WPARAM keyCode)
