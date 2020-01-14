@@ -12,7 +12,6 @@ set(CC_PLATFORM_SOURCES
     ${COCOS_SRC_PATH}/platform/CCApplication.h
     ${COCOS_SRC_PATH}/platform/CCDevice.h
     ${COCOS_SRC_PATH}/platform/CCFileUtils.h
-    ${COCOS_SRC_PATH}/platform/CCGL.h
     ${COCOS_SRC_PATH}/platform/CCImage.h
     ${COCOS_SRC_PATH}/platform/CCPlatformConfig.h
     ${COCOS_SRC_PATH}/platform/CCPlatformDefine.h
