@@ -6,6 +6,7 @@
 #include "tests/BasicTextureTest.h"
 #include "tests/DepthTest.h"
 #include "tests/StencilTest.h"
+#include "tests/ParticleTest.h"
 
 #include <android/log.h>
 //#include "AppDelegate.h"
@@ -43,6 +44,7 @@ namespace
                     BasicTexture::create,
                     DepthTexture::create,
                     StencilTest::create,
+                    ParticleTest::create,
             };
             g_test = g_tests[g_nextTestIndex](g_windowInfo);
             if (g_test == nullptr)
