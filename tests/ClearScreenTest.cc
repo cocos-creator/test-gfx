@@ -9,7 +9,7 @@
 
 NS_CC_BEGIN
 
-void ClearScreen::Destroy()
+void ClearScreen::destroy()
 {
 }
 
@@ -34,7 +34,7 @@ void ClearScreen::tick(float dt) {
     _commandBuffer->End();
 
     _device->queue()->submit(&_commandBuffer, 1);
-    _device->Present();
+    _device->present();
 }
 
 NS_CC_END

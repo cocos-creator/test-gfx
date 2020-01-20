@@ -9,7 +9,7 @@
 
 NS_CC_BEGIN
 
-void BasicTriangle::Destroy()
+void BasicTriangle::destroy()
 {
     CC_SAFE_DESTROY(_shader);
     CC_SAFE_DESTROY(_vertexBuffer);
@@ -148,7 +148,7 @@ void BasicTriangle::createShader()
     shaderInfo.name = "Basic Triangle";
     shaderInfo.stages = std::move(shaderStageList);
     shaderInfo.blocks = std::move(uniformBlockList);
-    _shader = _device->CreateGFXShader(shaderInfo);
+    _shader = _device->createShader(shaderInfo);
 }
 
 void BasicTriangle::createVertexBuffer()
@@ -166,7 +166,7 @@ void BasicTriangle::createVertexBuffer()
           sizeof(vertexData),
           GFXBufferFlagBit::NONE };
 
-    _vertexBuffer = _device->CreateGFXBuffer(vertexBufferInfo);
+    _vertexBuffer = _device->createBuffer(vertexBufferInfo);
     _vertexBuffer->Update(vertexData, 0, sizeof(vertexData));
 
     GFXBufferInfo uniformBufferInfo = {
@@ -175,7 +175,7 @@ void BasicTriangle::createVertexBuffer()
            4 * sizeof(float),
            sizeof(GFXColor),
            GFXBufferFlagBit::NONE };
-     _uniformBuffer = _device->CreateGFXBuffer(uniformBufferInfo);
+     _uniformBuffer = _device->createBuffer(uniformBufferInfo);
 }
 
 void BasicTriangle::createInputAssembler()
@@ -184,27 +184,27 @@ void BasicTriangle::createInputAssembler()
     GFXInputAssemblerInfo inputAssemblerInfo;
     inputAssemblerInfo.attributes.emplace_back(std::move(position));
     inputAssemblerInfo.vertex_buffers.emplace_back(_vertexBuffer);
-    _inputAssembler = _device->CreateGFXInputAssembler(inputAssemblerInfo);
+    _inputAssembler = _device->createInputAssembler(inputAssemblerInfo);
 }
 
 void BasicTriangle::createPipeline()
 {
     GFXBindingList bindingList = { {0, GFXBindingType::UNIFORM_BUFFER, "u_color"} };
     GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
-    _bindingLayout = _device->CreateGFXBindingLayout(bindingLayoutInfo);
+    _bindingLayout = _device->createBindingLayout(bindingLayoutInfo);
 
     GFXPipelineLayoutInfo pipelineLayoutInfo;
     pipelineLayoutInfo.layouts = { _bindingLayout };
-    auto pipelineLayout = _device->CreateGFXPipelieLayout(pipelineLayoutInfo);
+    auto pipelineLayout = _device->createPipelineLayout(pipelineLayoutInfo);
 
     GFXPipelineStateInfo pipelineInfo;
     pipelineInfo.primitive = GFXPrimitiveMode::TRIANGLE_LIST;
     pipelineInfo.shader = _shader;
     pipelineInfo.is = { _inputAssembler->attributes() };
     pipelineInfo.layout = pipelineLayout;
-    pipelineInfo.render_pass = _device->window()->render_pass();
+    pipelineInfo.render_pass = _device->mainWindow()->render_pass();
 
-    _pipelineState = _device->CreateGFXPipelineState(pipelineInfo);
+    _pipelineState = _device->createPipelineState(pipelineInfo);
 
     CC_SAFE_DESTROY(pipelineLayout);
 }
@@ -235,7 +235,7 @@ void BasicTriangle::tick(float dt) {
     _commandBuffer->End();
 
     _device->queue()->submit(&_commandBuffer, 1);
-    _device->Present();
+    _device->present();
 }
 
 NS_CC_END

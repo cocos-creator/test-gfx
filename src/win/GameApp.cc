@@ -118,7 +118,7 @@ void GameApp::Run()
         }
     }
 
-    Destroy();
+    destroy();
 
     DestroyAppWindow();
 }
@@ -145,7 +145,7 @@ bool GameApp::Initialize()
     return true;
 }
 
-void GameApp::Destroy()
+void GameApp::destroy()
 {
     CC_SAFE_DESTROY(_test);
 }

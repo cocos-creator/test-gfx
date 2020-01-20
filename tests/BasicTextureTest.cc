@@ -11,7 +11,7 @@
 
 NS_CC_BEGIN
 
-void BasicTexture::Destroy()
+void BasicTexture::destroy()
 {
     CC_SAFE_DESTROY(_shader);
     CC_SAFE_DESTROY(_vertexBuffer);
@@ -173,7 +173,7 @@ void BasicTexture::createShader()
     shaderInfo.stages = std::move(shaderStageList);
     shaderInfo.blocks = std::move(uniformBlockList);
     shaderInfo.samplers = std::move(sampler);
-    _shader = _device->CreateGFXShader(shaderInfo);
+    _shader = _device->createShader(shaderInfo);
 }
 
 void BasicTexture::createVertexBuffer()
@@ -197,7 +197,7 @@ void BasicTexture::createVertexBuffer()
           sizeof(vertexData),
           GFXBufferFlagBit::NONE };
 
-    _vertexBuffer = _device->CreateGFXBuffer(vertexBufferInfo);
+    _vertexBuffer = _device->createBuffer(vertexBufferInfo);
     _vertexBuffer->Update(vertexData, 0, sizeof(vertexData));
 
     GFXBufferInfo uniformBufferInfo = {
@@ -206,7 +206,7 @@ void BasicTexture::createVertexBuffer()
            sizeof(Mat4),
            sizeof(Mat4),
            GFXBufferFlagBit::NONE };
-     _uniformBuffer = _device->CreateGFXBuffer(uniformBufferInfo);
+     _uniformBuffer = _device->createBuffer(uniformBufferInfo);
 }
 
 void BasicTexture::createInputAssembler()
@@ -215,7 +215,7 @@ void BasicTexture::createInputAssembler()
     GFXInputAssemblerInfo inputAssemblerInfo;
     inputAssemblerInfo.attributes.emplace_back(std::move(position));
     inputAssemblerInfo.vertex_buffers.emplace_back(_vertexBuffer);
-    _inputAssembler = _device->CreateGFXInputAssembler(inputAssemblerInfo);
+    _inputAssembler = _device->createInputAssembler(inputAssemblerInfo);
 }
 
 void BasicTexture::createPipeline()
@@ -225,7 +225,7 @@ void BasicTexture::createPipeline()
         {1, GFXBindingType::SAMPLER, "u_texture"}
     };
     GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
-    _bindingLayout = _device->CreateGFXBindingLayout(bindingLayoutInfo);
+    _bindingLayout = _device->createBindingLayout(bindingLayoutInfo);
     
     Mat4 mvpMatrix;
     _uniformBuffer->Update(&mvpMatrix, 0, sizeof(mvpMatrix));
@@ -236,16 +236,16 @@ void BasicTexture::createPipeline()
 
     GFXPipelineLayoutInfo pipelineLayoutInfo;
     pipelineLayoutInfo.layouts = { _bindingLayout };
-    auto pipelineLayout = _device->CreateGFXPipelieLayout(pipelineLayoutInfo);
+    auto pipelineLayout = _device->createPipelineLayout(pipelineLayoutInfo);
 
     GFXPipelineStateInfo pipelineInfo;
     pipelineInfo.primitive = GFXPrimitiveMode::TRIANGLE_LIST;
     pipelineInfo.shader = _shader;
     pipelineInfo.is = { _inputAssembler->attributes() };
     pipelineInfo.layout = pipelineLayout;
-    pipelineInfo.render_pass = _device->window()->render_pass();
+    pipelineInfo.render_pass = _device->mainWindow()->render_pass();
 
-    _pipelineState = _device->CreateGFXPipelineState(pipelineInfo);
+    _pipelineState = _device->createPipelineState(pipelineInfo);
 
     CC_SAFE_DESTROY(pipelineLayout);
 }
@@ -266,7 +266,7 @@ void BasicTexture::createTexture()
         static_cast<uint>(img->getDataLen()),
         GFXBufferFlagBit::NONE };
     
-    _image = _device->CreateGFXBuffer(vertexBufferInfo);
+    _image = _device->createBuffer(vertexBufferInfo);
     _image->Update(data.getBytes(), 0, static_cast<uint>(data.getSize()));
     
     GFXTextureInfo textureInfo;
@@ -275,7 +275,7 @@ void BasicTexture::createTexture()
     textureInfo.width = img->getWidth();
     textureInfo.height = img->getHeight();
     
-    _texture = _device->CreateGFXTexture(textureInfo);
+    _texture = _device->createTexture(textureInfo);
     
     GFXBufferTextureCopy textureRegion;
     textureRegion.buff_tex_height = img->getHeight();
@@ -286,16 +286,16 @@ void BasicTexture::createTexture()
     GFXBufferTextureCopyList regions;
     regions.push_back(std::move(textureRegion));
     
-    _device->CopyBuffersToTexture(_image, _texture, regions);
+    _device->copyBuffersToTexture(_image, _texture, regions);
     
     //create sampler
     GFXSamplerInfo samplerInfo;
-    _sampler = _device->CreateGFXSampler(samplerInfo);
+    _sampler = _device->createSampler(samplerInfo);
     
     GFXTextureViewInfo texViewInfo;
     texViewInfo.texture = _texture;
     texViewInfo.format = GFXFormat::RGB8;
-    _texView = _device->CreateGFXTextureView(texViewInfo);
+    _texView = _device->createTextureView(texViewInfo);
 }
 
 void BasicTexture::tick(float dt) {
@@ -313,7 +313,7 @@ void BasicTexture::tick(float dt) {
     _commandBuffer->End();
 
     _device->queue()->submit(&_commandBuffer, 1);
-    _device->Present();
+    _device->present();
 }
 
 NS_CC_END

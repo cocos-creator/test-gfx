@@ -65,7 +65,7 @@ namespace {
     };
 }
 
-void ParticleTest::Destroy()
+void ParticleTest::destroy()
 {
     CC_SAFE_DESTROY(_shader);
     CC_SAFE_DESTROY(_vertexBuffer);
@@ -200,7 +200,7 @@ void ParticleTest::createShader()
     shaderInfo.stages = std::move(shaderStageList);
     shaderInfo.blocks = std::move(uniformBlockList);
     shaderInfo.samplers = std::move(sampler);
-    _shader = _device->CreateGFXShader(shaderInfo);
+    _shader = _device->createShader(shaderInfo);
 }
 
 void ParticleTest::createVertexBuffer()
@@ -213,7 +213,7 @@ void ParticleTest::createVertexBuffer()
           sizeof(_vbufferArray),
           GFXBufferFlagBit::NONE };
 
-    _vertexBuffer = _device->CreateGFXBuffer(vertexBufferInfo);
+    _vertexBuffer = _device->createBuffer(vertexBufferInfo);
     
     //index buffer: _ibufferArray[MAX_QUAD_COUNT][6];
     uint16_t dst = 0;
@@ -234,7 +234,7 @@ void ParticleTest::createVertexBuffer()
         sizeof(_ibufferArray),
         GFXBufferFlagBit::NONE };
     
-    _indexBuffer = _device->CreateGFXBuffer(indexBufferInfo);
+    _indexBuffer = _device->createBuffer(indexBufferInfo);
     _indexBuffer->Update(_ibufferArray, 0, sizeof(_ibufferArray));
     
     for (size_t i = 0; i < PARTICLE_COUNT; ++i)
@@ -250,7 +250,7 @@ void ParticleTest::createVertexBuffer()
            sizeof(Mat4),
            3 * sizeof(Mat4),
            GFXBufferFlagBit::NONE };
-     _uniformBuffer = _device->CreateGFXBuffer(uniformBufferInfo);
+     _uniformBuffer = _device->createBuffer(uniformBufferInfo);
     Mat4 model, view, projection;
     Mat4::createPerspective(60.0f, 1.0f * _device->width() / _device->height(), 0.01f, 1000.0f, &projection);
     Mat4::createLookAt(Vec3(30.0f , 20.0f, 30.0f), Vec3(0.0f, 2.5f, 0.0f), Vec3(0.0f, 1.0f, 0.f), &view);
@@ -270,7 +270,7 @@ void ParticleTest::createInputAssembler()
     inputAssemblerInfo.attributes.emplace_back(std::move(color));
     inputAssemblerInfo.vertex_buffers.emplace_back(_vertexBuffer);
     inputAssemblerInfo.index_buffer = _indexBuffer;
-    _inputAssembler = _device->CreateGFXInputAssembler(inputAssemblerInfo);
+    _inputAssembler = _device->createInputAssembler(inputAssemblerInfo);
 }
 
 void ParticleTest::createPipeline()
@@ -280,7 +280,7 @@ void ParticleTest::createPipeline()
         {1, GFXBindingType::SAMPLER, "Texture"}
     };
     GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
-    _bindingLayout = _device->CreateGFXBindingLayout(bindingLayoutInfo);
+    _bindingLayout = _device->createBindingLayout(bindingLayoutInfo);
     
     _bindingLayout->BindBuffer(0, _uniformBuffer);
     _bindingLayout->BindSampler(1, _sampler);
@@ -289,14 +289,14 @@ void ParticleTest::createPipeline()
 
     GFXPipelineLayoutInfo pipelineLayoutInfo;
     pipelineLayoutInfo.layouts = { _bindingLayout };
-    auto pipelineLayout = _device->CreateGFXPipelieLayout(pipelineLayoutInfo);
+    auto pipelineLayout = _device->createPipelineLayout(pipelineLayoutInfo);
 
     GFXPipelineStateInfo pipelineInfo;
     pipelineInfo.primitive = GFXPrimitiveMode::TRIANGLE_LIST;
     pipelineInfo.shader = _shader;
     pipelineInfo.is = { _inputAssembler->attributes() };
     pipelineInfo.layout = pipelineLayout;
-    pipelineInfo.render_pass = _device->window()->render_pass();
+    pipelineInfo.render_pass = _device->mainWindow()->render_pass();
     pipelineInfo.bs.targets[0].is_blend = true;
     pipelineInfo.bs.targets[0].blend_eq = GFXBlendOp::ADD;
     pipelineInfo.bs.targets[0].blend_alpha_eq = GFXBlendOp::ADD;
@@ -305,7 +305,7 @@ void ParticleTest::createPipeline()
     pipelineInfo.bs.targets[0].blend_src_alpha = GFXBlendFactor::ONE;
     pipelineInfo.bs.targets[0].blend_dst_alpha = GFXBlendFactor::ONE;
 
-    _pipelineState = _device->CreateGFXPipelineState(pipelineInfo);
+    _pipelineState = _device->createPipelineState(pipelineInfo);
 
     CC_SAFE_DESTROY(pipelineLayout);
 }
@@ -329,7 +329,7 @@ void ParticleTest::createTexture()
         static_cast<uint>(BUFFER_SIZE),
         GFXBufferFlagBit::NONE };
     
-    auto image = _device->CreateGFXBuffer(imageBufferInfo);
+    auto image = _device->createBuffer(imageBufferInfo);
     image->Update(imageData, 0, BUFFER_SIZE);
     CC_SAFE_FREE(imageData);
     
@@ -340,7 +340,7 @@ void ParticleTest::createTexture()
     textureInfo.height = LINE_HEIGHT;
     textureInfo.flags = GFXTextureFlagBit::GEN_MIPMAP;
     
-    _texture = _device->CreateGFXTexture(textureInfo);
+    _texture = _device->createTexture(textureInfo);
     
     GFXBufferTextureCopy textureRegion;
     textureRegion.buff_tex_height = 0;
@@ -351,7 +351,7 @@ void ParticleTest::createTexture()
     GFXBufferTextureCopyList regions;
     regions.push_back(std::move(textureRegion));
     
-    _device->CopyBuffersToTexture(image, _texture, regions);
+    _device->copyBuffersToTexture(image, _texture, regions);
     CC_SAFE_DESTROY(image);
     
     //create sampler
@@ -359,12 +359,12 @@ void ParticleTest::createTexture()
     samplerInfo.address_u = GFXAddress::WRAP;
     samplerInfo.address_v = GFXAddress::WRAP;
     samplerInfo.mip_filter = GFXFilter::LINEAR;
-    _sampler = _device->CreateGFXSampler(samplerInfo);
+    _sampler = _device->createSampler(samplerInfo);
     
     GFXTextureViewInfo texViewInfo;
     texViewInfo.texture = _texture;
     texViewInfo.format = GFXFormat::RGB8;
-    _texView = _device->CreateGFXTextureView(texViewInfo);
+    _texView = _device->createTextureView(texViewInfo);
 }
 
 void ParticleTest::tick(float dt) {
@@ -423,7 +423,7 @@ void ParticleTest::tick(float dt) {
     _commandBuffer->End();
 
     _device->queue()->submit(&_commandBuffer, 1);
-    _device->Present();
+    _device->present();
 }
 
 NS_CC_END

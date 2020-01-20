@@ -36,24 +36,24 @@ TestBaseI::TestBaseI(const WindowInfo& info)
         dev_info.height = info.screen.height;
         dev_info.native_width = info.physicalWidth;
         dev_info.native_height = info.physicalHeight;
-        _device->Initialize(dev_info);
+        _device->initialize(dev_info);
     }
 
     if(_commandBuffer == nullptr)
     {
         GFXCommandBufferInfo cmd_buff_info;
-        cmd_buff_info.allocator = _device->cmd_allocator();
+        cmd_buff_info.allocator = _device->commandAllocator();
         cmd_buff_info.type = GFXCommandBufferType::PRIMARY;
-        _commandBuffer = _device->CreateGFXCommandBuffer(cmd_buff_info);
+        _commandBuffer = _device->createCommandBuffer(cmd_buff_info);
     }
     
     if(_fbo == nullptr)
     {
-        _fbo = _device->window()->framebuffer();
+        _fbo = _device->mainWindow()->framebuffer();
     }
 }
 
-void TestBaseI::Destroy()
+void TestBaseI::destroy()
 {
 //    CC_SAFE_DESTROY(_device);
 //    CC_SAFE_DESTROY(_fbo);

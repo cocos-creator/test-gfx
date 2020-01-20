@@ -20,7 +20,7 @@ public:
     // Framework methods.  Derived client class overrides these methods to 
     // implement specific application requirements.
     virtual bool Initialize();
-    virtual void Destroy();
+    virtual void destroy();
     virtual void Resize(uint width, uint height);
     virtual void OnKeyDown(WPARAM keyCode);
     virtual void OnMouseLDown(WORD x, WORD y);

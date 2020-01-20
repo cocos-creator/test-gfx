@@ -26,7 +26,7 @@ public:
     virtual void tick(float dt) = 0;
 
     virtual bool initialize() { return true; }
-    virtual void Destroy();
+    virtual void destroy();
     virtual ~TestBaseI() = default;
 
     static GFXDevice* getDevice() { return _device; }
