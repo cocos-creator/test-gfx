@@ -9,7 +9,7 @@
 
 NS_CC_BEGIN
 
-void BasicTriangle::Destroy()
+void BasicTriangle::destroy()
 {
     CC_SAFE_DESTROY(_shader);
     CC_SAFE_DESTROY(_vertexBuffer);
@@ -148,7 +148,7 @@ void BasicTriangle::createShader()
     shaderInfo.name = "Basic Triangle";
     shaderInfo.stages = std::move(shaderStageList);
     shaderInfo.blocks = std::move(uniformBlockList);
-    _shader = _device->CreateGFXShader(shaderInfo);
+    _shader = _device->createShader(shaderInfo);
 }
 
 void BasicTriangle::createVertexBuffer()
@@ -166,8 +166,8 @@ void BasicTriangle::createVertexBuffer()
           sizeof(vertexData),
           GFXBufferFlagBit::NONE };
 
-    _vertexBuffer = _device->CreateGFXBuffer(vertexBufferInfo);
-    _vertexBuffer->Update(vertexData, 0, sizeof(vertexData));
+    _vertexBuffer = _device->createBuffer(vertexBufferInfo);
+    _vertexBuffer->update(vertexData, 0, sizeof(vertexData));
 
     GFXBufferInfo uniformBufferInfo = {
            GFXBufferUsage::UNIFORM,
@@ -175,7 +175,7 @@ void BasicTriangle::createVertexBuffer()
            4 * sizeof(float),
            sizeof(GFXColor),
            GFXBufferFlagBit::NONE };
-     _uniformBuffer = _device->CreateGFXBuffer(uniformBufferInfo);
+     _uniformBuffer = _device->createBuffer(uniformBufferInfo);
 }
 
 void BasicTriangle::createInputAssembler()
@@ -184,27 +184,27 @@ void BasicTriangle::createInputAssembler()
     GFXInputAssemblerInfo inputAssemblerInfo;
     inputAssemblerInfo.attributes.emplace_back(std::move(position));
     inputAssemblerInfo.vertex_buffers.emplace_back(_vertexBuffer);
-    _inputAssembler = _device->CreateGFXInputAssembler(inputAssemblerInfo);
+    _inputAssembler = _device->createInputAssembler(inputAssemblerInfo);
 }
 
 void BasicTriangle::createPipeline()
 {
     GFXBindingList bindingList = { {0, GFXBindingType::UNIFORM_BUFFER, "u_color"} };
     GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
-    _bindingLayout = _device->CreateGFXBindingLayout(bindingLayoutInfo);
+    _bindingLayout = _device->createBindingLayout(bindingLayoutInfo);
 
     GFXPipelineLayoutInfo pipelineLayoutInfo;
     pipelineLayoutInfo.layouts = { _bindingLayout };
-    auto pipelineLayout = _device->CreateGFXPipelieLayout(pipelineLayoutInfo);
+    auto pipelineLayout = _device->createPipelineLayout(pipelineLayoutInfo);
 
     GFXPipelineStateInfo pipelineInfo;
     pipelineInfo.primitive = GFXPrimitiveMode::TRIANGLE_LIST;
     pipelineInfo.shader = _shader;
     pipelineInfo.is = { _inputAssembler->attributes() };
     pipelineInfo.layout = pipelineLayout;
-    pipelineInfo.render_pass = _device->window()->render_pass();
+    pipelineInfo.render_pass = _device->mainWindow()->renderPass();
 
-    _pipelineState = _device->CreateGFXPipelineState(pipelineInfo);
+    _pipelineState = _device->createPipelineState(pipelineInfo);
 
     CC_SAFE_DESTROY(pipelineLayout);
 }
@@ -221,21 +221,21 @@ void BasicTriangle::tick(float dt) {
     uniformColor.b = 0.0f;
     uniformColor.a = 1.0f;
 
-    _uniformBuffer->Update(&uniformColor, 0, sizeof(uniformColor));
-    _bindingLayout->BindBuffer(0, _uniformBuffer);
-    _bindingLayout->Update();
+    _uniformBuffer->update(&uniformColor, 0, sizeof(uniformColor));
+    _bindingLayout->bindBuffer(0, _uniformBuffer);
+    _bindingLayout->update();
 
-    _commandBuffer->Begin();
-    _commandBuffer->BeginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, &clear_color, 1, 1.0f, 0);
-    _commandBuffer->BindInputAssembler(_inputAssembler);
-    _commandBuffer->BindBindingLayout(_bindingLayout);
-    _commandBuffer->BindPipelineState(_pipelineState);
-    _commandBuffer->Draw(_inputAssembler);
-    _commandBuffer->EndRenderPass();
-    _commandBuffer->End();
+    _commandBuffer->begin();
+    _commandBuffer->beginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, &clear_color, 1, 1.0f, 0);
+    _commandBuffer->bindInputAssembler(_inputAssembler);
+    _commandBuffer->bindBindingLayout(_bindingLayout);
+    _commandBuffer->bindPipelineState(_pipelineState);
+    _commandBuffer->draw(_inputAssembler);
+    _commandBuffer->endRenderPass();
+    _commandBuffer->end();
 
     _device->queue()->submit(&_commandBuffer, 1);
-    _device->Present();
+    _device->present();
 }
 
 NS_CC_END

@@ -9,7 +9,7 @@
 
 NS_CC_BEGIN
 
-void ClearScreen::Destroy()
+void ClearScreen::destroy()
 {
 }
 
@@ -28,13 +28,13 @@ void ClearScreen::tick(float dt) {
     clear_color.b = 0.0f;
     clear_color.a = 1.0f;
 
-    _commandBuffer->Begin();
-    _commandBuffer->BeginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, &clear_color, 1, 1.0f, 0);
-    _commandBuffer->EndRenderPass();
-    _commandBuffer->End();
+    _commandBuffer->begin();
+    _commandBuffer->beginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, &clear_color, 1, 1.0f, 0);
+    _commandBuffer->endRenderPass();
+    _commandBuffer->end();
 
     _device->queue()->submit(&_commandBuffer, 1);
-    _device->Present();
+    _device->present();
 }
 
 NS_CC_END

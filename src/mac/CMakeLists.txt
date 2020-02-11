@@ -66,7 +66,7 @@ find_library(METALKIT_LIBRARY MetalKit)
 list(APPEND PLATFORM_SPECIFIC_LIBS
      ${APPKIT_LIBRARY}
      ${METAL_LIBRARY}
-     ${METAL_KIT}
+     ${METALKIT_LIBRARY}
 )
 
 target_link_libraries(${APP_NAME} 
