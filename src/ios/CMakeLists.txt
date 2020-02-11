@@ -25,10 +25,6 @@ file(GLOB_RECURSE SOURCE_CPP_FILES *.cpp *.cc)
 file(GLOB_RECURSE SOURCE_C_FILES *.c)
 file(GLOB_RECURSE SOURCE_MM_FILES *.m *.mm)
 
-set(APP_UI_RES
-    ${CMAKE_CURRENT_LIST_DIR}/../Resources/uv_checker_01.jpg
-)
-
 set(ALL_FILES 
     ${HEADER_FILES} 
     ${SOURCE_CPP_FILES} 
@@ -61,14 +57,10 @@ set_xcode_property(${APP_NAME} INFOPLIST_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Info.p
 find_library(UIKIT_LIBRARY UIKit)
 find_library(OPENGLES_LIBRARY OpenGLES)
 find_library(QUARTZCORE_LIBRARY QuartzCore)
-find_library(METAL_LIBRARY Metal)
-find_library(METALKIT_LIBRARY MetalKit)
 list(APPEND PLATFORM_SPECIFIC_LIBS
      ${UIKIT_LIBRARY}
      ${OPENGLES_LIBRARY}
      ${QUARTZCORE_LIBRARY}
-     ${METAL_LIBRARY}
-     ${METAL_KIT}
 )
 
 target_link_libraries(${APP_NAME} 

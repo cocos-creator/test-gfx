@@ -112,7 +112,7 @@ namespace
              shaderInfo.stages = std::move(shaderStageList);
              shaderInfo.blocks = std::move(uniformBlockList);
              shaderInfo.samplers = std::move(sampler);
-             shader = device->CreateGFXShader(shaderInfo);
+             shader = device->createShader(shaderInfo);
         }
         
         void createSampler()
@@ -121,7 +121,7 @@ namespace
             GFXSamplerInfo samplerInfo;
             samplerInfo.address_u = GFXAddress::CLAMP;
             samplerInfo.address_v = GFXAddress::CLAMP;
-            sampler = device->CreateGFXSampler(samplerInfo);
+            sampler = device->createSampler(samplerInfo);
         }
                                          
         void createBuffers()
@@ -135,7 +135,7 @@ namespace
                 sizeof(vertices),
                 GFXBufferFlagBit::NONE
             };
-            vertexBuffer = device->CreateGFXBuffer(vertexBufferInfo);
+            vertexBuffer = device->createBuffer(vertexBufferInfo);
             vertexBuffer->Update(vertices, 0, sizeof(vertices));
             
             //create uniform buffer
@@ -145,7 +145,7 @@ namespace
                 sizeof(float),
                 2 * sizeof(float),
                 GFXBufferFlagBit::NONE };
-            nearFarUniformBuffer = device->CreateGFXBuffer(uniformBufferInfo);
+            nearFarUniformBuffer = device->createBuffer(uniformBufferInfo);
             
             float nearValue = 0.1f;
             float farValue = 100.0f;
@@ -159,7 +159,7 @@ namespace
              GFXInputAssemblerInfo inputAssemblerInfo;
              inputAssemblerInfo.attributes.emplace_back(std::move(position));
              inputAssemblerInfo.vertex_buffers.emplace_back(vertexBuffer);
-             inputAssembler = device->CreateGFXInputAssembler(inputAssemblerInfo);
+             inputAssembler = device->createInputAssembler(inputAssemblerInfo);
          }
                 
         void createPipeline()
@@ -170,7 +170,7 @@ namespace
                 {texBindingLoc, GFXBindingType::SAMPLER, "Texture"}
             };
             GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
-            bindingLayout = device->CreateGFXBindingLayout(bindingLayoutInfo);
+            bindingLayout = device->createBindingLayout(bindingLayoutInfo);
             
             
             bindingLayout->BindBuffer(0, nearFarUniformBuffer);
@@ -179,14 +179,14 @@ namespace
             
             GFXPipelineLayoutInfo pipelineLayoutInfo;
             pipelineLayoutInfo.layouts = { bindingLayout };
-            auto pipelineLayout = device->CreateGFXPipelieLayout(pipelineLayoutInfo);
+            auto pipelineLayout = device->createPipelineLayout(pipelineLayoutInfo);
             
             GFXPipelineStateInfo pipelineInfo;
             pipelineInfo.primitive = GFXPrimitiveMode::TRIANGLE_LIST;
             pipelineInfo.shader = shader;
             pipelineInfo.is = { inputAssembler->attributes() };
             pipelineInfo.layout = pipelineLayout;
-            pipelineInfo.render_pass = device->window()->render_pass();
+            pipelineInfo.render_pass = device->mainWindow()->render_pass();
             
             pipelineInfo.dss.depth_test = false;
             pipelineInfo.dss.depth_write = false;
@@ -195,7 +195,7 @@ namespace
             
             pipelineInfo.rs.cull_mode = GFXCullMode::NONE;
             
-            pipelineState = device->CreateGFXPipelineState(pipelineInfo);
+            pipelineState = device->createPipelineState(pipelineInfo);
             
             CC_SAFE_DESTROY(pipelineLayout);
         }
@@ -204,7 +204,7 @@ namespace
             
         }
         
-        void Destroy()
+        void destroy()
         {
             CC_SAFE_DESTROY(shader);
             CC_SAFE_DESTROY(vertexBuffer);
@@ -322,7 +322,7 @@ namespace
             shaderInfo.name = "Bunny";
             shaderInfo.stages = std::move(shaderStageList);
             shaderInfo.blocks = std::move(uniformBlockList);
-            shader = device->CreateGFXShader(shaderInfo);
+            shader = device->createShader(shaderInfo);
         }
         
         void createBuffers()
@@ -335,7 +335,7 @@ namespace
                 sizeof(bunny_positions),
                 GFXBufferFlagBit::NONE };
             
-            vertexBuffer = device->CreateGFXBuffer(vertexBufferInfo);
+            vertexBuffer = device->createBuffer(vertexBufferInfo);
             vertexBuffer->Update((void*)&bunny_positions[0][0], 0, sizeof(bunny_positions));
             
             //index buffer
@@ -346,7 +346,7 @@ namespace
                 sizeof(bunny_cells),
                 GFXBufferFlagBit::NONE
             };
-            indexBuffer = device->CreateGFXBuffer(indexBufferInfo);
+            indexBuffer = device->createBuffer(indexBufferInfo);
             indexBuffer->Update((void*)&bunny_cells[0], 0, sizeof(bunny_cells));
             
             //uniform buffer
@@ -359,7 +359,7 @@ namespace
                 GFXBufferFlagBit::NONE
             };
             for(uint i = 0; i < BUNNY_NUM; i++)
-                mvpUniformBuffer[i] = device->CreateGFXBuffer(uniformBufferInfo);
+                mvpUniformBuffer[i] = device->createBuffer(uniformBufferInfo);
         }
         
         void createInputAssembler()
@@ -369,7 +369,7 @@ namespace
             inputAssemblerInfo.attributes.emplace_back(std::move(position));
             inputAssemblerInfo.vertex_buffers.emplace_back(vertexBuffer);
             inputAssemblerInfo.index_buffer = indexBuffer;
-            inputAssembler = device->CreateGFXInputAssembler(inputAssemblerInfo);
+            inputAssembler = device->createInputAssembler(inputAssemblerInfo);
         }
         
         void createPipeline(GFXWindow* _window)
@@ -379,13 +379,13 @@ namespace
             };
             GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
             auto bunnyIndex = 0;
-            bindingLayout[bunnyIndex] = device->CreateGFXBindingLayout(bindingLayoutInfo);
+            bindingLayout[bunnyIndex] = device->createBindingLayout(bindingLayoutInfo);
             bindingLayout[bunnyIndex]->BindBuffer(0, mvpUniformBuffer[bunnyIndex]);
             bindingLayout[bunnyIndex]->Update();
             
             GFXPipelineLayoutInfo pipelineLayoutInfo;
             pipelineLayoutInfo.layouts = { bindingLayout[bunnyIndex] };
-            auto pipelineLayout = device->CreateGFXPipelieLayout(pipelineLayoutInfo);
+            auto pipelineLayout = device->createPipelineLayout(pipelineLayoutInfo);
             
             GFXPipelineStateInfo pipelineInfo;
             pipelineInfo.primitive = GFXPrimitiveMode::TRIANGLE_LIST;
@@ -396,22 +396,22 @@ namespace
             pipelineInfo.dss.depth_test = true;
             pipelineInfo.dss.depth_write = true;
             pipelineInfo.dss.depth_func = GFXComparisonFunc::LESS;
-            pipelineState[bunnyIndex] = device->CreateGFXPipelineState(pipelineInfo);
+            pipelineState[bunnyIndex] = device->createPipelineState(pipelineInfo);
             CC_SAFE_DESTROY(pipelineLayout);
             
             bunnyIndex++;
             pipelineLayoutInfo.layouts.clear();
             pipelineLayoutInfo.layouts = { bindingLayout[bunnyIndex] };
-            pipelineLayout = device->CreateGFXPipelieLayout(pipelineLayoutInfo);
-            bindingLayout[bunnyIndex] = device->CreateGFXBindingLayout(bindingLayoutInfo);
+            pipelineLayout = device->createPipelineLayout(pipelineLayoutInfo);
+            bindingLayout[bunnyIndex] = device->createBindingLayout(bindingLayoutInfo);
             bindingLayout[bunnyIndex]->BindBuffer(0, mvpUniformBuffer[bunnyIndex]);
             bindingLayout[bunnyIndex]->Update();
             pipelineInfo.layout = pipelineLayout;
-            pipelineState[bunnyIndex] = device->CreateGFXPipelineState(pipelineInfo);
+            pipelineState[bunnyIndex] = device->createPipelineState(pipelineInfo);
             CC_SAFE_DESTROY(pipelineLayout);
         }
 
-        void Destroy()
+        void destroy()
         {
             CC_SAFE_DESTROY(shader);
             CC_SAFE_DESTROY(vertexBuffer);
@@ -445,7 +445,7 @@ namespace
     Bunny* bunny;
 }
 
-void DepthTexture::Destroy()
+void DepthTexture::destroy()
 {
     CC_SAFE_DESTROY(_bunnyWindow);
     CC_SAFE_DESTROY(bunny);
@@ -467,7 +467,7 @@ void DepthTexture::createFBO()
     window_info.height = _device->height();
     window_info.depth_stencil_fmt = GFXFormat::D24S8;
     window_info.is_offscreen = true;
-    _bunnyWindow = _device->CreateGFXWindow(window_info);
+    _bunnyWindow = _device->createWindow(window_info);
 }
 
 void DepthTexture::tick(float dt)
@@ -519,7 +519,7 @@ void DepthTexture::tick(float dt)
     _commandBuffer->End();
 
     _device->queue()->submit(&_commandBuffer, 1);
-    _device->Present();
+    _device->present();
 }
 
 NS_CC_END

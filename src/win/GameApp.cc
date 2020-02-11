@@ -5,6 +5,8 @@
 #include "tests/BasicTriangleTest.h"
 #include "tests/BasicTextureTest.h"
 #include "tests/DepthTest.h"
+#include "tests/StencilTest.h"
+#include "tests/ParticleTest.h"
 
 NS_CC_BEGIN
 
@@ -116,7 +118,7 @@ void GameApp::Run()
         }
     }
 
-    Destroy();
+    destroy();
 
     DestroyAppWindow();
 }
@@ -131,6 +133,8 @@ bool GameApp::Initialize()
             BasicTriangle::create,
             BasicTexture::create,
             DepthTexture::create,
+            StencilTest::create,
+            ParticleTest::create,
         };
         _test = _tests[_nextIndex](_windowInfo);
         if (_test == nullptr)
@@ -141,13 +145,14 @@ bool GameApp::Initialize()
     return true;
 }
 
-void GameApp::Destroy()
+void GameApp::destroy()
 {
     CC_SAFE_DESTROY(_test);
 }
 
 void GameApp::Resize(uint width, uint height)
 {
+    TestBaseI::getDevice()->Resize(width, height);
 }
 
 void GameApp::OnKeyDown(WPARAM keyCode)
