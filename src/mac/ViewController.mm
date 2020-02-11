@@ -10,6 +10,7 @@
 #include "tests/ClearScreenTest.h"
 #include "tests/BasicTriangleTest.h"
 #include "tests/BasicTextureTest.h"
+#include "tests/StencilTest.h"
 #include "tests/TestBase.h"
 
 #import <AppKit/NSTouch.h>
@@ -102,6 +103,7 @@ namespace
             ClearScreen::create,
             BasicTriangle::create,
             BasicTexture::create,
+            StencilTest::create,
         };
         g_test = g_tests[g_nextTextIndex](g_windowInfo);
         if (g_test == nullptr)
