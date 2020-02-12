@@ -136,7 +136,7 @@ namespace
                 GFXBufferFlagBit::NONE
             };
             vertexBuffer = device->createBuffer(vertexBufferInfo);
-            vertexBuffer->Update(vertices, 0, sizeof(vertices));
+            vertexBuffer->update(vertices, 0, sizeof(vertices));
             
             //create uniform buffer
             GFXBufferInfo uniformBufferInfo = {
@@ -149,8 +149,8 @@ namespace
             
             float nearValue = 0.1f;
             float farValue = 100.0f;
-            nearFarUniformBuffer->Update(&nearValue, 0, sizeof(nearValue));
-            nearFarUniformBuffer->Update(&farValue, sizeof(nearValue), sizeof(farValue));
+            nearFarUniformBuffer->update(&nearValue, 0, sizeof(nearValue));
+            nearFarUniformBuffer->update(&farValue, sizeof(nearValue), sizeof(farValue));
         }
                                          
          void createInputAssembler()
@@ -173,9 +173,9 @@ namespace
             bindingLayout = device->createBindingLayout(bindingLayoutInfo);
             
             
-            bindingLayout->BindBuffer(0, nearFarUniformBuffer);
-            bindingLayout->BindSampler(texBindingLoc, sampler);
-            bindingLayout->Update();
+            bindingLayout->bindBuffer(0, nearFarUniformBuffer);
+            bindingLayout->bindSampler(texBindingLoc, sampler);
+            bindingLayout->update();
             
             GFXPipelineLayoutInfo pipelineLayoutInfo;
             pipelineLayoutInfo.layouts = { bindingLayout };
@@ -186,7 +186,7 @@ namespace
             pipelineInfo.shader = shader;
             pipelineInfo.is = { inputAssembler->attributes() };
             pipelineInfo.layout = pipelineLayout;
-            pipelineInfo.render_pass = device->mainWindow()->render_pass();
+            pipelineInfo.render_pass = device->mainWindow()->renderPass();
             
             pipelineInfo.dss.depth_test = false;
             pipelineInfo.dss.depth_write = false;
@@ -336,7 +336,7 @@ namespace
                 GFXBufferFlagBit::NONE };
             
             vertexBuffer = device->createBuffer(vertexBufferInfo);
-            vertexBuffer->Update((void*)&bunny_positions[0][0], 0, sizeof(bunny_positions));
+            vertexBuffer->update((void*)&bunny_positions[0][0], 0, sizeof(bunny_positions));
             
             //index buffer
             GFXBufferInfo indexBufferInfo = {
@@ -347,7 +347,7 @@ namespace
                 GFXBufferFlagBit::NONE
             };
             indexBuffer = device->createBuffer(indexBufferInfo);
-            indexBuffer->Update((void*)&bunny_cells[0], 0, sizeof(bunny_cells));
+            indexBuffer->update((void*)&bunny_cells[0], 0, sizeof(bunny_cells));
             
             //uniform buffer
             //create uniform buffer
@@ -380,8 +380,8 @@ namespace
             GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
             auto bunnyIndex = 0;
             bindingLayout[bunnyIndex] = device->createBindingLayout(bindingLayoutInfo);
-            bindingLayout[bunnyIndex]->BindBuffer(0, mvpUniformBuffer[bunnyIndex]);
-            bindingLayout[bunnyIndex]->Update();
+            bindingLayout[bunnyIndex]->bindBuffer(0, mvpUniformBuffer[bunnyIndex]);
+            bindingLayout[bunnyIndex]->update();
             
             GFXPipelineLayoutInfo pipelineLayoutInfo;
             pipelineLayoutInfo.layouts = { bindingLayout[bunnyIndex] };
@@ -392,7 +392,7 @@ namespace
             pipelineInfo.shader = shader;
             pipelineInfo.is = { inputAssembler->attributes() };
             pipelineInfo.layout = pipelineLayout;
-            pipelineInfo.render_pass = _window->render_pass();
+            pipelineInfo.render_pass = _window->renderPass();
             pipelineInfo.dss.depth_test = true;
             pipelineInfo.dss.depth_write = true;
             pipelineInfo.dss.depth_func = GFXComparisonFunc::LESS;
@@ -404,8 +404,8 @@ namespace
             pipelineLayoutInfo.layouts = { bindingLayout[bunnyIndex] };
             pipelineLayout = device->createPipelineLayout(pipelineLayoutInfo);
             bindingLayout[bunnyIndex] = device->createBindingLayout(bindingLayoutInfo);
-            bindingLayout[bunnyIndex]->BindBuffer(0, mvpUniformBuffer[bunnyIndex]);
-            bindingLayout[bunnyIndex]->Update();
+            bindingLayout[bunnyIndex]->bindBuffer(0, mvpUniformBuffer[bunnyIndex]);
+            bindingLayout[bunnyIndex]->update();
             pipelineInfo.layout = pipelineLayout;
             pipelineState[bunnyIndex] = device->createPipelineState(pipelineInfo);
             CC_SAFE_DESTROY(pipelineLayout);
@@ -483,10 +483,10 @@ void DepthTexture::tick(float dt)
     GFXRect render_area = {0, 0, _device->width(), _device->height() };
     GFXColor clear_color = {1.0, 0, 0, 1.0f};
 
-    _commandBuffer->Begin();
+    _commandBuffer->begin();
     
     //render bunny
-    _commandBuffer->BeginRenderPass(_bunnyWindow->framebuffer(), render_area, GFXClearFlagBit::DEPTH, &clear_color, 1, 1.0f, 0);
+    _commandBuffer->beginRenderPass(_bunnyWindow->framebuffer(), render_area, GFXClearFlagBit::DEPTH, &clear_color, 1, 1.0f, 0);
     for(uint i = 0; i < Bunny::BUNNY_NUM; i++)
     {
         _model = Mat4::IDENTITY;
@@ -494,29 +494,29 @@ void DepthTexture::tick(float dt)
             _model.translate(5, 0, 0);
         else
             _model.translate(-5, 0, 0);
-        bunny->mvpUniformBuffer[i]->Update(_model.m, 0, sizeof(_model));
-        bunny->mvpUniformBuffer[i]->Update(_view.m, sizeof(_model), sizeof(_view));
-        bunny->mvpUniformBuffer[i]->Update(_projection.m, sizeof(_model) + sizeof(_view), sizeof(_projection));
-        bunny->bindingLayout[i]->Update();
+        bunny->mvpUniformBuffer[i]->update(_model.m, 0, sizeof(_model));
+        bunny->mvpUniformBuffer[i]->update(_view.m, sizeof(_model), sizeof(_view));
+        bunny->mvpUniformBuffer[i]->update(_projection.m, sizeof(_model) + sizeof(_view), sizeof(_projection));
+        bunny->bindingLayout[i]->update();
         
-        _commandBuffer->BindInputAssembler(bunny->inputAssembler);
-        _commandBuffer->BindBindingLayout(bunny->bindingLayout[i]);
-        _commandBuffer->BindPipelineState(bunny->pipelineState[i]);
-        _commandBuffer->Draw(bunny->inputAssembler);
+        _commandBuffer->bindInputAssembler(bunny->inputAssembler);
+        _commandBuffer->bindBindingLayout(bunny->bindingLayout[i]);
+        _commandBuffer->bindPipelineState(bunny->pipelineState[i]);
+        _commandBuffer->draw(bunny->inputAssembler);
     }
-    _commandBuffer->EndRenderPass();
+    _commandBuffer->endRenderPass();
     
     //render bg
-    bg->bindingLayout->BindTextureView(bg->texBindingLoc, _bunnyWindow->depth_stencil_tex_view());
-    bg->bindingLayout->Update();
-    _commandBuffer->BeginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, &clear_color, 1, 1.0f, 0);
-    _commandBuffer->BindInputAssembler(bg->inputAssembler);
-    _commandBuffer->BindBindingLayout(bg->bindingLayout);
-    _commandBuffer->BindPipelineState(bg->pipelineState);
-    _commandBuffer->Draw(bg->inputAssembler);
-    _commandBuffer->EndRenderPass();
+    bg->bindingLayout->bindTextureView(bg->texBindingLoc, _bunnyWindow->depthStencilTexView());
+    bg->bindingLayout->update();
+    _commandBuffer->beginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, &clear_color, 1, 1.0f, 0);
+    _commandBuffer->bindInputAssembler(bg->inputAssembler);
+    _commandBuffer->bindBindingLayout(bg->bindingLayout);
+    _commandBuffer->bindPipelineState(bg->pipelineState);
+    _commandBuffer->draw(bg->inputAssembler);
+    _commandBuffer->endRenderPass();
     
-    _commandBuffer->End();
+    _commandBuffer->end();
 
     _device->queue()->submit(&_commandBuffer, 1);
     _device->present();

@@ -95,6 +95,51 @@ void ParticleTest::createShader()
     GFXShaderStage vertexShaderStage;
     vertexShaderStage.type = GFXShaderType::VERTEX;
 
+#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+    vertexShaderStage.source = R"(
+    #include <metal_stdlib>
+    #include <simd/simd.h>
+    
+    using namespace metal;
+    
+    struct MVP_Matrix
+    {
+        float4x4 u_model;
+        float4x4 u_view;
+        float4x4 u_projection;
+    };
+    
+    struct main0_out
+    {
+        float4 v_color [[user(locn0)]];
+        float2 v_texcoord [[user(locn1)]];
+        float4 gl_Position [[position]];
+        float gl_PointSize [[point_size]];
+    };
+    
+    struct main0_in
+    {
+        float2 a_quad [[attribute(0)]];
+        float3 a_position [[attribute(1)]];
+        float4 a_color [[attribute(2)]];
+    };
+    
+    vertex main0_out main0(main0_in in [[stage_in]], constant MVP_Matrix& _13 [[buffer(0)]])
+    {
+        main0_out out = {};
+        float4 pos = (_13.u_view * _13.u_model) * float4(in.a_position, 1.0);
+        float2 _39 = pos.xy + in.a_quad;
+        pos = float4(_39.x, _39.y, pos.z, pos.w);
+        pos = _13.u_projection * pos;
+        out.v_texcoord = float2((in.a_quad * (-0.5)) + float2(0.5));
+        out.gl_Position = pos;
+        out.gl_PointSize = 2.0;
+        out.v_color = in.a_color;
+        return out;
+    }
+    )";
+#else
+    
 #ifdef USE_GLES2
     vertexShaderStage.source = R"(
     attribute vec2 a_quad;
@@ -147,12 +192,39 @@ void ParticleTest::createShader()
     }
     )";
 #endif // USE_GLES2
+#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
 
     shaderStageList.emplace_back(std::move(vertexShaderStage));
 
     GFXShaderStage fragmentShaderStage;
     fragmentShaderStage.type = GFXShaderType::FRAGMENT;
     
+#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+    fragmentShaderStage.source = R"(
+    #include <metal_stdlib>
+    #include <simd/simd.h>
+    
+    using namespace metal;
+    
+    struct main0_out
+    {
+        float4 o_color [[color(0)]];
+    };
+    
+    struct main0_in
+    {
+        float4 v_color [[user(locn0)]];
+        float2 v_texcoord [[user(locn1)]];
+    };
+    
+    fragment main0_out main0(main0_in in [[stage_in]], texture2d<float> u_texture [[texture(0)]], sampler u_textureSmplr [[sampler(0)]])
+    {
+        main0_out out = {};
+        out.o_color = in.v_color * u_texture.sample(u_textureSmplr, in.v_texcoord);
+        return out;
+    }
+    )";
+#else
 #ifdef USE_GLES2
     fragmentShaderStage.source = R"(
     #ifdef GL_ES
@@ -183,6 +255,7 @@ void ParticleTest::createShader()
     }
     )";
 #endif // USE_GLES2
+#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
 
     shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
@@ -277,7 +350,7 @@ void ParticleTest::createPipeline()
 {
     GFXBindingList bindingList = {
         {0, GFXBindingType::UNIFORM_BUFFER, "MVP_Martix"},
-        {1, GFXBindingType::SAMPLER, "Texture"}
+        {1, GFXBindingType::SAMPLER, "u_texture"}
     };
     GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
     _bindingLayout = _device->createBindingLayout(bindingLayoutInfo);
