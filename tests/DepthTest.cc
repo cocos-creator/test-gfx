@@ -1,6 +1,10 @@
 #include "DepthTest.h"
+#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+#include "gfx-metal/GFXMTL.h"
+#else
 #include "gfx-gles2/GFXGLES2.h"
 #include "gfx-gles3/GFXGLES3.h"
+#endif
 #include "cocos2d.h"
 #include "BunnyData.h"
 
@@ -25,6 +29,34 @@ namespace
             GFXShaderStageList shaderStageList;
             GFXShaderStage vertexShaderStage;
             vertexShaderStage.type = GFXShaderType::VERTEX;
+#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+            vertexShaderStage.source = R"(
+            #include <metal_stdlib>
+            #include <simd/simd.h>
+            
+            using namespace metal;
+            
+            struct main0_out
+            {
+                float2 v_texcoord [[user(locn0)]];
+                float4 gl_Position [[position]];
+            };
+            
+            struct main0_in
+            {
+                float2 a_position [[attribute(0)]];
+            };
+            
+            vertex main0_out main0(main0_in in [[stage_in]])
+            {
+                main0_out out = {};
+                out.v_texcoord = (in.a_position + float2(1.0)) * 0.5;
+                out.gl_Position = float4(in.a_position, 0.0, 1.0);
+                return out;
+            }
+            )";
+#else
+            
 #ifdef USE_GLES2
             vertexShaderStage.source = R"(
             attribute vec2 a_position;
@@ -33,7 +65,7 @@ namespace
             void main() {
                 v_texcoord = (a_position + 1.0) * 0.5;
             #ifndef GL_ES
-                v_texcoord = vec2(uv.x, 1.0 - uv.y);
+                v_texcoord = vec2(v_texcoord.x, 1.0 - v_texcoord.y);
             #endif
                 gl_Position = vec4(a_position, 0, 1);
             }
@@ -46,16 +78,57 @@ namespace
             void main() {
                 v_texcoord = (a_position + 1.0) * 0.5;
             #ifndef GL_ES
-                v_texcoord = vec2(uv.x, 1.0 - uv.y);
+                v_texcoord = vec2(v_texcoord.x, 1.0 - v_texcoord.y);
             #endif
                 gl_Position = vec4(a_position, 0, 1);
             }
             )";
-#endif
+#endif // USE_GLES2
+            
+#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
             shaderStageList.emplace_back(std::move(vertexShaderStage));
             
             GFXShaderStage fragmentShaderStage;
             fragmentShaderStage.type = GFXShaderType::FRAGMENT;
+            
+#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+            fragmentShaderStage.source = R"(
+            #include <metal_stdlib>
+            #include <simd/simd.h>
+            
+            using namespace metal;
+            
+            struct Near_Far_Uniform
+            {
+                float u_near;
+                float u_far;
+            };
+            
+            struct main0_out
+            {
+                float4 o_color [[color(0)]];
+            };
+            
+            struct main0_in
+            {
+                float2 v_texcoord [[user(locn0)]];
+            };
+            
+            fragment main0_out main0(main0_in in [[stage_in]], constant Near_Far_Uniform& _26 [[buffer(0)]], texture2d<float> u_texture [[texture(0)]], sampler u_textureSmplr [[sampler(0)]])
+            {
+                main0_out out = {};
+                float z = u_texture.sample(u_textureSmplr, in.v_texcoord).x;
+                float viewZ = (_26.u_near * _26.u_far) / (((_26.u_far - _26.u_near) * z) - _26.u_far);
+                float depth = (viewZ + _26.u_near) / (_26.u_near - _26.u_far);
+                float3 _62 = float3(depth);
+                out.o_color = float4(_62.x, _62.y, _62.z, out.o_color.w);
+                out.o_color.w = 1.0;
+                //out.o_color = float4(1.0, 0, 0, 1.0);
+                return out;
+            }
+            )";
+#else
+            
 #ifdef USE_GLES2
             fragmentShaderStage.source = R"(
             #ifdef GL_ES
@@ -97,7 +170,9 @@ namespace
                 o_color.a = 1.0;
             }
             )";
-#endif
+#endif // USE_GLES2
+            
+#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
             shaderStageList.emplace_back(std::move(fragmentShaderStage));
                                          
              GFXUniformList nearFarUniform = {
@@ -167,7 +242,7 @@ namespace
             texBindingLoc = 1;
             GFXBindingList bindingList = {
                 {0, GFXBindingType::UNIFORM_BUFFER, "Near_Far_Uniform"},
-                {texBindingLoc, GFXBindingType::SAMPLER, "Texture"}
+                {texBindingLoc, GFXBindingType::SAMPLER, "u_texture"}
             };
             GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
             bindingLayout = device->createBindingLayout(bindingLayoutInfo);
@@ -251,6 +326,40 @@ namespace
             GFXShaderStageList shaderStageList;
             GFXShaderStage vertexShaderStage;
             vertexShaderStage.type = GFXShaderType::VERTEX;
+#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+            vertexShaderStage.source = R"(
+            #include <metal_stdlib>
+            #include <simd/simd.h>
+            
+            using namespace metal;
+            
+            struct MVP_Matrix
+            {
+                float4x4 u_model;
+                float4x4 u_view;
+                float4x4 u_projection;
+            };
+            
+            struct main0_out
+            {
+                float4 gl_Position [[position]];
+            };
+            
+            struct main0_in
+            {
+                float3 a_position [[attribute(0)]];
+            };
+            
+            vertex main0_out main0(main0_in in [[stage_in]], constant MVP_Matrix& _13 [[buffer(0)]])
+            {
+                main0_out out = {};
+                float4 pos = ((_13.u_projection * _13.u_view) * _13.u_model) * float4(in.a_position, 1.0);
+                out.gl_Position = pos;
+                return out;
+            }
+            )";
+#else
+            
 #ifdef USE_GLES2
             vertexShaderStage.source = R"(
             #ifdef GL_ES
@@ -282,12 +391,35 @@ namespace
                 gl_Position = pos;
             }
             )";
-#endif
+#endif // USE_GLES2
+            
+#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
             shaderStageList.emplace_back(std::move(vertexShaderStage));
             
             //fragment shader
             GFXShaderStage fragmentShaderStage;
             fragmentShaderStage.type = GFXShaderType::FRAGMENT;
+#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+            fragmentShaderStage.source = R"(
+            #include <metal_stdlib>
+            #include <simd/simd.h>
+            
+            using namespace metal;
+            
+            struct main0_out
+            {
+                float4 o_color [[color(0)]];
+            };
+            
+            fragment main0_out main0()
+            {
+                main0_out out = {};
+                out.o_color = float4(1.0);
+                return out;
+            }
+            )";
+#else
+            
 #ifdef USE_GLES2
             fragmentShaderStage.source = R"(
             #ifdef GL_ES
@@ -309,7 +441,9 @@ namespace
                 o_color = vec4(1, 1, 1, 1);
             }
             )";
-#endif
+#endif // USE_GLES2
+            
+#endif // #if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
             shaderStageList.emplace_back(std::move(fragmentShaderStage));
             
             GFXUniformList mvpMatrix = {

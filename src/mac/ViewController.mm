@@ -11,6 +11,8 @@
 #include "tests/BasicTriangleTest.h"
 #include "tests/BasicTextureTest.h"
 #include "tests/StencilTest.h"
+#include "tests/ParticleTest.h"
+#include "tests/DepthTest.h"
 #include "tests/TestBase.h"
 
 #import <AppKit/NSTouch.h>
@@ -104,6 +106,8 @@ namespace
             BasicTriangle::create,
             BasicTexture::create,
             StencilTest::create,
+            ParticleTest::create,
+            DepthTexture::create,
         };
         g_test = g_tests[g_nextTextIndex](g_windowInfo);
         if (g_test == nullptr)
