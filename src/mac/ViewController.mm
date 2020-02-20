@@ -14,6 +14,7 @@
 #include "tests/ParticleTest.h"
 #include "tests/DepthTest.h"
 #include "tests/TestBase.h"
+#include "tests/BunnyTest.h"
 
 #import <AppKit/NSTouch.h>
 #import <AppKit/NSEvent.h>
