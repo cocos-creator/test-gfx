@@ -194,8 +194,8 @@ namespace
         {
             //create sampler
             GFXSamplerInfo samplerInfo;
-            samplerInfo.address_u = GFXAddress::CLAMP;
-            samplerInfo.address_v = GFXAddress::CLAMP;
+            samplerInfo.addressU = GFXAddress::CLAMP;
+            samplerInfo.addressV = GFXAddress::CLAMP;
             sampler = device->createSampler(samplerInfo);
         }
                                          
@@ -233,7 +233,7 @@ namespace
              GFXAttribute position = {"a_position", GFXFormat::RG32F, false, 0, false};
              GFXInputAssemblerInfo inputAssemblerInfo;
              inputAssemblerInfo.attributes.emplace_back(std::move(position));
-             inputAssemblerInfo.vertex_buffers.emplace_back(vertexBuffer);
+             inputAssemblerInfo.vertexBuffers.emplace_back(vertexBuffer);
              inputAssembler = device->createInputAssembler(inputAssemblerInfo);
          }
                 
@@ -259,16 +259,16 @@ namespace
             GFXPipelineStateInfo pipelineInfo;
             pipelineInfo.primitive = GFXPrimitiveMode::TRIANGLE_LIST;
             pipelineInfo.shader = shader;
-            pipelineInfo.is = { inputAssembler->attributes() };
+            pipelineInfo.inputState = { inputAssembler->attributes() };
             pipelineInfo.layout = pipelineLayout;
-            pipelineInfo.render_pass = device->mainWindow()->renderPass();
+            pipelineInfo.renderPass = device->mainWindow()->renderPass();
             
-            pipelineInfo.dss.depth_test = false;
-            pipelineInfo.dss.depth_write = false;
-            pipelineInfo.dss.stencil_test_back = false;
-            pipelineInfo.dss.stencil_test_front = false;
+            pipelineInfo.depthStencilState.depthTest = false;
+            pipelineInfo.depthStencilState.depthWrite = false;
+            pipelineInfo.depthStencilState.stencilTestBack = false;
+            pipelineInfo.depthStencilState.stencilTestFront = false;
             
-            pipelineInfo.rs.cull_mode = GFXCullMode::NONE;
+            pipelineInfo.rasterizerState.cullMode = GFXCullMode::NONE;
             
             pipelineState = device->createPipelineState(pipelineInfo);
             
@@ -501,8 +501,8 @@ namespace
             GFXAttribute position = {"a_position", GFXFormat::RGB32F, false, 0, false};
             GFXInputAssemblerInfo inputAssemblerInfo;
             inputAssemblerInfo.attributes.emplace_back(std::move(position));
-            inputAssemblerInfo.vertex_buffers.emplace_back(vertexBuffer);
-            inputAssemblerInfo.index_buffer = indexBuffer;
+            inputAssemblerInfo.vertexBuffers.emplace_back(vertexBuffer);
+            inputAssemblerInfo.indexBuffer = indexBuffer;
             inputAssembler = device->createInputAssembler(inputAssemblerInfo);
         }
         
@@ -524,12 +524,12 @@ namespace
             GFXPipelineStateInfo pipelineInfo;
             pipelineInfo.primitive = GFXPrimitiveMode::TRIANGLE_LIST;
             pipelineInfo.shader = shader;
-            pipelineInfo.is = { inputAssembler->attributes() };
+            pipelineInfo.inputState = { inputAssembler->attributes() };
             pipelineInfo.layout = pipelineLayout;
-            pipelineInfo.render_pass = _window->renderPass();
-            pipelineInfo.dss.depth_test = true;
-            pipelineInfo.dss.depth_write = true;
-            pipelineInfo.dss.depth_func = GFXComparisonFunc::LESS;
+            pipelineInfo.renderPass = _window->renderPass();
+            pipelineInfo.depthStencilState.depthTest = true;
+            pipelineInfo.depthStencilState.depthWrite = true;
+            pipelineInfo.depthStencilState.depthFunc = GFXComparisonFunc::LESS;
             pipelineState[bunnyIndex] = device->createPipelineState(pipelineInfo);
             CC_SAFE_DESTROY(pipelineLayout);
             
@@ -599,8 +599,8 @@ void DepthTexture::createFBO()
     GFXWindowInfo window_info;
     window_info.width = _device->width();
     window_info.height = _device->height();
-    window_info.depth_stencil_fmt = GFXFormat::D24S8;
-    window_info.is_offscreen = true;
+    window_info.depthStencilFmt = GFXFormat::D24S8;
+    window_info.isOffscreen = true;
     _bunnyWindow = _device->createWindow(window_info);
 }
 

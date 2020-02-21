@@ -183,7 +183,7 @@ void BasicTriangle::createInputAssembler()
     GFXAttribute position = {"a_position", GFXFormat::RG32F, false, 0, false};
     GFXInputAssemblerInfo inputAssemblerInfo;
     inputAssemblerInfo.attributes.emplace_back(std::move(position));
-    inputAssemblerInfo.vertex_buffers.emplace_back(_vertexBuffer);
+    inputAssemblerInfo.vertexBuffers.emplace_back(_vertexBuffer);
     _inputAssembler = _device->createInputAssembler(inputAssemblerInfo);
 }
 
@@ -200,9 +200,9 @@ void BasicTriangle::createPipeline()
     GFXPipelineStateInfo pipelineInfo;
     pipelineInfo.primitive = GFXPrimitiveMode::TRIANGLE_LIST;
     pipelineInfo.shader = _shader;
-    pipelineInfo.is = { _inputAssembler->attributes() };
+    pipelineInfo.inputState = { _inputAssembler->attributes() };
     pipelineInfo.layout = pipelineLayout;
-    pipelineInfo.render_pass = _device->mainWindow()->renderPass();
+    pipelineInfo.renderPass = _device->mainWindow()->renderPass();
 
     _pipelineState = _device->createPipelineState(pipelineInfo);
 

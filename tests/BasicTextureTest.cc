@@ -214,7 +214,7 @@ void BasicTexture::createInputAssembler()
     GFXAttribute position = {"a_position", GFXFormat::RG32F, false, 0, false};
     GFXInputAssemblerInfo inputAssemblerInfo;
     inputAssemblerInfo.attributes.emplace_back(std::move(position));
-    inputAssemblerInfo.vertex_buffers.emplace_back(_vertexBuffer);
+    inputAssemblerInfo.vertexBuffers.emplace_back(_vertexBuffer);
     _inputAssembler = _device->createInputAssembler(inputAssemblerInfo);
 }
 
@@ -241,9 +241,9 @@ void BasicTexture::createPipeline()
     GFXPipelineStateInfo pipelineInfo;
     pipelineInfo.primitive = GFXPrimitiveMode::TRIANGLE_LIST;
     pipelineInfo.shader = _shader;
-    pipelineInfo.is = { _inputAssembler->attributes() };
+    pipelineInfo.inputState = { _inputAssembler->attributes() };
     pipelineInfo.layout = pipelineLayout;
-    pipelineInfo.render_pass = _device->mainWindow()->renderPass();
+    pipelineInfo.renderPass = _device->mainWindow()->renderPass();
 
     _pipelineState = _device->createPipelineState(pipelineInfo);
 
@@ -278,10 +278,10 @@ void BasicTexture::createTexture()
     _texture = _device->createTexture(textureInfo);
     
     GFXBufferTextureCopy textureRegion;
-    textureRegion.buff_tex_height = img->getHeight();
-    textureRegion.tex_extent.width = img->getWidth();
-    textureRegion.tex_extent.height = img->getHeight();
-    textureRegion.tex_extent.depth = 1;
+    textureRegion.buffTexHeight = img->getHeight();
+    textureRegion.texExtent.width = img->getWidth();
+    textureRegion.texExtent.height = img->getHeight();
+    textureRegion.texExtent.depth = 1;
     
     GFXBufferTextureCopyList regions;
     regions.push_back(std::move(textureRegion));

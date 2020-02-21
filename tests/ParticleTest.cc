@@ -341,8 +341,8 @@ void ParticleTest::createInputAssembler()
     inputAssemblerInfo.attributes.emplace_back(std::move(quad));
     inputAssemblerInfo.attributes.emplace_back(std::move(position));
     inputAssemblerInfo.attributes.emplace_back(std::move(color));
-    inputAssemblerInfo.vertex_buffers.emplace_back(_vertexBuffer);
-    inputAssemblerInfo.index_buffer = _indexBuffer;
+    inputAssemblerInfo.vertexBuffers.emplace_back(_vertexBuffer);
+    inputAssemblerInfo.indexBuffer = _indexBuffer;
     _inputAssembler = _device->createInputAssembler(inputAssemblerInfo);
 }
 
@@ -367,16 +367,16 @@ void ParticleTest::createPipeline()
     GFXPipelineStateInfo pipelineInfo;
     pipelineInfo.primitive = GFXPrimitiveMode::TRIANGLE_LIST;
     pipelineInfo.shader = _shader;
-    pipelineInfo.is = { _inputAssembler->attributes() };
+    pipelineInfo.inputState = { _inputAssembler->attributes() };
     pipelineInfo.layout = pipelineLayout;
-    pipelineInfo.render_pass = _device->mainWindow()->renderPass();
-    pipelineInfo.bs.targets[0].is_blend = true;
-    pipelineInfo.bs.targets[0].blend_eq = GFXBlendOp::ADD;
-    pipelineInfo.bs.targets[0].blend_alpha_eq = GFXBlendOp::ADD;
-    pipelineInfo.bs.targets[0].blend_src = GFXBlendFactor::SRC_ALPHA;
-    pipelineInfo.bs.targets[0].blend_dst = GFXBlendFactor::ONE_MINUS_SRC_ALPHA;
-    pipelineInfo.bs.targets[0].blend_src_alpha = GFXBlendFactor::ONE;
-    pipelineInfo.bs.targets[0].blend_dst_alpha = GFXBlendFactor::ONE;
+    pipelineInfo.renderPass = _device->mainWindow()->renderPass();
+    pipelineInfo.blendState.targets[0].blend = true;
+    pipelineInfo.blendState.targets[0].blendEq = GFXBlendOp::ADD;
+    pipelineInfo.blendState.targets[0].blendAlphaEq = GFXBlendOp::ADD;
+    pipelineInfo.blendState.targets[0].blendSrc = GFXBlendFactor::SRC_ALPHA;
+    pipelineInfo.blendState.targets[0].blendDst = GFXBlendFactor::ONE_MINUS_SRC_ALPHA;
+    pipelineInfo.blendState.targets[0].blendSrcAlpha = GFXBlendFactor::ONE;
+    pipelineInfo.blendState.targets[0].blendDstAlpha = GFXBlendFactor::ONE;
 
     _pipelineState = _device->createPipelineState(pipelineInfo);
 
@@ -416,10 +416,10 @@ void ParticleTest::createTexture()
     _texture = _device->createTexture(textureInfo);
     
     GFXBufferTextureCopy textureRegion;
-    textureRegion.buff_tex_height = 0;
-    textureRegion.tex_extent.width = LINE_WIDHT;
-    textureRegion.tex_extent.height = LINE_HEIGHT;
-    textureRegion.tex_extent.depth = 1;
+    textureRegion.buffTexHeight = 0;
+    textureRegion.texExtent.width = LINE_WIDHT;
+    textureRegion.texExtent.height = LINE_HEIGHT;
+    textureRegion.texExtent.depth = 1;
     
     GFXBufferTextureCopyList regions;
     regions.push_back(std::move(textureRegion));
@@ -429,9 +429,9 @@ void ParticleTest::createTexture()
     
     //create sampler
     GFXSamplerInfo samplerInfo;
-    samplerInfo.address_u = GFXAddress::WRAP;
-    samplerInfo.address_v = GFXAddress::WRAP;
-    samplerInfo.mip_filter = GFXFilter::LINEAR;
+    samplerInfo.addressU = GFXAddress::WRAP;
+    samplerInfo.addressV = GFXAddress::WRAP;
+    samplerInfo.mipFilter = GFXFilter::LINEAR;
     _sampler = _device->createSampler(samplerInfo);
     
     GFXTextureViewInfo texViewInfo;

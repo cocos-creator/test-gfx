@@ -199,8 +199,8 @@ void BunnyTest::createInputAssembler()
     GFXAttribute position = {"a_position", GFXFormat::RGB32F, false, 0, false};
     GFXInputAssemblerInfo inputAssemblerInfo;
     inputAssemblerInfo.attributes.emplace_back(std::move(position));
-    inputAssemblerInfo.vertex_buffers.emplace_back(_vertexBuffer);
-    inputAssemblerInfo.index_buffer = _indexBuffer;
+    inputAssemblerInfo.vertexBuffers.emplace_back(_vertexBuffer);
+    inputAssemblerInfo.indexBuffer = _indexBuffer;
     _inputAssembler = _device->createInputAssembler(inputAssemblerInfo);
 }
 
@@ -223,12 +223,12 @@ void BunnyTest::createPipelineState()
     GFXPipelineStateInfo pipelineStateInfo;
     pipelineStateInfo.primitive = GFXPrimitiveMode::TRIANGLE_LIST;
     pipelineStateInfo.shader = _shader;
-    pipelineStateInfo.is = { _inputAssembler->attributes() };
+    pipelineStateInfo.inputState = { _inputAssembler->attributes() };
     pipelineStateInfo.layout = pipelineLayout;
-    pipelineStateInfo.render_pass = _device->mainWindow()->renderPass();
-    pipelineStateInfo.dss.depth_test = true;
-    pipelineStateInfo.dss.depth_write = true;
-    pipelineStateInfo.dss.depth_func = GFXComparisonFunc::LESS;
+    pipelineStateInfo.renderPass = _device->mainWindow()->renderPass();
+    pipelineStateInfo.depthStencilState.depthTest = true;
+    pipelineStateInfo.depthStencilState.depthWrite = true;
+    pipelineStateInfo.depthStencilState.depthFunc = GFXComparisonFunc::LESS;
     _pipelineState = _device->createPipelineState(pipelineStateInfo);
     CC_SAFE_DESTROY(pipelineLayout);
 }

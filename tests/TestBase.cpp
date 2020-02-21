@@ -31,11 +31,11 @@ TestBaseI::TestBaseI(const WindowInfo& info)
 
     
         GFXDeviceInfo dev_info;
-        dev_info.window_handle = info.windowHandle;
+        dev_info.windowHandle = info.windowHandle;
         dev_info.width = info.screen.width;
         dev_info.height = info.screen.height;
-        dev_info.native_width = info.physicalWidth;
-        dev_info.native_height = info.physicalHeight;
+        dev_info.nativeWidth = info.physicalWidth;
+        dev_info.nativeHeight = info.physicalHeight;
         _device->initialize(dev_info);
     }
 
