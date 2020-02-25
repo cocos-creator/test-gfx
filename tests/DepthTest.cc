@@ -596,12 +596,13 @@ bool DepthTexture::initialize()
 
 void DepthTexture::createFBO()
 {
-    GFXWindowInfo window_info;
-    window_info.width = _device->width();
-    window_info.height = _device->height();
-    window_info.depthStencilFmt = GFXFormat::D24S8;
-    window_info.isOffscreen = true;
-    _bunnyWindow = _device->createWindow(window_info);
+    GFXWindowInfo windowInfo;
+    windowInfo.width = _device->width();
+    windowInfo.height = _device->height();
+    windowInfo.colorFmt = GFXFormat::RGBA8;
+    windowInfo.depthStencilFmt = GFXFormat::D24S8;
+    windowInfo.isOffscreen = true;
+    _bunnyWindow = _device->createWindow(windowInfo);
 }
 
 void DepthTexture::tick(float dt)
