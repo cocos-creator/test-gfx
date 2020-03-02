@@ -16,7 +16,6 @@ set(CC_PLATFORM_SOURCES
     ${COCOS_SRC_PATH}/platform/CCPlatformConfig.h
     ${COCOS_SRC_PATH}/platform/CCPlatformDefine.h
     ${COCOS_SRC_PATH}/platform/CCSAXParser.h
-    ${COCOS_SRC_PATH}/platform/CCStdC.h
 
     ${COCOS_SRC_PATH}/platform/CCFileUtils.cpp
     ${COCOS_SRC_PATH}/platform/CCImage.cpp
@@ -61,7 +60,6 @@ set(CC_BASE_HEADERS
     ${COCOS_SRC_PATH}/base/CCAutoreleasePool.h
     ${COCOS_SRC_PATH}/base/ccCArray.h
     ${COCOS_SRC_PATH}/base/ccConfig.h
-    ${COCOS_SRC_PATH}/base/CCConfiguration.h
     ${COCOS_SRC_PATH}/base/CCData.h
     # ${COCOS_SRC_PATH}/base/CCGLUtils.h
     ${COCOS_SRC_PATH}/base/CCLog.h
@@ -73,7 +71,6 @@ set(CC_BASE_HEADERS
     # ${COCOS_SRC_PATH}/base/CCRenderTexture.h
     # ${COCOS_SRC_PATH}/base/CCScheduler.h
     # ${COCOS_SRC_PATH}/base/CCThreadPool.h
-    ${COCOS_SRC_PATH}/base/ccTypes.h
     ${COCOS_SRC_PATH}/base/ccUTF8.h
     ${COCOS_SRC_PATH}/base/ccUtils.h
     ${COCOS_SRC_PATH}/base/CCValue.h
@@ -81,7 +78,6 @@ set(CC_BASE_HEADERS
     ${COCOS_SRC_PATH}/base/etc1.h
     ${COCOS_SRC_PATH}/base/etc2.h
     ${COCOS_SRC_PATH}/base/pvr.h
-    ${COCOS_SRC_PATH}/base/TGAlib.h
     ${COCOS_SRC_PATH}/base/uthash.h
     ${COCOS_SRC_PATH}/base/utlist.h
     ${COCOS_SRC_PATH}/base/ZipUtils.h
@@ -91,16 +87,12 @@ set(CC_BASE_SOURCES
     ${COCOS_SRC_PATH}/base/base64.cpp
     ${COCOS_SRC_PATH}/base/CCAutoreleasePool.cpp
     ${COCOS_SRC_PATH}/base/ccCArray.cpp
-    ${COCOS_SRC_PATH}/base/CCConfiguration.cpp
     ${COCOS_SRC_PATH}/base/CCData.cpp
     # ${COCOS_SRC_PATH}/base/CCGLUtils.cpp
     ${COCOS_SRC_PATH}/base/CCLog.cpp
     ${COCOS_SRC_PATH}/base/ccRandom.cpp
     ${COCOS_SRC_PATH}/base/CCRef.cpp
-    # ${COCOS_SRC_PATH}/base/CCRenderTexture.cpp
-    # ${COCOS_SRC_PATH}/base/CCScheduler.cpp
-    # ${COCOS_SRC_PATH}/base/CCThreadPool.cpp
-    ${COCOS_SRC_PATH}/base/ccTypes.cpp
+   
     ${COCOS_SRC_PATH}/base/ccUTF8.cpp
     ${COCOS_SRC_PATH}/base/ccUtils.cpp
     ${COCOS_SRC_PATH}/base/CCValue.cpp
@@ -108,7 +100,6 @@ set(CC_BASE_SOURCES
     ${COCOS_SRC_PATH}/base/etc1.cpp
     ${COCOS_SRC_PATH}/base/etc2.cpp
     ${COCOS_SRC_PATH}/base/pvr.cpp
-    ${COCOS_SRC_PATH}/base/TGAlib.cpp
     ${COCOS_SRC_PATH}/base/ZipUtils.cpp
 )
 
