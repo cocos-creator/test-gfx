@@ -15,7 +15,7 @@ public:
 public:
      virtual void tick(float dt) override;
      virtual bool initialize() override;
-     virtual void Destroy() override;
+     virtual void destroy() override;
 
 private:
    
