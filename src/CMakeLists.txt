@@ -139,6 +139,8 @@ set(APP_UI_RES
     "${GAME_RES_FOLDER}/uv_checker_01.jpg"
     "${GAME_RES_FOLDER}/uv_checker_02.jpg"
     "${GAME_RES_FOLDER}/stencil.jpg"
+    "${GAME_RES_FOLDER}/background.png"
+    "${GAME_RES_FOLDER}/sprite0.png"
 )
 
 # add test cases

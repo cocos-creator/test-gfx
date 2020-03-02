@@ -1,4 +1,4 @@
-﻿#include "GameApp.h"
+#include "GameApp.h"
 #include "base/ccMacros.h"
 #include "platform/CCFileUtils.h"
 #include "tests/ClearScreenTest.h"
@@ -6,6 +6,7 @@
 #include "tests/BasicTextureTest.h"
 #include "tests/DepthTest.h"
 #include "tests/StencilTest.h"
+#include "tests/BlendTest.h"
 #include "tests/ParticleTest.h"
 #include "tests/BunnyTest.h"
 
@@ -135,6 +136,7 @@ bool GameApp::initialize()
             BasicTexture::create,
             DepthTexture::create,
             StencilTest::create,
+	    BlendTest::create,
             ParticleTest::create,
             BunnyTest::create,
         };

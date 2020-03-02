@@ -14,6 +14,7 @@
 #include "tests/BasicTextureTest.h"
 #include "tests/DepthTest.h"
 #include "tests/StencilTest.h"
+#include "tests/BlendTest.h"
 #include "tests/ParticleTest.h"
 #include "tests/BunnyTest.h"
 
@@ -86,6 +87,7 @@ namespace
             BasicTexture::create,
             DepthTexture::create,
             StencilTest::create,
+            BlendTest::create,
             ParticleTest::create,
             BunnyTest::create
         };
