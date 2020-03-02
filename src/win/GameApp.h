@@ -19,9 +19,9 @@ public:
 
     // Framework methods.  Derived client class overrides these methods to 
     // implement specific application requirements.
-    virtual bool Initialize();
+    virtual bool initialize();
     virtual void destroy();
-    virtual void Resize(uint width, uint height);
+    virtual void resize(uint width, uint height);
     virtual void OnKeyDown(WPARAM keyCode);
     virtual void OnMouseLDown(WORD x, WORD y);
     virtual void OnMouseLUp(WORD x, WORD y);
@@ -48,7 +48,7 @@ protected:
     std::wstring              app_name_;
     std::wstring              root_path_;
     HINSTANCE           instance_handlw_;
-    bool                is_fullscreen_;
+    bool                _isFullscreen;
     bool                is_paused_;
     bool                is_device_inited_;
     WindowInfo          _windowInfo;

@@ -530,6 +530,7 @@ namespace
             pipelineInfo.depthStencilState.depthTest = true;
             pipelineInfo.depthStencilState.depthWrite = true;
             pipelineInfo.depthStencilState.depthFunc = GFXComparisonFunc::LESS;
+
             pipelineState[bunnyIndex] = device->createPipelineState(pipelineInfo);
             CC_SAFE_DESTROY(pipelineLayout);
             
