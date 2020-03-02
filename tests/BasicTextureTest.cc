@@ -259,22 +259,11 @@ void BasicTexture::createTexture()
     Data data;
     data.copy(img->getData(), img->getDataLen());
     
-    GFXBufferInfo vertexBufferInfo = {
-        GFXBufferUsage::TRANSFER_SRC,
-        GFXMemoryUsage::HOST,
-        1,
-        static_cast<uint>(img->getDataLen()),
-        GFXBufferFlagBit::NONE };
-    
-    _image = _device->createBuffer(vertexBufferInfo);
-    _image->update(data.getBytes(), 0, static_cast<uint>(data.getSize()));
-    
     GFXTextureInfo textureInfo;
     textureInfo.usage = GFXTextureUsage::SAMPLED;
     textureInfo.format = GFXFormat::RGB8;
     textureInfo.width = img->getWidth();
     textureInfo.height = img->getHeight();
-    
     _texture = _device->createTexture(textureInfo);
     
     GFXBufferTextureCopy textureRegion;
@@ -286,7 +275,8 @@ void BasicTexture::createTexture()
     GFXBufferTextureCopyList regions;
     regions.push_back(std::move(textureRegion));
     
-    _device->copyBuffersToTexture(_image, _texture, regions);
+    GFXArrayBuffer imageBuffer = { { img->getData() } };
+    _device->copyBuffersToTexture(imageBuffer, _texture, regions);
     
     //create sampler
     GFXSamplerInfo samplerInfo;

@@ -395,24 +395,12 @@ void ParticleTest::createTexture()
     fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 64, 64, 64, 64, 0x00, 0xFF, 0x00);
     fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 96, 96, 32, 32, 0x00, 0x00, 0xFF);
     
-    GFXBufferInfo imageBufferInfo = {
-        GFXBufferUsage::TRANSFER_SRC,
-        GFXMemoryUsage::NONE,
-        1,
-        static_cast<uint>(BUFFER_SIZE),
-        GFXBufferFlagBit::NONE };
-    
-    auto image = _device->createBuffer(imageBufferInfo);
-    image->update(imageData, 0, BUFFER_SIZE);
-    CC_SAFE_FREE(imageData);
-    
     GFXTextureInfo textureInfo;
     textureInfo.usage = GFXTextureUsage::SAMPLED;
     textureInfo.format = GFXFormat::RGB8;
     textureInfo.width = LINE_WIDHT;
     textureInfo.height = LINE_HEIGHT;
     textureInfo.flags = GFXTextureFlagBit::GEN_MIPMAP;
-    
     _texture = _device->createTexture(textureInfo);
     
     GFXBufferTextureCopy textureRegion;
@@ -424,8 +412,9 @@ void ParticleTest::createTexture()
     GFXBufferTextureCopyList regions;
     regions.push_back(std::move(textureRegion));
     
-    _device->copyBuffersToTexture(image, _texture, regions);
-    CC_SAFE_DESTROY(image);
+    GFXArrayBuffer imageBuffer = { { imageData } };
+    _device->copyBuffersToTexture(imageBuffer, _texture, regions);
+    CC_SAFE_FREE(imageData);
     
     //create sampler
     GFXSamplerInfo samplerInfo;

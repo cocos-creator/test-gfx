@@ -250,25 +250,16 @@ void StencilTest::createTextures()
     
     GFXBufferTextureCopyList regions;
     regions.push_back(std::move(labelTextureRegion));
-    
-    GFXBufferInfo imageBufferInfo = {
-        GFXBufferUsage::TRANSFER_SRC,
-        GFXMemoryUsage::HOST,
-        1,
-        static_cast<uint>(stencilImage->getDataLen()),
-        GFXBufferFlagBit::NONE };
-    
-    auto stencilImageBuffer = _device->createBuffer(imageBufferInfo);
-    stencilImageBuffer->update(stencilImage->getData(), 0, imageBufferInfo.size);
-    
+   
     GFXTextureInfo labelTextureInfo;
     labelTextureInfo.usage = GFXTextureUsage::SAMPLED;
     labelTextureInfo.format = GFXFormat::RGB8;
     labelTextureInfo.width = stencilImage->getWidth();
     labelTextureInfo.height = stencilImage->getHeight();
-    
     _labelTexture = _device->createTexture(labelTextureInfo);
-    _device->copyBuffersToTexture(stencilImageBuffer, _labelTexture, regions);
+    
+    GFXArrayBuffer stencilBuffer = { { stencilImage->getData() } };
+    _device->copyBuffersToTexture(stencilBuffer, _labelTexture, regions);
     
     GFXTextureViewInfo texViewInfo;
     texViewInfo.texture = _labelTexture;
@@ -281,17 +272,11 @@ void StencilTest::createTextures()
     ret = img->initWithImageFile("uv_checker_02.jpg");
     assert(ret);
     
-    imageBufferInfo.size = static_cast<uint>(img->getDataLen());
-    
-    auto image = _device->createBuffer(imageBufferInfo);
-    image->update(img->getData(), 0, imageBufferInfo.size);
-    
     GFXTextureInfo textureInfo;
     textureInfo.usage = GFXTextureUsage::SAMPLED;
     textureInfo.format = GFXFormat::RGB8;
     textureInfo.width = img->getWidth();
     textureInfo.height = img->getHeight();
-    
     _uvCheckerTexture = _device->createTexture(textureInfo);
     
     GFXBufferTextureCopy textureRegion;
@@ -303,7 +288,8 @@ void StencilTest::createTextures()
     GFXBufferTextureCopyList uvTextureRegions;
     uvTextureRegions.push_back(std::move(textureRegion));
     
-    _device->copyBuffersToTexture(image, _uvCheckerTexture, uvTextureRegions);
+    GFXArrayBuffer uvImageBuffer = { { img->getData() } };
+    _device->copyBuffersToTexture(uvImageBuffer, _uvCheckerTexture, uvTextureRegions);
     
     GFXTextureViewInfo uvTexViewInfo;
     uvTexViewInfo.texture = _uvCheckerTexture;
@@ -313,9 +299,6 @@ void StencilTest::createTextures()
     //create sampler
     GFXSamplerInfo samplerInfo;
     _sampler = _device->createSampler(samplerInfo);
-    
-    CC_SAFE_DESTROY(stencilImageBuffer);
-    CC_SAFE_DESTROY(image);
 }
 
 void StencilTest::createInputAssembler()
