@@ -275,7 +275,7 @@ void BasicTexture::createTexture()
     GFXBufferTextureCopyList regions;
     regions.push_back(std::move(textureRegion));
     
-    GFXArrayBuffer imageBuffer = { { img->getData() } };
+    GFXDataArray imageBuffer = { { img->getData() } };
     _device->copyBuffersToTexture(imageBuffer, _texture, regions);
     
     //create sampler
