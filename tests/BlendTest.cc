@@ -40,7 +40,7 @@ namespace {
         GFXBufferTextureCopyList regions;
         regions.push_back(std::move(textureRegion));
         
-        GFXArrayBuffer imageBuffers = { { img->getData() } };
+        GFXDataArray imageBuffers = { { img->getData() } };
         device->copyBuffersToTexture(imageBuffers, texture, regions);
         return texture;
     }
@@ -83,7 +83,41 @@ namespace {
             GFXShaderStage vertexShaderStage;
             vertexShaderStage.type = GFXShaderType::VERTEX;
             
-#ifdef USE_GLES2
+#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+            vertexShaderStage.source = R"(
+            #include <metal_stdlib>
+            #include <simd/simd.h>
+
+            using namespace metal;
+
+            struct MVP_Matrix
+            {
+                float4x4 u_model;
+                float4x4 u_projection;
+            };
+
+            struct main0_out
+            {
+                float2 uv [[user(locn0)]];
+                float4 gl_Position [[position]];
+            };
+
+            struct main0_in
+            {
+                float2 a_position [[attribute(0)]];
+                float2 a_uv [[attribute(1)]];
+            };
+
+            vertex main0_out main0(main0_in in [[stage_in]], constant MVP_Matrix& _22 [[buffer(0)]])
+            {
+                main0_out out = {};
+                out.uv = in.a_uv;
+                out.gl_Position = (_22.u_projection * _22.u_model) * float4(in.a_position, 0.0, 1.0);
+                return out;
+            }
+            )";
+#else
+    #ifdef USE_GLES2
             vertexShaderStage.source = R"(
             attribute vec2 a_position;
             attribute vec2 a_uv;
@@ -96,7 +130,7 @@ namespace {
                 gl_Position = u_projection * u_model * vec4(a_position, 0, 1);
             }
             )";
-#else
+    #else
             vertexShaderStage.source = R"(#version 300 es
             in vec2 a_position;
             in vec2 a_uv;
@@ -111,14 +145,39 @@ namespace {
                 gl_Position = u_projection * u_model * vec4(a_position, 0, 1);
             }
             )";
-#endif // USE_GLES2
+    #endif // USE_GLES2
+#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
             
             shaderStageList.emplace_back(std::move(vertexShaderStage));
             
             GFXShaderStage fragmentShaderStage;
             fragmentShaderStage.type = GFXShaderType::FRAGMENT;
-            
-#ifdef USE_GLES2
+#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+            fragmentShaderStage.source = R"(
+            #include <metal_stdlib>
+            #include <simd/simd.h>
+
+            using namespace metal;
+
+            struct main0_out
+            {
+                float4 o_color [[color(0)]];
+            };
+
+            struct main0_in
+            {
+                float2 uv [[user(locn0)]];
+            };
+
+            fragment main0_out main0(main0_in in [[stage_in]], texture2d<float> u_texture [[texture(0)]], sampler u_textureSmplr [[sampler(0)]])
+            {
+                main0_out out = {};
+                out.o_color = u_texture.sample(u_textureSmplr, in.uv);
+                return out;
+            }
+            )";
+#else
+    #ifdef USE_GLES2
             fragmentShaderStage.source = R"(
 #ifdef GL_ES
             precision highp float;
@@ -131,7 +190,7 @@ namespace {
                 gl_FragColor = texture2D(u_texture, uv);
             }
             )";
-#else
+    #else
             fragmentShaderStage.source = R"(#version 300 es
 #ifdef GL_ES
             precision highp float;
@@ -144,7 +203,8 @@ namespace {
                 o_color = texture(u_texture, uv);
             }
             )";
-#endif // USE_GLES2
+    #endif // USE_GLES2
+#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
             
             shaderStageList.emplace_back(std::move(fragmentShaderStage));
             
@@ -250,7 +310,7 @@ namespace {
         {
             GFXBindingList bindingList = {
                 {0, GFXBindingType::UNIFORM_BUFFER, "MVP_Matrix"},
-                {1, GFXBindingType::SAMPLER, "Texture2D"}
+                {1, GFXBindingType::SAMPLER, "u_texture"}
             };
             GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
             
@@ -394,8 +454,34 @@ namespace {
             GFXShaderStageList shaderStageList;
             GFXShaderStage vertexShaderStage;
             vertexShaderStage.type = GFXShaderType::VERTEX;
-            
-#ifdef USE_GLES2
+#if(CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+            vertexShaderStage.source = R"(
+            #include <metal_stdlib>
+            #include <simd/simd.h>
+
+            using namespace metal;
+
+            struct main0_out
+            {
+                float2 uv [[user(locn0)]];
+                float4 gl_Position [[position]];
+            };
+
+            struct main0_in
+            {
+                float2 a_position [[attribute(0)]];
+            };
+
+            vertex main0_out main0(main0_in in [[stage_in]])
+            {
+                main0_out out = {};
+                out.uv = (in.a_position + float2(1.0)) * 0.5;
+                out.gl_Position = float4(in.a_position, 0.0, 1.0);
+                return out;
+            }
+            )";
+#else
+    #ifdef USE_GLES2
             vertexShaderStage.source = R"(
             attribute vec2 a_position;
             varying vec2 uv;
@@ -405,7 +491,7 @@ namespace {
                 gl_Position = vec4(a_position, 0, 1);
             }
             )";
-#else
+    #else
             vertexShaderStage.source = R"(#version 300 es
             in vec2 a_position;
             out vec2 uv;
@@ -415,14 +501,46 @@ namespace {
                 gl_Position = vec4(a_position, 0, 1);
             }
             )";
-#endif // USE_GLES2
+    #endif // USE_GLES2
+#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX
             
             shaderStageList.emplace_back(std::move(vertexShaderStage));
             
             GFXShaderStage fragmentShaderStage;
             fragmentShaderStage.type = GFXShaderType::FRAGMENT;
             
-#ifdef USE_GLES2
+#if(CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+            fragmentShaderStage.source = R"(
+            #include <metal_stdlib>
+            #include <simd/simd.h>
+
+            using namespace metal;
+
+            struct Time
+            {
+                float u_time;
+            };
+
+            struct main0_out
+            {
+                float4 o_color [[color(0)]];
+            };
+
+            struct main0_in
+            {
+                float2 uv [[user(locn0)]];
+            };
+
+            fragment main0_out main0(main0_in in [[stage_in]], constant Time& _12 [[buffer(0)]], texture2d<float> u_texture [[texture(0)]], sampler u_textureSmplr [[sampler(0)]])
+            {
+                main0_out out = {};
+                float2 offset = float2(_12.u_time * (-0.00999999977648258209228515625));
+                out.o_color = u_texture.sample(u_textureSmplr, ((in.uv + offset) * 20.0));
+                return out;
+            }
+            )";
+#else
+    #ifdef USE_GLES2
             fragmentShaderStage.source = R"(
 #ifdef GL_ES
             precision highp float;
@@ -437,7 +555,7 @@ namespace {
                 gl_FragColor = texture2D(u_texture, 20.0 * (uv + offset));
             }
             )";
-#else
+    #else
             fragmentShaderStage.source = R"(#version 300 es
 #ifdef GL_ES
             precision highp float;
@@ -455,7 +573,8 @@ namespace {
                 o_color = texture(u_texture, 20.0 * (uv + offset));
             }
             )";
-#endif // USE_GLES2
+    #endif // USE_GLES2
+#endif //(CC_PLATFORM == CC_PLATFORM_MAC_OSX)
             
             shaderStageList.emplace_back(std::move(fragmentShaderStage));
             
@@ -538,7 +657,7 @@ namespace {
         {
             GFXBindingList bindingList = {
                 {0, GFXBindingType::UNIFORM_BUFFER, "Time"},
-                {1, GFXBindingType::SAMPLER, "Texture2D"}
+                {1, GFXBindingType::SAMPLER, "u_texture"}
             };
             GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
             bindingLayout = device->createBindingLayout(bindingLayoutInfo);
