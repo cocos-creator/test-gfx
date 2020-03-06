@@ -258,7 +258,7 @@ void StencilTest::createTextures()
     labelTextureInfo.height = stencilImage->getHeight();
     _labelTexture = _device->createTexture(labelTextureInfo);
     
-    GFXArrayBuffer stencilBuffer = { { stencilImage->getData() } };
+    GFXDataArray stencilBuffer = { { stencilImage->getData() } };
     _device->copyBuffersToTexture(stencilBuffer, _labelTexture, regions);
     
     GFXTextureViewInfo texViewInfo;
@@ -288,7 +288,7 @@ void StencilTest::createTextures()
     GFXBufferTextureCopyList uvTextureRegions;
     uvTextureRegions.push_back(std::move(textureRegion));
     
-    GFXArrayBuffer uvImageBuffer = { { img->getData() } };
+    GFXDataArray uvImageBuffer = { { img->getData() } };
     _device->copyBuffersToTexture(uvImageBuffer, _uvCheckerTexture, uvTextureRegions);
     
     GFXTextureViewInfo uvTexViewInfo;

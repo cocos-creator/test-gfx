@@ -24,10 +24,7 @@ file(GLOB_RECURSE SOURCE_CPP_FILES *.cpp *.cc)
 file(GLOB_RECURSE SOURCE_C_FILES *.c)
 file(GLOB_RECURSE SOURCE_MM_FILES *.m *.mm)
 
-set(APP_UI_RES
-    ${CMAKE_CURRENT_LIST_DIR}/../Resources/uv_checker_01.jpg
-    ${CMAKE_CURRENT_LIST_DIR}/../Resources/uv_checker_02.jpg
-    ${CMAKE_CURRENT_LIST_DIR}/../Resources/stencil.jpg
+list(APPEND APP_UI_RES
     ${CMAKE_CURRENT_LIST_DIR}/Base.lproj/Main.storyboard
     ${CMAKE_CURRENT_LIST_DIR}/Assets.xcassets/Contents.json
     ${CMAKE_CURRENT_LIST_DIR}/Assets.xcassets/AppIcon.appiconset/Contents.json
