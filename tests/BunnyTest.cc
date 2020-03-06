@@ -233,7 +233,7 @@ void BunnyTest::createBuffers()
         GFXBufferFlagBit::NONE };
 
     Mat4 model, projection;
-    Mat4::createPerspective(60.0f, 1.0f * _device->width()/_device->height(), 0.01f, 1000.0f, &projection);
+    Mat4::createPerspective(60.0f, 1.0f * _device->getWidth()/_device->getHeight(), 0.01f, 1000.0f, &projection);
     _mvpMatrix = _device->createBuffer(mvpMatrixInfo);
     _mvpMatrix->update(model.m, 0, sizeof(model));
     _mvpMatrix->update(projection.m, 2 * sizeof(Mat4), sizeof(projection));
@@ -280,9 +280,9 @@ void BunnyTest::createPipelineState()
     GFXPipelineStateInfo pipelineStateInfo;
     pipelineStateInfo.primitive = GFXPrimitiveMode::TRIANGLE_LIST;
     pipelineStateInfo.shader = _shader;
-    pipelineStateInfo.inputState = { _inputAssembler->attributes() };
+    pipelineStateInfo.inputState = { _inputAssembler->getAttributes() };
     pipelineStateInfo.layout = pipelineLayout;
-    pipelineStateInfo.renderPass = _device->mainWindow()->renderPass();
+    pipelineStateInfo.renderPass = _device->getMainWindow()->getRenderPass();
     pipelineStateInfo.depthStencilState.depthTest = true;
     pipelineStateInfo.depthStencilState.depthWrite = true;
     pipelineStateInfo.depthStencilState.depthFunc = GFXComparisonFunc::LESS;
@@ -296,21 +296,24 @@ void BunnyTest::tick(float dt)
     Mat4::createLookAt(Vec3(30.0f * std::cos(_dt), 20.0f, 30.0f * std::sin(_dt)), Vec3(0.0f, 2.5f, 0.0f), Vec3(0.0f, 1.0f, 0.f), &_view);
     _mvpMatrix->update(_view.m, sizeof(Mat4), sizeof(_view));
 
-    GFXRect render_area = { 0, 0, _device->width(), _device->height() };
+    GFXRect render_area = { 0, 0, _device->getWidth(), _device->getHeight() };
     GFXColor clear_color = {0.0f, 0, 0, 1.0f};
     
-    _commandBuffer->begin();
-    _commandBuffer->beginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, &clear_color, 1, 1.0f, 0);
-    
-    _commandBuffer->bindInputAssembler(_inputAssembler);
-    _commandBuffer->bindBindingLayout(_bindingLayout);
-    _commandBuffer->bindPipelineState(_pipelineState);
-    _commandBuffer->draw(_inputAssembler);
+    for(auto commandBuffer : _commandBuffers)
+    {
+        commandBuffer->begin();
+        commandBuffer->beginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, std::move(std::vector<GFXColor>({clear_color})), 1.0f, 0);
+        
+        commandBuffer->bindInputAssembler(_inputAssembler);
+        commandBuffer->bindBindingLayout(_bindingLayout);
+        commandBuffer->bindPipelineState(_pipelineState);
+        commandBuffer->draw(_inputAssembler);
 
-    _commandBuffer->endRenderPass();
-    _commandBuffer->end();
+        commandBuffer->endRenderPass();
+        commandBuffer->end();
+    }
     
-    _device->queue()->submit(&_commandBuffer, 1);
+    _device->getQueue()->submit(_commandBuffers);
     _device->present();
 }
 

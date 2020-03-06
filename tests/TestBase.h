@@ -34,7 +34,7 @@ public:
 protected:
     static GFXDevice* _device;
     static GFXFramebuffer* _fbo;
-    static GFXCommandBuffer* _commandBuffer;
+    static std::vector<GFXCommandBuffer*> _commandBuffers;
 };
 
 NS_CC_END

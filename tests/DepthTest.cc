@@ -259,9 +259,9 @@ namespace
             GFXPipelineStateInfo pipelineInfo;
             pipelineInfo.primitive = GFXPrimitiveMode::TRIANGLE_LIST;
             pipelineInfo.shader = shader;
-            pipelineInfo.inputState = { inputAssembler->attributes() };
+            pipelineInfo.inputState = { inputAssembler->getAttributes() };
             pipelineInfo.layout = pipelineLayout;
-            pipelineInfo.renderPass = device->mainWindow()->renderPass();
+            pipelineInfo.renderPass = device->getMainWindow()->getRenderPass();
             
             pipelineInfo.depthStencilState.depthTest = false;
             pipelineInfo.depthStencilState.depthWrite = false;
@@ -524,9 +524,9 @@ namespace
             GFXPipelineStateInfo pipelineInfo;
             pipelineInfo.primitive = GFXPrimitiveMode::TRIANGLE_LIST;
             pipelineInfo.shader = shader;
-            pipelineInfo.inputState = { inputAssembler->attributes() };
+            pipelineInfo.inputState = { inputAssembler->getAttributes() };
             pipelineInfo.layout = pipelineLayout;
-            pipelineInfo.renderPass = _window->renderPass();
+            pipelineInfo.renderPass = _window->getRenderPass();
             pipelineInfo.depthStencilState.depthTest = true;
             pipelineInfo.depthStencilState.depthWrite = true;
             pipelineInfo.depthStencilState.depthFunc = GFXComparisonFunc::LESS;
@@ -598,8 +598,8 @@ bool DepthTexture::initialize()
 void DepthTexture::createFBO()
 {
     GFXWindowInfo windowInfo;
-    windowInfo.width = _device->width();
-    windowInfo.height = _device->height();
+    windowInfo.width = _device->getWidth();
+    windowInfo.height = _device->getHeight();
     windowInfo.colorFmt = GFXFormat::RGBA8;
     windowInfo.depthStencilFmt = GFXFormat::D24S8;
     windowInfo.isOffscreen = true;
@@ -614,47 +614,49 @@ void DepthTexture::tick(float dt)
     _center.set(0, 2.5f, 0);
     _up.set(0, 1.f, 0);
     Mat4::createLookAt(_eye, _center, _up, &_view);
-    Mat4::createPerspective(45.f, 1.0f * _device->width()/ _device->height(), 0.1f, 100.f, &_projection);
+    Mat4::createPerspective(45.f, 1.0f * _device->getWidth()/ _device->getHeight(), 0.1f, 100.f, &_projection);
     
-    GFXRect render_area = {0, 0, _device->width(), _device->height() };
+    GFXRect render_area = {0, 0, _device->getWidth(), _device->getHeight() };
     GFXColor clear_color = {1.0, 0, 0, 1.0f};
 
-    _commandBuffer->begin();
-    
-    //render bunny
-    _commandBuffer->beginRenderPass(_bunnyWindow->framebuffer(), render_area, GFXClearFlagBit::DEPTH, &clear_color, 1, 1.0f, 0);
-    for(uint i = 0; i < Bunny::BUNNY_NUM; i++)
+    for(auto commandBuffer : _commandBuffers)
     {
-        _model = Mat4::IDENTITY;
-        if(i % 2 == 0)
-            _model.translate(5, 0, 0);
-        else
-            _model.translate(-5, 0, 0);
-        bunny->mvpUniformBuffer[i]->update(_model.m, 0, sizeof(_model));
-        bunny->mvpUniformBuffer[i]->update(_view.m, sizeof(_model), sizeof(_view));
-        bunny->mvpUniformBuffer[i]->update(_projection.m, sizeof(_model) + sizeof(_view), sizeof(_projection));
-        bunny->bindingLayout[i]->update();
+        commandBuffer->begin();
         
-        _commandBuffer->bindInputAssembler(bunny->inputAssembler);
-        _commandBuffer->bindBindingLayout(bunny->bindingLayout[i]);
-        _commandBuffer->bindPipelineState(bunny->pipelineState[i]);
-        _commandBuffer->draw(bunny->inputAssembler);
+        //render bunny
+        commandBuffer->beginRenderPass(_bunnyWindow->getFramebuffer(), render_area, GFXClearFlagBit::DEPTH, std::move(std::vector<GFXColor>({clear_color})), 1.0f, 0);
+        for(uint i = 0; i < Bunny::BUNNY_NUM; i++)
+        {
+            _model = Mat4::IDENTITY;
+            if(i % 2 == 0)
+                _model.translate(5, 0, 0);
+            else
+                _model.translate(-5, 0, 0);
+            bunny->mvpUniformBuffer[i]->update(_model.m, 0, sizeof(_model));
+            bunny->mvpUniformBuffer[i]->update(_view.m, sizeof(_model), sizeof(_view));
+            bunny->mvpUniformBuffer[i]->update(_projection.m, sizeof(_model) + sizeof(_view), sizeof(_projection));
+            bunny->bindingLayout[i]->update();
+            
+            commandBuffer->bindInputAssembler(bunny->inputAssembler);
+            commandBuffer->bindBindingLayout(bunny->bindingLayout[i]);
+            commandBuffer->bindPipelineState(bunny->pipelineState[i]);
+            commandBuffer->draw(bunny->inputAssembler);
+        }
+        commandBuffer->endRenderPass();
+        
+        //render bg
+        bg->bindingLayout->bindTextureView(bg->texBindingLoc, _bunnyWindow->getDepthStencilTexView());
+        bg->bindingLayout->update();
+        commandBuffer->beginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, std::move(std::vector<GFXColor>({clear_color})), 1.0f, 0);
+        commandBuffer->bindInputAssembler(bg->inputAssembler);
+        commandBuffer->bindBindingLayout(bg->bindingLayout);
+        commandBuffer->bindPipelineState(bg->pipelineState);
+        commandBuffer->draw(bg->inputAssembler);
+        commandBuffer->endRenderPass();
+        
+        commandBuffer->end();
     }
-    _commandBuffer->endRenderPass();
-    
-    //render bg
-    bg->bindingLayout->bindTextureView(bg->texBindingLoc, _bunnyWindow->depthStencilTexView());
-    bg->bindingLayout->update();
-    _commandBuffer->beginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, &clear_color, 1, 1.0f, 0);
-    _commandBuffer->bindInputAssembler(bg->inputAssembler);
-    _commandBuffer->bindBindingLayout(bg->bindingLayout);
-    _commandBuffer->bindPipelineState(bg->pipelineState);
-    _commandBuffer->draw(bg->inputAssembler);
-    _commandBuffer->endRenderPass();
-    
-    _commandBuffer->end();
-
-    _device->queue()->submit(&_commandBuffer, 1);
+    _device->getQueue()->submit(_commandBuffers);
     _device->present();
 }
 

@@ -11,7 +11,7 @@ NS_CC_BEGIN
 
 GFXDevice* TestBaseI::_device                = nullptr;
 GFXFramebuffer* TestBaseI::_fbo              = nullptr;
-GFXCommandBuffer* TestBaseI::_commandBuffer  = nullptr;
+std::vector<GFXCommandBuffer*> TestBaseI::_commandBuffers(1, nullptr);
 
 TestBaseI::TestBaseI(const WindowInfo& info)
 {
@@ -39,17 +39,20 @@ TestBaseI::TestBaseI(const WindowInfo& info)
         _device->initialize(dev_info);
     }
 
-    if(_commandBuffer == nullptr)
+    for(uint i = 0; i< static_cast<uint>(_commandBuffers.size()); i++)
     {
+        if(_commandBuffers[i] != nullptr)
+            continue;
+        
         GFXCommandBufferInfo cmd_buff_info;
-        cmd_buff_info.allocator = _device->commandAllocator();
+        cmd_buff_info.allocator = _device->getCommandAllocator();
         cmd_buff_info.type = GFXCommandBufferType::PRIMARY;
-        _commandBuffer = _device->createCommandBuffer(cmd_buff_info);
+        _commandBuffers[i] = _device->createCommandBuffer(cmd_buff_info);
     }
     
     if(_fbo == nullptr)
     {
-        _fbo = _device->mainWindow()->framebuffer();
+        _fbo = _device->getMainWindow()->getFramebuffer();
     }
 }
 
