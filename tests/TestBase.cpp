@@ -1,6 +1,6 @@
 #include "TestBase.h"
 
-#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX && defined(MAC_USE_METAL))
 #include "gfx-metal/GFXMTL.h"
 #else
 #include "gfx-gles2/GFXGLES2.h"
@@ -17,7 +17,7 @@ TestBaseI::TestBaseI(const WindowInfo& info)
 {
     if(_device == nullptr)
     {
-#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX && defined(MAC_USE_METAL))
         _device = CC_NEW(CCMTLDevice);
 #else
         

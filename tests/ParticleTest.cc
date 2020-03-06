@@ -95,7 +95,7 @@ void ParticleTest::createShader()
     GFXShaderStage vertexShaderStage;
     vertexShaderStage.type = GFXShaderType::VERTEX;
 
-#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX && defined(MAC_USE_METAL))
     vertexShaderStage.source = R"(
     #include <metal_stdlib>
     #include <simd/simd.h>
@@ -199,7 +199,7 @@ void ParticleTest::createShader()
     GFXShaderStage fragmentShaderStage;
     fragmentShaderStage.type = GFXShaderType::FRAGMENT;
     
-#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX && defined(MAC_USE_METAL))
     fragmentShaderStage.source = R"(
     #include <metal_stdlib>
     #include <simd/simd.h>
