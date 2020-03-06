@@ -325,7 +325,7 @@ void ParticleTest::createVertexBuffer()
            GFXBufferFlagBit::NONE };
      _uniformBuffer = _device->createBuffer(uniformBufferInfo);
     Mat4 model, view, projection;
-    Mat4::createPerspective(60.0f, 1.0f * _device->width() / _device->height(), 0.01f, 1000.0f, &projection);
+    Mat4::createPerspective(60.0f, 1.0f * _device->getWidth() / _device->getHeight(), 0.01f, 1000.0f, &projection);
     Mat4::createLookAt(Vec3(30.0f , 20.0f, 30.0f), Vec3(0.0f, 2.5f, 0.0f), Vec3(0.0f, 1.0f, 0.f), &view);
     _uniformBuffer->update(model.m, 0, sizeof(model));
     _uniformBuffer->update(view.m, sizeof(model), sizeof(view));
@@ -367,9 +367,9 @@ void ParticleTest::createPipeline()
     GFXPipelineStateInfo pipelineInfo;
     pipelineInfo.primitive = GFXPrimitiveMode::TRIANGLE_LIST;
     pipelineInfo.shader = _shader;
-    pipelineInfo.inputState = { _inputAssembler->attributes() };
+    pipelineInfo.inputState = { _inputAssembler->getAttributes() };
     pipelineInfo.layout = pipelineLayout;
-    pipelineInfo.renderPass = _device->mainWindow()->renderPass();
+    pipelineInfo.renderPass = _device->getMainWindow()->getRenderPass();
     pipelineInfo.blendState.targets[0].blend = true;
     pipelineInfo.blendState.targets[0].blendEq = GFXBlendOp::ADD;
     pipelineInfo.blendState.targets[0].blendAlphaEq = GFXBlendOp::ADD;
@@ -431,7 +431,7 @@ void ParticleTest::createTexture()
 
 void ParticleTest::tick(float dt) {
 
-    GFXRect render_area = {0, 0, _device->width(), _device->height() };
+    GFXRect render_area = {0, 0, _device->getWidth(), _device->getHeight() };
     GFXColor clear_color = {0, 0, 0, 1.0f};
     
     // update particles
@@ -475,16 +475,19 @@ void ParticleTest::tick(float dt) {
     }
     _vertexBuffer->update(_vbufferArray, 0, sizeof(_vbufferArray));
     
-    _commandBuffer->begin();
-    _commandBuffer->beginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, &clear_color, 1, 1.0f, 0);
-    _commandBuffer->bindInputAssembler(_inputAssembler);
-    _commandBuffer->bindBindingLayout(_bindingLayout);
-    _commandBuffer->bindPipelineState(_pipelineState);
-    _commandBuffer->draw(_inputAssembler);
-    _commandBuffer->endRenderPass();
-    _commandBuffer->end();
+    for(auto commandBuffer : _commandBuffers)
+    {
+        commandBuffer->begin();
+        commandBuffer->beginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, std::move(std::vector<GFXColor>({clear_color})), 1.0f, 0);
+        commandBuffer->bindInputAssembler(_inputAssembler);
+        commandBuffer->bindBindingLayout(_bindingLayout);
+        commandBuffer->bindPipelineState(_pipelineState);
+        commandBuffer->draw(_inputAssembler);
+        commandBuffer->endRenderPass();
+        commandBuffer->end();
+    }
 
-    _device->queue()->submit(&_commandBuffer, 1);
+    _device->getQueue()->submit(_commandBuffers);
     _device->present();
 }
 

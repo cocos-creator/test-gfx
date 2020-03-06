@@ -241,9 +241,9 @@ void BasicTexture::createPipeline()
     GFXPipelineStateInfo pipelineInfo;
     pipelineInfo.primitive = GFXPrimitiveMode::TRIANGLE_LIST;
     pipelineInfo.shader = _shader;
-    pipelineInfo.inputState = { _inputAssembler->attributes() };
+    pipelineInfo.inputState = { _inputAssembler->getAttributes() };
     pipelineInfo.layout = pipelineLayout;
-    pipelineInfo.renderPass = _device->mainWindow()->renderPass();
+    pipelineInfo.renderPass = _device->getMainWindow()->getRenderPass();
 
     _pipelineState = _device->createPipelineState(pipelineInfo);
 
@@ -290,19 +290,21 @@ void BasicTexture::createTexture()
 
 void BasicTexture::tick(float dt) {
 
-    GFXRect render_area = {0, 0, _device->width(), _device->height() };
+    GFXRect render_area = {0, 0, _device->getWidth(), _device->getHeight() };
     GFXColor clear_color = {0, 0, 0, 1.0f};
 
-    _commandBuffer->begin();
-    _commandBuffer->beginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, &clear_color, 1, 1.0f, 0);
-    _commandBuffer->bindInputAssembler(_inputAssembler);
-    _commandBuffer->bindBindingLayout(_bindingLayout);
-    _commandBuffer->bindPipelineState(_pipelineState);
-    _commandBuffer->draw(_inputAssembler);
-    _commandBuffer->endRenderPass();
-    _commandBuffer->end();
-
-    _device->queue()->submit(&_commandBuffer, 1);
+    for(auto commandBuffer : _commandBuffers)
+    {
+        commandBuffer->begin();
+        commandBuffer->beginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, std::move(std::vector<GFXColor>({clear_color})), 1.0f, 0);
+        commandBuffer->bindInputAssembler(_inputAssembler);
+        commandBuffer->bindBindingLayout(_bindingLayout);
+        commandBuffer->bindPipelineState(_pipelineState);
+        commandBuffer->draw(_inputAssembler);
+        commandBuffer->endRenderPass();
+        commandBuffer->end();
+    }
+    _device->getQueue()->submit(_commandBuffers);
     _device->present();
 }
 

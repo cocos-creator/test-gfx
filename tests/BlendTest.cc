@@ -266,7 +266,7 @@ namespace {
                 GFXBufferFlagBit::NONE };
             
             Mat4 projection;
-            Mat4::createOrthographicOffCenter(0, device->width(), device->height(), 0, 0, 1000.f, &projection);
+            Mat4::createOrthographicOffCenter(0, device->getWidth(), device->getHeight(), 0, 0, 1000.f, &projection);
             for (int i = 0; i < TOTAL_BLEND; i++) {
                 uniformBuffer[i] = device->createBuffer(uniformBufferInfo);
                 uniformBuffer[i]->update(projection.m, sizeof(Mat4), sizeof(projection));
@@ -331,9 +331,9 @@ namespace {
             GFXPipelineStateInfo pipelineInfo[TOTAL_BLEND];
             pipelineInfo[NO_BLEND].primitive = GFXPrimitiveMode::TRIANGLE_LIST;
             pipelineInfo[NO_BLEND].shader = shader;
-            pipelineInfo[NO_BLEND].inputState = { inputAssembler->attributes() };
+            pipelineInfo[NO_BLEND].inputState = { inputAssembler->getAttributes() };
             pipelineInfo[NO_BLEND].layout = pipelineLayout[NO_BLEND];
-            pipelineInfo[NO_BLEND].renderPass = device->mainWindow()->renderPass();
+            pipelineInfo[NO_BLEND].renderPass = device->getMainWindow()->getRenderPass();
             pipelineInfo[NO_BLEND].rasterizerState.cullMode = GFXCullMode::NONE;
             pipelineInfo[NO_BLEND].blendState.targets[0].blend = true;
             pipelineInfo[NO_BLEND].blendState.targets[0].blendEq = GFXBlendOp::ADD;
@@ -346,9 +346,9 @@ namespace {
             
             pipelineInfo[NORMAL_BLEND].primitive = GFXPrimitiveMode::TRIANGLE_LIST;
             pipelineInfo[NORMAL_BLEND].shader = shader;
-            pipelineInfo[NORMAL_BLEND].inputState = { inputAssembler->attributes() };
+            pipelineInfo[NORMAL_BLEND].inputState = { inputAssembler->getAttributes() };
             pipelineInfo[NORMAL_BLEND].layout = pipelineLayout[NORMAL_BLEND];
-            pipelineInfo[NORMAL_BLEND].renderPass = device->mainWindow()->renderPass();
+            pipelineInfo[NORMAL_BLEND].renderPass = device->getMainWindow()->getRenderPass();
             pipelineInfo[NORMAL_BLEND].rasterizerState.cullMode = GFXCullMode::NONE;
             pipelineInfo[NORMAL_BLEND].blendState.targets[0].blend = true;
             pipelineInfo[NORMAL_BLEND].blendState.targets[0].blendEq = GFXBlendOp::ADD;
@@ -361,9 +361,9 @@ namespace {
             
             pipelineInfo[ADDITIVE_BLEND].primitive = GFXPrimitiveMode::TRIANGLE_LIST;
             pipelineInfo[ADDITIVE_BLEND].shader = shader;
-            pipelineInfo[ADDITIVE_BLEND].inputState = { inputAssembler->attributes() };
+            pipelineInfo[ADDITIVE_BLEND].inputState = { inputAssembler->getAttributes() };
             pipelineInfo[ADDITIVE_BLEND].layout = pipelineLayout[ADDITIVE_BLEND];
-            pipelineInfo[ADDITIVE_BLEND].renderPass = device->mainWindow()->renderPass();
+            pipelineInfo[ADDITIVE_BLEND].renderPass = device->getMainWindow()->getRenderPass();
             pipelineInfo[ADDITIVE_BLEND].rasterizerState.cullMode = GFXCullMode::NONE;
             pipelineInfo[ADDITIVE_BLEND].blendState.targets[0].blend = true;
             pipelineInfo[ADDITIVE_BLEND].blendState.targets[0].blendEq = GFXBlendOp::ADD;
@@ -376,9 +376,9 @@ namespace {
             
             pipelineInfo[SUBSTRACT_BLEND].primitive = GFXPrimitiveMode::TRIANGLE_LIST;
             pipelineInfo[SUBSTRACT_BLEND].shader = shader;
-            pipelineInfo[SUBSTRACT_BLEND].inputState = { inputAssembler->attributes() };
+            pipelineInfo[SUBSTRACT_BLEND].inputState = { inputAssembler->getAttributes() };
             pipelineInfo[SUBSTRACT_BLEND].layout = pipelineLayout[SUBSTRACT_BLEND];
-            pipelineInfo[SUBSTRACT_BLEND].renderPass = device->mainWindow()->renderPass();
+            pipelineInfo[SUBSTRACT_BLEND].renderPass = device->getMainWindow()->getRenderPass();
             pipelineInfo[SUBSTRACT_BLEND].rasterizerState.cullMode = GFXCullMode::NONE;
             pipelineInfo[SUBSTRACT_BLEND].blendState.targets[0].blend = true;
             pipelineInfo[SUBSTRACT_BLEND].blendState.targets[0].blendEq = GFXBlendOp::ADD;
@@ -391,9 +391,9 @@ namespace {
             
             pipelineInfo[MULTIPLY_BLEND].primitive = GFXPrimitiveMode::TRIANGLE_LIST;
             pipelineInfo[MULTIPLY_BLEND].shader = shader;
-            pipelineInfo[MULTIPLY_BLEND].inputState = { inputAssembler->attributes() };
+            pipelineInfo[MULTIPLY_BLEND].inputState = { inputAssembler->getAttributes() };
             pipelineInfo[MULTIPLY_BLEND].layout = pipelineLayout[MULTIPLY_BLEND];
-            pipelineInfo[MULTIPLY_BLEND].renderPass = device->mainWindow()->renderPass();
+            pipelineInfo[MULTIPLY_BLEND].renderPass = device->getMainWindow()->getRenderPass();
             pipelineInfo[MULTIPLY_BLEND].rasterizerState.cullMode = GFXCullMode::NONE;
             pipelineInfo[MULTIPLY_BLEND].blendState.targets[0].blend = true;
             pipelineInfo[MULTIPLY_BLEND].blendState.targets[0].blendEq = GFXBlendOp::ADD;
@@ -674,9 +674,9 @@ namespace {
             GFXPipelineStateInfo pipelineInfo;
             pipelineInfo.primitive = GFXPrimitiveMode::TRIANGLE_LIST;
             pipelineInfo.shader = shader;
-            pipelineInfo.inputState = { inputAssembler->attributes() };
+            pipelineInfo.inputState = { inputAssembler->getAttributes() };
             pipelineInfo.layout = pipelineLayout;
-            pipelineInfo.renderPass = device->mainWindow()->renderPass();
+            pipelineInfo.renderPass = device->getMainWindow()->getRenderPass();
             
             pipelineState = device->createPipelineState(pipelineInfo);
             
@@ -725,71 +725,73 @@ void BlendTest::tick(float dt) {
 
     _dt += dt;
 
-    GFXRect render_area = {0, 0, _device->width(), _device->height() };
+    GFXRect render_area = {0, 0, _device->getWidth(), _device->getHeight() };
     GFXColor clear_color = {0.0f, 0, 0, 1.0f};
 
-    _commandBuffer->begin();
-    _commandBuffer->beginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, &clear_color, 1, 1.0f, 0);
-    
-    //draw background
-    bigTriangle->uniformBuffer->update(&_dt, 0, sizeof(_dt));
-    _commandBuffer->bindInputAssembler(bigTriangle->inputAssembler);
-    _commandBuffer->bindBindingLayout(bigTriangle->bindingLayout);
-    _commandBuffer->bindPipelineState(bigTriangle->pipelineState);
-    _commandBuffer->draw(bigTriangle->inputAssembler);
+    for(auto commandBuffer : _commandBuffers)
+    {
+        commandBuffer->begin();
+        commandBuffer->beginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, std::move(std::vector<GFXColor>({clear_color})), 1.0f, 0);
+        
+        //draw background
+        bigTriangle->uniformBuffer->update(&_dt, 0, sizeof(_dt));
+        commandBuffer->bindInputAssembler(bigTriangle->inputAssembler);
+        commandBuffer->bindBindingLayout(bigTriangle->bindingLayout);
+        commandBuffer->bindPipelineState(bigTriangle->pipelineState);
+        commandBuffer->draw(bigTriangle->inputAssembler);
 
-    //draw sprite without blending
-    float size = std::min(render_area.width, render_area.height) * 0.15f;
-    float halfSize = size * 0.5f;
-    float offsetX = 5.f + halfSize;
-    float offsetY = 5.f + halfSize;
-    quad->model = std::move(createModel(Vec3(offsetX, offsetY, 0), Vec3(size, size, 0)));
-    quad->uniformBuffer[NO_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
-    _commandBuffer->bindInputAssembler(quad->inputAssembler);
-    _commandBuffer->bindBindingLayout(quad->bindingLayout[NO_BLEND]);
-    _commandBuffer->bindPipelineState(quad->pipelineState[NO_BLEND]);
-    _commandBuffer->draw(quad->inputAssembler);
-    
-    //normal
-    offsetY = offsetY + 5.f + size;
-    quad->model = std::move(createModel(cocos2d::Vec3(offsetX, offsetY, 0), cocos2d::Vec3(size, size, 0)));
-    quad->uniformBuffer[NORMAL_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
-    _commandBuffer->bindInputAssembler(quad->inputAssembler);
-    _commandBuffer->bindBindingLayout(quad->bindingLayout[NORMAL_BLEND]);
-    _commandBuffer->bindPipelineState(quad->pipelineState[NORMAL_BLEND]);
-    _commandBuffer->draw(quad->inputAssembler);
-    
-    //additive
-    offsetY = offsetY + 5.f + size;
-    quad->model = std::move(createModel(cocos2d::Vec3(offsetX, offsetY, 0), cocos2d::Vec3(size, size, 0)));
-    quad->uniformBuffer[ADDITIVE_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
-    _commandBuffer->bindInputAssembler(quad->inputAssembler);
-    _commandBuffer->bindBindingLayout(quad->bindingLayout[ADDITIVE_BLEND]);
-    _commandBuffer->bindPipelineState(quad->pipelineState[ADDITIVE_BLEND]);
-    _commandBuffer->draw(quad->inputAssembler);
-    
-    //substract
-    offsetY = offsetY + 5.f + size;
-    quad->model = std::move(createModel(cocos2d::Vec3(offsetX, offsetY, 0), cocos2d::Vec3(size, size, 0)));
-    quad->uniformBuffer[SUBSTRACT_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
-    _commandBuffer->bindInputAssembler(quad->inputAssembler);
-    _commandBuffer->bindBindingLayout(quad->bindingLayout[SUBSTRACT_BLEND]);
-    _commandBuffer->bindPipelineState(quad->pipelineState[SUBSTRACT_BLEND]);
-    _commandBuffer->draw(quad->inputAssembler);
-    
-    //multiply
-    offsetY = offsetY + 5.f + size;
-    quad->model = std::move(createModel(cocos2d::Vec3(offsetX, offsetY, 0), cocos2d::Vec3(size, size, 0)));
-    quad->uniformBuffer[MULTIPLY_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
-    _commandBuffer->bindInputAssembler(quad->inputAssembler);
-    _commandBuffer->bindBindingLayout(quad->bindingLayout[MULTIPLY_BLEND]);
-    _commandBuffer->bindPipelineState(quad->pipelineState[MULTIPLY_BLEND]);
-    _commandBuffer->draw(quad->inputAssembler);
-    
-    _commandBuffer->endRenderPass();
-    _commandBuffer->end();
-
-    _device->queue()->submit(&_commandBuffer, 1);
+        //draw sprite without blending
+        float size = std::min(render_area.width, render_area.height) * 0.15f;
+        float halfSize = size * 0.5f;
+        float offsetX = 5.f + halfSize;
+        float offsetY = 5.f + halfSize;
+        quad->model = std::move(createModel(Vec3(offsetX, offsetY, 0), Vec3(size, size, 0)));
+        quad->uniformBuffer[NO_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
+        commandBuffer->bindInputAssembler(quad->inputAssembler);
+        commandBuffer->bindBindingLayout(quad->bindingLayout[NO_BLEND]);
+        commandBuffer->bindPipelineState(quad->pipelineState[NO_BLEND]);
+        commandBuffer->draw(quad->inputAssembler);
+        
+        //normal
+        offsetY = offsetY + 5.f + size;
+        quad->model = std::move(createModel(cocos2d::Vec3(offsetX, offsetY, 0), cocos2d::Vec3(size, size, 0)));
+        quad->uniformBuffer[NORMAL_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
+        commandBuffer->bindInputAssembler(quad->inputAssembler);
+        commandBuffer->bindBindingLayout(quad->bindingLayout[NORMAL_BLEND]);
+        commandBuffer->bindPipelineState(quad->pipelineState[NORMAL_BLEND]);
+        commandBuffer->draw(quad->inputAssembler);
+        
+        //additive
+        offsetY = offsetY + 5.f + size;
+        quad->model = std::move(createModel(cocos2d::Vec3(offsetX, offsetY, 0), cocos2d::Vec3(size, size, 0)));
+        quad->uniformBuffer[ADDITIVE_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
+        commandBuffer->bindInputAssembler(quad->inputAssembler);
+        commandBuffer->bindBindingLayout(quad->bindingLayout[ADDITIVE_BLEND]);
+        commandBuffer->bindPipelineState(quad->pipelineState[ADDITIVE_BLEND]);
+        commandBuffer->draw(quad->inputAssembler);
+        
+        //substract
+        offsetY = offsetY + 5.f + size;
+        quad->model = std::move(createModel(cocos2d::Vec3(offsetX, offsetY, 0), cocos2d::Vec3(size, size, 0)));
+        quad->uniformBuffer[SUBSTRACT_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
+        commandBuffer->bindInputAssembler(quad->inputAssembler);
+        commandBuffer->bindBindingLayout(quad->bindingLayout[SUBSTRACT_BLEND]);
+        commandBuffer->bindPipelineState(quad->pipelineState[SUBSTRACT_BLEND]);
+        commandBuffer->draw(quad->inputAssembler);
+        
+        //multiply
+        offsetY = offsetY + 5.f + size;
+        quad->model = std::move(createModel(cocos2d::Vec3(offsetX, offsetY, 0), cocos2d::Vec3(size, size, 0)));
+        quad->uniformBuffer[MULTIPLY_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
+        commandBuffer->bindInputAssembler(quad->inputAssembler);
+        commandBuffer->bindBindingLayout(quad->bindingLayout[MULTIPLY_BLEND]);
+        commandBuffer->bindPipelineState(quad->pipelineState[MULTIPLY_BLEND]);
+        commandBuffer->draw(quad->inputAssembler);
+        
+        commandBuffer->endRenderPass();
+        commandBuffer->end();
+    }
+    _device->getQueue()->submit(_commandBuffers);
     _device->present();
 }
 

@@ -20,7 +20,7 @@ bool ClearScreen::initialize()
 
 void ClearScreen::tick(float dt) {
 
-    GFXRect render_area = {0, 0, _device->width(), _device->height() };
+    GFXRect render_area = {0, 0, _device->getWidth(), _device->getHeight() };
     _time += dt;
     GFXColor clear_color;
     clear_color.r = 1.0f;
@@ -28,12 +28,14 @@ void ClearScreen::tick(float dt) {
     clear_color.b = 0.0f;
     clear_color.a = 1.0f;
 
-    _commandBuffer->begin();
-    _commandBuffer->beginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, &clear_color, 1, 1.0f, 0);
-    _commandBuffer->endRenderPass();
-    _commandBuffer->end();
-
-    _device->queue()->submit(&_commandBuffer, 1);
+    for(auto commandBuffer : _commandBuffers)
+    {
+        commandBuffer->begin();
+        commandBuffer->beginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, std::move(std::vector<GFXColor>({clear_color})), 1.0f, 0);
+        commandBuffer->endRenderPass();
+        commandBuffer->end();
+    }
+    _device->getQueue()->submit(_commandBuffers);
     _device->present();
 }
 
