@@ -3,8 +3,9 @@
 #if (CC_PLATFORM == CC_PLATFORM_MAC_OSX && defined(MAC_USE_METAL))
 #include "gfx-metal/GFXMTL.h"
 #else
-#include "gfx-gles2/GFXGLES2.h"
+#include "gfx-vulkan/GFXVulkan.h"
 #include "gfx-gles3/GFXGLES3.h"
+#include "gfx-gles2/GFXGLES2.h"
 #endif
 
 NS_CC_BEGIN
@@ -20,9 +21,11 @@ TestBaseI::TestBaseI(const WindowInfo& info)
 #if (CC_PLATFORM == CC_PLATFORM_MAC_OSX && defined(MAC_USE_METAL))
         _device = CC_NEW(CCMTLDevice);
 #else
-        
-#ifdef USE_GLES2
-        _device = CC_NEW(GLES2Device);
+
+#if defined(USE_VULKAN)
+    _device = CC_NEW(CCVKDevice);
+#elif defined(USE_GLES2)
+    _device = CC_NEW(GLES2Device);
 #else
     _device = CC_NEW(GLES3Device);
 #endif
@@ -58,9 +61,11 @@ TestBaseI::TestBaseI(const WindowInfo& info)
 
 void TestBaseI::destroy()
 {
-//    CC_SAFE_DESTROY(_device);
-//    CC_SAFE_DESTROY(_fbo);
-//    CC_SAFE_DESTROY(_commandBuffer);
+    for (auto cmdBuff : _commandBuffers)
+    {
+        CC_SAFE_DESTROY(cmdBuff);
+    }
+    CC_SAFE_DESTROY(_device);
 }
 
 NS_CC_END

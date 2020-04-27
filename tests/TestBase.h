@@ -1,7 +1,7 @@
 #pragma once
 #include "Core.h"
 
-#define USE_GLES2
+//#define USE_VULKAN
 
 NS_CC_BEGIN
 

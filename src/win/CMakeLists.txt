@@ -12,6 +12,7 @@ set(INCLUDE_FILES
   ${COCOS_SRC_PATH}/renderer/core
   ${COCOS_SRC_PATH}/renderer/gfx-gles2
   ${COCOS_SRC_PATH}/renderer/gfx-gles3
+  ${COCOS_SRC_PATH}/renderer/gfx-vulkan
   ./GFXTest
 )
 
@@ -75,6 +76,7 @@ target_link_libraries(${TARGET_NAME}
   Core 
   GFXGLES2 
   GFXGLES3
+  GFXVulkan
   ${CC_EXTERNAL_LIBS}
 ) 
 

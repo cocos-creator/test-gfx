@@ -11,6 +11,7 @@ NS_CC_BEGIN
 
 void ClearScreen::destroy()
 {
+    TestBaseI::destroy();
 }
 
 bool ClearScreen::initialize()
