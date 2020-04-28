@@ -59,13 +59,14 @@ TestBaseI::TestBaseI(const WindowInfo& info)
     }
 }
 
-void TestBaseI::destroy()
+void TestBaseI::destroyGlobal()
 {
-    for (auto cmdBuff : _commandBuffers)
+    for (auto& cmdBuff : _commandBuffers)
     {
         CC_SAFE_DESTROY(cmdBuff);
     }
     CC_SAFE_DESTROY(_device);
+    _fbo = nullptr;
 }
 
 NS_CC_END

@@ -1,7 +1,7 @@
 #pragma once
 #include "Core.h"
 
-//#define USE_VULKAN
+#define USE_VULKAN
 
 NS_CC_BEGIN
 
@@ -26,10 +26,11 @@ public:
     virtual void tick(float dt) = 0;
 
     virtual bool initialize() { return true; }
-    virtual void destroy();
+    virtual void destroy() {}
     virtual ~TestBaseI() = default;
 
     static GFXDevice* getDevice() { return _device; }
+    static void destroyGlobal();
 
 protected:
     static GFXDevice* _device;

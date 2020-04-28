@@ -152,6 +152,7 @@ bool GameApp::initialize()
 void GameApp::destroy()
 {
     CC_SAFE_DESTROY(_test);
+    TestBaseI::destroyGlobal();
 }
 
 void GameApp::resize(uint width, uint height)
