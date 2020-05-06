@@ -165,7 +165,7 @@ void ParticleTest::createShader()
     }
     )";
 #else
-    vertexShaderStage.source = R"(#version 300 es
+    vertexShaderStage.source = R"(
     in vec2 a_quad;
     in vec3 a_position;
     in vec4 a_color;
@@ -240,7 +240,7 @@ void ParticleTest::createShader()
     }
     )";
 #else
-    fragmentShaderStage.source = R"(#version 300 es
+    fragmentShaderStage.source = R"(
     #ifdef GL_ES
     precision highp float;
     #endif

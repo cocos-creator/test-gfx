@@ -136,7 +136,7 @@ bool GameApp::initialize()
             BasicTexture::create,
             DepthTexture::create,
             StencilTest::create,
-	    BlendTest::create,
+	        BlendTest::create,
             ParticleTest::create,
             BunnyTest::create,
         };

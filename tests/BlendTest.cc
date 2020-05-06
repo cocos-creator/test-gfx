@@ -131,7 +131,7 @@ namespace {
             }
             )";
     #else
-            vertexShaderStage.source = R"(#version 300 es
+            vertexShaderStage.source = R"(
             in vec2 a_position;
             in vec2 a_uv;
             out vec2 uv;
@@ -191,7 +191,7 @@ namespace {
             }
             )";
     #else
-            fragmentShaderStage.source = R"(#version 300 es
+            fragmentShaderStage.source = R"(
 #ifdef GL_ES
             precision highp float;
 #endif
@@ -492,7 +492,7 @@ namespace {
             }
             )";
     #else
-            vertexShaderStage.source = R"(#version 300 es
+            vertexShaderStage.source = R"(
             in vec2 a_position;
             out vec2 uv;
             void main()
@@ -556,7 +556,7 @@ namespace {
             }
             )";
     #else
-            fragmentShaderStage.source = R"(#version 300 es
+            fragmentShaderStage.source = R"(
 #ifdef GL_ES
             precision highp float;
 #endif

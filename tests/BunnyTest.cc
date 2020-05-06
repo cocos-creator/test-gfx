@@ -95,7 +95,7 @@ void BunnyTest::createShader()
     }
     )";
 #else
-    vertexShaderStage.source = R"(#version 300 es
+    vertexShaderStage.source = R"(
     in vec3 a_position;
     
     layout(std140) uniform MVP_Matrix
@@ -164,7 +164,7 @@ void BunnyTest::createShader()
     }
     )";
 #else
-    fragmentShaderStage.source = R"(#version 300 es
+    fragmentShaderStage.source = R"(
 #ifdef GL_ES
     precision highp float;
 #endif

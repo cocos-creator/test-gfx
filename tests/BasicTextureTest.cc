@@ -16,8 +16,9 @@ void BasicTexture::destroy()
     CC_SAFE_DESTROY(_shader);
     CC_SAFE_DESTROY(_vertexBuffer);
     CC_SAFE_DESTROY(_inputAssembler);
-    CC_SAFE_DESTROY(_pipelineState);
     CC_SAFE_DESTROY(_bindingLayout);
+    CC_SAFE_DESTROY(_pipelineLayout);
+    CC_SAFE_DESTROY(_pipelineState);
     CC_SAFE_DESTROY(_uniformBuffer);
     CC_SAFE_DESTROY(_texture);
     CC_SAFE_DESTROY(_image);
@@ -73,7 +74,23 @@ void BasicTexture::createShader()
     
 #else
     
-#ifdef USE_GLES2
+#if defined(USE_VULKAN)
+    vertexShaderStage.source = R"(
+    layout(location = 0) in vec2 a_position;
+    layout(location = 0) out vec2 texcoord;
+    layout(binding = 0) uniform MVP_Matrix
+    {
+        mat4 u_mvpMatrix;
+    };
+   
+    void main()
+    {
+        gl_Position = u_mvpMatrix * vec4(a_position, 0, 1);
+        texcoord = a_position * 0.5 + 0.5;
+        texcoord = vec2(texcoord.x, 1.0 - texcoord.y);
+    }
+    )";
+#elif defined(USE_GLES2)
     vertexShaderStage.source = R"(
     attribute vec2 a_position;
     uniform mat4 u_mvpMatrix;
@@ -86,7 +103,7 @@ void BasicTexture::createShader()
     }
     )";
 #else
-    vertexShaderStage.source = R"(#version 300 es
+    vertexShaderStage.source = R"(
     in vec2 a_position;
     out vec2 texcoord;
     layout(std140) uniform MVP_Matrix
@@ -135,7 +152,16 @@ void BasicTexture::createShader()
     )";
 #else
     
-#ifdef USE_GLES2
+#if defined(USE_VULKAN)
+    fragmentShaderStage.source = R"(
+    layout(location = 0) in vec2 texcoord;
+    layout(binding = 1) uniform sampler2D u_texture;
+    layout(location = 0) out vec4 o_color;
+    void main () {
+        o_color = texture(u_texture, texcoord);
+    }
+    )";
+#elif defined(USE_GLES2)
     fragmentShaderStage.source = R"(
     #ifdef GL_ES
     precision highp float;
@@ -147,7 +173,7 @@ void BasicTexture::createShader()
     }
     )";
 #else
-    fragmentShaderStage.source = R"(#version 300 es
+    fragmentShaderStage.source = R"(
     #ifdef GL_ES
     precision highp float;
     #endif
@@ -236,18 +262,16 @@ void BasicTexture::createPipeline()
 
     GFXPipelineLayoutInfo pipelineLayoutInfo;
     pipelineLayoutInfo.layouts = { _bindingLayout };
-    auto pipelineLayout = _device->createPipelineLayout(pipelineLayoutInfo);
+    _pipelineLayout = _device->createPipelineLayout(pipelineLayoutInfo);
 
     GFXPipelineStateInfo pipelineInfo;
     pipelineInfo.primitive = GFXPrimitiveMode::TRIANGLE_LIST;
     pipelineInfo.shader = _shader;
     pipelineInfo.inputState = { _inputAssembler->getAttributes() };
-    pipelineInfo.layout = pipelineLayout;
+    pipelineInfo.layout = _pipelineLayout;
     pipelineInfo.renderPass = _device->getMainWindow()->getRenderPass();
 
     _pipelineState = _device->createPipelineState(pipelineInfo);
-
-    CC_SAFE_DESTROY(pipelineLayout);
 }
 
 void BasicTexture::createTexture()
@@ -293,7 +317,9 @@ void BasicTexture::tick(float dt) {
     GFXRect render_area = {0, 0, _device->getWidth(), _device->getHeight() };
     GFXColor clear_color = {0, 0, 0, 1.0f};
 
-    for(auto commandBuffer : _commandBuffers)
+    _device->begin();
+
+    for (auto commandBuffer : _commandBuffers)
     {
         commandBuffer->begin();
         commandBuffer->beginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, std::move(std::vector<GFXColor>({clear_color})), 1.0f, 0);

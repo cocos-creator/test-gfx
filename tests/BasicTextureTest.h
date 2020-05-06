@@ -27,9 +27,10 @@ private:
     GFXShader* _shader = nullptr;
     GFXBuffer* _vertexBuffer = nullptr;
     GFXBuffer* _uniformBuffer = nullptr;
-    GFXPipelineState* _pipelineState = nullptr;
     GFXInputAssembler* _inputAssembler = nullptr;
     GFXBindingLayout* _bindingLayout = nullptr;
+    GFXPipelineLayout* _pipelineLayout = nullptr;
+    GFXPipelineState* _pipelineState = nullptr;
     GFXTexture* _texture = nullptr;
     GFXBuffer* _image = nullptr;
     GFXSampler* _sampler = nullptr;

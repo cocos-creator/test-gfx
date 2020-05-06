@@ -169,7 +169,7 @@ message(STATUS "\${GFX_EXTERNAL_PATH}: ${GFX_EXTERNAL_PATH}")
 macro(use_precompiled_header PrecompiledHeader PrecompiledSource Sources)
 endmacro(use_precompiled_header)
 
-# ad dependencies
+# add dependencies
 set(COCOS_EXTERNAL_TARGETS
 	tommyds)
 if(COCOS_PLATFORM_WIN32 OR COCOS_PLATFORM_ANDROID)

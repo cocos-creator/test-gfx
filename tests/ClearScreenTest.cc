@@ -28,7 +28,9 @@ void ClearScreen::tick(float dt) {
     clear_color.b = 0.0f;
     clear_color.a = 1.0f;
 
-    for(auto commandBuffer : _commandBuffers)
+    _device->begin();
+
+    for (auto commandBuffer : _commandBuffers)
     {
         commandBuffer->begin();
         commandBuffer->beginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, std::move(std::vector<GFXColor>({clear_color})), 1.0f, 0);

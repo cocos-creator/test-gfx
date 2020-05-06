@@ -37,9 +37,10 @@ class BasicTriangle: public TestBaseI
      GFXShader* _shader = nullptr;
      GFXBuffer* _vertexBuffer = nullptr;
      GFXBuffer* _uniformBuffer = nullptr;
+     GFXBindingLayout* _bindingLayout = nullptr;
+     GFXPipelineLayout* _pipelineLayout = nullptr;
      GFXPipelineState* _pipelineState = nullptr;
      GFXInputAssembler* _inputAssembler = nullptr;
-     GFXBindingLayout* _bindingLayout = nullptr;
 
      float _time = 0.0f;
 };
