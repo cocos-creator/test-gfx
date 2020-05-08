@@ -29,6 +29,7 @@ private:
     GFXBuffer* _indexBuffer = nullptr;
     GFXBuffer* _uniformBuffer = nullptr;
     GFXPipelineState* _pipelineState = nullptr;
+    GFXPipelineLayout* _pipelineLayout = nullptr;
     GFXInputAssembler* _inputAssembler = nullptr;
     GFXBindingLayout* _bindingLayout = nullptr;
     GFXTexture* _texture = nullptr;

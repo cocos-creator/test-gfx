@@ -117,7 +117,22 @@ namespace {
             }
             )";
 #else
-    #ifdef USE_GLES2
+    #if defined(USE_VULKAN)
+            vertexShaderStage.source = R"(
+            layout(location = 0) in vec2 a_position;
+            layout(location = 1) in vec2 a_uv;
+            layout(location = 0) out vec2 uv;
+            layout(binding = 0) uniform MVP_Matrix
+            {
+                mat4 u_model, u_projection;
+            };
+            void main()
+            {
+                uv = a_uv;
+                gl_Position = u_projection * u_model * vec4(a_position, 0, 1);
+            }
+            )";
+    #elif defined(USE_GLES2)
             vertexShaderStage.source = R"(
             attribute vec2 a_position;
             attribute vec2 a_uv;
@@ -177,7 +192,17 @@ namespace {
             }
             )";
 #else
-    #ifdef USE_GLES2
+    #if defined(USE_VULKAN)
+            fragmentShaderStage.source = R"(
+            layout(location = 0) in vec2 uv;
+            layout(binding = 1) uniform sampler2D u_texture;
+            layout(location = 0) out vec4 o_color;
+            void main()
+            {
+                o_color = texture(u_texture, uv);
+            }
+            )";
+    #elif defined(USE_GLES2)
             fragmentShaderStage.source = R"(
 #ifdef GL_ES
             precision highp float;
@@ -212,9 +237,9 @@ namespace {
                 { "u_model", GFXType::MAT4, 1},
                 { "u_projection", GFXType::MAT4, 1},
             };
-            GFXUniformBlockList uniformBlockList = { {0, "MVP_Matrix", mvpMatrix} };
+            GFXUniformBlockList uniformBlockList = { { GFXShaderType::VERTEX,  0, "MVP_Matrix", mvpMatrix} };
             
-            GFXUniformSamplerList sampler = { {1, "u_texture", GFXType::SAMPLER2D, 1} };
+            GFXUniformSamplerList sampler = { { GFXShaderType::FRAGMENT,  1, "u_texture", GFXType::SAMPLER2D, 1} };
             
             GFXShaderInfo shaderInfo;
             shaderInfo.name = "Blend Test: Quad";
@@ -309,8 +334,8 @@ namespace {
         void createPipeline()
         {
             GFXBindingList bindingList = {
-                {0, GFXBindingType::UNIFORM_BUFFER, "MVP_Matrix"},
-                {1, GFXBindingType::SAMPLER, "u_texture"}
+                {GFXShaderType::VERTEX, 0, GFXBindingType::UNIFORM_BUFFER, "MVP_Matrix", 1},
+                {GFXShaderType::FRAGMENT, 1, GFXBindingType::SAMPLER, "u_texture", 1}
             };
             GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
             
@@ -442,6 +467,7 @@ namespace {
             CC_SAFE_DESTROY(vertexBuffer);
             CC_SAFE_DESTROY(inputAssembler);
             CC_SAFE_DESTROY(pipelineState);
+            CC_SAFE_DESTROY(pipelineLayout);
             CC_SAFE_DESTROY(bindingLayout);
             CC_SAFE_DESTROY(uniformBuffer);
             CC_SAFE_DESTROY(texture);
@@ -481,7 +507,17 @@ namespace {
             }
             )";
 #else
-    #ifdef USE_GLES2
+    #if defined(USE_VULKAN)
+            vertexShaderStage.source = R"(
+            layout(location = 0) in vec2 a_position;
+            layout(location = 0) out vec2 uv;
+            void main()
+            {
+                uv = (a_position + 1.0) * 0.5;
+                gl_Position = vec4(a_position, 0, 1);
+            }
+            )";
+    #elif defined(USE_GLES2)
             vertexShaderStage.source = R"(
             attribute vec2 a_position;
             varying vec2 uv;
@@ -540,7 +576,22 @@ namespace {
             }
             )";
 #else
-    #ifdef USE_GLES2
+    #if defined(USE_VULKAN)
+            fragmentShaderStage.source = R"(
+            layout(location = 0) in vec2 uv;
+            layout(binding = 0) uniform sampler2D u_texture;
+            layout(binding = 1) uniform Time
+            {
+                float u_time;
+            };
+            layout(location = 0) out vec4 o_color;
+            void main()
+            {
+                vec2 offset = vec2(u_time * -0.01);
+                o_color = texture(u_texture, 20.0 * (uv + offset));
+            }
+            )";
+    #elif defined(USE_GLES2)
             fragmentShaderStage.source = R"(
 #ifdef GL_ES
             precision highp float;
@@ -579,9 +630,9 @@ namespace {
             shaderStageList.emplace_back(std::move(fragmentShaderStage));
             
             GFXUniformList mvpMatrix = { { "u_time", GFXType::FLOAT, 1} };
-            GFXUniformBlockList uniformBlockList = { {0, "Time", mvpMatrix} };
+            GFXUniformBlockList uniformBlockList = { {GFXShaderType::FRAGMENT, 0, "Time", mvpMatrix} };
             
-            GFXUniformSamplerList sampler = { {1, "u_texture", GFXType::SAMPLER2D, 1} };
+            GFXUniformSamplerList sampler = { {GFXShaderType::FRAGMENT, 1, "u_texture", GFXType::SAMPLER2D, 1} };
             
             GFXShaderInfo shaderInfo;
             shaderInfo.name = "Blend Test: BigTriangle";
@@ -656,8 +707,8 @@ namespace {
         void createPipeline()
         {
             GFXBindingList bindingList = {
-                {0, GFXBindingType::UNIFORM_BUFFER, "Time"},
-                {1, GFXBindingType::SAMPLER, "u_texture"}
+                {GFXShaderType::FRAGMENT, 0, GFXBindingType::UNIFORM_BUFFER, "Time", 1},
+                {GFXShaderType::FRAGMENT, 1, GFXBindingType::SAMPLER, "u_texture", 1}
             };
             GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
             bindingLayout = device->createBindingLayout(bindingLayoutInfo);
@@ -669,7 +720,7 @@ namespace {
             
             GFXPipelineLayoutInfo pipelineLayoutInfo;
             pipelineLayoutInfo.layouts = { bindingLayout };
-            auto pipelineLayout = device->createPipelineLayout(pipelineLayoutInfo);
+            pipelineLayout = device->createPipelineLayout(pipelineLayoutInfo);
             
             GFXPipelineStateInfo pipelineInfo;
             pipelineInfo.primitive = GFXPrimitiveMode::TRIANGLE_LIST;
@@ -679,8 +730,6 @@ namespace {
             pipelineInfo.renderPass = device->getMainWindow()->getRenderPass();
             
             pipelineState = device->createPipelineState(pipelineInfo);
-            
-            CC_SAFE_DESTROY(pipelineLayout);
         }
         
         GFXDevice* device = nullptr;
@@ -693,6 +742,7 @@ namespace {
         GFXTexture* texture = nullptr;
         GFXTextureView* texView = nullptr;
         GFXPipelineState* pipelineState = nullptr;
+        GFXPipelineLayout* pipelineLayout = nullptr;
     };
     
     Mat4 createModel(const Vec3& t, const Vec3& s)
@@ -728,6 +778,8 @@ void BlendTest::tick(float dt) {
     GFXRect render_area = {0, 0, _device->getWidth(), _device->getHeight() };
     GFXColor clear_color = {0.0f, 0, 0, 1.0f};
 
+    _device->begin();
+
     for(auto commandBuffer : _commandBuffers)
     {
         commandBuffer->begin();
@@ -736,8 +788,8 @@ void BlendTest::tick(float dt) {
         //draw background
         bigTriangle->uniformBuffer->update(&_dt, 0, sizeof(_dt));
         commandBuffer->bindInputAssembler(bigTriangle->inputAssembler);
-        commandBuffer->bindBindingLayout(bigTriangle->bindingLayout);
         commandBuffer->bindPipelineState(bigTriangle->pipelineState);
+        commandBuffer->bindBindingLayout(bigTriangle->bindingLayout);
         commandBuffer->draw(bigTriangle->inputAssembler);
 
         //draw sprite without blending
@@ -748,8 +800,8 @@ void BlendTest::tick(float dt) {
         quad->model = std::move(createModel(Vec3(offsetX, offsetY, 0), Vec3(size, size, 0)));
         quad->uniformBuffer[NO_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
         commandBuffer->bindInputAssembler(quad->inputAssembler);
-        commandBuffer->bindBindingLayout(quad->bindingLayout[NO_BLEND]);
         commandBuffer->bindPipelineState(quad->pipelineState[NO_BLEND]);
+        commandBuffer->bindBindingLayout(quad->bindingLayout[NO_BLEND]);
         commandBuffer->draw(quad->inputAssembler);
         
         //normal
@@ -757,8 +809,8 @@ void BlendTest::tick(float dt) {
         quad->model = std::move(createModel(cocos2d::Vec3(offsetX, offsetY, 0), cocos2d::Vec3(size, size, 0)));
         quad->uniformBuffer[NORMAL_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
         commandBuffer->bindInputAssembler(quad->inputAssembler);
-        commandBuffer->bindBindingLayout(quad->bindingLayout[NORMAL_BLEND]);
         commandBuffer->bindPipelineState(quad->pipelineState[NORMAL_BLEND]);
+        commandBuffer->bindBindingLayout(quad->bindingLayout[NORMAL_BLEND]);
         commandBuffer->draw(quad->inputAssembler);
         
         //additive
@@ -766,8 +818,8 @@ void BlendTest::tick(float dt) {
         quad->model = std::move(createModel(cocos2d::Vec3(offsetX, offsetY, 0), cocos2d::Vec3(size, size, 0)));
         quad->uniformBuffer[ADDITIVE_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
         commandBuffer->bindInputAssembler(quad->inputAssembler);
-        commandBuffer->bindBindingLayout(quad->bindingLayout[ADDITIVE_BLEND]);
         commandBuffer->bindPipelineState(quad->pipelineState[ADDITIVE_BLEND]);
+        commandBuffer->bindBindingLayout(quad->bindingLayout[ADDITIVE_BLEND]);
         commandBuffer->draw(quad->inputAssembler);
         
         //substract
@@ -775,8 +827,8 @@ void BlendTest::tick(float dt) {
         quad->model = std::move(createModel(cocos2d::Vec3(offsetX, offsetY, 0), cocos2d::Vec3(size, size, 0)));
         quad->uniformBuffer[SUBSTRACT_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
         commandBuffer->bindInputAssembler(quad->inputAssembler);
-        commandBuffer->bindBindingLayout(quad->bindingLayout[SUBSTRACT_BLEND]);
         commandBuffer->bindPipelineState(quad->pipelineState[SUBSTRACT_BLEND]);
+        commandBuffer->bindBindingLayout(quad->bindingLayout[SUBSTRACT_BLEND]);
         commandBuffer->draw(quad->inputAssembler);
         
         //multiply
@@ -784,8 +836,8 @@ void BlendTest::tick(float dt) {
         quad->model = std::move(createModel(cocos2d::Vec3(offsetX, offsetY, 0), cocos2d::Vec3(size, size, 0)));
         quad->uniformBuffer[MULTIPLY_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
         commandBuffer->bindInputAssembler(quad->inputAssembler);
-        commandBuffer->bindBindingLayout(quad->bindingLayout[MULTIPLY_BLEND]);
         commandBuffer->bindPipelineState(quad->pipelineState[MULTIPLY_BLEND]);
+        commandBuffer->bindBindingLayout(quad->bindingLayout[MULTIPLY_BLEND]);
         commandBuffer->draw(quad->inputAssembler);
         
         commandBuffer->endRenderPass();

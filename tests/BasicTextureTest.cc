@@ -190,9 +190,9 @@ void BasicTexture::createShader()
     shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
     GFXUniformList mvpMatrix = { { "u_mvpMatrix", GFXType::MAT4, 1} };
-    GFXUniformBlockList uniformBlockList = { {0, "MVP_Matrix", mvpMatrix} };
+    GFXUniformBlockList uniformBlockList = { { GFXShaderType::VERTEX, 0, "MVP_Matrix", mvpMatrix} };
     
-    GFXUniformSamplerList sampler = { {1, "u_texture", GFXType::SAMPLER2D, 1} };
+    GFXUniformSamplerList sampler = { { GFXShaderType::FRAGMENT, 1, "u_texture", GFXType::SAMPLER2D, 1} };
 
     GFXShaderInfo shaderInfo;
     shaderInfo.name = "Basic Texture";
@@ -247,8 +247,8 @@ void BasicTexture::createInputAssembler()
 void BasicTexture::createPipeline()
 {
     GFXBindingList bindingList = {
-        {0, GFXBindingType::UNIFORM_BUFFER, "u_mvpMatrix"},
-        {1, GFXBindingType::SAMPLER, "u_texture"}
+        {GFXShaderType::VERTEX, 0, GFXBindingType::UNIFORM_BUFFER, "u_mvpMatrix", 1},
+        {GFXShaderType::FRAGMENT, 1, GFXBindingType::SAMPLER, "u_texture", 1}
     };
     GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
     _bindingLayout = _device->createBindingLayout(bindingLayoutInfo);
@@ -280,12 +280,20 @@ void BasicTexture::createTexture()
     bool ret = img->initWithImageFile("uv_checker_01.jpg");
     CCASSERT(ret, "BasicTexture load image failed");
     
-    Data data;
-    data.copy(img->getData(), img->getDataLen());
+    auto srcData = img->getData();
+    auto size = img->getWidth() * img->getHeight();
+    auto dstData = new unsigned char[size * 4];
+    for (uint32_t i = 0; i < size; i++)
+    {
+        dstData[i * 4]     = srcData[i * 3];
+        dstData[i * 4 + 1] = srcData[i * 3 + 1];
+        dstData[i * 4 + 2] = srcData[i * 3 + 2];
+        dstData[i * 4 + 3] = 255u;
+    }
     
     GFXTextureInfo textureInfo;
     textureInfo.usage = GFXTextureUsage::SAMPLED;
-    textureInfo.format = GFXFormat::RGB8;
+    textureInfo.format = GFXFormat::RGBA8;
     textureInfo.width = img->getWidth();
     textureInfo.height = img->getHeight();
     _texture = _device->createTexture(textureInfo);
@@ -299,7 +307,7 @@ void BasicTexture::createTexture()
     GFXBufferTextureCopyList regions;
     regions.push_back(std::move(textureRegion));
     
-    GFXDataArray imageBuffer = { { img->getData() } };
+    GFXDataArray imageBuffer = { { dstData } };
     _device->copyBuffersToTexture(imageBuffer, _texture, regions);
     
     //create sampler
@@ -308,8 +316,10 @@ void BasicTexture::createTexture()
     
     GFXTextureViewInfo texViewInfo;
     texViewInfo.texture = _texture;
-    texViewInfo.format = GFXFormat::RGB8;
+    texViewInfo.format = GFXFormat::RGBA8;
     _texView = _device->createTextureView(texViewInfo);
+
+    delete dstData;
 }
 
 void BasicTexture::tick(float dt) {
@@ -324,8 +334,8 @@ void BasicTexture::tick(float dt) {
         commandBuffer->begin();
         commandBuffer->beginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, std::move(std::vector<GFXColor>({clear_color})), 1.0f, 0);
         commandBuffer->bindInputAssembler(_inputAssembler);
-        commandBuffer->bindBindingLayout(_bindingLayout);
         commandBuffer->bindPipelineState(_pipelineState);
+        commandBuffer->bindBindingLayout(_bindingLayout);
         commandBuffer->draw(_inputAssembler);
         commandBuffer->endRenderPass();
         commandBuffer->end();

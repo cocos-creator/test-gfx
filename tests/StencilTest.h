@@ -35,6 +35,7 @@ private:
     GFXInputAssembler* _inputAssembler = nullptr;
     GFXBuffer* _uniformBuffer[BINDING_COUNT] = { nullptr };
     GFXBindingLayout* _bindingLayout[BINDING_COUNT] = { nullptr };
+    GFXPipelineLayout* _pipelineLayout[BINDING_COUNT] = { nullptr };
     GFXPipelineState* _pipelineState[PIPELIE_COUNT] = { nullptr };
     GFXSampler* _sampler = nullptr;
     

@@ -31,6 +31,7 @@ private:
     GFXBindingLayout* _bindingLayout = nullptr;
     GFXInputAssembler* _inputAssembler = nullptr;
     GFXPipelineState* _pipelineState = nullptr;
+    GFXPipelineLayout* _pipelineLayout = nullptr;
     
     Mat4 _view;
     float _dt = 0.0f;

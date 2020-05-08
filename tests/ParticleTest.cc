@@ -72,6 +72,7 @@ void ParticleTest::destroy()
     CC_SAFE_DESTROY(_indexBuffer);
     CC_SAFE_DESTROY(_inputAssembler);
     CC_SAFE_DESTROY(_pipelineState);
+    CC_SAFE_DESTROY(_pipelineLayout);
     CC_SAFE_DESTROY(_bindingLayout);
     CC_SAFE_DESTROY(_uniformBuffer);
     CC_SAFE_DESTROY(_texture);
@@ -140,7 +141,34 @@ void ParticleTest::createShader()
     )";
 #else
     
-#ifdef USE_GLES2
+#if defined(USE_VULKAN)
+    vertexShaderStage.source = R"(
+    layout(location = 0) in vec2 a_quad;
+    layout(location = 1) in vec3 a_position;
+    layout(location = 2) in vec4 a_color;
+    
+    layout(binding = 0) uniform MVP_Matrix
+    {
+        mat4 u_model, u_view, u_projection;
+    };
+    
+    layout(location = 0) out vec4 v_color;
+    layout(location = 1) out vec2 v_texcoord;
+    
+    void main() {
+        // billboard
+        vec4 pos = u_view * u_model * vec4(a_position, 1);
+        pos.xy += a_quad.xy;
+        pos = u_projection * pos;
+        
+        v_texcoord = vec2(a_quad * -0.5 + 0.5);
+        
+        gl_Position = pos;
+        gl_PointSize = 2.0;
+        v_color = a_color;
+    }
+    )";
+#elif defined(USE_GLES2)
     vertexShaderStage.source = R"(
     attribute vec2 a_quad;
     attribute vec3 a_position;
@@ -225,7 +253,19 @@ void ParticleTest::createShader()
     }
     )";
 #else
-#ifdef USE_GLES2
+#if defined(USE_VULKAN)
+    fragmentShaderStage.source = R"(
+    layout(binding = 1) uniform sampler2D u_texture;
+    
+    layout(location = 0) in vec4 v_color;
+    layout(location = 1) in vec2 v_texcoord;
+    
+    layout(location = 0) out vec4 o_color;
+    void main () {
+        o_color = v_color * texture(u_texture, v_texcoord);
+    }
+    )";
+#elif defined(USE_GLES2)
     fragmentShaderStage.source = R"(
     #ifdef GL_ES
     precision highp float;
@@ -264,9 +304,9 @@ void ParticleTest::createShader()
             { "u_view", GFXType::MAT4, 1},
             { "u_projection", GFXType::MAT4, 1}
     };
-    GFXUniformBlockList uniformBlockList = { {0, "MVP_Matrix", mvpMatrix} };
+    GFXUniformBlockList uniformBlockList = { {GFXShaderType::VERTEX, 0, "MVP_Matrix", mvpMatrix} };
     
-    GFXUniformSamplerList sampler = { {1, "u_texture", GFXType::SAMPLER2D, 1} };
+    GFXUniformSamplerList sampler = { {GFXShaderType::FRAGMENT, 1, "u_texture", GFXType::SAMPLER2D, 1} };
 
     GFXShaderInfo shaderInfo;
     shaderInfo.name = "Particle Test";
@@ -349,8 +389,8 @@ void ParticleTest::createInputAssembler()
 void ParticleTest::createPipeline()
 {
     GFXBindingList bindingList = {
-        {0, GFXBindingType::UNIFORM_BUFFER, "MVP_Martix"},
-        {1, GFXBindingType::SAMPLER, "u_texture"}
+        {GFXShaderType::VERTEX, 0, GFXBindingType::UNIFORM_BUFFER, "MVP_Martix", 1},
+        {GFXShaderType::FRAGMENT, 1, GFXBindingType::SAMPLER, "u_texture", 1}
     };
     GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
     _bindingLayout = _device->createBindingLayout(bindingLayoutInfo);
@@ -362,13 +402,13 @@ void ParticleTest::createPipeline()
 
     GFXPipelineLayoutInfo pipelineLayoutInfo;
     pipelineLayoutInfo.layouts = { _bindingLayout };
-    auto pipelineLayout = _device->createPipelineLayout(pipelineLayoutInfo);
+    _pipelineLayout = _device->createPipelineLayout(pipelineLayoutInfo);
 
     GFXPipelineStateInfo pipelineInfo;
     pipelineInfo.primitive = GFXPrimitiveMode::TRIANGLE_LIST;
     pipelineInfo.shader = _shader;
     pipelineInfo.inputState = { _inputAssembler->getAttributes() };
-    pipelineInfo.layout = pipelineLayout;
+    pipelineInfo.layout = _pipelineLayout;
     pipelineInfo.renderPass = _device->getMainWindow()->getRenderPass();
     pipelineInfo.blendState.targets[0].blend = true;
     pipelineInfo.blendState.targets[0].blendEq = GFXBlendOp::ADD;
@@ -379,8 +419,6 @@ void ParticleTest::createPipeline()
     pipelineInfo.blendState.targets[0].blendDstAlpha = GFXBlendFactor::ONE;
 
     _pipelineState = _device->createPipelineState(pipelineInfo);
-
-    CC_SAFE_DESTROY(pipelineLayout);
 }
 
 void ParticleTest::createTexture()
@@ -474,14 +512,16 @@ void ParticleTest::tick(float dt) {
         }
     }
     _vertexBuffer->update(_vbufferArray, 0, sizeof(_vbufferArray));
-    
+
+    _device->begin();
+
     for(auto commandBuffer : _commandBuffers)
     {
         commandBuffer->begin();
         commandBuffer->beginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, std::move(std::vector<GFXColor>({clear_color})), 1.0f, 0);
         commandBuffer->bindInputAssembler(_inputAssembler);
-        commandBuffer->bindBindingLayout(_bindingLayout);
         commandBuffer->bindPipelineState(_pipelineState);
+        commandBuffer->bindBindingLayout(_bindingLayout);
         commandBuffer->draw(_inputAssembler);
         commandBuffer->endRenderPass();
         commandBuffer->end();

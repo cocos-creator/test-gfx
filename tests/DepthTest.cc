@@ -57,7 +57,20 @@ namespace
             )";
 #else
             
-#ifdef USE_GLES2
+#if defined(USE_VULKAN)
+            vertexShaderStage.source = R"(
+            layout(location = 0) in vec2 a_position;
+            layout(location = 0) out vec2 v_texcoord;
+            
+            void main() {
+                v_texcoord = (a_position + 1.0) * 0.5;
+            #ifndef GL_ES
+                v_texcoord = vec2(v_texcoord.x, 1.0 - v_texcoord.y);
+            #endif
+                gl_Position = vec4(a_position, 0, 1);
+            }
+            )";
+#elif defined(USE_GLES2)
             vertexShaderStage.source = R"(
             attribute vec2 a_position;
             varying vec2 v_texcoord;
@@ -129,7 +142,26 @@ namespace
             )";
 #else
             
-#ifdef USE_GLES2
+#if defined(USE_VULKAN)
+            fragmentShaderStage.source = R"(
+            layout(location = 0) in vec2 v_texcoord;
+            layout(binding = 0) uniform sampler2D u_texture;
+            layout(binding = 1) uniform Near_Far_Uniform
+            {
+                float u_near;
+                float u_far;
+            };
+            layout(location = 0) out vec4 o_color;
+            void main() {
+                float z = texture(u_texture, v_texcoord).x;
+                float viewZ = (u_near * u_far) / ((u_far - u_near) * z - u_far);
+                float depth = (viewZ + u_near) / (u_near - u_far);
+                
+                o_color.rgb = vec3(depth);
+                o_color.a = 1.0;
+            }
+            )";
+#elif defined(USE_GLES2)
             fragmentShaderStage.source = R"(
             #ifdef GL_ES
             precision highp float;
@@ -179,8 +211,8 @@ namespace
                  { "u_near", GFXType::FLOAT, 1},
                  { "u_far", GFXType::FLOAT, 1}
              };
-             GFXUniformBlockList uniformBlockList = { {0, "Near_Far_Uniform", nearFarUniform} };
-             GFXUniformSamplerList sampler = { {1, "u_texture", GFXType::SAMPLER2D, 1} };
+             GFXUniformBlockList uniformBlockList = { { GFXShaderType::FRAGMENT,  0, "Near_Far_Uniform", nearFarUniform} };
+             GFXUniformSamplerList sampler = { { GFXShaderType::FRAGMENT,  1, "u_texture", GFXType::SAMPLER2D, 1} };
              
              GFXShaderInfo shaderInfo;
              shaderInfo.name = "BigTriangle";
@@ -241,8 +273,8 @@ namespace
         {
             texBindingLoc = 1;
             GFXBindingList bindingList = {
-                {0, GFXBindingType::UNIFORM_BUFFER, "Near_Far_Uniform"},
-                {texBindingLoc, GFXBindingType::SAMPLER, "u_texture"}
+                {GFXShaderType::FRAGMENT, 0, GFXBindingType::UNIFORM_BUFFER, "Near_Far_Uniform", 1},
+                {GFXShaderType::FRAGMENT, texBindingLoc, GFXBindingType::SAMPLER, "u_texture", 1}
             };
             GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
             bindingLayout = device->createBindingLayout(bindingLayoutInfo);
@@ -254,7 +286,7 @@ namespace
             
             GFXPipelineLayoutInfo pipelineLayoutInfo;
             pipelineLayoutInfo.layouts = { bindingLayout };
-            auto pipelineLayout = device->createPipelineLayout(pipelineLayoutInfo);
+            pipelineLayout = device->createPipelineLayout(pipelineLayoutInfo);
             
             GFXPipelineStateInfo pipelineInfo;
             pipelineInfo.primitive = GFXPrimitiveMode::TRIANGLE_LIST;
@@ -271,8 +303,6 @@ namespace
             pipelineInfo.rasterizerState.cullMode = GFXCullMode::NONE;
             
             pipelineState = device->createPipelineState(pipelineInfo);
-            
-            CC_SAFE_DESTROY(pipelineLayout);
         }
         ~BigTriangle()
         {
@@ -289,6 +319,7 @@ namespace
             CC_SAFE_DESTROY(texture);
             CC_SAFE_DESTROY(textureView);
             CC_SAFE_DESTROY(pipelineState);
+            CC_SAFE_DESTROY(pipelineLayout);
             CC_SAFE_DESTROY(nearFarUniformBuffer);
         }
         
@@ -302,6 +333,7 @@ namespace
         GFXTexture* texture = nullptr;
         GFXTextureView* textureView = nullptr;
         GFXPipelineState* pipelineState = nullptr;
+        GFXPipelineLayout* pipelineLayout = nullptr;
         uint texBindingLoc = 0;
     };
     
@@ -360,7 +392,23 @@ namespace
             )";
 #else
             
-#ifdef USE_GLES2
+#if defined(USE_VULKAN)
+            vertexShaderStage.source = R"(
+            layout(location = 0) in vec3 a_position;
+            layout(binding = 0) uniform MVP_Matrix
+            {
+                mat4 u_model;
+                mat4 u_view;
+                mat4 u_projection;
+            };
+            void main ()
+            {
+                vec4 pos = u_projection * u_view * u_model * vec4(a_position, 1);
+                
+                gl_Position = pos;
+            }
+            )";
+#elif defined(USE_GLES2)
             vertexShaderStage.source = R"(
             #ifdef GL_ES
             precision highp float;
@@ -420,7 +468,15 @@ namespace
             )";
 #else
             
-#ifdef USE_GLES2
+#if defined(USE_VULKAN)
+            fragmentShaderStage.source = R"(
+            layout(location = 0) out vec4 o_color;
+            void main ()
+            {
+                o_color = vec4(1, 1, 1, 1);
+            }
+            )";
+#elif defined(USE_GLES2)
             fragmentShaderStage.source = R"(
             #ifdef GL_ES
             precision highp float;
@@ -450,7 +506,7 @@ namespace
                 { "u_model", GFXType::MAT4, 1},
                 { "u_view", GFXType::MAT4, 1},
                 { "u_projection", GFXType::MAT4, 1} };
-            GFXUniformBlockList uniformBlockList = { {0, "MVP_Matrix", mvpMatrix} };
+            GFXUniformBlockList uniformBlockList = { {GFXShaderType::VERTEX, 0, "MVP_Matrix", mvpMatrix} };
             
             GFXShaderInfo shaderInfo;
             shaderInfo.name = "Bunny";
@@ -509,7 +565,7 @@ namespace
         void createPipeline(GFXWindow* _window)
         {
             GFXBindingList bindingList = {
-                {0, GFXBindingType::UNIFORM_BUFFER, "MVP_Matrix"},
+                {GFXShaderType::VERTEX, 0, GFXBindingType::UNIFORM_BUFFER, "MVP_Matrix", 1},
             };
             GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
             auto bunnyIndex = 0;
@@ -519,31 +575,29 @@ namespace
             
             GFXPipelineLayoutInfo pipelineLayoutInfo;
             pipelineLayoutInfo.layouts = { bindingLayout[bunnyIndex] };
-            auto pipelineLayout = device->createPipelineLayout(pipelineLayoutInfo);
+            pipelineLayout[bunnyIndex] = device->createPipelineLayout(pipelineLayoutInfo);
             
             GFXPipelineStateInfo pipelineInfo;
             pipelineInfo.primitive = GFXPrimitiveMode::TRIANGLE_LIST;
             pipelineInfo.shader = shader;
             pipelineInfo.inputState = { inputAssembler->getAttributes() };
-            pipelineInfo.layout = pipelineLayout;
+            pipelineInfo.layout = pipelineLayout[bunnyIndex];
             pipelineInfo.renderPass = _window->getRenderPass();
             pipelineInfo.depthStencilState.depthTest = true;
             pipelineInfo.depthStencilState.depthWrite = true;
             pipelineInfo.depthStencilState.depthFunc = GFXComparisonFunc::LESS;
 
             pipelineState[bunnyIndex] = device->createPipelineState(pipelineInfo);
-            CC_SAFE_DESTROY(pipelineLayout);
             
             bunnyIndex++;
             pipelineLayoutInfo.layouts.clear();
             pipelineLayoutInfo.layouts = { bindingLayout[bunnyIndex] };
-            pipelineLayout = device->createPipelineLayout(pipelineLayoutInfo);
+            pipelineLayout[bunnyIndex] = device->createPipelineLayout(pipelineLayoutInfo);
             bindingLayout[bunnyIndex] = device->createBindingLayout(bindingLayoutInfo);
             bindingLayout[bunnyIndex]->bindBuffer(0, mvpUniformBuffer[bunnyIndex]);
             bindingLayout[bunnyIndex]->update();
-            pipelineInfo.layout = pipelineLayout;
+            pipelineInfo.layout = pipelineLayout[bunnyIndex];
             pipelineState[bunnyIndex] = device->createPipelineState(pipelineInfo);
-            CC_SAFE_DESTROY(pipelineLayout);
         }
 
         void destroy()
@@ -559,6 +613,7 @@ namespace
             {
                 CC_SAFE_DESTROY(mvpUniformBuffer[i]);
                 CC_SAFE_DESTROY(bindingLayout[i]);
+                CC_SAFE_DESTROY(pipelineLayout[i]);
                 CC_SAFE_DESTROY(pipelineState[i]);
             }
         }
@@ -573,6 +628,7 @@ namespace
         GFXBuffer* mvpUniformBuffer[BUNNY_NUM] = { nullptr, nullptr };
         GFXInputAssembler* inputAssembler = nullptr;
         GFXBindingLayout* bindingLayout[BUNNY_NUM] = { nullptr, nullptr };
+        GFXPipelineLayout* pipelineLayout[BUNNY_NUM] = { nullptr, nullptr };
         GFXPipelineState* pipelineState[BUNNY_NUM] = { nullptr, nullptr };
     };
     
@@ -619,7 +675,9 @@ void DepthTexture::tick(float dt)
     GFXRect render_area = {0, 0, _device->getWidth(), _device->getHeight() };
     GFXColor clear_color = {1.0, 0, 0, 1.0f};
 
-    for(auto commandBuffer : _commandBuffers)
+    _device->begin();
+
+    for (auto commandBuffer : _commandBuffers)
     {
         commandBuffer->begin();
         
@@ -638,8 +696,8 @@ void DepthTexture::tick(float dt)
             bunny->bindingLayout[i]->update();
             
             commandBuffer->bindInputAssembler(bunny->inputAssembler);
-            commandBuffer->bindBindingLayout(bunny->bindingLayout[i]);
             commandBuffer->bindPipelineState(bunny->pipelineState[i]);
+            commandBuffer->bindBindingLayout(bunny->bindingLayout[i]);
             commandBuffer->draw(bunny->inputAssembler);
         }
         commandBuffer->endRenderPass();
@@ -649,8 +707,8 @@ void DepthTexture::tick(float dt)
         bg->bindingLayout->update();
         commandBuffer->beginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, std::move(std::vector<GFXColor>({clear_color})), 1.0f, 0);
         commandBuffer->bindInputAssembler(bg->inputAssembler);
-        commandBuffer->bindBindingLayout(bg->bindingLayout);
         commandBuffer->bindPipelineState(bg->pipelineState);
+        commandBuffer->bindBindingLayout(bg->bindingLayout);
         commandBuffer->draw(bg->inputAssembler);
         commandBuffer->endRenderPass();
         

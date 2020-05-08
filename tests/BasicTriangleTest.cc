@@ -164,7 +164,7 @@ void BasicTriangle::createShader()
     shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
     GFXUniformList uniformList = { { "u_color", GFXType::FLOAT4, 1 } };
-    GFXUniformBlockList uniformBlockList = { { 0, "Color", uniformList } };
+    GFXUniformBlockList uniformBlockList = { { GFXShaderType::FRAGMENT, 0, "Color", uniformList } };
 
     GFXShaderInfo shaderInfo;
     shaderInfo.name = "Basic Triangle";
@@ -211,7 +211,7 @@ void BasicTriangle::createInputAssembler()
 
 void BasicTriangle::createPipeline()
 {
-    GFXBindingList bindingList = { {0, GFXBindingType::UNIFORM_BUFFER, "u_color"} };
+    GFXBindingList bindingList = { { GFXShaderType::FRAGMENT, 0, GFXBindingType::UNIFORM_BUFFER, "u_color", 1 } };
     GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
     _bindingLayout = _device->createBindingLayout(bindingLayoutInfo);
 

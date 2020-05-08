@@ -29,6 +29,8 @@ void BunnyTest::destroy()
     CC_SAFE_DESTROY(_color);
     CC_SAFE_DESTROY(_inputAssembler);
     CC_SAFE_DESTROY(_bindingLayout);
+    CC_SAFE_DESTROY(_pipelineLayout);
+    CC_SAFE_DESTROY(_pipelineState);
 }
 
 bool BunnyTest::initialize()
@@ -82,7 +84,24 @@ void BunnyTest::createShader()
     )";
 #else
     
-#ifdef USE_GLES2
+#if defined(USE_VULKAN)
+    vertexShaderStage.source = R"(
+    layout(location = 0) in vec3 a_position;
+    
+    layout(binding = 0) uniform MVP_Matrix
+    {
+        mat4 u_model, u_view, u_projection;
+    };
+    
+    layout(location = 0) out vec3 v_position;
+
+    void main () {
+        vec4 pos = u_projection * u_view * u_model * vec4(a_position, 1);
+        v_position = a_position.xyz;
+        gl_Position = pos;
+    }
+    )";
+#elif defined(USE_GLES2)
     vertexShaderStage.source = R"(
     attribute vec3 a_position;
     uniform mat4 u_model, u_view, u_projection;
@@ -151,7 +170,19 @@ void BunnyTest::createShader()
     )";
 #else
     
-#ifdef USE_GLES2
+#if defined(USE_VULKAN)
+    fragmentShaderStage.source = R"(
+    layout(binding = 1) uniform Color
+    {
+        vec4 u_color;
+    };
+    layout(location = 0) in vec3 v_position;
+    layout(location = 0) out vec4 o_color;
+    void main () {
+        o_color = u_color * vec4(v_position, 1);
+    }
+    )";
+#elif defined(USE_GLES2)
     fragmentShaderStage.source = R"(
     #ifdef GL_ES
     precision highp float;
@@ -190,8 +221,8 @@ void BunnyTest::createShader()
     };
     GFXUniformList color = { { "u_color", GFXType::FLOAT4, 1} };
     GFXUniformBlockList uniformBlockList = {
-        {static_cast<uint>(Binding::MVP), "MVP_Matrix", mvpMatrix},
-        {static_cast<uint>(Binding::COLOR), "Color", color}
+        {GFXShaderType::VERTEX, static_cast<uint>(Binding::MVP), "MVP_Matrix", mvpMatrix},
+        {GFXShaderType::FRAGMENT, static_cast<uint>(Binding::COLOR), "Color", color}
     };
     
     GFXShaderInfo shaderInfo;
@@ -264,8 +295,8 @@ void BunnyTest::createInputAssembler()
 void BunnyTest::createPipelineState()
 {
     GFXBindingList bindingList = {
-        {static_cast<uint>(Binding::MVP), GFXBindingType::UNIFORM_BUFFER, "MVP_Matrix"},
-        {static_cast<uint>(Binding::COLOR), GFXBindingType::UNIFORM_BUFFER, "Color"}
+        {GFXShaderType::VERTEX, static_cast<uint>(Binding::MVP), GFXBindingType::UNIFORM_BUFFER, "MVP_Matrix", 1},
+        {GFXShaderType::FRAGMENT, static_cast<uint>(Binding::COLOR), GFXBindingType::UNIFORM_BUFFER, "Color", 1}
     };
     GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
     _bindingLayout = _device->createBindingLayout(bindingLayoutInfo);
@@ -275,19 +306,18 @@ void BunnyTest::createPipelineState()
     
     GFXPipelineLayoutInfo pipelineLayoutInfo;
     pipelineLayoutInfo.layouts = { _bindingLayout };
-    auto pipelineLayout = _device->createPipelineLayout(pipelineLayoutInfo);
+    _pipelineLayout = _device->createPipelineLayout(pipelineLayoutInfo);
 
     GFXPipelineStateInfo pipelineStateInfo;
     pipelineStateInfo.primitive = GFXPrimitiveMode::TRIANGLE_LIST;
     pipelineStateInfo.shader = _shader;
     pipelineStateInfo.inputState = { _inputAssembler->getAttributes() };
-    pipelineStateInfo.layout = pipelineLayout;
+    pipelineStateInfo.layout = _pipelineLayout;
     pipelineStateInfo.renderPass = _device->getMainWindow()->getRenderPass();
     pipelineStateInfo.depthStencilState.depthTest = true;
     pipelineStateInfo.depthStencilState.depthWrite = true;
     pipelineStateInfo.depthStencilState.depthFunc = GFXComparisonFunc::LESS;
     _pipelineState = _device->createPipelineState(pipelineStateInfo);
-    CC_SAFE_DESTROY(pipelineLayout);
 }
 
 void BunnyTest::tick(float dt)
@@ -299,14 +329,16 @@ void BunnyTest::tick(float dt)
     GFXRect render_area = { 0, 0, _device->getWidth(), _device->getHeight() };
     GFXColor clear_color = {0.0f, 0, 0, 1.0f};
     
-    for(auto commandBuffer : _commandBuffers)
+    _device->begin();
+
+    for (auto commandBuffer : _commandBuffers)
     {
         commandBuffer->begin();
         commandBuffer->beginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, std::move(std::vector<GFXColor>({clear_color})), 1.0f, 0);
         
         commandBuffer->bindInputAssembler(_inputAssembler);
-        commandBuffer->bindBindingLayout(_bindingLayout);
         commandBuffer->bindPipelineState(_pipelineState);
+        commandBuffer->bindBindingLayout(_bindingLayout);
         commandBuffer->draw(_inputAssembler);
 
         commandBuffer->endRenderPass();
