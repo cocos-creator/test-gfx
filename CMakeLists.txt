@@ -45,6 +45,8 @@ if(MSVC)
 		set(COCOS_PLATFORM_WIN32 TRUE)
 		message(STATUS "Platform: Win32")
 		set(COCOS_UNICODE TRUE)
+		set(COCOS_STATIC TRUE CACHE BOOL "Use static build by default for windows" FORCE)
+		add_definitions("-DCC_STATIC")
 		# compiler building setting
 		# Flags used by the compiler during all build types.
 		set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /W4 /wd4819 /wd4100 /wd4201 /wd4127 /Zm256 /EHsc /GR- /fp:fast")
