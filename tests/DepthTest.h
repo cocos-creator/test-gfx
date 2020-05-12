@@ -22,10 +22,8 @@ public:
      virtual void destroy() override;
 
 private:
-    void createFBO();
+    Framebuffer* _bunnyFBO;
 
-    GFXWindow* _bunnyWindow = nullptr;
-    
     cocos2d::Mat4 _view;
     cocos2d::Mat4 _model;
     cocos2d::Mat4 _projection;

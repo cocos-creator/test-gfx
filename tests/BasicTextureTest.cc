@@ -283,7 +283,7 @@ void BasicTexture::createTexture()
     auto srcData = img->getData();
     auto size = img->getWidth() * img->getHeight();
     auto dstData = new unsigned char[size * 4];
-    for (uint32_t i = 0; i < size; i++)
+    for (int i = 0; i < size; i++)
     {
         dstData[i * 4]     = srcData[i * 3];
         dstData[i * 4 + 1] = srcData[i * 3 + 1];

@@ -145,12 +145,12 @@ namespace
 #if defined(USE_VULKAN)
             fragmentShaderStage.source = R"(
             layout(location = 0) in vec2 v_texcoord;
-            layout(binding = 0) uniform sampler2D u_texture;
-            layout(binding = 1) uniform Near_Far_Uniform
+            layout(binding = 0) uniform Near_Far_Uniform
             {
                 float u_near;
                 float u_far;
             };
+            layout(binding = 1) uniform sampler2D u_texture;
             layout(location = 0) out vec4 o_color;
             void main() {
                 float z = texture(u_texture, v_texcoord).x;
@@ -212,13 +212,13 @@ namespace
                  { "u_far", GFXType::FLOAT, 1}
              };
              GFXUniformBlockList uniformBlockList = { { GFXShaderType::FRAGMENT,  0, "Near_Far_Uniform", nearFarUniform} };
-             GFXUniformSamplerList sampler = { { GFXShaderType::FRAGMENT,  1, "u_texture", GFXType::SAMPLER2D, 1} };
+             GFXUniformSamplerList samplers = { { GFXShaderType::FRAGMENT,  1, "u_texture", GFXType::SAMPLER2D, 1} };
              
              GFXShaderInfo shaderInfo;
              shaderInfo.name = "BigTriangle";
              shaderInfo.stages = std::move(shaderStageList);
              shaderInfo.blocks = std::move(uniformBlockList);
-             shaderInfo.samplers = std::move(sampler);
+             shaderInfo.samplers = std::move(samplers);
              shader = device->createShader(shaderInfo);
         }
         
@@ -279,10 +279,9 @@ namespace
             GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
             bindingLayout = device->createBindingLayout(bindingLayoutInfo);
             
-            
             bindingLayout->bindBuffer(0, nearFarUniformBuffer);
             bindingLayout->bindSampler(texBindingLoc, sampler);
-            bindingLayout->update();
+            // don't update just yet for the texture is still missing
             
             GFXPipelineLayoutInfo pipelineLayoutInfo;
             pipelineLayoutInfo.layouts = { bindingLayout };
@@ -339,13 +338,13 @@ namespace
     
     struct Bunny : public Object
     {
-        Bunny(GFXDevice* _device, GFXWindow* _window)
+        Bunny(GFXDevice* _device, GFXFramebuffer* _fbo)
         : device(_device)
         {
             createShader();
             createBuffers();
             createInputAssembler();
-            createPipeline(_window);
+            createPipeline(_fbo);
         }
         
         ~Bunny()
@@ -562,42 +561,35 @@ namespace
             inputAssembler = device->createInputAssembler(inputAssemblerInfo);
         }
         
-        void createPipeline(GFXWindow* _window)
+        void createPipeline(GFXFramebuffer* _fbo)
         {
             GFXBindingList bindingList = {
                 {GFXShaderType::VERTEX, 0, GFXBindingType::UNIFORM_BUFFER, "MVP_Matrix", 1},
             };
             GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
-            auto bunnyIndex = 0;
-            bindingLayout[bunnyIndex] = device->createBindingLayout(bindingLayoutInfo);
-            bindingLayout[bunnyIndex]->bindBuffer(0, mvpUniformBuffer[bunnyIndex]);
-            bindingLayout[bunnyIndex]->update();
-            
+
+            for (uint i = 0u; i < BUNNY_NUM; i++)
+            {
+                bindingLayout[i] = device->createBindingLayout(bindingLayoutInfo);
+                bindingLayout[i]->bindBuffer(0, mvpUniformBuffer[i]);
+                bindingLayout[i]->update();
+            }
+
             GFXPipelineLayoutInfo pipelineLayoutInfo;
-            pipelineLayoutInfo.layouts = { bindingLayout[bunnyIndex] };
-            pipelineLayout[bunnyIndex] = device->createPipelineLayout(pipelineLayoutInfo);
-            
+            pipelineLayoutInfo.layouts = { bindingLayout[0] };
+            pipelineLayout = device->createPipelineLayout(pipelineLayoutInfo);
+
             GFXPipelineStateInfo pipelineInfo;
             pipelineInfo.primitive = GFXPrimitiveMode::TRIANGLE_LIST;
             pipelineInfo.shader = shader;
             pipelineInfo.inputState = { inputAssembler->getAttributes() };
-            pipelineInfo.layout = pipelineLayout[bunnyIndex];
-            pipelineInfo.renderPass = _window->getRenderPass();
+            pipelineInfo.layout = pipelineLayout;
+            pipelineInfo.renderPass = _fbo->getRenderPass();
             pipelineInfo.depthStencilState.depthTest = true;
             pipelineInfo.depthStencilState.depthWrite = true;
             pipelineInfo.depthStencilState.depthFunc = GFXComparisonFunc::LESS;
 
-            pipelineState[bunnyIndex] = device->createPipelineState(pipelineInfo);
-            
-            bunnyIndex++;
-            pipelineLayoutInfo.layouts.clear();
-            pipelineLayoutInfo.layouts = { bindingLayout[bunnyIndex] };
-            pipelineLayout[bunnyIndex] = device->createPipelineLayout(pipelineLayoutInfo);
-            bindingLayout[bunnyIndex] = device->createBindingLayout(bindingLayoutInfo);
-            bindingLayout[bunnyIndex]->bindBuffer(0, mvpUniformBuffer[bunnyIndex]);
-            bindingLayout[bunnyIndex]->update();
-            pipelineInfo.layout = pipelineLayout[bunnyIndex];
-            pipelineState[bunnyIndex] = device->createPipelineState(pipelineInfo);
+            pipelineState = device->createPipelineState(pipelineInfo);
         }
 
         void destroy()
@@ -613,9 +605,9 @@ namespace
             {
                 CC_SAFE_DESTROY(mvpUniformBuffer[i]);
                 CC_SAFE_DESTROY(bindingLayout[i]);
-                CC_SAFE_DESTROY(pipelineLayout[i]);
-                CC_SAFE_DESTROY(pipelineState[i]);
             }
+            CC_SAFE_DESTROY(pipelineLayout);
+            CC_SAFE_DESTROY(pipelineState);
         }
         const static uint BUNNY_NUM = 2;
         GFXDevice* device = nullptr;
@@ -625,11 +617,11 @@ namespace
         GFXSampler* sampler = nullptr;
         GFXTexture* depthTexture = nullptr;
         GFXTextureView* depthView = nullptr;
-        GFXBuffer* mvpUniformBuffer[BUNNY_NUM] = { nullptr, nullptr };
         GFXInputAssembler* inputAssembler = nullptr;
+        GFXBuffer* mvpUniformBuffer[BUNNY_NUM] = { nullptr, nullptr };
         GFXBindingLayout* bindingLayout[BUNNY_NUM] = { nullptr, nullptr };
-        GFXPipelineLayout* pipelineLayout[BUNNY_NUM] = { nullptr, nullptr };
-        GFXPipelineState* pipelineState[BUNNY_NUM] = { nullptr, nullptr };
+        GFXPipelineLayout* pipelineLayout = nullptr;
+        GFXPipelineState* pipelineState = nullptr;
     };
     
     BigTriangle* bg;
@@ -638,28 +630,93 @@ namespace
 
 void DepthTexture::destroy()
 {
-    CC_SAFE_DESTROY(_bunnyWindow);
-    CC_SAFE_DESTROY(bunny);
     CC_SAFE_DESTROY(bg);
+    CC_SAFE_DESTROY(bunny);
+    CC_SAFE_DELETE(_bunnyFBO);
 }
 
 bool DepthTexture::initialize()
 {
-    createFBO();
-    bunny = CC_NEW(Bunny(_device, _bunnyWindow));
+    _bunnyFBO = CC_NEW(Framebuffer);
+
+    GFXRenderPassInfo renderPassInfo;
+
+    GFXColorAttachment colorAttachment;
+    colorAttachment.format = _device->getColorFormat();
+    colorAttachment.loadOp = GFXLoadOp::CLEAR;
+    colorAttachment.storeOp = GFXStoreOp::STORE;
+    colorAttachment.sampleCount = 1;
+    colorAttachment.beginLayout = GFXTextureLayout::COLOR_ATTACHMENT_OPTIMAL;
+    colorAttachment.endLayout = GFXTextureLayout::COLOR_ATTACHMENT_OPTIMAL;
+    renderPassInfo.colorAttachments.emplace_back(colorAttachment);
+
+    GFXDepthStencilAttachment& depthStencilAttachment = renderPassInfo.depthStencilAttachment;
+    depthStencilAttachment.format = _device->getDepthStencilFormat();
+    depthStencilAttachment.depthLoadOp = GFXLoadOp::CLEAR;
+    depthStencilAttachment.depthStoreOp = GFXStoreOp::STORE;
+    depthStencilAttachment.stencilLoadOp = GFXLoadOp::CLEAR;
+    depthStencilAttachment.stencilStoreOp = GFXStoreOp::STORE;
+    depthStencilAttachment.sampleCount = 1;
+    depthStencilAttachment.beginLayout = GFXTextureLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    depthStencilAttachment.endLayout = GFXTextureLayout::SHADER_READONLY_OPTIMAL;
+
+    _bunnyFBO->renderPass = _device->createRenderPass(renderPassInfo);
+
+    GFXTextureInfo colorTexInfo;
+    colorTexInfo.type = GFXTextureType::TEX2D;
+    colorTexInfo.usage = GFXTextureUsageBit::COLOR_ATTACHMENT | GFXTextureUsageBit::SAMPLED;
+    colorTexInfo.format = _device->getColorFormat();
+    colorTexInfo.width = _device->getWidth();
+    colorTexInfo.height = _device->getHeight();
+    colorTexInfo.depth = 1;
+    colorTexInfo.arrayLayer = 1;
+    colorTexInfo.mipLevel = 1;
+    _bunnyFBO->colorTex = _device->createTexture(colorTexInfo);
+
+    GFXTextureViewInfo colorTexViewInfo;
+    colorTexViewInfo.texture = _bunnyFBO->colorTex;
+    colorTexViewInfo.type = GFXTextureViewType::TV2D;
+    colorTexViewInfo.format = _device->getColorFormat();
+    colorTexViewInfo.baseLevel = 0;
+    colorTexViewInfo.levelCount = 1;
+    colorTexViewInfo.baseLayer = 0;
+    colorTexViewInfo.layerCount = 1;
+    _bunnyFBO->colorTexView = _device->createTextureView(colorTexViewInfo);
+
+    GFXTextureInfo depthStecnilTexInfo;
+    depthStecnilTexInfo.type = GFXTextureType::TEX2D;
+    depthStecnilTexInfo.usage = GFXTextureUsageBit::DEPTH_STENCIL_ATTACHMENT | GFXTextureUsageBit::SAMPLED;
+    depthStecnilTexInfo.format = _device->getDepthStencilFormat();
+    depthStecnilTexInfo.width = _device->getWidth();
+    depthStecnilTexInfo.height = _device->getHeight();
+    depthStecnilTexInfo.depth = 1;
+    depthStecnilTexInfo.arrayLayer = 1;
+    depthStecnilTexInfo.mipLevel = 1;
+    _bunnyFBO->depthStencilTex = _device->createTexture(depthStecnilTexInfo);
+
+    GFXTextureViewInfo depthStecnilTexViewInfo;
+    depthStecnilTexViewInfo.texture = _bunnyFBO->depthStencilTex;
+    depthStecnilTexViewInfo.type = GFXTextureViewType::TV2D;
+    depthStecnilTexViewInfo.format = _device->getDepthStencilFormat();
+    depthStecnilTexViewInfo.baseLevel = 0;
+    depthStecnilTexViewInfo.levelCount = 1;
+    depthStecnilTexViewInfo.baseLayer = 0;
+    depthStecnilTexViewInfo.layerCount = 1;
+    _bunnyFBO->depthStencilTexView = _device->createTextureView(depthStecnilTexViewInfo);
+
+    GFXFramebufferInfo fboInfo;
+    fboInfo.renderPass = _bunnyFBO->renderPass;
+    if (_bunnyFBO->colorTexView)
+    {
+        fboInfo.colorViews.push_back(_bunnyFBO->colorTexView);
+    }
+    fboInfo.depthStencilView = _bunnyFBO->depthStencilTexView;
+    fboInfo.isOffscreen = true;
+    _bunnyFBO->framebuffer = _device->createFramebuffer(fboInfo);
+
+    bunny = CC_NEW(Bunny(_device, _bunnyFBO->framebuffer));
     bg = CC_NEW(BigTriangle(_device));
     return true;
-}
-
-void DepthTexture::createFBO()
-{
-    GFXWindowInfo windowInfo;
-    windowInfo.width = _device->getWidth();
-    windowInfo.height = _device->getHeight();
-    windowInfo.colorFmt = GFXFormat::RGBA8;
-    windowInfo.depthStencilFmt = GFXFormat::D24S8;
-    windowInfo.isOffscreen = true;
-    _bunnyWindow = _device->createWindow(windowInfo);
 }
 
 void DepthTexture::tick(float dt)
@@ -682,8 +739,10 @@ void DepthTexture::tick(float dt)
         commandBuffer->begin();
         
         //render bunny
-        commandBuffer->beginRenderPass(_bunnyWindow->getFramebuffer(), render_area, GFXClearFlagBit::DEPTH, std::move(std::vector<GFXColor>({clear_color})), 1.0f, 0);
-        for(uint i = 0; i < Bunny::BUNNY_NUM; i++)
+        commandBuffer->beginRenderPass(_bunnyFBO->framebuffer, render_area, GFXClearFlagBit::DEPTH, std::move(std::vector<GFXColor>({clear_color})), 1.0f, 0);
+        commandBuffer->bindPipelineState(bunny->pipelineState);
+        commandBuffer->bindInputAssembler(bunny->inputAssembler);
+        for (uint i = 0; i < Bunny::BUNNY_NUM; i++)
         {
             _model = Mat4::IDENTITY;
             if(i % 2 == 0)
@@ -695,15 +754,13 @@ void DepthTexture::tick(float dt)
             bunny->mvpUniformBuffer[i]->update(_projection.m, sizeof(_model) + sizeof(_view), sizeof(_projection));
             bunny->bindingLayout[i]->update();
             
-            commandBuffer->bindInputAssembler(bunny->inputAssembler);
-            commandBuffer->bindPipelineState(bunny->pipelineState[i]);
             commandBuffer->bindBindingLayout(bunny->bindingLayout[i]);
             commandBuffer->draw(bunny->inputAssembler);
         }
         commandBuffer->endRenderPass();
         
         //render bg
-        bg->bindingLayout->bindTextureView(bg->texBindingLoc, _bunnyWindow->getDepthStencilTexView());
+        bg->bindingLayout->bindTextureView(bg->texBindingLoc, _bunnyFBO->depthStencilTexView);
         bg->bindingLayout->update();
         commandBuffer->beginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, std::move(std::vector<GFXColor>({clear_color})), 1.0f, 0);
         commandBuffer->bindInputAssembler(bg->inputAssembler);

@@ -13,6 +13,26 @@ typedef struct WindowInfo
     int physicalHeight;
 }WindowInfo;
 
+struct Framebuffer
+{
+    GFXRenderPass* renderPass = nullptr;
+    GFXTexture* colorTex = nullptr;
+    GFXTextureView* colorTexView = nullptr;
+    GFXTexture* depthStencilTex = nullptr;
+    GFXTextureView* depthStencilTexView = nullptr;
+    GFXFramebuffer* framebuffer = nullptr;
+
+    ~Framebuffer()
+    {
+        CC_SAFE_DESTROY(framebuffer);
+        CC_SAFE_DESTROY(depthStencilTexView);
+        CC_SAFE_DESTROY(depthStencilTex);
+        CC_SAFE_DESTROY(colorTexView);
+        CC_SAFE_DESTROY(colorTex);
+        CC_SAFE_DESTROY(renderPass);
+    }
+};
+
 #define DEFINE_CREATE_METHOD(className) \
 static TestBaseI* create(const WindowInfo& info) { \
     TestBaseI* test =  CC_NEW(className(info)); \
