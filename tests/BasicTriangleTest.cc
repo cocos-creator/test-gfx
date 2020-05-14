@@ -183,7 +183,7 @@ void BasicTriangle::createVertexBuffer()
 
     GFXBufferInfo vertexBufferInfo = {
           GFXBufferUsage::VERTEX,
-          GFXMemoryUsage::HOST,
+          GFXMemoryUsage::DEVICE,
           2 * sizeof(float),
           sizeof(vertexData),
           GFXBufferFlagBit::NONE };
@@ -193,7 +193,7 @@ void BasicTriangle::createVertexBuffer()
 
     GFXBufferInfo uniformBufferInfo = {
            GFXBufferUsage::UNIFORM,
-           GFXMemoryUsage::HOST,
+           GFXMemoryUsage::DEVICE | GFXMemoryUsage::HOST,
            4 * sizeof(float),
            sizeof(GFXColor),
            GFXBufferFlagBit::NONE };
