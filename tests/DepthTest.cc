@@ -237,7 +237,7 @@ namespace
             float vertices[] = {-1, 4, -1, -1, 4, -1};
             GFXBufferInfo vertexBufferInfo = {
                 GFXBufferUsage::VERTEX,
-                GFXMemoryUsage::HOST,
+                GFXMemoryUsage::DEVICE,
                 2 * sizeof(float),
                 sizeof(vertices),
                 GFXBufferFlagBit::NONE
@@ -248,7 +248,7 @@ namespace
             //create uniform buffer
             GFXBufferInfo uniformBufferInfo = {
                 GFXBufferUsage::UNIFORM,
-                GFXMemoryUsage::HOST,
+                GFXMemoryUsage::HOST | GFXMemoryUsage::DEVICE,
                 sizeof(float),
                 2 * sizeof(float),
                 GFXBufferFlagBit::NONE };
@@ -519,7 +519,7 @@ namespace
             //vertex buffer
             GFXBufferInfo vertexBufferInfo = {
                 GFXBufferUsage::VERTEX,
-                GFXMemoryUsage::HOST,
+                GFXMemoryUsage::DEVICE,
                 3*sizeof(float),
                 sizeof(bunny_positions),
                 GFXBufferFlagBit::NONE };
@@ -530,7 +530,7 @@ namespace
             //index buffer
             GFXBufferInfo indexBufferInfo = {
                 GFXBufferUsage::INDEX,
-                GFXMemoryUsage::NONE,
+                GFXMemoryUsage::DEVICE,
                 sizeof(unsigned short),
                 sizeof(bunny_cells),
                 GFXBufferFlagBit::NONE
@@ -542,7 +542,7 @@ namespace
             //create uniform buffer
             GFXBufferInfo uniformBufferInfo = {
                 GFXBufferUsage::UNIFORM,
-                GFXMemoryUsage::HOST,
+                GFXMemoryUsage::HOST | GFXMemoryUsage::DEVICE,
                 sizeof(Mat4),
                 3*sizeof(Mat4),
                 GFXBufferFlagBit::NONE
@@ -643,8 +643,8 @@ bool DepthTexture::initialize()
 
     GFXColorAttachment colorAttachment;
     colorAttachment.format = _device->getColorFormat();
-    colorAttachment.loadOp = GFXLoadOp::CLEAR;
-    colorAttachment.storeOp = GFXStoreOp::STORE;
+    colorAttachment.loadOp = GFXLoadOp::DISCARD;
+    colorAttachment.storeOp = GFXStoreOp::DISCARD;
     colorAttachment.sampleCount = 1;
     colorAttachment.beginLayout = GFXTextureLayout::COLOR_ATTACHMENT_OPTIMAL;
     colorAttachment.endLayout = GFXTextureLayout::COLOR_ATTACHMENT_OPTIMAL;
@@ -745,10 +745,10 @@ void DepthTexture::tick(float dt)
         for (uint i = 0; i < Bunny::BUNNY_NUM; i++)
         {
             _model = Mat4::IDENTITY;
-            if(i % 2 == 0)
+            /*if(i % 2 == 0)
                 _model.translate(5, 0, 0);
             else
-                _model.translate(-5, 0, 0);
+                _model.translate(-5, 0, 0);*/
             bunny->mvpUniformBuffer[i]->update(_model.m, 0, sizeof(_model));
             bunny->mvpUniformBuffer[i]->update(_view.m, sizeof(_model), sizeof(_view));
             bunny->mvpUniformBuffer[i]->update(_projection.m, sizeof(_model) + sizeof(_view), sizeof(_projection));

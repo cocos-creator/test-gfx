@@ -237,7 +237,7 @@ void BunnyTest::createBuffers()
     //vertex buffer
     GFXBufferInfo vertexBufferInfo = {
         GFXBufferUsage::VERTEX,
-        GFXMemoryUsage::HOST,
+        GFXMemoryUsage::DEVICE,
         3 * sizeof(float),
         sizeof(bunny_positions),
         GFXBufferFlagBit::NONE };
@@ -248,7 +248,7 @@ void BunnyTest::createBuffers()
     //index buffer
     GFXBufferInfo indexBufferInfo = {
         GFXBufferUsage::INDEX,
-        GFXMemoryUsage::HOST,
+        GFXMemoryUsage::DEVICE,
         sizeof(uint16_t),
         sizeof(bunny_cells),
         GFXBufferFlagBit::NONE };
@@ -258,7 +258,7 @@ void BunnyTest::createBuffers()
     //mvp matrix uniform
     GFXBufferInfo mvpMatrixInfo = {
         GFXBufferUsage::UNIFORM,
-        GFXMemoryUsage::HOST,
+        GFXMemoryUsage::HOST | GFXMemoryUsage::DEVICE,
         sizeof(Mat4),
         3 * sizeof(Mat4),
         GFXBufferFlagBit::NONE };
@@ -272,7 +272,7 @@ void BunnyTest::createBuffers()
     //color uniform
     GFXBufferInfo colorInfo = {
         GFXBufferUsage::UNIFORM,
-        GFXMemoryUsage::HOST,
+        GFXMemoryUsage::HOST | GFXMemoryUsage::DEVICE,
         sizeof(float),
         4 * sizeof(float),
         GFXBufferFlagBit::NONE

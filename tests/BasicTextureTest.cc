@@ -218,7 +218,7 @@ void BasicTexture::createVertexBuffer()
 
     GFXBufferInfo vertexBufferInfo = {
           GFXBufferUsage::VERTEX,
-          GFXMemoryUsage::HOST,
+          GFXMemoryUsage::DEVICE,
           2 * sizeof(float),
           sizeof(vertexData),
           GFXBufferFlagBit::NONE };
@@ -228,7 +228,7 @@ void BasicTexture::createVertexBuffer()
 
     GFXBufferInfo uniformBufferInfo = {
            GFXBufferUsage::UNIFORM,
-           GFXMemoryUsage::HOST,
+           GFXMemoryUsage::HOST | GFXMemoryUsage::DEVICE,
            sizeof(Mat4),
            sizeof(Mat4),
            GFXBufferFlagBit::NONE };
