@@ -1,14 +1,5 @@
 #include "BlendTest.h"
 
-#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
-#include "gfx-metal/GFXMTL.h"
-#else
-#include "gfx-gles2/GFXGLES2.h"
-#include "gfx-gles3/GFXGLES3.h"
-#endif
-
-#include "cocos2d.h"
-
 NS_CC_BEGIN
 
 namespace {
@@ -26,13 +17,13 @@ namespace {
     {
         auto img = new cocos2d::Image();
         img->autorelease();
-        bool ret = img->initWithImageFile(imageFile);
-        CCASSERT(ret, "load image failed");
+        bool valid = img->initWithImageFile(imageFile);
+        CCASSERT(valid, "load image failed");
+        auto imgData = img->getRenderFormat() == GFXFormat::RGB8 ? TestBaseI::RGB2RGBA(img) : img->getData();
         
         auto texture = device->createTexture(textureInfo);
         
         GFXBufferTextureCopy textureRegion;
-        textureRegion.buffTexHeight = img->getHeight();
         textureRegion.texExtent.width = img->getWidth();
         textureRegion.texExtent.height = img->getHeight();
         textureRegion.texExtent.depth = 1;
@@ -40,8 +31,9 @@ namespace {
         GFXBufferTextureCopyList regions;
         regions.push_back(std::move(textureRegion));
         
-        GFXDataArray imageBuffers = { { img->getData() } };
+        GFXDataArray imageBuffers = { { imgData } };
         device->copyBuffersToTexture(imageBuffers, texture, regions);
+        delete imgData;
         return texture;
     }
     
@@ -72,6 +64,7 @@ namespace {
             CC_SAFE_DESTROY(texView);
             for (int i = 0; i < TOTAL_BLEND; i++) {
                 CC_SAFE_DESTROY(pipelineState[i]);
+                CC_SAFE_DESTROY(pipelineLayout[i]);
                 CC_SAFE_DESTROY(bindingLayout[i]);
                 CC_SAFE_DESTROY(uniformBuffer[i]);
             }
@@ -239,13 +232,13 @@ namespace {
             };
             GFXUniformBlockList uniformBlockList = { { GFXShaderType::VERTEX,  0, "MVP_Matrix", mvpMatrix} };
             
-            GFXUniformSamplerList sampler = { { GFXShaderType::FRAGMENT,  1, "u_texture", GFXType::SAMPLER2D, 1} };
+            GFXUniformSamplerList samplers = { { GFXShaderType::FRAGMENT,  1, "u_texture", GFXType::SAMPLER2D, 1} };
             
             GFXShaderInfo shaderInfo;
             shaderInfo.name = "Blend Test: Quad";
             shaderInfo.stages = std::move(shaderStageList);
             shaderInfo.blocks = std::move(uniformBlockList);
-            shaderInfo.samplers = std::move(sampler);
+            shaderInfo.samplers = std::move(samplers);
             shader = device->createShader(shaderInfo);
         }
         
@@ -263,7 +256,7 @@ namespace {
             //vertex buffer
             GFXBufferInfo vertexBufferInfo = {
                 GFXBufferUsage::VERTEX,
-                GFXMemoryUsage::NONE,
+                GFXMemoryUsage::DEVICE,
                 4 * sizeof(float),
                 sizeof(vertexData),
                 GFXBufferFlagBit::NONE };
@@ -274,7 +267,7 @@ namespace {
             //index buffer
             GFXBufferInfo indexBufferInfo = {
                 GFXBufferUsage::INDEX,
-                GFXMemoryUsage::NONE,
+                GFXMemoryUsage::DEVICE,
                 sizeof(unsigned short),
                 sizeof(indices),
                 GFXBufferFlagBit::NONE
@@ -285,13 +278,14 @@ namespace {
             //uniform buffer
             GFXBufferInfo uniformBufferInfo = {
                 GFXBufferUsage::UNIFORM,
-                GFXMemoryUsage::HOST,
+                GFXMemoryUsage::DEVICE,
                 sizeof(Mat4),
                 2 * sizeof(Mat4),
                 GFXBufferFlagBit::NONE };
             
             Mat4 projection;
-            Mat4::createOrthographicOffCenter(0, device->getWidth(), device->getHeight(), 0, 0, 1000.f, &projection);
+            Mat4::createOrthographicOffCenter(0.0f, (float)device->getWidth(), (float)device->getHeight(), 0.0f, 0.0f, 1000.f, &projection);
+            TestBaseI::ModifyProjectionBasedOnDevice(projection);
             for (int i = 0; i < TOTAL_BLEND; i++) {
                 uniformBuffer[i] = device->createBuffer(uniformBufferInfo);
                 uniformBuffer[i]->update(projection.m, sizeof(Mat4), sizeof(projection));
@@ -339,7 +333,6 @@ namespace {
             };
             GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
             
-            GFXPipelineLayout* pipelineLayout[TOTAL_BLEND] = { nullptr };
             for (int i = 0; i < TOTAL_BLEND; i++) {
                 bindingLayout[i] = device->createBindingLayout(bindingLayoutInfo);
                 
@@ -360,13 +353,14 @@ namespace {
             pipelineInfo[NO_BLEND].layout = pipelineLayout[NO_BLEND];
             pipelineInfo[NO_BLEND].renderPass = device->getMainWindow()->getRenderPass();
             pipelineInfo[NO_BLEND].rasterizerState.cullMode = GFXCullMode::NONE;
+            pipelineInfo[NO_BLEND].depthStencilState.depthWrite = false;
             pipelineInfo[NO_BLEND].blendState.targets[0].blend = true;
             pipelineInfo[NO_BLEND].blendState.targets[0].blendEq = GFXBlendOp::ADD;
             pipelineInfo[NO_BLEND].blendState.targets[0].blendAlphaEq = GFXBlendOp::ADD;
             pipelineInfo[NO_BLEND].blendState.targets[0].blendSrc = GFXBlendFactor::ONE;
             pipelineInfo[NO_BLEND].blendState.targets[0].blendDst = GFXBlendFactor::ZERO;
             pipelineInfo[NO_BLEND].blendState.targets[0].blendSrcAlpha = GFXBlendFactor::ONE;
-            pipelineInfo[NO_BLEND].blendState.targets[0].blendDstAlpha = GFXBlendFactor::ZERO;
+            pipelineInfo[NO_BLEND].blendState.targets[0].blendDstAlpha = GFXBlendFactor::ONE_MINUS_SRC_ALPHA;
             pipelineState[NO_BLEND] = device->createPipelineState(pipelineInfo[NO_BLEND]);
             
             pipelineInfo[NORMAL_BLEND].primitive = GFXPrimitiveMode::TRIANGLE_LIST;
@@ -375,13 +369,14 @@ namespace {
             pipelineInfo[NORMAL_BLEND].layout = pipelineLayout[NORMAL_BLEND];
             pipelineInfo[NORMAL_BLEND].renderPass = device->getMainWindow()->getRenderPass();
             pipelineInfo[NORMAL_BLEND].rasterizerState.cullMode = GFXCullMode::NONE;
+            pipelineInfo[NORMAL_BLEND].depthStencilState.depthWrite = false;
             pipelineInfo[NORMAL_BLEND].blendState.targets[0].blend = true;
             pipelineInfo[NORMAL_BLEND].blendState.targets[0].blendEq = GFXBlendOp::ADD;
             pipelineInfo[NORMAL_BLEND].blendState.targets[0].blendAlphaEq = GFXBlendOp::ADD;
             pipelineInfo[NORMAL_BLEND].blendState.targets[0].blendSrc = GFXBlendFactor::SRC_ALPHA;
             pipelineInfo[NORMAL_BLEND].blendState.targets[0].blendDst = GFXBlendFactor::ONE_MINUS_SRC_ALPHA;
             pipelineInfo[NORMAL_BLEND].blendState.targets[0].blendSrcAlpha = GFXBlendFactor::ONE;
-            pipelineInfo[NORMAL_BLEND].blendState.targets[0].blendDstAlpha = GFXBlendFactor::ONE;
+            pipelineInfo[NORMAL_BLEND].blendState.targets[0].blendDstAlpha = GFXBlendFactor::ONE_MINUS_SRC_ALPHA;
             pipelineState[NORMAL_BLEND] = device->createPipelineState(pipelineInfo[NORMAL_BLEND]);
             
             pipelineInfo[ADDITIVE_BLEND].primitive = GFXPrimitiveMode::TRIANGLE_LIST;
@@ -390,13 +385,14 @@ namespace {
             pipelineInfo[ADDITIVE_BLEND].layout = pipelineLayout[ADDITIVE_BLEND];
             pipelineInfo[ADDITIVE_BLEND].renderPass = device->getMainWindow()->getRenderPass();
             pipelineInfo[ADDITIVE_BLEND].rasterizerState.cullMode = GFXCullMode::NONE;
+            pipelineInfo[ADDITIVE_BLEND].depthStencilState.depthWrite = false;
             pipelineInfo[ADDITIVE_BLEND].blendState.targets[0].blend = true;
             pipelineInfo[ADDITIVE_BLEND].blendState.targets[0].blendEq = GFXBlendOp::ADD;
             pipelineInfo[ADDITIVE_BLEND].blendState.targets[0].blendAlphaEq = GFXBlendOp::ADD;
             pipelineInfo[ADDITIVE_BLEND].blendState.targets[0].blendSrc = GFXBlendFactor::SRC_ALPHA;
             pipelineInfo[ADDITIVE_BLEND].blendState.targets[0].blendDst = GFXBlendFactor::ONE;
             pipelineInfo[ADDITIVE_BLEND].blendState.targets[0].blendSrcAlpha = GFXBlendFactor::ONE;
-            pipelineInfo[ADDITIVE_BLEND].blendState.targets[0].blendDstAlpha = GFXBlendFactor::ONE;
+            pipelineInfo[ADDITIVE_BLEND].blendState.targets[0].blendDstAlpha = GFXBlendFactor::ONE_MINUS_SRC_ALPHA;
             pipelineState[ADDITIVE_BLEND] = device->createPipelineState(pipelineInfo[ADDITIVE_BLEND]);
             
             pipelineInfo[SUBSTRACT_BLEND].primitive = GFXPrimitiveMode::TRIANGLE_LIST;
@@ -405,13 +401,14 @@ namespace {
             pipelineInfo[SUBSTRACT_BLEND].layout = pipelineLayout[SUBSTRACT_BLEND];
             pipelineInfo[SUBSTRACT_BLEND].renderPass = device->getMainWindow()->getRenderPass();
             pipelineInfo[SUBSTRACT_BLEND].rasterizerState.cullMode = GFXCullMode::NONE;
+            pipelineInfo[SUBSTRACT_BLEND].depthStencilState.depthWrite = false;
             pipelineInfo[SUBSTRACT_BLEND].blendState.targets[0].blend = true;
             pipelineInfo[SUBSTRACT_BLEND].blendState.targets[0].blendEq = GFXBlendOp::ADD;
             pipelineInfo[SUBSTRACT_BLEND].blendState.targets[0].blendAlphaEq = GFXBlendOp::ADD;
             pipelineInfo[SUBSTRACT_BLEND].blendState.targets[0].blendSrc = GFXBlendFactor::ZERO;
             pipelineInfo[SUBSTRACT_BLEND].blendState.targets[0].blendDst = GFXBlendFactor::ONE_MINUS_SRC_COLOR;
             pipelineInfo[SUBSTRACT_BLEND].blendState.targets[0].blendSrcAlpha = GFXBlendFactor::ONE;
-            pipelineInfo[SUBSTRACT_BLEND].blendState.targets[0].blendDstAlpha = GFXBlendFactor::ONE;
+            pipelineInfo[SUBSTRACT_BLEND].blendState.targets[0].blendDstAlpha = GFXBlendFactor::ONE_MINUS_SRC_ALPHA;
             pipelineState[SUBSTRACT_BLEND] = device->createPipelineState(pipelineInfo[SUBSTRACT_BLEND]);
             
             pipelineInfo[MULTIPLY_BLEND].primitive = GFXPrimitiveMode::TRIANGLE_LIST;
@@ -420,18 +417,15 @@ namespace {
             pipelineInfo[MULTIPLY_BLEND].layout = pipelineLayout[MULTIPLY_BLEND];
             pipelineInfo[MULTIPLY_BLEND].renderPass = device->getMainWindow()->getRenderPass();
             pipelineInfo[MULTIPLY_BLEND].rasterizerState.cullMode = GFXCullMode::NONE;
+            pipelineInfo[MULTIPLY_BLEND].depthStencilState.depthWrite = false;
             pipelineInfo[MULTIPLY_BLEND].blendState.targets[0].blend = true;
             pipelineInfo[MULTIPLY_BLEND].blendState.targets[0].blendEq = GFXBlendOp::ADD;
             pipelineInfo[MULTIPLY_BLEND].blendState.targets[0].blendAlphaEq = GFXBlendOp::ADD;
             pipelineInfo[MULTIPLY_BLEND].blendState.targets[0].blendSrc = GFXBlendFactor::ZERO;
             pipelineInfo[MULTIPLY_BLEND].blendState.targets[0].blendDst = GFXBlendFactor::SRC_COLOR;
             pipelineInfo[MULTIPLY_BLEND].blendState.targets[0].blendSrcAlpha = GFXBlendFactor::ONE;
-            pipelineInfo[MULTIPLY_BLEND].blendState.targets[0].blendDstAlpha = GFXBlendFactor::ONE;
+            pipelineInfo[MULTIPLY_BLEND].blendState.targets[0].blendDstAlpha = GFXBlendFactor::ONE_MINUS_SRC_ALPHA;
             pipelineState[MULTIPLY_BLEND] = device->createPipelineState(pipelineInfo[MULTIPLY_BLEND]);
-            
-            for (int i= 0 ; i < TOTAL_BLEND; i++) {
-                CC_SAFE_DESTROY(pipelineLayout[i]);
-            }
         }
         
         GFXDevice* device = nullptr;
@@ -444,6 +438,7 @@ namespace {
         GFXTextureView* texView = nullptr;
         GFXBuffer* uniformBuffer[TOTAL_BLEND] = { nullptr };
         GFXBindingLayout* bindingLayout[TOTAL_BLEND] = { nullptr };
+        GFXPipelineLayout* pipelineLayout[TOTAL_BLEND] = { nullptr };
         GFXPipelineState* pipelineState[TOTAL_BLEND] = { nullptr };
         
         Mat4 model;
@@ -469,7 +464,8 @@ namespace {
             CC_SAFE_DESTROY(pipelineState);
             CC_SAFE_DESTROY(pipelineLayout);
             CC_SAFE_DESTROY(bindingLayout);
-            CC_SAFE_DESTROY(uniformBuffer);
+            CC_SAFE_DESTROY(timeBuffer);
+            CC_SAFE_DESTROY(mvpBuffer);
             CC_SAFE_DESTROY(texture);
             CC_SAFE_DESTROY(sampler);
             CC_SAFE_DESTROY(texView);
@@ -487,6 +483,11 @@ namespace {
 
             using namespace metal;
 
+            struct MVP
+            {
+                mat4 mvp;
+            };
+
             struct main0_out
             {
                 float2 uv [[user(locn0)]];
@@ -498,11 +499,11 @@ namespace {
                 float2 a_position [[attribute(0)]];
             };
 
-            vertex main0_out main0(main0_in in [[stage_in]])
+            vertex main0_out main0(main0_in in [[stage_in]], constant Time& _12 [[buffer(2)]])
             {
                 main0_out out = {};
                 out.uv = (in.a_position + float2(1.0)) * 0.5;
-                out.gl_Position = float4(in.a_position, 0.0, 1.0);
+                out.gl_Position = mvp * float4(in.a_position, 0.1, 1.0);
                 return out;
             }
             )";
@@ -511,30 +512,37 @@ namespace {
             vertexShaderStage.source = R"(
             layout(location = 0) in vec2 a_position;
             layout(location = 0) out vec2 uv;
+            layout(binding = 2) uniform MVP {
+                mat4 mvp;
+            };
             void main()
             {
                 uv = (a_position + 1.0) * 0.5;
-                gl_Position = vec4(a_position, 0, 1);
+                gl_Position = mvp * vec4(a_position, 0.1, 1);
             }
             )";
     #elif defined(USE_GLES2)
             vertexShaderStage.source = R"(
             attribute vec2 a_position;
             varying vec2 uv;
+            uniform mat4 mvp;
             void main()
             {
                 uv = (a_position + 1.0) * 0.5;
-                gl_Position = vec4(a_position, 0, 1);
+                gl_Position = mvp * vec4(a_position, 0.1, 1);
             }
             )";
     #else
             vertexShaderStage.source = R"(
             in vec2 a_position;
             out vec2 uv;
+            uniform MVP {
+                mat4 mvp;
+            };
             void main()
             {
                 uv = (a_position + 1.0) * 0.5;
-                gl_Position = vec4(a_position, 0, 1);
+                gl_Position = mvp * vec4(a_position, 0.1, 1);
             }
             )";
     #endif // USE_GLES2
@@ -579,11 +587,11 @@ namespace {
     #if defined(USE_VULKAN)
             fragmentShaderStage.source = R"(
             layout(location = 0) in vec2 uv;
-            layout(binding = 0) uniform sampler2D u_texture;
-            layout(binding = 1) uniform Time
+            layout(binding = 0) uniform Time
             {
                 float u_time;
             };
+            layout(binding = 1) uniform sampler2D u_texture;
             layout(location = 0) out vec4 o_color;
             void main()
             {
@@ -629,16 +637,20 @@ namespace {
             
             shaderStageList.emplace_back(std::move(fragmentShaderStage));
             
-            GFXUniformList mvpMatrix = { { "u_time", GFXType::FLOAT, 1} };
-            GFXUniformBlockList uniformBlockList = { {GFXShaderType::FRAGMENT, 0, "Time", mvpMatrix} };
-            
-            GFXUniformSamplerList sampler = { {GFXShaderType::FRAGMENT, 1, "u_texture", GFXType::SAMPLER2D, 1} };
-            
+            GFXUniformList time = { { "u_time", GFXType::FLOAT, 1} };
+            GFXUniformList mvpMatrix = { { "mvp", GFXType::FLOAT, 1} };
+            GFXUniformBlockList uniformBlockList = {
+                {GFXShaderType::FRAGMENT, 0, "Time", time},
+                {GFXShaderType::VERTEX, 2, "MVP", mvpMatrix}
+            };
+
+            GFXUniformSamplerList samplers = { {GFXShaderType::FRAGMENT, 1, "u_texture", GFXType::SAMPLER2D, 1} };
+
             GFXShaderInfo shaderInfo;
             shaderInfo.name = "Blend Test: BigTriangle";
             shaderInfo.stages = std::move(shaderStageList);
             shaderInfo.blocks = std::move(uniformBlockList);
-            shaderInfo.samplers = std::move(sampler);
+            shaderInfo.samplers = std::move(samplers);
             shader = device->createShader(shaderInfo);
         }
         
@@ -664,11 +676,23 @@ namespace {
             //uniform buffer
             GFXBufferInfo uniformBufferInfo = {
                 GFXBufferUsage::UNIFORM,
-                GFXMemoryUsage::HOST,
+                GFXMemoryUsage::HOST | GFXMemoryUsage::DEVICE,
                 sizeof(float),
                 sizeof(float),
                 GFXBufferFlagBit::NONE };
-            uniformBuffer = device->createBuffer(uniformBufferInfo);
+            timeBuffer = device->createBuffer(uniformBufferInfo);
+
+            GFXBufferInfo mvpUBOInfo = {
+                GFXBufferUsage::UNIFORM,
+                GFXMemoryUsage::DEVICE,
+                sizeof(Mat4),
+                sizeof(Mat4),
+                GFXBufferFlagBit::NONE };
+
+            Mat4 projection; // dummy projection
+            TestBaseI::ModifyProjectionBasedOnDevice(projection);
+            mvpBuffer = device->createBuffer(mvpUBOInfo);
+            mvpBuffer->update(projection.m, 0, sizeof(projection));
         }
         
         void createInputAssembler()
@@ -707,14 +731,16 @@ namespace {
         void createPipeline()
         {
             GFXBindingList bindingList = {
-                {GFXShaderType::FRAGMENT, 0, GFXBindingType::UNIFORM_BUFFER, "Time", 1},
-                {GFXShaderType::FRAGMENT, 1, GFXBindingType::SAMPLER, "u_texture", 1}
+                { GFXShaderType::FRAGMENT, 0, GFXBindingType::UNIFORM_BUFFER, "Time", 1 },
+                { GFXShaderType::FRAGMENT, 1, GFXBindingType::SAMPLER, "u_texture", 1 },
+                { GFXShaderType::VERTEX, 2, GFXBindingType::UNIFORM_BUFFER, "MVP", 1 }
             };
             GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
             bindingLayout = device->createBindingLayout(bindingLayoutInfo);
             
-            bindingLayout->bindBuffer(0, uniformBuffer);
+            bindingLayout->bindBuffer(0, timeBuffer);
             bindingLayout->bindSampler(1, sampler);
+            bindingLayout->bindBuffer(2, mvpBuffer);
             bindingLayout->bindTextureView(1, texView);
             bindingLayout->update();
             
@@ -735,7 +761,8 @@ namespace {
         GFXDevice* device = nullptr;
         GFXShader* shader = nullptr;
         GFXBuffer* vertexBuffer = nullptr;
-        GFXBuffer* uniformBuffer = nullptr;
+        GFXBuffer* timeBuffer = nullptr;
+        GFXBuffer* mvpBuffer = nullptr;
         GFXInputAssembler* inputAssembler = nullptr;
         GFXSampler* sampler = nullptr;
         GFXBindingLayout* bindingLayout = nullptr;
@@ -745,7 +772,7 @@ namespace {
         GFXPipelineLayout* pipelineLayout = nullptr;
     };
     
-    Mat4 createModel(const Vec3& t, const Vec3& s)
+    Mat4 createModelTransform(const Vec3& t, const Vec3& s)
     {
         Mat4 model;
         model.translate(t);
@@ -786,56 +813,53 @@ void BlendTest::tick(float dt) {
         commandBuffer->beginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, std::move(std::vector<GFXColor>({clear_color})), 1.0f, 0);
         
         //draw background
-        bigTriangle->uniformBuffer->update(&_dt, 0, sizeof(_dt));
+        bigTriangle->timeBuffer->update(&_dt, 0, sizeof(_dt));
         commandBuffer->bindInputAssembler(bigTriangle->inputAssembler);
         commandBuffer->bindPipelineState(bigTriangle->pipelineState);
         commandBuffer->bindBindingLayout(bigTriangle->bindingLayout);
         commandBuffer->draw(bigTriangle->inputAssembler);
 
+        commandBuffer->bindInputAssembler(quad->inputAssembler);
+
         //draw sprite without blending
         float size = std::min(render_area.width, render_area.height) * 0.15f;
         float halfSize = size * 0.5f;
         float offsetX = 5.f + halfSize;
-        float offsetY = 5.f + halfSize;
-        quad->model = std::move(createModel(Vec3(offsetX, offsetY, 0), Vec3(size, size, 0)));
+        float offsetY = 50.f + halfSize;
+        quad->model = std::move(createModelTransform(Vec3(offsetX, offsetY, 0), Vec3(size, size, 1)));
         quad->uniformBuffer[NO_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
-        commandBuffer->bindInputAssembler(quad->inputAssembler);
         commandBuffer->bindPipelineState(quad->pipelineState[NO_BLEND]);
         commandBuffer->bindBindingLayout(quad->bindingLayout[NO_BLEND]);
         commandBuffer->draw(quad->inputAssembler);
         
         //normal
-        offsetY = offsetY + 5.f + size;
-        quad->model = std::move(createModel(cocos2d::Vec3(offsetX, offsetY, 0), cocos2d::Vec3(size, size, 0)));
+        offsetY += 5.f + size;
+        quad->model = std::move(createModelTransform(cocos2d::Vec3(offsetX, offsetY, 0), cocos2d::Vec3(size, size, 1)));
         quad->uniformBuffer[NORMAL_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
-        commandBuffer->bindInputAssembler(quad->inputAssembler);
         commandBuffer->bindPipelineState(quad->pipelineState[NORMAL_BLEND]);
         commandBuffer->bindBindingLayout(quad->bindingLayout[NORMAL_BLEND]);
         commandBuffer->draw(quad->inputAssembler);
         
         //additive
-        offsetY = offsetY + 5.f + size;
-        quad->model = std::move(createModel(cocos2d::Vec3(offsetX, offsetY, 0), cocos2d::Vec3(size, size, 0)));
+        offsetY += 5.f + size;
+        quad->model = std::move(createModelTransform(cocos2d::Vec3(offsetX, offsetY, 0), cocos2d::Vec3(size, size, 1)));
         quad->uniformBuffer[ADDITIVE_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
-        commandBuffer->bindInputAssembler(quad->inputAssembler);
         commandBuffer->bindPipelineState(quad->pipelineState[ADDITIVE_BLEND]);
         commandBuffer->bindBindingLayout(quad->bindingLayout[ADDITIVE_BLEND]);
         commandBuffer->draw(quad->inputAssembler);
         
         //substract
-        offsetY = offsetY + 5.f + size;
-        quad->model = std::move(createModel(cocos2d::Vec3(offsetX, offsetY, 0), cocos2d::Vec3(size, size, 0)));
+        offsetY += 5.f + size;
+        quad->model = std::move(createModelTransform(cocos2d::Vec3(offsetX, offsetY, 0), cocos2d::Vec3(size, size, 1)));
         quad->uniformBuffer[SUBSTRACT_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
-        commandBuffer->bindInputAssembler(quad->inputAssembler);
         commandBuffer->bindPipelineState(quad->pipelineState[SUBSTRACT_BLEND]);
         commandBuffer->bindBindingLayout(quad->bindingLayout[SUBSTRACT_BLEND]);
         commandBuffer->draw(quad->inputAssembler);
         
         //multiply
-        offsetY = offsetY + 5.f + size;
-        quad->model = std::move(createModel(cocos2d::Vec3(offsetX, offsetY, 0), cocos2d::Vec3(size, size, 0)));
+        offsetY += 5.f + size;
+        quad->model = std::move(createModelTransform(cocos2d::Vec3(offsetX, offsetY, 0), cocos2d::Vec3(size, size, 1)));
         quad->uniformBuffer[MULTIPLY_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
-        commandBuffer->bindInputAssembler(quad->inputAssembler);
         commandBuffer->bindPipelineState(quad->pipelineState[MULTIPLY_BLEND]);
         commandBuffer->bindBindingLayout(quad->bindingLayout[MULTIPLY_BLEND]);
         commandBuffer->draw(quad->inputAssembler);

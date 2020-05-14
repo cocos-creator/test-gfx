@@ -1,13 +1,4 @@
 #include "BunnyTest.h"
-
-#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
-#include "gfx-metal/GFXMTL.h"
-#else
-#include "gfx-gles2/GFXGLES2.h"
-#include "gfx-gles3/GFXGLES3.h"
-#endif
-
-#include "cocos2d.h"
 #include "BunnyData.h"
 
 NS_CC_BEGIN
@@ -258,13 +249,14 @@ void BunnyTest::createBuffers()
     //mvp matrix uniform
     GFXBufferInfo mvpMatrixInfo = {
         GFXBufferUsage::UNIFORM,
-        GFXMemoryUsage::HOST | GFXMemoryUsage::DEVICE,
+        GFXMemoryUsage::DEVICE,
         sizeof(Mat4),
         3 * sizeof(Mat4),
         GFXBufferFlagBit::NONE };
 
     Mat4 model, projection;
     Mat4::createPerspective(60.0f, 1.0f * _device->getWidth()/_device->getHeight(), 0.01f, 1000.0f, &projection);
+    TestBaseI::ModifyProjectionBasedOnDevice(projection);
     _mvpMatrix = _device->createBuffer(mvpMatrixInfo);
     _mvpMatrix->update(model.m, 0, sizeof(model));
     _mvpMatrix->update(projection.m, 2 * sizeof(Mat4), sizeof(projection));
@@ -272,7 +264,7 @@ void BunnyTest::createBuffers()
     //color uniform
     GFXBufferInfo colorInfo = {
         GFXBufferUsage::UNIFORM,
-        GFXMemoryUsage::HOST | GFXMemoryUsage::DEVICE,
+        GFXMemoryUsage::DEVICE,
         sizeof(float),
         4 * sizeof(float),
         GFXBufferFlagBit::NONE

@@ -1,14 +1,5 @@
 #include "BasicTextureTest.h"
 
-#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
-#include "gfx-metal/GFXMTL.h"
-#else
-#include "gfx-gles2/GFXGLES2.h"
-#include "gfx-gles3/GFXGLES3.h"
-#endif
-
-#include "cocos2d.h"
-
 NS_CC_BEGIN
 
 void BasicTexture::destroy()
@@ -277,20 +268,11 @@ void BasicTexture::createPipeline()
 void BasicTexture::createTexture()
 {
     auto img = new cocos2d::Image();
-    bool ret = img->initWithImageFile("uv_checker_01.jpg");
-    CCASSERT(ret, "BasicTexture load image failed");
-    
-    auto srcData = img->getData();
-    auto size = img->getWidth() * img->getHeight();
-    auto dstData = new unsigned char[size * 4];
-    for (int i = 0; i < size; i++)
-    {
-        dstData[i * 4]     = srcData[i * 3];
-        dstData[i * 4 + 1] = srcData[i * 3 + 1];
-        dstData[i * 4 + 2] = srcData[i * 3 + 2];
-        dstData[i * 4 + 3] = 255u;
-    }
-    
+    bool valid = img->initWithImageFile("uv_checker_01.jpg");
+    CCASSERT(valid, "BasicTexture load image failed");
+
+    auto data = TestBaseI::RGB2RGBA(img);
+        
     GFXTextureInfo textureInfo;
     textureInfo.usage = GFXTextureUsage::SAMPLED;
     textureInfo.format = GFXFormat::RGBA8;
@@ -307,7 +289,7 @@ void BasicTexture::createTexture()
     GFXBufferTextureCopyList regions;
     regions.push_back(std::move(textureRegion));
     
-    GFXDataArray imageBuffer = { { dstData } };
+    GFXDataArray imageBuffer = { { data } };
     _device->copyBuffersToTexture(imageBuffer, _texture, regions);
     
     //create sampler
@@ -319,7 +301,7 @@ void BasicTexture::createTexture()
     texViewInfo.format = GFXFormat::RGBA8;
     _texView = _device->createTextureView(texViewInfo);
 
-    delete dstData;
+    delete data;
 }
 
 void BasicTexture::tick(float dt) {

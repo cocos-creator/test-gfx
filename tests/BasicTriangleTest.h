@@ -2,12 +2,6 @@
 
 #include "TestBase.h"
 
-#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
-#include "MTLStd.h"
-#else
-#include "GLES2Std.h"
-#endif
-
 NS_CC_BEGIN
 
 typedef struct Vertex

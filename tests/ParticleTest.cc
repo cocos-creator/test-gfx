@@ -1,13 +1,5 @@
 #include "ParticleTest.h"
 
-#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
-#include "gfx-metal/GFXMTL.h"
-#else
-#include "gfx-gles2/GFXGLES2.h"
-#include "gfx-gles3/GFXGLES3.h"
-#endif
-
-#include "base/ccRandom.h"
 NS_CC_BEGIN
 
 namespace {
@@ -30,10 +22,11 @@ namespace {
         {
             for (uint32_t offsetX = x; offsetX < (x + width); ++offsetX)
             {
-                p = buf + (totalWidth * offsetY + offsetX) * 3;
+                p = buf + (totalWidth * offsetY + offsetX) * 4;
                 *p++ = r;
                 *p++ = g;
                 *p++ = b;
+                *p++ = 255;
             }
         }
     }
@@ -321,7 +314,7 @@ void ParticleTest::createVertexBuffer()
     //vertex buffer: _vbufferArray[MAX_QUAD_COUNT][4][VERTEX_STRIDE];
     GFXBufferInfo vertexBufferInfo = {
           GFXBufferUsage::VERTEX,
-          GFXMemoryUsage::NONE,
+          GFXMemoryUsage::DEVICE,
           VERTEX_STRIDE * sizeof(float),
           sizeof(_vbufferArray),
           GFXBufferFlagBit::NONE };
@@ -342,7 +335,7 @@ void ParticleTest::createVertexBuffer()
     }
     GFXBufferInfo indexBufferInfo = {
         GFXBufferUsage::INDEX,
-        GFXMemoryUsage::NONE,
+        GFXMemoryUsage::DEVICE,
         sizeof(uint16_t),
         sizeof(_ibufferArray),
         GFXBufferFlagBit::NONE };
@@ -359,7 +352,7 @@ void ParticleTest::createVertexBuffer()
 
     GFXBufferInfo uniformBufferInfo = {
            GFXBufferUsage::UNIFORM,
-           GFXMemoryUsage::NONE,
+           GFXMemoryUsage::DEVICE | GFXMemoryUsage::HOST,
            sizeof(Mat4),
            3 * sizeof(Mat4),
            GFXBufferFlagBit::NONE };
@@ -425,7 +418,7 @@ void ParticleTest::createTexture()
 {
     const size_t LINE_WIDHT = 128;
     const size_t LINE_HEIGHT = 128;
-    const size_t BUFFER_SIZE = LINE_WIDHT * LINE_HEIGHT * 3;
+    const size_t BUFFER_SIZE = LINE_WIDHT * LINE_HEIGHT * 4;
     uint8_t* imageData = (uint8_t*)CC_MALLOC(BUFFER_SIZE);
     fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 0, 0, 128, 128, 0xD0, 0xD0, 0xD0);
     fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 0, 0, 64, 64, 0x50, 0x50, 0x50);
@@ -435,7 +428,7 @@ void ParticleTest::createTexture()
     
     GFXTextureInfo textureInfo;
     textureInfo.usage = GFXTextureUsage::SAMPLED;
-    textureInfo.format = GFXFormat::RGB8;
+    textureInfo.format = GFXFormat::RGBA8;
     textureInfo.width = LINE_WIDHT;
     textureInfo.height = LINE_HEIGHT;
     textureInfo.flags = GFXTextureFlagBit::GEN_MIPMAP;
@@ -463,7 +456,7 @@ void ParticleTest::createTexture()
     
     GFXTextureViewInfo texViewInfo;
     texViewInfo.texture = _texture;
-    texViewInfo.format = GFXFormat::RGB8;
+    texViewInfo.format = GFXFormat::RGBA8;
     _texView = _device->createTextureView(texViewInfo);
 }
 
@@ -508,7 +501,7 @@ void ParticleTest::tick(float dt) {
             pVbuffer[offset + 5] = 1;
             pVbuffer[offset + 6] = 1;
             pVbuffer[offset + 7] = 1;
-            pVbuffer[offset + 8] = 1.0 - p.age / p.life;
+            pVbuffer[offset + 8] = 1.0f - p.age / p.life;
         }
     }
     _vertexBuffer->update(_vbufferArray, 0, sizeof(_vbufferArray));

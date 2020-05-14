@@ -75,54 +75,40 @@ void GameApp::Run()
     MSG msg;
     ZeroMemory(&msg, sizeof(MSG));
 
-    // Loop until there is a quit message from the window or the user.
-    bool done = false;
-    while(!done)
+    while(true)
     {
-        // Handle the windows messages.
-        if(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+        // Handle the windows messages, including exit & destroy
+        while(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
         {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
 
-        // If windows signals to end the application then exit out.
-        if(msg.message == WM_QUIT)
+        // If the application is paused then free some CPU 
+        // cycles to other applications and then continue on
+        // to the next frame.
+        /*
+        if( m_bPaused )
         {
-            done = true;
+        Sleep(20);
+        continue;
         }
-        else
+        */
+
+        if(!IsDeviceLost())
         {
-            // If the application is paused then free some CPU 
-            // cycles to other applications and then continue on
-            // to the next frame.
-            /*
-            if( m_bPaused )
-            {
-            Sleep(20);
-            continue;
-            }
-            */
+            __int64 currTimeStamp = 0;
+            QueryPerformanceCounter((LARGE_INTEGER*)&currTimeStamp);
+            float deltaTime = (currTimeStamp - prevTimeStamp)*secsPerCnt;
 
-            if(!IsDeviceLost())
-            {
-                __int64 currTimeStamp = 0;
-                QueryPerformanceCounter((LARGE_INTEGER*)&currTimeStamp);
-                float deltaTime = (currTimeStamp - prevTimeStamp)*secsPerCnt;
+            FrameMove(deltaTime);
+            _test->tick(deltaTime);
 
-                FrameMove(deltaTime);
-                _test->tick(deltaTime);
-
-                // Prepare for next iteration: The current time stamp becomes
-                // the previous time stamp for the next iteration.
-                prevTimeStamp = currTimeStamp;
-            }
+            // Prepare for next iteration: The current time stamp becomes
+            // the previous time stamp for the next iteration.
+            prevTimeStamp = currTimeStamp;
         }
     }
-
-    destroy();
-
-    DestroyAppWindow();
 }
 
 bool GameApp::initialize()
@@ -134,8 +120,8 @@ bool GameApp::initialize()
             //ClearScreen::create,
             //BasicTriangle::create,
             //BasicTexture::create,
-            DepthTexture::create,
-            StencilTest::create,
+            //DepthTexture::create,
+            //StencilTest::create,
 	        BlendTest::create,
             ParticleTest::create,
             BunnyTest::create,
@@ -266,12 +252,9 @@ LRESULT CALLBACK GameApp::MessageHandler(HWND hWnd, DWORD msg, WPARAM wParam, LP
     // caption bar menu.
     case WM_CLOSE:
     {
-         DestroyWindow((HWND)_windowInfo.windowHandle);
-    } break;
-    // WM_DESTROY is sent when the window is being destroyed.
-    case WM_DESTROY:
-    {
-        PostQuitMessage(0);
+        destroy();
+        DestroyAppWindow();
+        exit(0);
     } break;
     case WM_KEYDOWN:
         OnKeyDown(wParam);
@@ -367,10 +350,12 @@ bool GameApp::InitAppWindow(int screenWidth, int screenHeight, bool bFullscreen)
         posY = (GetSystemMetrics(SM_CYSCREEN) - screenHeight) / 2;
     }
 
+    RECT rect{ posX, posY, posX + screenWidth , posY + screenHeight };
+    AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, FALSE);
     // Create the window with the screen settings and get the handle to it.
     _windowInfo.windowHandle = (intptr_t)CreateWindowEx(WS_EX_APPWINDOW, app_name_.c_str(), app_name_.c_str(),
                                     WS_OVERLAPPEDWINDOW /*WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_POPUP*/,
-                                    posX, posY, screenWidth, screenHeight, 
+                                    posX, posY, rect.right - rect.left, rect.bottom - rect.top,
                                     NULL, NULL, instance_handlw_, NULL);
     _windowInfo.screen.x = posX;
     _windowInfo.screen.y = posY;

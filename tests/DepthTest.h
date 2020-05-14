@@ -1,11 +1,6 @@
 #pragma once
 
 #include "TestBase.h"
-#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
-#else
-#include "GLES2Std.h"
-#endif
-#include "math/Mat4.h"
 
 NS_CC_BEGIN
 

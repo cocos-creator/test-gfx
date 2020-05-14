@@ -1,7 +1,6 @@
 #pragma once
 
 #include "TestBase.h"
-#include "math/Mat4.h"
 
 NS_CC_BEGIN
 

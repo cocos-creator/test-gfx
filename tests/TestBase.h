@@ -1,7 +1,10 @@
 #pragma once
 #include "Core.h"
+#include "cocos2d.h"
 
+//#define MAC_USE_METAL
 #define USE_VULKAN
+//#define USE_GLES2
 
 NS_CC_BEGIN
 
@@ -51,6 +54,9 @@ public:
 
     static GFXDevice* getDevice() { return _device; }
     static void destroyGlobal();
+
+    static unsigned char* RGB2RGBA(Image* img);
+    static void ModifyProjectionBasedOnDevice(Mat4 &projection);
 
 protected:
     static GFXDevice* _device;
