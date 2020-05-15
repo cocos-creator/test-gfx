@@ -256,7 +256,7 @@ void BunnyTest::createBuffers()
 
     Mat4 model, projection;
     Mat4::createPerspective(60.0f, 1.0f * _device->getWidth()/_device->getHeight(), 0.01f, 1000.0f, &projection);
-    TestBaseI::ModifyProjectionBasedOnDevice(projection);
+    TestBaseI::modifyProjectionBasedOnDevice(projection);
     _mvpMatrix = _device->createBuffer(mvpMatrixInfo);
     _mvpMatrix->update(model.m, 0, sizeof(model));
     _mvpMatrix->update(projection.m, 2 * sizeof(Mat4), sizeof(projection));

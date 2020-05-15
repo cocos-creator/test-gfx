@@ -314,7 +314,7 @@ void ParticleTest::createVertexBuffer()
     //vertex buffer: _vbufferArray[MAX_QUAD_COUNT][4][VERTEX_STRIDE];
     GFXBufferInfo vertexBufferInfo = {
           GFXBufferUsage::VERTEX,
-          GFXMemoryUsage::DEVICE,
+          GFXMemoryUsage::DEVICE | GFXMemoryUsage::HOST,
           VERTEX_STRIDE * sizeof(float),
           sizeof(_vbufferArray),
           GFXBufferFlagBit::NONE };
@@ -352,14 +352,15 @@ void ParticleTest::createVertexBuffer()
 
     GFXBufferInfo uniformBufferInfo = {
            GFXBufferUsage::UNIFORM,
-           GFXMemoryUsage::DEVICE | GFXMemoryUsage::HOST,
+           GFXMemoryUsage::DEVICE,
            sizeof(Mat4),
            3 * sizeof(Mat4),
            GFXBufferFlagBit::NONE };
      _uniformBuffer = _device->createBuffer(uniformBufferInfo);
     Mat4 model, view, projection;
-    Mat4::createPerspective(60.0f, 1.0f * _device->getWidth() / _device->getHeight(), 0.01f, 1000.0f, &projection);
     Mat4::createLookAt(Vec3(30.0f , 20.0f, 30.0f), Vec3(0.0f, 2.5f, 0.0f), Vec3(0.0f, 1.0f, 0.f), &view);
+    Mat4::createPerspective(60.0f, 1.0f * _device->getWidth() / _device->getHeight(), 0.01f, 1000.0f, &projection);
+    TestBaseI::modifyProjectionBasedOnDevice(projection);
     _uniformBuffer->update(model.m, 0, sizeof(model));
     _uniformBuffer->update(view.m, sizeof(model), sizeof(view));
     _uniformBuffer->update(projection.m, sizeof(model) + sizeof(view), sizeof(projection));
@@ -421,7 +422,7 @@ void ParticleTest::createTexture()
     const size_t BUFFER_SIZE = LINE_WIDHT * LINE_HEIGHT * 4;
     uint8_t* imageData = (uint8_t*)CC_MALLOC(BUFFER_SIZE);
     fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 0, 0, 128, 128, 0xD0, 0xD0, 0xD0);
-    fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 0, 0, 64, 64, 0x50, 0x50, 0x50);
+    fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 0, 0,  64,  64, 0x50, 0x50, 0x50);
     fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 32, 32, 32, 32, 0xFF, 0x00, 0x00);
     fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 64, 64, 64, 64, 0x00, 0xFF, 0x00);
     fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 96, 96, 32, 32, 0x00, 0x00, 0xFF);

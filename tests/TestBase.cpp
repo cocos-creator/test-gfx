@@ -84,12 +84,18 @@ unsigned char* TestBaseI::RGB2RGBA(Image* img)
     return dstData;
 }
 
-void TestBaseI::ModifyProjectionBasedOnDevice(Mat4 &projection)
+void TestBaseI::modifyProjectionBasedOnDevice(Mat4 &projection)
 {
     Mat4 trans, scale;
     Mat4::createTranslation(0.0f, 0.0f, 1.0f + _device->getMinClipZ(), &trans);
     Mat4::createScale(1.0f, _device->getProjectionSignY(), 0.5f - 0.5f * _device->getMinClipZ(), &scale);
     projection = scale * trans * projection;
+}
+
+float TestBaseI::getViewportTopBasedOnDevice(float top, float height)
+{
+    float s = _device->getProjectionSignY();
+    return s * (top + height) + 0.5f - 0.5f * s;
 }
 
 NS_CC_END

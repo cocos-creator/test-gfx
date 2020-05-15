@@ -219,7 +219,7 @@ void BasicTexture::createVertexBuffer()
 
     GFXBufferInfo uniformBufferInfo = {
            GFXBufferUsage::UNIFORM,
-           GFXMemoryUsage::HOST | GFXMemoryUsage::DEVICE,
+           GFXMemoryUsage::DEVICE,
            sizeof(Mat4),
            sizeof(Mat4),
            GFXBufferFlagBit::NONE };
@@ -245,6 +245,7 @@ void BasicTexture::createPipeline()
     _bindingLayout = _device->createBindingLayout(bindingLayoutInfo);
     
     Mat4 mvpMatrix;
+    TestBaseI::modifyProjectionBasedOnDevice(mvpMatrix);
     _uniformBuffer->update(&mvpMatrix, 0, sizeof(mvpMatrix));
     _bindingLayout->bindBuffer(0, _uniformBuffer);
     _bindingLayout->bindSampler(1, _sampler);

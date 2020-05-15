@@ -56,7 +56,8 @@ public:
     static void destroyGlobal();
 
     static unsigned char* RGB2RGBA(Image* img);
-    static void ModifyProjectionBasedOnDevice(Mat4 &projection);
+    static void modifyProjectionBasedOnDevice(Mat4 &projection);
+    static float getViewportTopBasedOnDevice(float top, float height);
 
 protected:
     static GFXDevice* _device;

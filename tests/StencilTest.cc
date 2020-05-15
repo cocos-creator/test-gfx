@@ -245,6 +245,7 @@ void StencilTest::createBuffers()
     for (uint i = 0; i < BINDING_COUNT; i++)
     {
         _uniformBuffer[i] = _device->createBuffer(uniformBufferInfo);
+        TestBaseI::modifyProjectionBasedOnDevice(transform[i]);
         _uniformBuffer[i]->update(&transform[i], 0, sizeof(transform[i]));
     }
 }
@@ -479,7 +480,7 @@ void StencilTest::tick(float dt)
         //draw label
         GFXViewport viewport;
         viewport.left = render_area.width / 6;
-        viewport.top = render_area.height / 2;
+        viewport.top = uint(TestBaseI::getViewportTopBasedOnDevice(0.5f, 0.5f) * render_area.height);
         viewport.width = render_area.width / 3;
         viewport.height = render_area.height / 2;
         commandBuffer->setViewport(viewport);
@@ -496,7 +497,7 @@ void StencilTest::tick(float dt)
 
         //do back and front stencil test
         viewport.left = 0;
-        viewport.top = 0;
+        viewport.top = uint(TestBaseI::getViewportTopBasedOnDevice(0.0f, 0.5f) * render_area.height);
         commandBuffer->setViewport(viewport);
         commandBuffer->bindPipelineState(_pipelineState[(uint8_t)PipelineType::CAVAS]);
         commandBuffer->bindBindingLayout(_bindingLayout[0]);

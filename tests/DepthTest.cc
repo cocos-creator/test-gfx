@@ -57,9 +57,6 @@ namespace
             
             void main() {
                 v_texcoord = (a_position + 1.0) * 0.5;
-            #ifndef GL_ES
-                v_texcoord = vec2(v_texcoord.x, 1.0 - v_texcoord.y);
-            #endif
                 gl_Position = vec4(a_position, 0, 1);
             }
             )";
@@ -227,7 +224,8 @@ namespace
         void createBuffers()
         {
             //create vertex buffer
-            float vertices[] = {-1, 4, -1, -1, 4, -1};
+            float ySign = device->getProjectionSignY();
+            float vertices[] = {-1, 4 * ySign, -1, -1 * ySign, 4, -1 * ySign };
             GFXBufferInfo vertexBufferInfo = {
                 GFXBufferUsage::VERTEX,
                 GFXMemoryUsage::DEVICE,
@@ -241,7 +239,7 @@ namespace
             //create uniform buffer
             GFXBufferInfo uniformBufferInfo = {
                 GFXBufferUsage::UNIFORM,
-                GFXMemoryUsage::HOST | GFXMemoryUsage::DEVICE,
+                GFXMemoryUsage::DEVICE,
                 sizeof(float),
                 2 * sizeof(float),
                 GFXBufferFlagBit::NONE };
@@ -721,6 +719,7 @@ void DepthTexture::tick(float dt)
     _up.set(0, 1.f, 0);
     Mat4::createLookAt(_eye, _center, _up, &_view);
     Mat4::createPerspective(45.f, 1.0f * _device->getWidth()/ _device->getHeight(), 0.1f, 100.f, &_projection);
+    TestBaseI::modifyProjectionBasedOnDevice(_projection);
     
     GFXRect render_area = {0, 0, _device->getWidth(), _device->getHeight() };
     GFXColor clear_color = {1.0, 0, 0, 1.0f};
@@ -738,10 +737,10 @@ void DepthTexture::tick(float dt)
         for (uint i = 0; i < Bunny::BUNNY_NUM; i++)
         {
             _model = Mat4::IDENTITY;
-            /*if(i % 2 == 0)
+            if(i % 2 == 0)
                 _model.translate(5, 0, 0);
             else
-                _model.translate(-5, 0, 0);*/
+                _model.translate(-5, 0, 0);
             bunny->mvpUniformBuffer[i]->update(_model.m, 0, sizeof(_model));
             bunny->mvpUniformBuffer[i]->update(_view.m, sizeof(_model), sizeof(_view));
             bunny->mvpUniformBuffer[i]->update(_projection.m, sizeof(_model) + sizeof(_view), sizeof(_projection));

@@ -285,7 +285,7 @@ namespace {
             
             Mat4 projection;
             Mat4::createOrthographicOffCenter(0.0f, (float)device->getWidth(), (float)device->getHeight(), 0.0f, 0.0f, 1000.f, &projection);
-            TestBaseI::ModifyProjectionBasedOnDevice(projection);
+            TestBaseI::modifyProjectionBasedOnDevice(projection);
             for (int i = 0; i < TOTAL_BLEND; i++) {
                 uniformBuffer[i] = device->createBuffer(uniformBufferInfo);
                 uniformBuffer[i]->update(projection.m, sizeof(Mat4), sizeof(projection));
@@ -465,7 +465,6 @@ namespace {
             CC_SAFE_DESTROY(pipelineLayout);
             CC_SAFE_DESTROY(bindingLayout);
             CC_SAFE_DESTROY(timeBuffer);
-            CC_SAFE_DESTROY(mvpBuffer);
             CC_SAFE_DESTROY(texture);
             CC_SAFE_DESTROY(sampler);
             CC_SAFE_DESTROY(texView);
@@ -483,11 +482,6 @@ namespace {
 
             using namespace metal;
 
-            struct MVP
-            {
-                mat4 mvp;
-            };
-
             struct main0_out
             {
                 float2 uv [[user(locn0)]];
@@ -499,11 +493,11 @@ namespace {
                 float2 a_position [[attribute(0)]];
             };
 
-            vertex main0_out main0(main0_in in [[stage_in]], constant Time& _12 [[buffer(2)]])
+            vertex main0_out main0(main0_in in [[stage_in]])
             {
                 main0_out out = {};
                 out.uv = (in.a_position + float2(1.0)) * 0.5;
-                out.gl_Position = mvp * float4(in.a_position, 0.1, 1.0);
+                out.gl_Position = float4(in.a_position, 0.1, 1.0);
                 return out;
             }
             )";
@@ -512,37 +506,30 @@ namespace {
             vertexShaderStage.source = R"(
             layout(location = 0) in vec2 a_position;
             layout(location = 0) out vec2 uv;
-            layout(binding = 2) uniform MVP {
-                mat4 mvp;
-            };
             void main()
             {
                 uv = (a_position + 1.0) * 0.5;
-                gl_Position = mvp * vec4(a_position, 0.1, 1);
+                gl_Position = vec4(a_position, 0.1, 1);
             }
             )";
     #elif defined(USE_GLES2)
             vertexShaderStage.source = R"(
             attribute vec2 a_position;
             varying vec2 uv;
-            uniform mat4 mvp;
             void main()
             {
                 uv = (a_position + 1.0) * 0.5;
-                gl_Position = mvp * vec4(a_position, 0.1, 1);
+                gl_Position = vec4(a_position, 0.1, 1);
             }
             )";
     #else
             vertexShaderStage.source = R"(
             in vec2 a_position;
             out vec2 uv;
-            uniform MVP {
-                mat4 mvp;
-            };
             void main()
             {
                 uv = (a_position + 1.0) * 0.5;
-                gl_Position = mvp * vec4(a_position, 0.1, 1);
+                gl_Position = vec4(a_position, 0.1, 1);
             }
             )";
     #endif // USE_GLES2
@@ -638,11 +625,7 @@ namespace {
             shaderStageList.emplace_back(std::move(fragmentShaderStage));
             
             GFXUniformList time = { { "u_time", GFXType::FLOAT, 1} };
-            GFXUniformList mvpMatrix = { { "mvp", GFXType::FLOAT, 1} };
-            GFXUniformBlockList uniformBlockList = {
-                {GFXShaderType::FRAGMENT, 0, "Time", time},
-                {GFXShaderType::VERTEX, 2, "MVP", mvpMatrix}
-            };
+            GFXUniformBlockList uniformBlockList = { {GFXShaderType::FRAGMENT, 0, "Time", time} };
 
             GFXUniformSamplerList samplers = { {GFXShaderType::FRAGMENT, 1, "u_texture", GFXType::SAMPLER2D, 1} };
 
@@ -656,10 +639,11 @@ namespace {
         
         void createVertexBuffer()
         {
+            float ySign = device->getProjectionSignY();
             float vertexData[] = {
-                -1.0f,  4.0f,
-                -1.0f, -1.0f,
-                 4.0f, -1.0f
+                -1.0f,  4.0f * ySign,
+                -1.0f, -1.0f * ySign,
+                 4.0f, -1.0f * ySign
             };
             
             //vertex buffer
@@ -681,18 +665,6 @@ namespace {
                 sizeof(float),
                 GFXBufferFlagBit::NONE };
             timeBuffer = device->createBuffer(uniformBufferInfo);
-
-            GFXBufferInfo mvpUBOInfo = {
-                GFXBufferUsage::UNIFORM,
-                GFXMemoryUsage::DEVICE,
-                sizeof(Mat4),
-                sizeof(Mat4),
-                GFXBufferFlagBit::NONE };
-
-            Mat4 projection; // dummy projection
-            TestBaseI::ModifyProjectionBasedOnDevice(projection);
-            mvpBuffer = device->createBuffer(mvpUBOInfo);
-            mvpBuffer->update(projection.m, 0, sizeof(projection));
         }
         
         void createInputAssembler()
@@ -733,14 +705,12 @@ namespace {
             GFXBindingList bindingList = {
                 { GFXShaderType::FRAGMENT, 0, GFXBindingType::UNIFORM_BUFFER, "Time", 1 },
                 { GFXShaderType::FRAGMENT, 1, GFXBindingType::SAMPLER, "u_texture", 1 },
-                { GFXShaderType::VERTEX, 2, GFXBindingType::UNIFORM_BUFFER, "MVP", 1 }
             };
             GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
             bindingLayout = device->createBindingLayout(bindingLayoutInfo);
             
             bindingLayout->bindBuffer(0, timeBuffer);
             bindingLayout->bindSampler(1, sampler);
-            bindingLayout->bindBuffer(2, mvpBuffer);
             bindingLayout->bindTextureView(1, texView);
             bindingLayout->update();
             
@@ -762,7 +732,6 @@ namespace {
         GFXShader* shader = nullptr;
         GFXBuffer* vertexBuffer = nullptr;
         GFXBuffer* timeBuffer = nullptr;
-        GFXBuffer* mvpBuffer = nullptr;
         GFXInputAssembler* inputAssembler = nullptr;
         GFXSampler* sampler = nullptr;
         GFXBindingLayout* bindingLayout = nullptr;

@@ -168,10 +168,12 @@ void BasicTriangle::createShader()
 
 void BasicTriangle::createVertexBuffer()
 {
+    float ySign = _device->getProjectionSignY();
+
     float vertexData[] = {
-        -0.5f, -0.5f,
-        0.5f, -0.5f,
-        0.0f, 0.5f
+        -0.5f, -0.5f * ySign,
+        0.5f, -0.5f * ySign,
+        0.0f, 0.5f * ySign
     };
 
     GFXBufferInfo vertexBufferInfo = {
