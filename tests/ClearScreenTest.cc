@@ -21,7 +21,7 @@ void ClearScreen::tick(float dt) {
     clear_color.b = 0.0f;
     clear_color.a = 1.0f;
 
-    _device->begin();
+    _device->acquire();
 
     for (auto commandBuffer : _commandBuffers)
     {

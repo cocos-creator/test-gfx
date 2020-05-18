@@ -468,7 +468,7 @@ void StencilTest::tick(float dt)
     GFXRect render_area = { 0, 0, _device->getWidth(), _device->getHeight() };
     GFXColor clear_color = {1.0f, 0, 0, 1.0f};
 
-    _device->begin();
+    _device->acquire();
 
     for(auto commandBuffer : _commandBuffers)
     {

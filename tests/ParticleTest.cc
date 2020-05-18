@@ -507,7 +507,7 @@ void ParticleTest::tick(float dt) {
     }
     _vertexBuffer->update(_vbufferArray, 0, sizeof(_vbufferArray));
 
-    _device->begin();
+    _device->acquire();
 
     for(auto commandBuffer : _commandBuffers)
     {

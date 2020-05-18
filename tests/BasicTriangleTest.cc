@@ -240,7 +240,7 @@ void BasicTriangle::tick(float dt) {
     _bindingLayout->bindBuffer(0, _uniformBuffer);
     _bindingLayout->update();
 
-    _device->begin();
+    _device->acquire();
 
     for (auto commandBuffer : _commandBuffers)
     {

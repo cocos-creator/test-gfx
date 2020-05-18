@@ -117,11 +117,11 @@ bool GameApp::initialize()
     if (first)
     {
         _tests = {
-            //ClearScreen::create,
-            //BasicTriangle::create,
-            //BasicTexture::create,
-            //DepthTexture::create,
-            //StencilTest::create,
+            ClearScreen::create,
+            BasicTriangle::create,
+            BasicTexture::create,
+            DepthTexture::create,
+            StencilTest::create,
 	        BlendTest::create,
             ParticleTest::create,
             BunnyTest::create,
