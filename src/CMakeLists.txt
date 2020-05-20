@@ -49,9 +49,7 @@ elseif(APPLE)
     list(APPEND CC_PLATFORM_SOURCES
         ${COCOS_SRC_PATH}/platform/apple/CCFileUtils-apple.h
         
-        ${COCOS_SRC_PATH}/platform/apple/CCFileUtils-apple.mm
-        
-        
+        ${COCOS_SRC_PATH}/platform/apple/CCFileUtils-apple.mm        
     )
 endif()
 
@@ -154,8 +152,7 @@ elseif(IOS)
 elseif(ANDROID)
     add_subdirectory(android/app/src/main/cpp)
 elseif(APPLE)
-    #add_subdirectory(mac)
-    #add_compile_definitions(MAC_USE_METAL)
+    add_subdirectory(mac)
     
-    add_subdirectory(mac-gles)
+    # add_subdirectory(mac-gles)
 endif()

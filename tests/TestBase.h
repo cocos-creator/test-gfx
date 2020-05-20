@@ -2,10 +2,9 @@
 #include "Core.h"
 #include "cocos2d.h"
 
-//#define MAC_USE_METAL
-#define USE_VULKAN
+//#define USE_METAL
+//#define USE_VULKAN
 //#define USE_GLES2
-
 NS_CC_BEGIN
 
 typedef struct WindowInfo

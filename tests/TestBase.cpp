@@ -18,7 +18,7 @@ TestBaseI::TestBaseI(const WindowInfo& info)
 {
     if(_device == nullptr)
     {
-#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX && defined(MAC_USE_METAL))
+#if defined(USE_METAL)
         _device = CC_NEW(CCMTLDevice);
 #else
 
@@ -72,7 +72,7 @@ void TestBaseI::destroyGlobal()
 unsigned char* TestBaseI::RGB2RGBA(Image* img)
 {
     int size = img->getWidth() * img->getHeight();
-    unsigned char* srcData = img->getData();
+    const unsigned char* srcData = img->getData();
     unsigned char* dstData = new unsigned char[size * 4];
     for (int i = 0; i < size; i++)
     {

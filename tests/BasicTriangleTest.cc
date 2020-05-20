@@ -29,33 +29,33 @@ void BasicTriangle::createShader()
     GFXShaderStage vertexShaderStage;
     vertexShaderStage.type = GFXShaderType::VERTEX;
     
-#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX && defined(MAC_USE_METAL))
-    vertexShaderStage.source = R"(
-        #include <metal_stdlib>
-        #include <simd/simd.h>
-        
-        using namespace metal;
-        
-        struct main0_out
-        {
-            float4 gl_Position [[position]];
-        };
-        
-        struct main0_in
-        {
-            float2 a_position [[attribute(0)]];
-        };
-        
-        vertex main0_out main0(main0_in in [[stage_in]])
-        {
-            main0_out out = {};
-            out.gl_Position = float4(in.a_position, 0.0, 1.0);
-            return out;
-        }
-    )";
-#else
+//#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX && defined(USE_METAL))
+//    vertexShaderStage.source = R"(
+//        #include <metal_stdlib>
+//        #include <simd/simd.h>
+//
+//        using namespace metal;
+//
+//        struct main0_out
+//        {
+//            float4 gl_Position [[position]];
+//        };
+//
+//        struct main0_in
+//        {
+//            float2 a_position [[attribute(0)]];
+//        };
+//
+//        vertex main0_out main0(main0_in in [[stage_in]])
+//        {
+//            main0_out out = {};
+//            out.gl_Position = float4(in.a_position, 0.0, 1.0);
+//            return out;
+//        }
+//    )";
+//#else
     
-#if defined(USE_VULKAN)
+#if defined(USE_VULKAN) || defined(USE_METAL)
     vertexShaderStage.source = R"(
         layout(location = 0) in vec2 a_position;
         void main()
@@ -81,40 +81,58 @@ void BasicTriangle::createShader()
     )";
 #endif // USE_GLES2
     
-#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+//#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
     shaderStageList.emplace_back(std::move(vertexShaderStage));
 
     GFXShaderStage fragmentShaderStage;
     fragmentShaderStage.type = GFXShaderType::FRAGMENT;
     
-#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX && defined(MAC_USE_METAL))
-    fragmentShaderStage.source = R"(
-        #include <metal_stdlib>
-        #include <simd/simd.h>
-        
-        using namespace metal;
-        
-        struct Color
-        {
-            float4 u_color;
-        };
-        
-        struct main0_out
-        {
-            float4 o_color [[color(0)]];
-        };
-        
-        fragment main0_out main0(constant Color& _12 [[buffer(0)]])
-        {
-            main0_out out = {};
-            out.o_color = _12.u_color;
-            return out;
-        }
-    )";
-#else
+//#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX && defined(USE_METAL))
+//    fragmentShaderStage.source = R"(
+//    #ifdef GL_ES
+//    precision highp float;
+//    #endif
+//    layout(std140, binding = 0) uniform Color
+//    {
+//        vec4 u_color;
+//    };
+//    layout(location = 0) out vec4 o_color;
+//
+//    void main()
+//    {
+//        o_color = u_color;
+//    }
+//    )";
+//    fragmentShaderStage.source = R"(
+//        #include <metal_stdlib>
+//        #include <simd/simd.h>
+//
+//        using namespace metal;
+//
+//        struct Color
+//        {
+//            float4 u_color;
+//        };
+//
+//        struct main0_out
+//        {
+//            float4 o_color [[color(0)]];
+//        };
+//
+//        fragment main0_out main0(constant Color& _12 [[buffer(0)]])
+//        {
+//            main0_out out = {};
+//            out.o_color = _12.u_color;
+//            return out;
+//        }
+//    )";
+//#else
     
-#if defined(USE_VULKAN)
+#if defined(USE_VULKAN) || defined(USE_METAL)
     fragmentShaderStage.source = R"(
+    #ifdef GL_ES
+                precision highp float;
+    #endif
         layout(binding = 0) uniform Color
         {
             vec4 u_color;
@@ -153,7 +171,7 @@ void BasicTriangle::createShader()
     )";
 #endif // #ifdef USE_GLES2
     
-#endif // #if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+//#endif // #if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
     shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
     GFXUniformList uniformList = { { "u_color", GFXType::FLOAT4, 1 } };

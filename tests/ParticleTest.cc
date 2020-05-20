@@ -9,6 +9,7 @@ namespace {
         {  1.0f,  1.0f },
         { -1.0f,  1.0f }
     };
+
     
     void fillRectWithColor(uint8_t* buf, uint32_t totalWidth, uint32_t totalHeight, uint32_t x, uint32_t y, uint32_t width, uint32_t height, uint8_t r, uint8_t g, uint8_t b)
     {
@@ -89,52 +90,52 @@ void ParticleTest::createShader()
     GFXShaderStage vertexShaderStage;
     vertexShaderStage.type = GFXShaderType::VERTEX;
 
-#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX && defined(MAC_USE_METAL))
-    vertexShaderStage.source = R"(
-    #include <metal_stdlib>
-    #include <simd/simd.h>
-    
-    using namespace metal;
-    
-    struct MVP_Matrix
-    {
-        float4x4 u_model;
-        float4x4 u_view;
-        float4x4 u_projection;
-    };
-    
-    struct main0_out
-    {
-        float4 v_color [[user(locn0)]];
-        float2 v_texcoord [[user(locn1)]];
-        float4 gl_Position [[position]];
-        float gl_PointSize [[point_size]];
-    };
-    
-    struct main0_in
-    {
-        float2 a_quad [[attribute(0)]];
-        float3 a_position [[attribute(1)]];
-        float4 a_color [[attribute(2)]];
-    };
-    
-    vertex main0_out main0(main0_in in [[stage_in]], constant MVP_Matrix& _13 [[buffer(0)]])
-    {
-        main0_out out = {};
-        float4 pos = (_13.u_view * _13.u_model) * float4(in.a_position, 1.0);
-        float2 _39 = pos.xy + in.a_quad;
-        pos = float4(_39.x, _39.y, pos.z, pos.w);
-        pos = _13.u_projection * pos;
-        out.v_texcoord = float2((in.a_quad * (-0.5)) + float2(0.5));
-        out.gl_Position = pos;
-        out.gl_PointSize = 2.0;
-        out.v_color = in.a_color;
-        return out;
-    }
-    )";
-#else
-    
-#if defined(USE_VULKAN)
+//#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX && defined(USE_METAL))
+//    vertexShaderStage.source = R"(
+//    #include <metal_stdlib>
+//    #include <simd/simd.h>
+//
+//    using namespace metal;
+//
+//    struct MVP_Matrix
+//    {
+//        float4x4 u_model;
+//        float4x4 u_view;
+//        float4x4 u_projection;
+//    };
+//
+//    struct main0_out
+//    {
+//        float4 v_color [[user(locn0)]];
+//        float2 v_texcoord [[user(locn1)]];
+//        float4 gl_Position [[position]];
+//        float gl_PointSize [[point_size]];
+//    };
+//
+//    struct main0_in
+//    {
+//        float2 a_quad [[attribute(0)]];
+//        float3 a_position [[attribute(1)]];
+//        float4 a_color [[attribute(2)]];
+//    };
+//
+//    vertex main0_out main0(main0_in in [[stage_in]], constant MVP_Matrix& _13 [[buffer(0)]])
+//    {
+//        main0_out out = {};
+//        float4 pos = (_13.u_view * _13.u_model) * float4(in.a_position, 1.0);
+//        float2 _39 = pos.xy + in.a_quad;
+//        pos = float4(_39.x, _39.y, pos.z, pos.w);
+//        pos = _13.u_projection * pos;
+//        out.v_texcoord = float2((in.a_quad * (-0.5)) + float2(0.5));
+//        out.gl_Position = pos;
+//        out.gl_PointSize = 2.0;
+//        out.v_color = in.a_color;
+//        return out;
+//    }
+//    )";
+//#else
+//
+#if defined(USE_VULKAN) || defined(USE_METAL)
     vertexShaderStage.source = R"(
     layout(location = 0) in vec2 a_quad;
     layout(location = 1) in vec3 a_position;
@@ -213,41 +214,44 @@ void ParticleTest::createShader()
     }
     )";
 #endif // USE_GLES2
-#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+//#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
 
     shaderStageList.emplace_back(std::move(vertexShaderStage));
 
     GFXShaderStage fragmentShaderStage;
     fragmentShaderStage.type = GFXShaderType::FRAGMENT;
     
-#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX && defined(MAC_USE_METAL))
+//#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX && defined(USE_METAL))
+//    fragmentShaderStage.source = R"(
+//    #include <metal_stdlib>
+//    #include <simd/simd.h>
+//
+//    using namespace metal;
+//
+//    struct main0_out
+//    {
+//        float4 o_color [[color(0)]];
+//    };
+//
+//    struct main0_in
+//    {
+//        float4 v_color [[user(locn0)]];
+//        float2 v_texcoord [[user(locn1)]];
+//    };
+//
+//    fragment main0_out main0(main0_in in [[stage_in]], texture2d<float> u_texture [[texture(0)]], sampler u_textureSmplr [[sampler(0)]])
+//    {
+//        main0_out out = {};
+//        out.o_color = in.v_color * u_texture.sample(u_textureSmplr, in.v_texcoord);
+//        return out;
+//    }
+//    )";
+//#else
+#if defined(USE_VULKAN) || defined(USE_METAL)
     fragmentShaderStage.source = R"(
-    #include <metal_stdlib>
-    #include <simd/simd.h>
-    
-    using namespace metal;
-    
-    struct main0_out
-    {
-        float4 o_color [[color(0)]];
-    };
-    
-    struct main0_in
-    {
-        float4 v_color [[user(locn0)]];
-        float2 v_texcoord [[user(locn1)]];
-    };
-    
-    fragment main0_out main0(main0_in in [[stage_in]], texture2d<float> u_texture [[texture(0)]], sampler u_textureSmplr [[sampler(0)]])
-    {
-        main0_out out = {};
-        out.o_color = in.v_color * u_texture.sample(u_textureSmplr, in.v_texcoord);
-        return out;
-    }
-    )";
-#else
-#if defined(USE_VULKAN)
-    fragmentShaderStage.source = R"(
+    #ifdef GL_ES
+                precision highp float;
+    #endif
     layout(binding = 1) uniform sampler2D u_texture;
     
     layout(location = 0) in vec4 v_color;
@@ -288,7 +292,7 @@ void ParticleTest::createShader()
     }
     )";
 #endif // USE_GLES2
-#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+//#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
 
     shaderStageList.emplace_back(std::move(fragmentShaderStage));
 

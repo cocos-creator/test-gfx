@@ -8,7 +8,7 @@
 
 #import <MetalKit/MetalKit.h>
 
-@interface ViewController : NSViewController <MTKViewDelegate>
+@interface ViewController : NSViewController
 
 
 @end

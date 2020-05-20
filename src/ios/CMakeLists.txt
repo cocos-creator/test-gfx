@@ -11,7 +11,7 @@ message(STATUS "App: ${APP_NAME}...")
 set(INCLUDE_FILES
   ${GFX_EXTERNAL_PATH}/khronos
   ${COCOS_SRC_PATH}/renderer/core
-  ${COCOS_SRC_PATH}/renderer/gfx-gles2
+#   ${COCOS_SRC_PATH}/renderer/gfx-gles2
   ${COCOS_SRC_PATH}/renderer/gfx-gles3
   ./GFXTest
 )
@@ -67,7 +67,7 @@ target_link_libraries(${APP_NAME}
     ${PLATFORM_SPECIFIC_LIBS} 
     Core 
     GFXGLES3 
-    GFXGLES2
+    # GFXGLES2
     ${CC_EXTERNAL_LIBS}
     z
 )
