@@ -1,10 +1,12 @@
 #include "TestBase.h"
 
-#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+#if defined(USE_METAL)
 #include "gfx-metal/GFXMTL.h"
-#else
+#elif defined(USE_VULKAN)
 #include "gfx-vulkan/GFXVulkan.h"
+#elif defined(USE_GLES2)
 #include "gfx-gles2/GFXGLES2.h"
+#else
 #include "gfx-gles3/GFXGLES3.h"
 #endif
 
@@ -18,7 +20,7 @@ TestBaseI::TestBaseI(const WindowInfo& info)
 {
     if(_device == nullptr)
     {
-#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX && defined(MAC_USE_METAL))
+#if defined(USE_METAL)
         _device = CC_NEW(CCMTLDevice);
 #else
 
@@ -72,7 +74,7 @@ void TestBaseI::destroyGlobal()
 unsigned char* TestBaseI::RGB2RGBA(Image* img)
 {
     int size = img->getWidth() * img->getHeight();
-    unsigned char* srcData = img->getData();
+    const unsigned char* srcData = img->getData();
     unsigned char* dstData = new unsigned char[size * 4];
     for (int i = 0; i < size; i++)
     {
@@ -96,6 +98,11 @@ float TestBaseI::getViewportTopBasedOnDevice(float top, float height)
 {
     float s = _device->getProjectionSignY();
     return s * (top + height) + 0.5f - 0.5f * s;
+}
+
+uint TestBaseI::getMipmapLevelCounts(uint width, uint height)
+{
+    return static_cast<uint>(std::floor(std::log2(std::max(width, height)))) +1;
 }
 
 NS_CC_END

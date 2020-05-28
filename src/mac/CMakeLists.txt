@@ -15,6 +15,16 @@ set(INCLUDE_FILES
   ./GFXTest
 )
 
+if(COCOS_PLATFORM_OSX)
+  list(APPEND INCLUDE_FILES ${GFX_EXTERNAL_PATH}/pvrsdk/include)
+  set(PVRSDK_LIB_DIR ${GFX_EXTERNAL_PATH}/pvrsdk/lib/OSX_x86)
+  
+  link_libraries(
+    ${PVRSDK_LIB_DIR}/libEGL.dylib
+    ${PVRSDK_LIB_DIR}/libGLESv2.dylib
+  )
+endif()
+
 include_directories( ${INCLUDE_FILES} )
 
 # ---------------------------------------------------------------------
@@ -51,6 +61,20 @@ set(ALL_FILES
 
 if(COCOS_UNICODE)
 	add_definitions("-DUNICODE -D_UNICODE")
+endif()
+
+if(MACOSX)
+  add_definitions("-DUSE_METAL")
+  file(COPY ${COCOS_ROOT_PATH}/src/mac/CCView.h DESTINATION ${COCOS_SRC_PATH}/platform/mac)
+  file(COPY ${COCOS_ROOT_PATH}/src/mac/CCView.mm DESTINATION ${COCOS_SRC_PATH}/platform/mac)
+  list(APPEND ALL_FILES
+    ${COCOS_SRC_PATH}/platform/mac/CCView.h
+    ${COCOS_SRC_PATH}/platform/mac//CCView.mm
+    ${COCOS_SRC_PATH}/platform/mac/CCKeyCodeHelper.h
+    ${COCOS_SRC_PATH}/platform/mac/CCKeyCodeHelper.cpp
+  )
+  list(REMOVE_ITEM ALL_FILES ${COCOS_ROOT_PATH}/src/mac/CCView.h)
+  list(REMOVE_ITEM ALL_FILES ${COCOS_ROOT_PATH}/src/mac/CCView.mm)
 endif()
 
 add_executable(${APP_NAME} MACOSX_BUNDLE ${ALL_FILES})
@@ -111,5 +135,13 @@ target_compile_definitions(${APP_NAME} PUBLIC
     $<$<BOOL:${USE_GFX_RENDERER}>:USE_GFX_RENDERER=1>
     $<$<NOT:$<BOOL:${USE_V8_DEBUGGER}>>:USE_V8_DEBUGGER=0>
 )
+
+file(GLOB PVRDLLS ${PVRSDK_LIB_DIR}/*.dylib)
+foreach(PVRDLL ${PVRDLLS})
+  add_custom_command(TARGET ${APP_NAME} PRE_BUILD
+                     COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:${APP_NAME}>/../Frameworks
+                     COMMAND ${CMAKE_COMMAND} -E
+                         copy ${PVRDLL} $<TARGET_FILE_DIR:${APP_NAME}>/../Frameworks/)
+endforeach()
 
 message(STATUS "${APP_NAME} configuration completed.") 

@@ -53,40 +53,40 @@ void StencilTest::createShader()
     GFXShaderStage vertexShaderStage;
     vertexShaderStage.type = GFXShaderType::VERTEX;
     
-#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX && defined(MAC_USE_METAL))
-    vertexShaderStage.source = R"(
-    #include <metal_stdlib>
-    #include <simd/simd.h>
+//#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX && defined(USE_METAL))
+//    vertexShaderStage.source = R"(
+//    #include <metal_stdlib>
+//    #include <simd/simd.h>
+//
+//    using namespace metal;
+//
+//    struct MVP_Matrix
+//    {
+//        float4x4 u_mvpMatrix;
+//    };
+//
+//    struct main0_out
+//    {
+//        float2 v_texcoord [[user(locn0)]];
+//        float4 gl_Position [[position]];
+//    };
+//
+//    struct main0_in
+//    {
+//        float2 a_position [[attribute(0)]];
+//    };
+//
+//    vertex main0_out main0(main0_in in [[stage_in]], constant MVP_Matrix& _16 [[buffer(0)]])
+//    {
+//        main0_out out = {};
+//        out.gl_Position = _16.u_mvpMatrix * float4(in.a_position, 0.0, 1.0);
+//        out.v_texcoord = (in.a_position * 0.5) + float2(0.5);
+//        out.v_texcoord = float2(out.v_texcoord.x, 1.0 - out.v_texcoord.y);
+//        return out;
+//    })";
+//#else
     
-    using namespace metal;
-    
-    struct MVP_Matrix
-    {
-        float4x4 u_mvpMatrix;
-    };
-    
-    struct main0_out
-    {
-        float2 v_texcoord [[user(locn0)]];
-        float4 gl_Position [[position]];
-    };
-    
-    struct main0_in
-    {
-        float2 a_position [[attribute(0)]];
-    };
-    
-    vertex main0_out main0(main0_in in [[stage_in]], constant MVP_Matrix& _16 [[buffer(0)]])
-    {
-        main0_out out = {};
-        out.gl_Position = _16.u_mvpMatrix * float4(in.a_position, 0.0, 1.0);
-        out.v_texcoord = (in.a_position * 0.5) + float2(0.5);
-        out.v_texcoord = float2(out.v_texcoord.x, 1.0 - out.v_texcoord.y);
-        return out;
-    })";
-#else
-    
-#if defined(USE_VULKAN)
+#if defined(USE_VULKAN) || defined(USE_METAL)
     vertexShaderStage.source = R"(
     layout(location = 0) in vec2 a_position;
     layout(binding = 0) uniform MVP_Matrix
@@ -126,41 +126,44 @@ void StencilTest::createShader()
     }
     )";
 #endif // USE_GLES2
-#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+//#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
     
     shaderStageList.emplace_back(std::move(vertexShaderStage));
     
     GFXShaderStage fragmentShaderStage;
     fragmentShaderStage.type = GFXShaderType::FRAGMENT;
     
-#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX && defined(MAC_USE_METAL))
+//#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX && defined(USE_METAL))
+//    fragmentShaderStage.source = R"(
+//    #include <metal_stdlib>
+//    #include <simd/simd.h>
+//
+//    using namespace metal;
+//
+//    struct main0_out
+//    {
+//        float4 o_color [[color(0)]];
+//    };
+//
+//    struct main0_in
+//    {
+//        float2 v_texcoord [[user(locn0)]];
+//    };
+//
+//    fragment main0_out main0(main0_in in [[stage_in]], texture2d<float> u_texture [[texture(0)]], sampler u_textureSmplr [[sampler(0)]])
+//    {
+//        main0_out out = {};
+//        out.o_color = u_texture.sample(u_textureSmplr, in.v_texcoord);
+//        return out;
+//    }
+//    )";
+//#else
+    
+#if defined(USE_VULKAN) || defined(USE_METAL)
     fragmentShaderStage.source = R"(
-    #include <metal_stdlib>
-    #include <simd/simd.h>
-    
-    using namespace metal;
-    
-    struct main0_out
-    {
-        float4 o_color [[color(0)]];
-    };
-    
-    struct main0_in
-    {
-        float2 v_texcoord [[user(locn0)]];
-    };
-    
-    fragment main0_out main0(main0_in in [[stage_in]], texture2d<float> u_texture [[texture(0)]], sampler u_textureSmplr [[sampler(0)]])
-    {
-        main0_out out = {};
-        out.o_color = u_texture.sample(u_textureSmplr, in.v_texcoord);
-        return out;
-    }
-    )";
-#else
-    
-#if defined(USE_VULKAN)
-    fragmentShaderStage.source = R"(
+    #ifdef GL_ES
+                precision highp float;
+    #endif
     layout(binding = 1) uniform sampler2D u_texture;
     layout(location = 0) in vec2 v_texcoord;
     layout(location = 0) out vec4 o_color;
@@ -193,7 +196,7 @@ void StencilTest::createShader()
     )";
 #endif // USE_GLES2
     
-#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+//#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
     shaderStageList.emplace_back(std::move(fragmentShaderStage));
     
     GFXUniformList mvpMatrix = { { "u_mvpMatrix", GFXType::MAT4, 1} };
@@ -245,7 +248,7 @@ void StencilTest::createBuffers()
     for (uint i = 0; i < BINDING_COUNT; i++)
     {
         _uniformBuffer[i] = _device->createBuffer(uniformBufferInfo);
-        TestBaseI::modifyProjectionBasedOnDevice(transform[i]);
+//        TestBaseI::modifyProjectionBasedOnDevice(transform[i]);
         _uniformBuffer[i]->update(&transform[i], 0, sizeof(transform[i]));
     }
 }
@@ -318,8 +321,8 @@ void StencilTest::createTextures()
     GFXSamplerInfo samplerInfo;
     _sampler = _device->createSampler(samplerInfo);
 
-    delete imgData;
-    delete stencilImageData;
+    delete[] imgData;
+    delete[] stencilImageData;
 }
 
 void StencilTest::createInputAssembler()
@@ -439,6 +442,7 @@ void StencilTest::createPipelineState()
     pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].rasterizerState.cullMode = GFXCullMode::NONE;
     pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].dynamicStates.push_back(GFXDynamicState::VIEWPORT);
     _pipelineState[(uint8_t)PipelineType::BACK_STENCIL] = _device->createPipelineState(pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL]);
+    
     
     //do front stencil test
     pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].primitive = GFXPrimitiveMode::TRIANGLE_LIST;

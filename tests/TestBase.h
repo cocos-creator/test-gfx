@@ -2,10 +2,9 @@
 #include "Core.h"
 #include "cocos2d.h"
 
-//#define MAC_USE_METAL
-#define USE_VULKAN
+//#define USE_METAL
+//#define USE_VULKAN
 //#define USE_GLES2
-
 NS_CC_BEGIN
 
 typedef struct WindowInfo
@@ -58,6 +57,7 @@ public:
     static unsigned char* RGB2RGBA(Image* img);
     static void modifyProjectionBasedOnDevice(Mat4 &projection);
     static float getViewportTopBasedOnDevice(float top, float height);
+    static uint getMipmapLevelCounts(uint width, uint height);
 
 protected:
     static GFXDevice* _device;
