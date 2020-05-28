@@ -693,6 +693,7 @@ namespace {
             textureInfo.width = 128;
             textureInfo.height = 128;
             textureInfo.flags = GFXTextureFlagBit::GEN_MIPMAP;
+            textureInfo.mipLevel = TestBaseI::getMipmapLevelCounts(textureInfo.width, textureInfo.height);
             texture = ::cocos2d::createTexture(device, textureInfo, "background.png");
             
             //create sampler
@@ -706,6 +707,7 @@ namespace {
             GFXTextureViewInfo texViewInfo;
             texViewInfo.texture = texture;
             texViewInfo.format = GFXFormat::RGBA8;
+            texViewInfo.levelCount = textureInfo.mipLevel;
             texView = device->createTextureView(texViewInfo);
         }
         

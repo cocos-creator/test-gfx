@@ -437,6 +437,7 @@ void ParticleTest::createTexture()
     textureInfo.width = LINE_WIDHT;
     textureInfo.height = LINE_HEIGHT;
     textureInfo.flags = GFXTextureFlagBit::GEN_MIPMAP;
+    textureInfo.mipLevel = TestBaseI::getMipmapLevelCounts(textureInfo.width, textureInfo.height);
     _texture = _device->createTexture(textureInfo);
     
     GFXBufferTextureCopy textureRegion;
@@ -462,6 +463,7 @@ void ParticleTest::createTexture()
     GFXTextureViewInfo texViewInfo;
     texViewInfo.texture = _texture;
     texViewInfo.format = GFXFormat::RGBA8;
+    texViewInfo.levelCount = textureInfo.mipLevel;
     _texView = _device->createTextureView(texViewInfo);
 }
 
