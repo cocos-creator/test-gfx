@@ -28,8 +28,6 @@ private:
     GFXShader* _shader = nullptr;
     GFXTexture* _labelTexture = nullptr;
     GFXTexture* _uvCheckerTexture = nullptr;
-    GFXTextureView* _labelTexView = nullptr;
-    GFXTextureView* _uvCheckerTexView = nullptr;
     GFXBuffer* _vertexBuffer = nullptr;
     GFXInputAssembler* _inputAssembler = nullptr;
     GFXBuffer* _uniformBuffer[BINDING_COUNT] = { nullptr };

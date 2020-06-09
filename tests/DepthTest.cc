@@ -310,7 +310,6 @@ namespace
             CC_SAFE_DESTROY(bindingLayout);
             CC_SAFE_DESTROY(sampler);
             CC_SAFE_DESTROY(texture);
-            CC_SAFE_DESTROY(textureView);
             CC_SAFE_DESTROY(pipelineState);
             CC_SAFE_DESTROY(pipelineLayout);
             CC_SAFE_DESTROY(nearFarUniformBuffer);
@@ -324,7 +323,6 @@ namespace
         GFXBindingLayout* bindingLayout = nullptr;
         GFXSampler* sampler = nullptr;
         GFXTexture* texture = nullptr;
-        GFXTextureView* textureView = nullptr;
         GFXPipelineState* pipelineState = nullptr;
         GFXPipelineLayout* pipelineLayout = nullptr;
         uint texBindingLoc = 0;
@@ -596,7 +594,6 @@ namespace
             CC_SAFE_DESTROY(indexBuffer);
             CC_SAFE_DESTROY(sampler);
             CC_SAFE_DESTROY(depthTexture);
-            CC_SAFE_DESTROY(depthView);
             CC_SAFE_DESTROY(inputAssembler);
             for(uint i = 0; i < BUNNY_NUM; i++)
             {
@@ -613,7 +610,6 @@ namespace
         GFXBuffer* indexBuffer = nullptr;
         GFXSampler* sampler = nullptr;
         GFXTexture* depthTexture = nullptr;
-        GFXTextureView* depthView = nullptr;
         GFXInputAssembler* inputAssembler = nullptr;
         GFXBuffer* mvpUniformBuffer[BUNNY_NUM] = { nullptr, nullptr };
         GFXBindingLayout* bindingLayout[BUNNY_NUM] = { nullptr, nullptr };
@@ -670,16 +666,6 @@ bool DepthTexture::initialize()
     colorTexInfo.mipLevel = 1;
     _bunnyFBO->colorTex = _device->createTexture(colorTexInfo);
 
-    GFXTextureViewInfo colorTexViewInfo;
-    colorTexViewInfo.texture = _bunnyFBO->colorTex;
-    colorTexViewInfo.type = GFXTextureViewType::TV2D;
-    colorTexViewInfo.format = _device->getColorFormat();
-    colorTexViewInfo.baseLevel = 0;
-    colorTexViewInfo.levelCount = 1;
-    colorTexViewInfo.baseLayer = 0;
-    colorTexViewInfo.layerCount = 1;
-    _bunnyFBO->colorTexView = _device->createTextureView(colorTexViewInfo);
-
     GFXTextureInfo depthStecnilTexInfo;
     depthStecnilTexInfo.type = GFXTextureType::TEX2D;
     depthStecnilTexInfo.usage = GFXTextureUsageBit::DEPTH_STENCIL_ATTACHMENT | GFXTextureUsageBit::SAMPLED;
@@ -691,23 +677,13 @@ bool DepthTexture::initialize()
     depthStecnilTexInfo.mipLevel = 1;
     _bunnyFBO->depthStencilTex = _device->createTexture(depthStecnilTexInfo);
 
-    GFXTextureViewInfo depthStecnilTexViewInfo;
-    depthStecnilTexViewInfo.texture = _bunnyFBO->depthStencilTex;
-    depthStecnilTexViewInfo.type = GFXTextureViewType::TV2D;
-    depthStecnilTexViewInfo.format = _device->getDepthStencilFormat();
-    depthStecnilTexViewInfo.baseLevel = 0;
-    depthStecnilTexViewInfo.levelCount = 1;
-    depthStecnilTexViewInfo.baseLayer = 0;
-    depthStecnilTexViewInfo.layerCount = 1;
-    _bunnyFBO->depthStencilTexView = _device->createTextureView(depthStecnilTexViewInfo);
-
     GFXFramebufferInfo fboInfo;
     fboInfo.renderPass = _bunnyFBO->renderPass;
-    if (_bunnyFBO->colorTexView)
+    if (_bunnyFBO->colorTex)
     {
-        fboInfo.colorViews.push_back(_bunnyFBO->colorTexView);
+        fboInfo.colorTextures.push_back(_bunnyFBO->colorTex);
     }
-    fboInfo.depthStencilView = _bunnyFBO->depthStencilTexView;
+    fboInfo.depthStencilTexture = _bunnyFBO->depthStencilTex;
     fboInfo.isOffscreen = true;
     _bunnyFBO->framebuffer = _device->createFramebuffer(fboInfo);
 
@@ -758,7 +734,7 @@ void DepthTexture::tick(float dt)
         commandBuffer->endRenderPass();
         
         //render bg
-        bg->bindingLayout->bindTextureView(bg->texBindingLoc, _bunnyFBO->depthStencilTexView);
+        bg->bindingLayout->bindTexture(bg->texBindingLoc, _bunnyFBO->depthStencilTex);
         bg->bindingLayout->update();
         commandBuffer->beginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, std::move(std::vector<GFXColor>({clear_color})), 1.0f, 0);
         commandBuffer->bindInputAssembler(bg->inputAssembler);

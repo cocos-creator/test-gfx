@@ -20,8 +20,6 @@ void StencilTest::destroy()
     CC_SAFE_DESTROY(_shader);
     CC_SAFE_DESTROY(_labelTexture);
     CC_SAFE_DESTROY(_uvCheckerTexture);
-    CC_SAFE_DESTROY(_labelTexView);
-    CC_SAFE_DESTROY(_uvCheckerTexView);
     CC_SAFE_DESTROY(_vertexBuffer);
     CC_SAFE_DESTROY(_inputAssembler);
     CC_SAFE_DESTROY(_sampler);
@@ -281,11 +279,6 @@ void StencilTest::createTextures()
     GFXDataArray stencilBuffer = { { stencilImageData } };
     _device->copyBuffersToTexture(stencilBuffer, _labelTexture, regions);
     
-    GFXTextureViewInfo texViewInfo;
-    texViewInfo.texture = _labelTexture;
-    texViewInfo.format = GFXFormat::RGBA8;
-    _labelTexView = _device->createTextureView(texViewInfo);
-    
     //load uv_checker_02.jpg
     auto img = new cocos2d::Image();
     img->autorelease();
@@ -311,12 +304,7 @@ void StencilTest::createTextures()
     
     GFXDataArray uvImageBuffer = { { imgData } };
     _device->copyBuffersToTexture(uvImageBuffer, _uvCheckerTexture, uvTextureRegions);
-    
-    GFXTextureViewInfo uvTexViewInfo;
-    uvTexViewInfo.texture = _uvCheckerTexture;
-    uvTexViewInfo.format = GFXFormat::RGBA8;
-    _uvCheckerTexView = _device->createTextureView(uvTexViewInfo);
-    
+
     //create sampler
     GFXSamplerInfo samplerInfo;
     _sampler = _device->createSampler(samplerInfo);
@@ -342,13 +330,13 @@ void StencilTest::createPipelineState()
     };
     GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
    
-    GFXTextureView* texView[BINDING_COUNT] = { _labelTexView, _uvCheckerTexView };
+    GFXTexture* texView[BINDING_COUNT] = { _labelTexture, _uvCheckerTexture };
     for(uint i = 0; i < BINDING_COUNT; i++)
     {
         _bindingLayout[i] = _device->createBindingLayout(bindingLayoutInfo);
         _bindingLayout[i]->bindBuffer(0, _uniformBuffer[i]);
         _bindingLayout[i]->bindSampler(1, _sampler);
-        _bindingLayout[i]->bindTextureView(1, texView[i]);
+        _bindingLayout[i]->bindTexture(1, texView[i]);
         _bindingLayout[i]->update();
         
         GFXPipelineLayoutInfo pipelineLayoutInfo;

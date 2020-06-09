@@ -71,7 +71,6 @@ void ParticleTest::destroy()
     CC_SAFE_DESTROY(_uniformBuffer);
     CC_SAFE_DESTROY(_texture);
     CC_SAFE_DESTROY(_sampler);
-    CC_SAFE_DESTROY(_texView);
 }
 
 bool ParticleTest::initialize()
@@ -395,7 +394,7 @@ void ParticleTest::createPipeline()
     
     _bindingLayout->bindBuffer(0, _uniformBuffer);
     _bindingLayout->bindSampler(1, _sampler);
-    _bindingLayout->bindTextureView(1, _texView);
+    _bindingLayout->bindTexture(1, _texture);
     _bindingLayout->update();
 
     GFXPipelineLayoutInfo pipelineLayoutInfo;
@@ -459,12 +458,6 @@ void ParticleTest::createTexture()
     samplerInfo.addressV = GFXAddress::WRAP;
     samplerInfo.mipFilter = GFXFilter::LINEAR;
     _sampler = _device->createSampler(samplerInfo);
-    
-    GFXTextureViewInfo texViewInfo;
-    texViewInfo.texture = _texture;
-    texViewInfo.format = GFXFormat::RGBA8;
-    texViewInfo.levelCount = textureInfo.mipLevel;
-    _texView = _device->createTextureView(texViewInfo);
 }
 
 void ParticleTest::tick(float dt) {

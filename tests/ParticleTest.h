@@ -33,7 +33,6 @@ private:
     GFXBindingLayout* _bindingLayout = nullptr;
     GFXTexture* _texture = nullptr;
     GFXSampler* _sampler = nullptr;
-    GFXTextureView* _texView = nullptr;
         
 #define MAX_QUAD_COUNT 1024
 #define VERTEX_STRIDE 9
