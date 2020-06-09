@@ -146,6 +146,7 @@ include(${PROJECT_SOURCE_DIR}/tests/CMakeLists.txt)
 
 if(WIN32)
     add_definitions("-DCC_STATIC")
+    add_definitions("-DUSE_VULKAN")
     add_subdirectory(win)
 elseif(IOS)
 	add_subdirectory(ios)

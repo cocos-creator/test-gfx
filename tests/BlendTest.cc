@@ -61,7 +61,6 @@ namespace {
             CC_SAFE_DESTROY(indexBuffer);
             CC_SAFE_DESTROY(texture);
             CC_SAFE_DESTROY(sampler);
-            CC_SAFE_DESTROY(texView);
             for (int i = 0; i < TOTAL_BLEND; i++) {
                 CC_SAFE_DESTROY(pipelineState[i]);
                 CC_SAFE_DESTROY(pipelineLayout[i]);
@@ -325,10 +324,6 @@ namespace {
             samplerInfo.addressV = GFXAddress::CLAMP;
             sampler = device->createSampler(samplerInfo);
             
-            GFXTextureViewInfo texViewInfo;
-            texViewInfo.texture = texture;
-            texViewInfo.format = GFXFormat::RGBA8;
-            texView = device->createTextureView(texViewInfo);
         }
         
         void createPipeline()
@@ -344,7 +339,7 @@ namespace {
                 
                 bindingLayout[i]->bindBuffer(0, uniformBuffer[i]);
                 bindingLayout[i]->bindSampler(1, sampler);
-                bindingLayout[i]->bindTextureView(1, texView);
+                bindingLayout[i]->bindTexture(1, texture);
                 bindingLayout[i]->update();
                 
                 GFXPipelineLayoutInfo pipelineLayoutInfo;
@@ -441,7 +436,6 @@ namespace {
         GFXInputAssembler* inputAssembler = nullptr;
         GFXSampler* sampler = nullptr;
         GFXTexture* texture = nullptr;
-        GFXTextureView* texView = nullptr;
         GFXBuffer* uniformBuffer[TOTAL_BLEND] = { nullptr };
         GFXBindingLayout* bindingLayout[TOTAL_BLEND] = { nullptr };
         GFXPipelineLayout* pipelineLayout[TOTAL_BLEND] = { nullptr };
@@ -473,7 +467,6 @@ namespace {
             CC_SAFE_DESTROY(timeBuffer);
             CC_SAFE_DESTROY(texture);
             CC_SAFE_DESTROY(sampler);
-            CC_SAFE_DESTROY(texView);
         }
         
         void createShader()
@@ -704,11 +697,6 @@ namespace {
             samplerInfo.addressV = GFXAddress::WRAP;
             sampler = device->createSampler(samplerInfo);
             
-            GFXTextureViewInfo texViewInfo;
-            texViewInfo.texture = texture;
-            texViewInfo.format = GFXFormat::RGBA8;
-            texViewInfo.levelCount = textureInfo.mipLevel;
-            texView = device->createTextureView(texViewInfo);
         }
         
         void createPipeline()
@@ -722,7 +710,7 @@ namespace {
             
             bindingLayout->bindBuffer(0, timeBuffer);
             bindingLayout->bindSampler(1, sampler);
-            bindingLayout->bindTextureView(1, texView);
+            bindingLayout->bindTexture(1, texture);
             bindingLayout->update();
             
             GFXPipelineLayoutInfo pipelineLayoutInfo;
@@ -747,7 +735,6 @@ namespace {
         GFXSampler* sampler = nullptr;
         GFXBindingLayout* bindingLayout = nullptr;
         GFXTexture* texture = nullptr;
-        GFXTextureView* texView = nullptr;
         GFXPipelineState* pipelineState = nullptr;
         GFXPipelineLayout* pipelineLayout = nullptr;
     };

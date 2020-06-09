@@ -33,7 +33,6 @@ private:
     GFXTexture* _texture = nullptr;
     GFXBuffer* _image = nullptr;
     GFXSampler* _sampler = nullptr;
-    GFXTextureView* _texView = nullptr;
 };
 
 NS_CC_END

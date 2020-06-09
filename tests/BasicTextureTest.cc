@@ -14,7 +14,6 @@ void BasicTexture::destroy()
     CC_SAFE_DESTROY(_texture);
     CC_SAFE_DESTROY(_image);
     CC_SAFE_DESTROY(_sampler);
-    CC_SAFE_DESTROY(_texView);
 }
 
 bool BasicTexture::initialize()
@@ -260,7 +259,7 @@ void BasicTexture::createPipeline()
     _uniformBuffer->update(&mvpMatrix, 0, sizeof(mvpMatrix));
     _bindingLayout->bindBuffer(0, _uniformBuffer);
     _bindingLayout->bindSampler(1, _sampler);
-    _bindingLayout->bindTextureView(1, _texView);
+    _bindingLayout->bindTexture(1, _texture);
     _bindingLayout->update();
 
     GFXPipelineLayoutInfo pipelineLayoutInfo;
@@ -280,6 +279,7 @@ void BasicTexture::createPipeline()
 void BasicTexture::createTexture()
 {
     auto img = new cocos2d::Image();
+    img->autorelease();
     bool valid = img->initWithImageFile("uv_checker_01.jpg");
     CCASSERT(valid, "BasicTexture load image failed");
 
@@ -307,11 +307,6 @@ void BasicTexture::createTexture()
     //create sampler
     GFXSamplerInfo samplerInfo;
     _sampler = _device->createSampler(samplerInfo);
-    
-    GFXTextureViewInfo texViewInfo;
-    texViewInfo.texture = _texture;
-    texViewInfo.format = GFXFormat::RGBA8;
-    _texView = _device->createTextureView(texViewInfo);
 
     delete[] data;
 }
