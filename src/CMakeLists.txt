@@ -13,8 +13,6 @@ set(CC_PLATFORM_SOURCES
     ${COCOS_SRC_PATH}/platform/CCDevice.h
     ${COCOS_SRC_PATH}/platform/CCFileUtils.h
     ${COCOS_SRC_PATH}/platform/CCImage.h
-    ${COCOS_SRC_PATH}/platform/CCPlatformConfig.h
-    ${COCOS_SRC_PATH}/platform/CCPlatformDefine.h
     ${COCOS_SRC_PATH}/platform/CCSAXParser.h
 
     ${COCOS_SRC_PATH}/platform/CCFileUtils.cpp

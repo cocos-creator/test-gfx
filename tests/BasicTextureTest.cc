@@ -271,7 +271,7 @@ void BasicTexture::createPipeline()
     pipelineInfo.shader = _shader;
     pipelineInfo.inputState = { _inputAssembler->getAttributes() };
     pipelineInfo.layout = _pipelineLayout;
-    pipelineInfo.renderPass = _device->getMainWindow()->getRenderPass();
+    pipelineInfo.renderPass = _fbo->getRenderPass();
 
     _pipelineState = _device->createPipelineState(pipelineInfo);
 }
