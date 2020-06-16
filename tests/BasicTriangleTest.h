@@ -35,6 +35,8 @@ class BasicTriangle: public TestBaseI
      GFXPipelineLayout* _pipelineLayout = nullptr;
      GFXPipelineState* _pipelineState = nullptr;
      GFXInputAssembler* _inputAssembler = nullptr;
+    GFXBuffer *_indirectBuffer = nullptr;
+    GFXBuffer *_indexBuffer = nullptr;
 
      float _time = 0.0f;
 };
