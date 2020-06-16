@@ -11,6 +11,8 @@ void BasicTriangle::destroy()
     CC_SAFE_DESTROY(_bindingLayout);
     CC_SAFE_DESTROY(_pipelineLayout);
     CC_SAFE_DESTROY(_pipelineState);
+    CC_SAFE_DESTROY(_indexBuffer);
+    CC_SAFE_DESTROY(_indirectBuffer);
 }
 
 bool BasicTriangle::initialize()
@@ -191,7 +193,8 @@ void BasicTriangle::createVertexBuffer()
     float vertexData[] = {
         -0.5f, -0.5f * ySign,
         0.5f, -0.5f * ySign,
-        0.0f, 0.5f * ySign
+        0.0f, 0.5f * ySign,
+        0.5f, 0.5f * ySign,
     };
 
     GFXBufferInfo vertexBufferInfo = {
@@ -211,6 +214,33 @@ void BasicTriangle::createVertexBuffer()
            sizeof(GFXColor),
            GFXBufferFlagBit::NONE };
      _uniformBuffer = _device->createBuffer(uniformBufferInfo);
+    
+    GFXDrawInfo drawInfo;
+    drawInfo.firstIndex = 0;
+    drawInfo.indexCount = 6;
+    drawInfo.instanceCount = 1;
+    
+    GFXBufferInfo indirectBufferInfo = {
+        GFXBufferUsageBit::INDIRECT,
+        GFXMemoryUsage::DEVICE | GFXMemoryUsage::HOST,
+        sizeof(GFXDrawInfo),
+        sizeof(GFXDrawInfo),
+        GFXBufferFlagBit::NONE
+    };
+    _indirectBuffer = _device->createBuffer(indirectBufferInfo);
+    _indirectBuffer->update(&drawInfo, 0, sizeof(GFXDrawInfo));
+    
+    unsigned short indices[] = { 0,1,2,1,3,2};
+    GFXBufferInfo indexBufferInfo  = {
+        GFXBufferUsageBit::INDEX,
+        GFXMemoryUsage::DEVICE,
+        sizeof(unsigned short),
+        sizeof(indices),
+        GFXBufferFlagBit::NONE
+    };
+    _indexBuffer = _device->createBuffer(indexBufferInfo);
+    _indexBuffer->update(indices, 0, sizeof(indices));
+
 }
 
 void BasicTriangle::createInputAssembler()
@@ -219,6 +249,8 @@ void BasicTriangle::createInputAssembler()
     GFXInputAssemblerInfo inputAssemblerInfo;
     inputAssemblerInfo.attributes.emplace_back(std::move(position));
     inputAssemblerInfo.vertexBuffers.emplace_back(_vertexBuffer);
+    inputAssemblerInfo.indexBuffer = _indexBuffer;
+    inputAssemblerInfo.indirectBuffer = _indirectBuffer;
     _inputAssembler = _device->createInputAssembler(inputAssemblerInfo);
 }
 
