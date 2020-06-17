@@ -115,7 +115,8 @@ void TestBaseI::modifyProjectionBasedOnDevice(Mat4 &projection) {
 
 float TestBaseI::getViewportTopBasedOnDevice(float top, float height) {
   float s = _device->getProjectionSignY();
-  return s * (top + height) + 0.5f - 0.5f * s;
+  if (s > 0) return top;
+  else return 1.0f - top - height;
 }
 
 uint TestBaseI::getMipmapLevelCounts(uint width, uint height) {
