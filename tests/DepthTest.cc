@@ -354,9 +354,11 @@ namespace cc {
                 shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
                 gfx::GFXAttributeList attributeList = { { "a_position", gfx::GFXFormat::RGB32F, false, 0, false, 0 } };
-                gfx::GFXUniformList mvpMatrix = { {"u_model", gfx::GFXType::MAT4, 1},
-                                            {"u_view", gfx::GFXType::MAT4, 1},
-                                            {"u_projection", gfx::GFXType::MAT4, 1} };
+                gfx::GFXUniformList mvpMatrix = {
+                    {"u_model", gfx::GFXType::MAT4, 1},
+                    {"u_view", gfx::GFXType::MAT4, 1},
+                    {"u_projection", gfx::GFXType::MAT4, 1},
+                };
                 gfx::GFXUniformBlockList uniformBlockList = {
                     {gfx::GFXShaderType::VERTEX, 0, "MVP_Matrix", mvpMatrix} };
 
@@ -405,8 +407,7 @@ namespace cc {
 
             void createPipeline(gfx::GFXFramebuffer *_fbo) {
                 gfx::GFXBindingList bindingList = {
-                    {gfx::GFXShaderType::VERTEX, 0, gfx::GFXBindingType::UNIFORM_BUFFER, "MVP_Matrix",
-                     1},
+                    {gfx::GFXShaderType::VERTEX, 0, gfx::GFXBindingType::UNIFORM_BUFFER, "MVP_Matrix", 1},
                 };
                 gfx::GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
 
@@ -485,8 +486,7 @@ namespace cc {
         colorAttachment.endLayout = gfx::GFXTextureLayout::COLOR_ATTACHMENT_OPTIMAL;
         renderPassInfo.colorAttachments.emplace_back(colorAttachment);
 
-        gfx::GFXDepthStencilAttachment &depthStencilAttachment =
-            renderPassInfo.depthStencilAttachment;
+        gfx::GFXDepthStencilAttachment &depthStencilAttachment = renderPassInfo.depthStencilAttachment;
         depthStencilAttachment.format = _device->getDepthStencilFormat();
         depthStencilAttachment.depthLoadOp = gfx::GFXLoadOp::CLEAR;
         depthStencilAttachment.depthStoreOp = gfx::GFXStoreOp::STORE;
@@ -500,8 +500,7 @@ namespace cc {
 
         gfx::GFXTextureInfo colorTexInfo;
         colorTexInfo.type = gfx::GFXTextureType::TEX2D;
-        colorTexInfo.usage =
-            gfx::GFXTextureUsageBit::COLOR_ATTACHMENT | gfx::GFXTextureUsageBit::SAMPLED;
+        colorTexInfo.usage = gfx::GFXTextureUsageBit::COLOR_ATTACHMENT | gfx::GFXTextureUsageBit::SAMPLED;
         colorTexInfo.format = _device->getColorFormat();
         colorTexInfo.width = _device->getWidth();
         colorTexInfo.height = _device->getHeight();
@@ -512,8 +511,7 @@ namespace cc {
 
         gfx::GFXTextureInfo depthStecnilTexInfo;
         depthStecnilTexInfo.type = gfx::GFXTextureType::TEX2D;
-        depthStecnilTexInfo.usage = gfx::GFXTextureUsageBit::DEPTH_STENCIL_ATTACHMENT |
-            gfx::GFXTextureUsageBit::SAMPLED;
+        depthStecnilTexInfo.usage = gfx::GFXTextureUsageBit::DEPTH_STENCIL_ATTACHMENT | gfx::GFXTextureUsageBit::SAMPLED;
         depthStecnilTexInfo.format = _device->getDepthStencilFormat();
         depthStecnilTexInfo.width = _device->getWidth();
         depthStecnilTexInfo.height = _device->getHeight();
@@ -524,16 +522,40 @@ namespace cc {
 
         gfx::GFXFramebufferInfo fboInfo;
         fboInfo.renderPass = _bunnyFBO->renderPass;
-        if (_bunnyFBO->colorTex) {
-            fboInfo.colorTextures.push_back(_bunnyFBO->colorTex);
-        }
+        fboInfo.colorTextures.push_back(_bunnyFBO->colorTex);
         fboInfo.depthStencilTexture = _bunnyFBO->depthStencilTex;
         fboInfo.isOffscreen = true;
         _bunnyFBO->framebuffer = _device->createFramebuffer(fboInfo);
 
         bunny = CC_NEW(Bunny(_device, _bunnyFBO->framebuffer));
         bg = CC_NEW(BigTriangle(_device, _fbo));
+
+        bg->bindingLayout->bindTexture(bg->texBindingLoc, _bunnyFBO->depthStencilTex);
+        bg->bindingLayout->update();
+
         return true;
+    }
+
+    void DepthTexture::resize(uint width, uint height) {
+        TestBaseI::resize(width, height);
+
+        _bunnyFBO->colorTex->resize(width, height);
+        _bunnyFBO->depthStencilTex->resize(width, height);
+
+        gfx::GFXFramebufferInfo fboInfo;
+        fboInfo.renderPass = _bunnyFBO->renderPass;
+        fboInfo.colorTextures.push_back(_bunnyFBO->colorTex);
+        fboInfo.depthStencilTexture = _bunnyFBO->depthStencilTex;
+        fboInfo.isOffscreen = true;
+
+        _bunnyFBO->framebuffer->destroy();
+        _bunnyFBO->framebuffer->initialize(fboInfo);
+        
+        // TODO: this hack works around binding update issue in vulkan backend
+        // can be removed after binding layout refactor (#3591)
+        bg->bindingLayout->bindTexture(bg->texBindingLoc, nullptr);
+        bg->bindingLayout->bindTexture(bg->texBindingLoc, _bunnyFBO->depthStencilTex);
+        bg->bindingLayout->update();
     }
 
     void DepthTexture::tick(float dt) {
@@ -557,8 +579,7 @@ namespace cc {
         commandBuffer->begin();
 
         // render bunny
-        commandBuffer->beginRenderPass(
-            _bunnyFBO->framebuffer, render_area, gfx::GFXClearFlagBit::DEPTH,
+        commandBuffer->beginRenderPass(_bunnyFBO->framebuffer, render_area, gfx::GFXClearFlagBit::DEPTH,
             std::move(std::vector<gfx::GFXColor>({ clear_color })), 1.0f, 0);
         commandBuffer->bindPipelineState(bunny->pipelineState);
         commandBuffer->bindInputAssembler(bunny->inputAssembler);
@@ -569,10 +590,8 @@ namespace cc {
             else
                 _model.translate(-5, 0, 0);
             bunny->mvpUniformBuffer[i]->update(_model.m, 0, sizeof(_model));
-            bunny->mvpUniformBuffer[i]->update(_view.m, sizeof(_model),
-                sizeof(_view));
-            bunny->mvpUniformBuffer[i]->update(
-                _projection.m, sizeof(_model) + sizeof(_view), sizeof(_projection));
+            bunny->mvpUniformBuffer[i]->update(_view.m, sizeof(_model), sizeof(_view));
+            bunny->mvpUniformBuffer[i]->update(_projection.m, sizeof(_model) + sizeof(_view), sizeof(_projection));
             bunny->bindingLayout[i]->update();
 
             commandBuffer->bindBindingLayout(bunny->bindingLayout[i]);
@@ -581,11 +600,7 @@ namespace cc {
         commandBuffer->endRenderPass();
 
         // render bg
-        bg->bindingLayout->bindTexture(bg->texBindingLoc,
-            _bunnyFBO->depthStencilTex);
-        bg->bindingLayout->update();
-        commandBuffer->beginRenderPass(
-            _fbo, render_area, gfx::GFXClearFlagBit::ALL,
+        commandBuffer->beginRenderPass(_fbo, render_area, gfx::GFXClearFlagBit::ALL,
             std::move(std::vector<gfx::GFXColor>({ clear_color })), 1.0f, 0);
         commandBuffer->bindInputAssembler(bg->inputAssembler);
         commandBuffer->bindPipelineState(bg->pipelineState);

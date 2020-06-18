@@ -12,9 +12,10 @@ public:
     ~DepthTexture() = default;
 
 public:
-     virtual void tick(float dt) override;
      virtual bool initialize() override;
      virtual void destroy() override;
+     virtual void tick(float dt) override;
+     virtual void resize(uint width, uint height) override;
 
 private:
     Framebuffer* _bunnyFBO;

@@ -33,6 +33,7 @@ namespace cc {
         _windowInfo.screen.height = 768;
         is_paused_ = false;
         is_device_inited_ = false;
+        _minimized = false;
         std::vector<std::string> path = { "Resources" };
         FileUtils::getInstance()->setSearchPaths(path);
     }
@@ -107,9 +108,9 @@ namespace cc {
         static bool first = true;
         if (first) {
             _tests = {
-                ClearScreen::create,
-                BasicTriangle::create,
-                BasicTexture::create,
+                //ClearScreen::create,
+                //BasicTriangle::create,
+                //BasicTexture::create,
                 DepthTexture::create,
                 StencilTest::create,
                 BlendTest::create,
@@ -131,7 +132,13 @@ namespace cc {
     }
 
     void GameApp::resize(uint width, uint height) {
-        TestBaseI::getDevice()->resize(width, height);
+        if (!width || !height) {
+            _minimized = true;
+            return;
+        }
+
+        _minimized = false;
+        _test->resize(width, height);
     }
 
     void GameApp::OnKeyDown(WPARAM keyCode) {
@@ -260,7 +267,7 @@ namespace cc {
     }
 
     bool GameApp::IsDeviceLost() {
-        return false;
+        return _minimized;
     }
 
     bool GameApp::InitAppWindow(int screenWidth, int screenHeight, bool bFullscreen) {

@@ -42,11 +42,12 @@ namespace cc {
     class TestBaseI : public gfx::Object {
     public:
         TestBaseI(const WindowInfo &info);
-        virtual void tick(float dt) = 0;
+        virtual ~TestBaseI() = default;
 
         virtual bool initialize() { return true; }
         virtual void destroy() {}
-        virtual ~TestBaseI() = default;
+        virtual void tick(float dt) = 0;
+        virtual void resize(uint width, uint height) { _device->resize(width, height); }
 
         static gfx::GFXDevice *getDevice() { return _device; }
         static void destroyGlobal();
