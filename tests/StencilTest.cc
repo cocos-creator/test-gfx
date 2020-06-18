@@ -45,40 +45,6 @@ namespace cc {
         gfx::GFXShaderStage vertexShaderStage;
         vertexShaderStage.type = gfx::GFXShaderType::VERTEX;
 
-        //#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX && defined(USE_METAL))
-        //    vertexShaderStage.source = R"(
-        //    #include <metal_stdlib>
-        //    #include <simd/simd.h>
-        //
-        //    using namespace metal;
-        //
-        //    struct MVP_Matrix
-        //    {
-        //        float4x4 u_mvpMatrix;
-        //    };
-        //
-        //    struct main0_out
-        //    {
-        //        float2 v_texcoord [[user(locn0)]];
-        //        float4 gl_Position [[position]];
-        //    };
-        //
-        //    struct main0_in
-        //    {
-        //        float2 a_position [[attribute(0)]];
-        //    };
-        //
-        //    vertex main0_out main0(main0_in in [[stage_in]], constant MVP_Matrix&
-        //    _16 [[buffer(0)]])
-        //    {
-        //        main0_out out = {};
-        //        out.gl_Position = _16.u_mvpMatrix * float4(in.a_position, 0.0, 1.0);
-        //        out.v_texcoord = (in.a_position * 0.5) + float2(0.5);
-        //        out.v_texcoord = float2(out.v_texcoord.x, 1.0 - out.v_texcoord.y);
-        //        return out;
-        //    })";
-        //#else
-
 #if defined(USE_VULKAN) || defined(USE_METAL)
         vertexShaderStage.source = R"(
     layout(location = 0) in vec2 a_position;
@@ -119,39 +85,11 @@ namespace cc {
     }
     )";
 #endif // USE_GLES2
-        //#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
 
         shaderStageList.emplace_back(std::move(vertexShaderStage));
 
         gfx::GFXShaderStage fragmentShaderStage;
         fragmentShaderStage.type = gfx::GFXShaderType::FRAGMENT;
-
-        //#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX && defined(USE_METAL))
-        //    fragmentShaderStage.source = R"(
-        //    #include <metal_stdlib>
-        //    #include <simd/simd.h>
-        //
-        //    using namespace metal;
-        //
-        //    struct main0_out
-        //    {
-        //        float4 o_color [[color(0)]];
-        //    };
-        //
-        //    struct main0_in
-        //    {
-        //        float2 v_texcoord [[user(locn0)]];
-        //    };
-        //
-        //    fragment main0_out main0(main0_in in [[stage_in]], texture2d<float>
-        //    u_texture [[texture(0)]], sampler u_textureSmplr [[sampler(0)]])
-        //    {
-        //        main0_out out = {};
-        //        out.o_color = u_texture.sample(u_textureSmplr, in.v_texcoord);
-        //        return out;
-        //    }
-        //    )";
-        //#else
 
 #if defined(USE_VULKAN) || defined(USE_METAL)
         fragmentShaderStage.source = R"(
@@ -190,7 +128,6 @@ namespace cc {
     )";
 #endif // USE_GLES2
 
-        //#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
         shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
         gfx::GFXAttributeList attributeList = { { "a_position", gfx::GFXFormat::RG32F, false, 0, false, 0 } };

@@ -69,41 +69,6 @@ namespace cc {
                 gfx::GFXShaderStage vertexShaderStage;
                 vertexShaderStage.type = gfx::GFXShaderType::VERTEX;
 
-                //#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
-                //            vertexShaderStage.source = R"(
-                //            #include <metal_stdlib>
-                //            #include <simd/simd.h>
-                //
-                //            using namespace metal;
-                //
-                //            struct MVP_Matrix
-                //            {
-                //                float4x4 u_model;
-                //                float4x4 u_projection;
-                //            };
-                //
-                //            struct main0_out
-                //            {
-                //                float2 uv [[user(locn0)]];
-                //                float4 gl_Position [[position]];
-                //            };
-                //
-                //            struct main0_in
-                //            {
-                //                float2 a_position [[attribute(0)]];
-                //                float2 a_uv [[attribute(1)]];
-                //            };
-                //
-                //            vertex main0_out main0(main0_in in [[stage_in]], constant
-                //            MVP_Matrix& _22 [[buffer(0)]])
-                //            {
-                //                main0_out out = {};
-                //                out.uv = in.a_uv;
-                //                out.gl_Position = (_22.u_projection * _22.u_model) *
-                //                float4(in.a_position, 0.0, 1.0); return out;
-                //            }
-                //            )";
-                //#else
 #if defined(USE_VULKAN) || defined(USE_METAL)
                 vertexShaderStage.source = R"(
             #ifdef GL_ES
@@ -151,39 +116,12 @@ namespace cc {
             }
             )";
 #endif // USE_GLES2
-                //#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
 
                 shaderStageList.emplace_back(std::move(vertexShaderStage));
 
                 gfx::GFXShaderStage fragmentShaderStage;
                 fragmentShaderStage.type = gfx::GFXShaderType::FRAGMENT;
-                //#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
-                //            fragmentShaderStage.source = R"(
-                //            #include <metal_stdlib>
-                //            #include <simd/simd.h>
-                //
-                //            using namespace metal;
-                //
-                //            struct main0_out
-                //            {
-                //                float4 o_color [[color(0)]];
-                //            };
-                //
-                //            struct main0_in
-                //            {
-                //                float2 uv [[user(locn0)]];
-                //            };
-                //
-                //            fragment main0_out main0(main0_in in [[stage_in]],
-                //            texture2d<float> u_texture [[texture(0)]], sampler
-                //            u_textureSmplr [[sampler(0)]])
-                //            {
-                //                main0_out out = {};
-                //                out.o_color = u_texture.sample(u_textureSmplr, in.uv);
-                //                return out;
-                //            }
-                //            )";
-                //#else
+
 #if defined(USE_VULKAN) || defined(USE_METAL)
                 fragmentShaderStage.source = R"(
             #ifdef GL_ES
@@ -224,7 +162,6 @@ namespace cc {
             }
             )";
 #endif // USE_GLES2
-                //#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
 
                 shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
@@ -489,33 +426,7 @@ namespace cc {
                 gfx::GFXShaderStageList shaderStageList;
                 gfx::GFXShaderStage vertexShaderStage;
                 vertexShaderStage.type = gfx::GFXShaderType::VERTEX;
-                //#if(CC_PLATFORM == CC_PLATFORM_MAC_OSX)
-                //            vertexShaderStage.source = R"(
-                //            #include <metal_stdlib>
-                //            #include <simd/simd.h>
-                //
-                //            using namespace metal;
-                //
-                //            struct main0_out
-                //            {
-                //                float2 uv [[user(locn0)]];
-                //                float4 gl_Position [[position]];
-                //            };
-                //
-                //            struct main0_in
-                //            {
-                //                float2 a_position [[attribute(0)]];
-                //            };
-                //
-                //            vertex main0_out main0(main0_in in [[stage_in]])
-                //            {
-                //                main0_out out = {};
-                //                out.uv = (in.a_position + float2(1.0)) * 0.5;
-                //                out.gl_Position = float4(in.a_position, 0.1, 1.0);
-                //                return out;
-                //            }
-                //            )";
-                //#else
+
 #if defined(USE_VULKAN) | defined(USE_METAL)
                 vertexShaderStage.source = R"(
             layout(location = 0) in vec2 a_position;
@@ -547,47 +458,12 @@ namespace cc {
             }
             )";
 #endif // USE_GLES2
-                //#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX
 
                 shaderStageList.emplace_back(std::move(vertexShaderStage));
 
                 gfx::GFXShaderStage fragmentShaderStage;
                 fragmentShaderStage.type = gfx::GFXShaderType::FRAGMENT;
 
-                //#if(CC_PLATFORM == CC_PLATFORM_MAC_OSX)
-                //            fragmentShaderStage.source = R"(
-                //            #include <metal_stdlib>
-                //            #include <simd/simd.h>
-                //
-                //            using namespace metal;
-                //
-                //            struct Time
-                //            {
-                //                float u_time;
-                //            };
-                //
-                //            struct main0_out
-                //            {
-                //                float4 o_color [[color(0)]];
-                //            };
-                //
-                //            struct main0_in
-                //            {
-                //                float2 uv [[user(locn0)]];
-                //            };
-                //
-                //            fragment main0_out main0(main0_in in [[stage_in]], constant
-                //            Time& _12 [[buffer(0)]], texture2d<float> u_texture
-                //            [[texture(0)]], sampler u_textureSmplr [[sampler(0)]])
-                //            {
-                //                main0_out out = {};
-                //                float2 offset = float2(_12.u_time *
-                //                (-0.00999999977648258209228515625)); out.o_color =
-                //                u_texture.sample(u_textureSmplr, ((in.uv + offset)
-                //                * 20.0)); return out;
-                //            }
-                //            )";
-                //#else
 #if defined(USE_VULKAN) | defined(USE_METAL)
                 fragmentShaderStage.source = R"(
             #ifdef GL_ES
@@ -640,7 +516,6 @@ namespace cc {
             }
             )";
 #endif // USE_GLES2
-                //#endif //(CC_PLATFORM == CC_PLATFORM_MAC_OSX)
 
                 shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
