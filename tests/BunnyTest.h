@@ -2,7 +2,7 @@
 
 #include "TestBase.h"
 
-NS_CC_BEGIN
+namespace cc {
 
 class BunnyTest: public TestBaseI
 {
@@ -22,18 +22,18 @@ private:
     void createInputAssembler();
     void createPipelineState();
     
-    GFXShader* _shader = nullptr;
-    GFXBuffer* _vertexBuffer = nullptr;
-    GFXBuffer* _indexBuffer = nullptr;
-    GFXBuffer* _mvpMatrix = nullptr;
-    GFXBuffer* _color = nullptr;
-    GFXBindingLayout* _bindingLayout = nullptr;
-    GFXInputAssembler* _inputAssembler = nullptr;
-    GFXPipelineState* _pipelineState = nullptr;
-    GFXPipelineLayout* _pipelineLayout = nullptr;
+    gfx::GFXShader* _shader = nullptr;
+    gfx::GFXBuffer* _vertexBuffer = nullptr;
+    gfx::GFXBuffer* _indexBuffer = nullptr;
+    gfx::GFXBuffer* _mvpMatrix = nullptr;
+    gfx::GFXBuffer* _color = nullptr;
+    gfx::GFXBindingLayout* _bindingLayout = nullptr;
+    gfx::GFXInputAssembler* _inputAssembler = nullptr;
+    gfx::GFXPipelineState* _pipelineState = nullptr;
+    gfx::GFXPipelineLayout* _pipelineLayout = nullptr;
     
     Mat4 _view;
     float _dt = 0.0f;
 };
 
-NS_CC_END
+} // namespace cc

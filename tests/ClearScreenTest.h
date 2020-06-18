@@ -2,7 +2,7 @@
 
 #include "TestBase.h"
 
-NS_CC_BEGIN
+namespace cc {
 
 class ClearScreen: public TestBaseI
 {
@@ -20,4 +20,4 @@ class ClearScreen: public TestBaseI
      float _time = 0.0f;
 };
 
-NS_CC_END
+} // namespace cc

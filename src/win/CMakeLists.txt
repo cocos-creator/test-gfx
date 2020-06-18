@@ -22,11 +22,11 @@ file(GLOB_RECURSE HEADER_FILES *.h)
 file(GLOB_RECURSE SOURCE_CPP_FILES *.cpp *.cc)
 file(GLOB_RECURSE SOURCE_C_FILES *.c)
 
-set(ALL_FILES 
-    ${HEADER_FILES} 
-    ${SOURCE_CPP_FILES} 
-    ${SOURCE_C_FILES} 
-    ${GFX_TESTCASE_HEADER} 
+set(ALL_FILES
+    ${HEADER_FILES}
+    ${SOURCE_CPP_FILES}
+    ${SOURCE_C_FILES}
+    ${GFX_TESTCASE_HEADER}
     ${GFX_TESTCASE_SOURCE}
     ${CC_PLATFORM_SOURCES}
     ${CC_EXTERNAL_SROUCES}
@@ -63,8 +63,8 @@ foreach(PVRDLL ${PVRDLLS})
                          copy ${PVRDLL} $<TARGET_FILE_DIR:${TARGET_NAME}>)
 endforeach()
 
-target_include_directories(${TARGET_NAME} PUBLIC 
-    ${PROJECT_SOURCE_DIR}/src/win 
+target_include_directories(${TARGET_NAME} PUBLIC
+    ${PROJECT_SOURCE_DIR}/src/win
     ${PROJECT_SOURCE_DIR}
     ${INCLUDE_FILES}
     ${COCOS_EXTERNAL_PATH}/sources
@@ -72,13 +72,13 @@ target_include_directories(${TARGET_NAME} PUBLIC
     ${COCOS_SRC_PATH}/platform
 )
 
-target_link_libraries(${TARGET_NAME} 
-  Core 
-  GFXGLES2 
+target_link_libraries(${TARGET_NAME}
+  Core
+  GFXGLES2
   GFXGLES3
   GFXVulkan
   ${CC_EXTERNAL_LIBS}
-) 
+)
 
 include(CocosBuildHelpers)
 if(LINUX OR WINDOWS)
@@ -94,8 +94,8 @@ source_group(TREE ${COCOS_SRC_PATH}/math PREFIX "Header Files/math" FILES ${CC_M
 source_group(TREE ${COCOS_SRC_PATH}/math PREFIX "Source Files/math" FILES ${CC_MATH_SOURCES})
 source_group(TREE ${COCOS_EXTERNAL_PATH}/sources PREFIX "Header Files/external" FILES ${CC_EXTERNAL_SROUCES})
 
-message(STATUS "${TARGET_NAME} configuration completed.") 
+message(STATUS "${TARGET_NAME} configuration completed.")
 
-target_compile_definitions(${TARGET_NAME} PUBLIC 
+target_compile_definitions(${TARGET_NAME} PUBLIC
     $<$<CONFIG:Debug>:COCOS2D_DEBUG=1>
 )

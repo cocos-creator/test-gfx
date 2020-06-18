@@ -1,71 +1,68 @@
 #include "BasicTextureTest.h"
 
-NS_CC_BEGIN
+namespace cc {
 
-void BasicTexture::destroy()
-{
-    CC_SAFE_DESTROY(_shader);
-    CC_SAFE_DESTROY(_vertexBuffer);
-    CC_SAFE_DESTROY(_inputAssembler);
-    CC_SAFE_DESTROY(_bindingLayout);
-    CC_SAFE_DESTROY(_pipelineLayout);
-    CC_SAFE_DESTROY(_pipelineState);
-    CC_SAFE_DESTROY(_uniformBuffer);
-    CC_SAFE_DESTROY(_texture);
-    CC_SAFE_DESTROY(_image);
-    CC_SAFE_DESTROY(_sampler);
-}
+    void BasicTexture::destroy() {
+        CC_SAFE_DESTROY(_shader);
+        CC_SAFE_DESTROY(_vertexBuffer);
+        CC_SAFE_DESTROY(_inputAssembler);
+        CC_SAFE_DESTROY(_bindingLayout);
+        CC_SAFE_DESTROY(_pipelineLayout);
+        CC_SAFE_DESTROY(_pipelineState);
+        CC_SAFE_DESTROY(_uniformBuffer);
+        CC_SAFE_DESTROY(_texture);
+        CC_SAFE_DESTROY(_image);
+        CC_SAFE_DESTROY(_sampler);
+    }
 
-bool BasicTexture::initialize()
-{
-    createShader();
-    createVertexBuffer();
-    createInputAssembler();
-    createTexture();
-    createPipeline();
-    return true;
-}
+    bool BasicTexture::initialize() {
+        createShader();
+        createVertexBuffer();
+        createInputAssembler();
+        createTexture();
+        createPipeline();
+        return true;
+    }
 
-void BasicTexture::createShader()
-{
-    GFXShaderStageList shaderStageList;
-    GFXShaderStage vertexShaderStage;
-    vertexShaderStage.type = GFXShaderType::VERTEX;
-//#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX && defined(USE_METAL))
-//    vertexShaderStage.source = R"(#include <metal_stdlib>
-//    #include <simd/simd.h>
-//
-//    using namespace metal;
-//
-//    struct MVP_Matrix
-//    {
-//        float4x4 u_mvpMatrix;
-//    };
-//
-//    struct main0_out
-//    {
-//        float2 texcoord [[user(locn0)]];
-//        float4 gl_Position [[position]];
-//    };
-//
-//    struct main0_in
-//    {
-//        float2 a_position [[attribute(0)]];
-//    };
-//
-//    vertex main0_out main0(main0_in in [[stage_in]], constant MVP_Matrix& _16 [[buffer(0)]])
-//    {
-//        main0_out out = {};
-//        out.gl_Position = _16.u_mvpMatrix * float4(in.a_position, 0.0, 1.0);
-//        out.texcoord = (in.a_position * 0.5) + float2(0.5);
-//        out.texcoord = float2(out.texcoord.x, 1.0 - out.texcoord.y);
-//        return out;
-//    })";
-//
-//#else
-    
+    void BasicTexture::createShader() {
+        gfx::GFXShaderStageList shaderStageList;
+        gfx::GFXShaderStage vertexShaderStage;
+        vertexShaderStage.type = gfx::GFXShaderType::VERTEX;
+        //#if (CC_PLATFORM == CC_PLATFORM_MAC_OSX && defined(USE_METAL))
+        //    vertexShaderStage.source = R"(#include <metal_stdlib>
+        //    #include <simd/simd.h>
+        //
+        //    using namespace metal;
+        //
+        //    struct MVP_Matrix
+        //    {
+        //        float4x4 u_mvpMatrix;
+        //    };
+        //
+        //    struct main0_out
+        //    {
+        //        float2 texcoord [[user(locn0)]];
+        //        float4 gl_Position [[position]];
+        //    };
+        //
+        //    struct main0_in
+        //    {
+        //        float2 a_position [[attribute(0)]];
+        //    };
+        //
+        //    vertex main0_out main0(main0_in in [[stage_in]], constant MVP_Matrix& _16 [[buffer(0)]])
+        //    {
+        //        main0_out out = {};
+        //        out.gl_Position = _16.u_mvpMatrix * float4(in.a_position, 0.0, 1.0);
+        //        out.texcoord = (in.a_position * 0.5) + float2(0.5);
+        //        out.texcoord = float2(out.texcoord.x, 1.0 - out.texcoord.y);
+        //        return out;
+        //    })";
+        //
+        //#else
+
 #if defined(USE_VULKAN) || defined(USE_METAL)
-    vertexShaderStage.source = R"(
+        vertexShaderStage.source = R"(
     layout(location = 0) in vec2 a_position;
     layout(location = 0) out vec2 texcoord;
     layout(binding = 0) uniform MVP_Matrix
@@ -81,7 +78,7 @@ void BasicTexture::createShader()
     }
     )";
 #elif defined(USE_GLES2)
-    vertexShaderStage.source = R"(
+        vertexShaderStage.source = R"(
     attribute vec2 a_position;
     uniform mat4 u_mvpMatrix;
     varying vec2 v_texcoord;
@@ -93,7 +90,7 @@ void BasicTexture::createShader()
     }
     )";
 #else
-    vertexShaderStage.source = R"(
+        vertexShaderStage.source = R"(
     in vec2 a_position;
     out vec2 texcoord;
     layout(std140) uniform MVP_Matrix
@@ -109,15 +106,15 @@ void BasicTexture::createShader()
     }
     )";
 #endif // USE_GLES2
-    
-//#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
-    shaderStageList.emplace_back(std::move(vertexShaderStage));
 
-    GFXShaderStage fragmentShaderStage;
-    fragmentShaderStage.type = GFXShaderType::FRAGMENT;
-    
+        //#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
+        shaderStageList.emplace_back(std::move(vertexShaderStage));
+
+        gfx::GFXShaderStage fragmentShaderStage;
+        fragmentShaderStage.type = gfx::GFXShaderType::FRAGMENT;
+
 #if defined(USE_METAL)
-    fragmentShaderStage.source = R"(
+        fragmentShaderStage.source = R"(
     #ifdef GL_ES
        precision highp float;
     #endif
@@ -128,33 +125,33 @@ void BasicTexture::createShader()
         o_color = texture(u_texture, texcoord);
     }
     )";
-//    fragmentShaderStage.source = R"(
-//    #include <metal_stdlib>
-//    #include <simd/simd.h>
-//
-//    using namespace metal;
-//
-//    struct main0_out
-//    {
-//        float4 o_color [[color(0)]];
-//    };
-//
-//    struct main0_in
-//    {
-//        float2 texcoord [[user(locn0)]];
-//    };
-//
-//    fragment main0_out main0(main0_in in [[stage_in]], texture2d<float> u_texture [[texture(0)]], sampler u_textureSmplr [[sampler(0)]])
-//    {
-//        main0_out out = {};
-//        out.o_color = u_texture.sample(u_textureSmplr, in.texcoord);
-//        return out;
-//    }
-//    )";
+        //    fragmentShaderStage.source = R"(
+        //    #include <metal_stdlib>
+        //    #include <simd/simd.h>
+        //
+        //    using namespace metal;
+        //
+        //    struct main0_out
+        //    {
+        //        float4 o_color [[color(0)]];
+        //    };
+        //
+        //    struct main0_in
+        //    {
+        //        float2 texcoord [[user(locn0)]];
+        //    };
+        //
+        //    fragment main0_out main0(main0_in in [[stage_in]], texture2d<float> u_texture [[texture(0)]], sampler u_textureSmplr [[sampler(0)]])
+        //    {
+        //        main0_out out = {};
+        //        out.o_color = u_texture.sample(u_textureSmplr, in.texcoord);
+        //        return out;
+        //    }
+        //    )";
 #else
-    
+
 #if defined(USE_VULKAN)
-    fragmentShaderStage.source = R"(
+        fragmentShaderStage.source = R"(
     layout(location = 0) in vec2 texcoord;
     layout(binding = 1) uniform sampler2D u_texture;
     layout(location = 0) out vec4 o_color;
@@ -163,7 +160,7 @@ void BasicTexture::createShader()
     }
     )";
 #elif defined(USE_GLES2)
-    fragmentShaderStage.source = R"(
+        fragmentShaderStage.source = R"(
     #ifdef GL_ES
     precision highp float;
     #endif
@@ -174,7 +171,7 @@ void BasicTexture::createShader()
     }
     )";
 #else
-    fragmentShaderStage.source = R"(
+        fragmentShaderStage.source = R"(
     #ifdef GL_ES
     precision highp float;
     #endif
@@ -186,151 +183,147 @@ void BasicTexture::createShader()
     }
     )";
 #endif // USE_GLES2
-    
+
 #endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
-    shaderStageList.emplace_back(std::move(fragmentShaderStage));
+        shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
-    GFXUniformList mvpMatrix = { { "u_mvpMatrix", GFXType::MAT4, 1} };
-    GFXUniformBlockList uniformBlockList = { { GFXShaderType::VERTEX, 0, "MVP_Matrix", mvpMatrix} };
-    
-    GFXUniformSamplerList sampler = { { GFXShaderType::FRAGMENT, 1, "u_texture", GFXType::SAMPLER2D, 1} };
+        gfx::GFXAttributeList attributeList = { { "a_position", gfx::GFXFormat::RG32F, false, 0, false, 0 } };
+        gfx::GFXUniformList mvpMatrix = { { "u_mvpMatrix", gfx::GFXType::MAT4, 1} };
+        gfx::GFXUniformBlockList uniformBlockList = { { gfx::GFXShaderType::VERTEX, 0, "MVP_Matrix", mvpMatrix} };
+        gfx::GFXUniformSamplerList sampler = { { gfx::GFXShaderType::FRAGMENT, 1, "u_texture", gfx::GFXType::SAMPLER2D, 1} };
 
-    GFXShaderInfo shaderInfo;
-    shaderInfo.name = "Basic Texture";
-    shaderInfo.stages = std::move(shaderStageList);
-    shaderInfo.blocks = std::move(uniformBlockList);
-    shaderInfo.samplers = std::move(sampler);
-    _shader = _device->createShader(shaderInfo);
-}
+        gfx::GFXShaderInfo shaderInfo;
+        shaderInfo.name = "Basic Texture";
+        shaderInfo.stages = std::move(shaderStageList);
+        shaderInfo.attributes = std::move(attributeList);
+        shaderInfo.blocks = std::move(uniformBlockList);
+        shaderInfo.samplers = std::move(sampler);
+        _shader = _device->createShader(shaderInfo);
+    }
 
-void BasicTexture::createVertexBuffer()
-{
-    float vertexData[] = {
-        -1.0f, -1.0f,
-         1.0f, -1.0f,
-         1.0f,  1.0f,
-        
-         1.0f,  1.0f,
-        -1.0f,  1.0f,
-        -1.0f, -1.0f
-    };
-    
-//    unsigned short indices[6] = {0, 1, 2, 1, 2, 3};
+    void BasicTexture::createVertexBuffer() {
+        float vertexData[] = {
+            -1.0f, -1.0f,
+             1.0f, -1.0f,
+             1.0f,  1.0f,
 
-    GFXBufferInfo vertexBufferInfo = {
-          GFXBufferUsage::VERTEX,
-          GFXMemoryUsage::DEVICE,
-          2 * sizeof(float),
-          sizeof(vertexData),
-          GFXBufferFlagBit::NONE };
+             1.0f,  1.0f,
+            -1.0f,  1.0f,
+            -1.0f, -1.0f
+        };
 
-    _vertexBuffer = _device->createBuffer(vertexBufferInfo);
-    _vertexBuffer->update(vertexData, 0, sizeof(vertexData));
+        //    unsigned short indices[6] = {0, 1, 2, 1, 2, 3};
 
-    GFXBufferInfo uniformBufferInfo = {
-           GFXBufferUsage::UNIFORM,
-           GFXMemoryUsage::DEVICE,
-           sizeof(Mat4),
-           sizeof(Mat4),
-           GFXBufferFlagBit::NONE };
-     _uniformBuffer = _device->createBuffer(uniformBufferInfo);
-}
+        gfx::GFXBufferInfo vertexBufferInfo = {
+              gfx::GFXBufferUsage::VERTEX,
+              gfx::GFXMemoryUsage::DEVICE,
+              2 * sizeof(float),
+              sizeof(vertexData),
+              gfx::GFXBufferFlagBit::NONE };
 
-void BasicTexture::createInputAssembler()
-{
-    GFXAttribute position = {"a_position", GFXFormat::RG32F, false, 0, false};
-    GFXInputAssemblerInfo inputAssemblerInfo;
-    inputAssemblerInfo.attributes.emplace_back(std::move(position));
-    inputAssemblerInfo.vertexBuffers.emplace_back(_vertexBuffer);
-    _inputAssembler = _device->createInputAssembler(inputAssemblerInfo);
-}
+        _vertexBuffer = _device->createBuffer(vertexBufferInfo);
+        _vertexBuffer->update(vertexData, 0, sizeof(vertexData));
 
-void BasicTexture::createPipeline()
-{
-    GFXBindingList bindingList = {
-        {GFXShaderType::VERTEX, 0, GFXBindingType::UNIFORM_BUFFER, "u_mvpMatrix", 1},
-        {GFXShaderType::FRAGMENT, 1, GFXBindingType::SAMPLER, "u_texture", 1}
-    };
-    GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
-    _bindingLayout = _device->createBindingLayout(bindingLayoutInfo);
-    
-    Mat4 mvpMatrix;
-    TestBaseI::modifyProjectionBasedOnDevice(mvpMatrix);
-    _uniformBuffer->update(&mvpMatrix, 0, sizeof(mvpMatrix));
-    _bindingLayout->bindBuffer(0, _uniformBuffer);
-    _bindingLayout->bindSampler(1, _sampler);
-    _bindingLayout->bindTexture(1, _texture);
-    _bindingLayout->update();
+        gfx::GFXBufferInfo uniformBufferInfo = {
+               gfx::GFXBufferUsage::UNIFORM,
+               gfx::GFXMemoryUsage::DEVICE,
+               sizeof(Mat4),
+               sizeof(Mat4),
+               gfx::GFXBufferFlagBit::NONE };
+        _uniformBuffer = _device->createBuffer(uniformBufferInfo);
+    }
 
-    GFXPipelineLayoutInfo pipelineLayoutInfo;
-    pipelineLayoutInfo.layouts = { _bindingLayout };
-    _pipelineLayout = _device->createPipelineLayout(pipelineLayoutInfo);
+    void BasicTexture::createInputAssembler() {
+        gfx::GFXAttribute position = { "a_position", gfx::GFXFormat::RG32F, false, 0, false };
+        gfx::GFXInputAssemblerInfo inputAssemblerInfo;
+        inputAssemblerInfo.attributes.emplace_back(std::move(position));
+        inputAssemblerInfo.vertexBuffers.emplace_back(_vertexBuffer);
+        _inputAssembler = _device->createInputAssembler(inputAssemblerInfo);
+    }
 
-    GFXPipelineStateInfo pipelineInfo;
-    pipelineInfo.primitive = GFXPrimitiveMode::TRIANGLE_LIST;
-    pipelineInfo.shader = _shader;
-    pipelineInfo.inputState = { _inputAssembler->getAttributes() };
-    pipelineInfo.layout = _pipelineLayout;
-    pipelineInfo.renderPass = _fbo->getRenderPass();
+    void BasicTexture::createPipeline() {
+        gfx::GFXBindingList bindingList = {
+            {gfx::GFXShaderType::VERTEX, 0, gfx::GFXBindingType::UNIFORM_BUFFER, "u_mvpMatrix", 1},
+            {gfx::GFXShaderType::FRAGMENT, 1, gfx::GFXBindingType::SAMPLER, "u_texture", 1}
+        };
+        gfx::GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
+        _bindingLayout = _device->createBindingLayout(bindingLayoutInfo);
 
-    _pipelineState = _device->createPipelineState(pipelineInfo);
-}
+        Mat4 mvpMatrix;
+        TestBaseI::modifyProjectionBasedOnDevice(mvpMatrix);
+        _uniformBuffer->update(&mvpMatrix, 0, sizeof(mvpMatrix));
+        _bindingLayout->bindBuffer(0, _uniformBuffer);
+        _bindingLayout->bindSampler(1, _sampler);
+        _bindingLayout->bindTexture(1, _texture);
+        _bindingLayout->update();
 
-void BasicTexture::createTexture()
-{
-    auto img = new cocos2d::Image();
-    img->autorelease();
-    bool valid = img->initWithImageFile("uv_checker_01.jpg");
-    CCASSERT(valid, "BasicTexture load image failed");
+        gfx::GFXPipelineLayoutInfo pipelineLayoutInfo;
+        pipelineLayoutInfo.layouts = { _bindingLayout };
+        _pipelineLayout = _device->createPipelineLayout(pipelineLayoutInfo);
 
-    auto data = TestBaseI::RGB2RGBA(img);
-        
-    GFXTextureInfo textureInfo;
-    textureInfo.usage = GFXTextureUsage::SAMPLED;
-    textureInfo.format = GFXFormat::RGBA8;
-    textureInfo.width = img->getWidth();
-    textureInfo.height = img->getHeight();
-    _texture = _device->createTexture(textureInfo);
-    
-    GFXBufferTextureCopy textureRegion;
-    textureRegion.buffTexHeight = img->getHeight();
-    textureRegion.texExtent.width = img->getWidth();
-    textureRegion.texExtent.height = img->getHeight();
-    textureRegion.texExtent.depth = 1;
-    
-    GFXBufferTextureCopyList regions;
-    regions.push_back(std::move(textureRegion));
-    
-    GFXDataArray imageBuffer = { { data } };
-    _device->copyBuffersToTexture(imageBuffer, _texture, regions);
-    
-    //create sampler
-    GFXSamplerInfo samplerInfo;
-    _sampler = _device->createSampler(samplerInfo);
+        gfx::GFXPipelineStateInfo pipelineInfo;
+        pipelineInfo.primitive = gfx::GFXPrimitiveMode::TRIANGLE_LIST;
+        pipelineInfo.shader = _shader;
+        pipelineInfo.inputState = { _inputAssembler->getAttributes() };
+        pipelineInfo.layout = _pipelineLayout;
+        pipelineInfo.renderPass = _fbo->getRenderPass();
 
-    delete[] data;
-}
+        _pipelineState = _device->createPipelineState(pipelineInfo);
+    }
 
-void BasicTexture::tick(float dt) {
+    void BasicTexture::createTexture() {
+        auto img = new cc::Image();
+        img->autorelease();
+        bool valid = img->initWithImageFile("uv_checker_01.jpg");
+        CCASSERT(valid, "BasicTexture load image failed");
 
-    GFXRect render_area = {0, 0, _device->getWidth(), _device->getHeight() };
-    GFXColor clear_color = {0, 0, 0, 1.0f};
+        auto data = TestBaseI::RGB2RGBA(img);
 
-    _device->acquire();
+        gfx::GFXTextureInfo textureInfo;
+        textureInfo.usage = gfx::GFXTextureUsage::SAMPLED;
+        textureInfo.format = gfx::GFXFormat::RGBA8;
+        textureInfo.width = img->getWidth();
+        textureInfo.height = img->getHeight();
+        _texture = _device->createTexture(textureInfo);
 
-    for (auto commandBuffer : _commandBuffers)
-    {
+        gfx::GFXBufferTextureCopy textureRegion;
+        textureRegion.buffTexHeight = img->getHeight();
+        textureRegion.texExtent.width = img->getWidth();
+        textureRegion.texExtent.height = img->getHeight();
+        textureRegion.texExtent.depth = 1;
+
+        gfx::GFXBufferTextureCopyList regions;
+        regions.push_back(std::move(textureRegion));
+
+        gfx::GFXDataArray imageBuffer = { { data } };
+        _device->copyBuffersToTexture(imageBuffer, _texture, regions);
+
+        //create sampler
+        gfx::GFXSamplerInfo samplerInfo;
+        _sampler = _device->createSampler(samplerInfo);
+
+        delete[] data;
+    }
+
+    void BasicTexture::tick(float dt) {
+
+        gfx::GFXRect render_area = { 0, 0, _device->getWidth(), _device->getHeight() };
+        gfx::GFXColor clear_color = { 0, 0, 0, 1.0f };
+
+        _device->acquire();
+
+        auto commandBuffer = _commandBuffers[0];
         commandBuffer->begin();
-        commandBuffer->beginRenderPass(_fbo, render_area, GFXClearFlagBit::ALL, std::move(std::vector<GFXColor>({clear_color})), 1.0f, 0);
+        commandBuffer->beginRenderPass(_fbo, render_area, gfx::GFXClearFlagBit::ALL, std::move(std::vector<gfx::GFXColor>({ clear_color })), 1.0f, 0);
         commandBuffer->bindInputAssembler(_inputAssembler);
         commandBuffer->bindPipelineState(_pipelineState);
         commandBuffer->bindBindingLayout(_bindingLayout);
         commandBuffer->draw(_inputAssembler);
         commandBuffer->endRenderPass();
         commandBuffer->end();
-    }
-    _device->getQueue()->submit(_commandBuffers);
-    _device->present();
-}
 
-NS_CC_END
+        _device->getQueue()->submit(_commandBuffers);
+        _device->present();
+    }
+
+} // namespace cc

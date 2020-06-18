@@ -22,9 +22,8 @@ set(CC_PLATFORM_SOURCES
 if(WIN32)
     list(APPEND CC_PLATFORM_SOURCES
         ${COCOS_SRC_PATH}/platform/win32/CCFileUtils-win32.h
-        ${COCOS_SRC_PATH}/platform/win32/CCPlatformDefine-win32.h
         ${COCOS_SRC_PATH}/platform/win32/CCUtils-win32.h
-       
+
         ${COCOS_SRC_PATH}/platform/win32/CCDevice-win32.cpp
         ${COCOS_SRC_PATH}/platform/win32/CCFileUtils-win32.cpp
         ${COCOS_SRC_PATH}/platform/win32/CCUtils-win32.cpp
@@ -37,7 +36,7 @@ elseif(ANDROID)
 #         ${COCOS_SRC_PATH}/platform/android/jni/JniImp.h
 
         # ${COCOS_SRC_PATH}/platform/android/CCDevice-android.cpp
-        ${COCOS_SRC_PATH}/platform/android/CCFileUtils-android.cpp 
+        ${COCOS_SRC_PATH}/platform/android/CCFileUtils-android.cpp
         # ${COCOS_SRC_PATH}/platform/android/CCApplication-android.cpp
         # ${COCOS_SRC_PATH}/platform/android/CCCanvasRenderingContext2D-android.cpp
 #         ${COCOS_SRC_PATH}/platform/android/jni/JniImp.cpp
@@ -46,12 +45,12 @@ elseif(ANDROID)
 elseif(APPLE)
     list(APPEND CC_PLATFORM_SOURCES
         ${COCOS_SRC_PATH}/platform/apple/CCFileUtils-apple.h
-        
-        ${COCOS_SRC_PATH}/platform/apple/CCFileUtils-apple.mm        
+
+        ${COCOS_SRC_PATH}/platform/apple/CCFileUtils-apple.mm
     )
 endif()
 
-set(CC_BASE_HEADERS 
+set(CC_BASE_HEADERS
     ${COCOS_SRC_PATH}/base/base64.h
     ${COCOS_SRC_PATH}/base/CCAutoreleasePool.h
     ${COCOS_SRC_PATH}/base/ccCArray.h
@@ -88,7 +87,7 @@ set(CC_BASE_SOURCES
     ${COCOS_SRC_PATH}/base/CCLog.cpp
     ${COCOS_SRC_PATH}/base/ccRandom.cpp
     ${COCOS_SRC_PATH}/base/CCRef.cpp
-   
+
     ${COCOS_SRC_PATH}/base/ccUTF8.cpp
     ${COCOS_SRC_PATH}/base/ccUtils.cpp
     ${COCOS_SRC_PATH}/base/CCValue.cpp
@@ -123,6 +122,7 @@ set(CC_MATH_SOURCES
     ${COCOS_SRC_PATH}/math/Vec4.cpp
 )
 
+set(USE_SE_V8 ON)
 include(${COCOS_EXTERNAL_PATH}/CMakeLists.txt)
 list(REMOVE_ITEM CC_EXTERNAL_LIBS "glfw3")
 
@@ -152,6 +152,6 @@ elseif(ANDROID)
     add_subdirectory(android/app/src/main/cpp)
 elseif(APPLE)
     add_subdirectory(mac)
-    
+
     # add_subdirectory(mac-gles)
 endif()

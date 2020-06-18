@@ -2,7 +2,7 @@
 
 #include "TestBase.h"
 
-NS_CC_BEGIN
+namespace cc {
 
 class BlendTest: public TestBaseI
 {
@@ -21,4 +21,4 @@ private:
     float _dt = 0.0f;
 };
 
-NS_CC_END
+} // namespace cc

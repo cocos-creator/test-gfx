@@ -24,7 +24,7 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     set(PLATFORM_FOLDER win32)
     set(CC_PLATFORM ${CC_PLATFORM_WINDOWS})
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Android")
-    set(PLATFORM_FOLDER android)    
+    set(PLATFORM_FOLDER android)
     set(ANDROID TRUE)
     set(CC_PLATFORM ${CC_PLATFORM_ANDROID})
 elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
@@ -75,7 +75,7 @@ if(MSVC)
 		set(CMAKE_SYSTEM_NAME "Linux")
 		#set(CMAKE_SYSTEM_NAME Android)
 		set(CMAKE_SYSTEM_PROCESSOR arm)
-		
+
 		set(CMAKE_ANDROID_API "19")
 
 	elseif(WIN32)
@@ -105,7 +105,7 @@ if(MSVC)
 		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} /MD /O2 /Ob2 /DNDEBUG")
 		# Flags used by the compiler during Release with Debug Info builds.
 		set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS} /MD /Zi /O2 /Ob1 /DNDEBUG")
-			
+
 		# Enable intrinsics on MSVC in debug mode
 		if (CMAKE_CL_64)
 			# Visual Studio bails out on debug builds in 64bit mode unless
@@ -113,11 +113,11 @@ if(MSVC)
 			set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /bigobj")
 			set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /bigobj")
 		endif ()
-		
+
 		# This seems to break Xcode projects so definitely don't enable on Apple builds
 		set(CMAKE_USE_RELATIVE_PATHS true)
 		# set(CMAKE_SUPPRESS_REGENERATION true)
-		
+
 	else()
 		message(STATUS "Platform: Unknown")
 	endif()
@@ -132,7 +132,7 @@ elseif(APPLE)
 		set(COCOS_PLATFORM_IOS TRUE)
 		message(STATUS "Platform: Mac iOS")
 		set(COCOS_STATIC TRUE CACHE BOOL "Forcing static build for iPhone" FORCE)
-		
+
 		set(CMAKE_SYSTEM_NAME iOS)
 		set(CMAKE_OSX_SYSROOT iphoneos)
 		set(CMAKE_IOS_INSTALL_COMBINED 1)
@@ -151,7 +151,7 @@ elseif(APPLE)
 
 	set(CMAKE_C_FLAGS "-fstrict-aliasing -Wno-multichar -Wall -Wextra -Wno-expansion-to-defined -Wno-unused-parameter -Wno-unknown-pragmas -Wno-ignored-qualifiers -Wno-long-long -Wno-overloaded-virtual -Wno-unused-volatile-lvalue  -Wno-deprecated-writable-strings")
 	set(CMAKE_C_FLAGS_RELEASE "-O3 -msse3 -DNDEBUG")
-	set(CMAKE_C_FLAGS_DEBUG "-O0 -D_DEBUG_ -D_DEBUG -DFIPS_DEBUG=1 -g")        	
+	set(CMAKE_C_FLAGS_DEBUG "-O0 -D_DEBUG_ -D_DEBUG -DFIPS_DEBUG=1 -g")
 
 	set(CMAKE_EXE_LINKER_FLAGS "-ObjC -dead_strip -lpthread")
 	set(CMAKE_EXE_LINKER_FLAGS_DEBUG "")
@@ -161,7 +161,7 @@ elseif(APPLE)
 	set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++14")
 	set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
 
-	set(CMAKE_XCODE_ATTRIBUTE_ENABLE_BITCODE "NO") 
+	set(CMAKE_XCODE_ATTRIBUTE_ENABLE_BITCODE "NO")
 
 	# disable ARC
 	set(CMAKE_XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC "NO")
@@ -211,8 +211,7 @@ macro(use_precompiled_header PrecompiledHeader PrecompiledSource Sources)
 endmacro(use_precompiled_header)
 
 # add dependencies
-set(COCOS_EXTERNAL_TARGETS
-	tommyds)
+set(COCOS_EXTERNAL_TARGETS)
 if(COCOS_PLATFORM_WIN32 OR COCOS_PLATFORM_ANDROID)
 	list(APPEND COCOS_EXTERNAL_TARGETS jemalloc)
 endif()

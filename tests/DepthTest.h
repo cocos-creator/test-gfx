@@ -2,7 +2,7 @@
 
 #include "TestBase.h"
 
-NS_CC_BEGIN
+namespace cc {
 
 class DepthTexture: public TestBaseI
 {
@@ -19,14 +19,14 @@ public:
 private:
     Framebuffer* _bunnyFBO;
 
-    cocos2d::Mat4 _view;
-    cocos2d::Mat4 _model;
-    cocos2d::Mat4 _projection;
-    cocos2d::Vec3 _eye;
-    cocos2d::Vec3 _center;
-    cocos2d::Vec3 _up;
+    Mat4 _view;
+    Mat4 _model;
+    Mat4 _projection;
+    Vec3 _eye;
+    Vec3 _center;
+    Vec3 _up;
     
     float _dt = 0.0f;
 };
 
-NS_CC_END
+} // namespace cc

@@ -5,9 +5,9 @@
 #include "Core.h"
 #include "tests/TestBase.h"
 
-NS_CC_BEGIN
+namespace cc {
 
-class GameApp: public Object
+class GameApp: public gfx::Object
 {
 public:
     GameApp();
@@ -62,4 +62,4 @@ private:
 
 extern GameApp *g_pApp;
 
-NS_CC_END
+} // namespace cc

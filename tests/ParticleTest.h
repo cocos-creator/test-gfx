@@ -2,7 +2,7 @@
 
 #include "TestBase.h"
 
-NS_CC_BEGIN
+namespace cc {
 
 class ParticleTest: public TestBaseI
 {
@@ -23,16 +23,16 @@ private:
     void createInputAssembler();
     void createTexture();
 
-    GFXShader* _shader = nullptr;
-    GFXBuffer* _vertexBuffer = nullptr;
-    GFXBuffer* _indexBuffer = nullptr;
-    GFXBuffer* _uniformBuffer = nullptr;
-    GFXPipelineState* _pipelineState = nullptr;
-    GFXPipelineLayout* _pipelineLayout = nullptr;
-    GFXInputAssembler* _inputAssembler = nullptr;
-    GFXBindingLayout* _bindingLayout = nullptr;
-    GFXTexture* _texture = nullptr;
-    GFXSampler* _sampler = nullptr;
+    gfx::GFXShader* _shader = nullptr;
+    gfx::GFXBuffer* _vertexBuffer = nullptr;
+    gfx::GFXBuffer* _indexBuffer = nullptr;
+    gfx::GFXBuffer* _uniformBuffer = nullptr;
+    gfx::GFXPipelineState* _pipelineState = nullptr;
+    gfx::GFXPipelineLayout* _pipelineLayout = nullptr;
+    gfx::GFXInputAssembler* _inputAssembler = nullptr;
+    gfx::GFXBindingLayout* _bindingLayout = nullptr;
+    gfx::GFXTexture* _texture = nullptr;
+    gfx::GFXSampler* _sampler = nullptr;
         
 #define MAX_QUAD_COUNT 1024
 #define VERTEX_STRIDE 9
@@ -42,8 +42,8 @@ private:
     
     struct ParticleData
     {
-        cocos2d::Vec3 position;
-        cocos2d::Vec3 velocity;
+        Vec3 position;
+        Vec3 velocity;
         float age;
         float life;
     };
@@ -51,4 +51,4 @@ private:
     ParticleData _particles[PARTICLE_COUNT];
 };
 
-NS_CC_END
+} // namespace cc

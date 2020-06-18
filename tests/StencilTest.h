@@ -2,7 +2,7 @@
 
 #include "TestBase.h"
 
-NS_CC_BEGIN
+namespace cc {
 
 class StencilTest: public TestBaseI
 {
@@ -25,18 +25,18 @@ private:
     
     const static uint BINDING_COUNT = 2;
     const static uint PIPELIE_COUNT = 6;
-    GFXShader* _shader = nullptr;
-    GFXTexture* _labelTexture = nullptr;
-    GFXTexture* _uvCheckerTexture = nullptr;
-    GFXBuffer* _vertexBuffer = nullptr;
-    GFXInputAssembler* _inputAssembler = nullptr;
-    GFXBuffer* _uniformBuffer[BINDING_COUNT] = { nullptr };
-    GFXBindingLayout* _bindingLayout[BINDING_COUNT] = { nullptr };
-    GFXPipelineLayout* _pipelineLayout[BINDING_COUNT] = { nullptr };
-    GFXPipelineState* _pipelineState[PIPELIE_COUNT] = { nullptr };
-    GFXSampler* _sampler = nullptr;
+    gfx::GFXShader* _shader = nullptr;
+    gfx::GFXTexture* _labelTexture = nullptr;
+    gfx::GFXTexture* _uvCheckerTexture = nullptr;
+    gfx::GFXBuffer* _vertexBuffer = nullptr;
+    gfx::GFXInputAssembler* _inputAssembler = nullptr;
+    gfx::GFXBuffer* _uniformBuffer[BINDING_COUNT] = { nullptr };
+    gfx::GFXBindingLayout* _bindingLayout[BINDING_COUNT] = { nullptr };
+    gfx::GFXPipelineLayout* _pipelineLayout[BINDING_COUNT] = { nullptr };
+    gfx::GFXPipelineState* _pipelineState[PIPELIE_COUNT] = { nullptr };
+    gfx::GFXSampler* _sampler = nullptr;
     
     float _dt = 0.0f;
 };
 
-NS_CC_END
+} // namespace cc

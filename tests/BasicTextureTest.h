@@ -2,7 +2,7 @@
 
 #include "TestBase.h"
 
-NS_CC_BEGIN
+namespace cc {
 
 class BasicTexture: public TestBaseI
 {
@@ -23,16 +23,16 @@ private:
     void createInputAssembler();
     void createTexture();
 
-    GFXShader* _shader = nullptr;
-    GFXBuffer* _vertexBuffer = nullptr;
-    GFXBuffer* _uniformBuffer = nullptr;
-    GFXInputAssembler* _inputAssembler = nullptr;
-    GFXBindingLayout* _bindingLayout = nullptr;
-    GFXPipelineLayout* _pipelineLayout = nullptr;
-    GFXPipelineState* _pipelineState = nullptr;
-    GFXTexture* _texture = nullptr;
-    GFXBuffer* _image = nullptr;
-    GFXSampler* _sampler = nullptr;
+    gfx::GFXShader* _shader = nullptr;
+    gfx::GFXBuffer* _vertexBuffer = nullptr;
+    gfx::GFXBuffer* _uniformBuffer = nullptr;
+    gfx::GFXInputAssembler* _inputAssembler = nullptr;
+    gfx::GFXBindingLayout* _bindingLayout = nullptr;
+    gfx::GFXPipelineLayout* _pipelineLayout = nullptr;
+    gfx::GFXPipelineState* _pipelineState = nullptr;
+    gfx::GFXTexture* _texture = nullptr;
+    gfx::GFXBuffer* _image = nullptr;
+    gfx::GFXSampler* _sampler = nullptr;
 };
 
-NS_CC_END
+} // namespace cc

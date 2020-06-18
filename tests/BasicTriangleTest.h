@@ -2,7 +2,7 @@
 
 #include "TestBase.h"
 
-NS_CC_BEGIN
+namespace cc {
 
 typedef struct Vertex
 {
@@ -28,17 +28,17 @@ class BasicTriangle: public TestBaseI
      void createPipeline();
      void createInputAssembler();
 
-     GFXShader* _shader = nullptr;
-     GFXBuffer* _vertexBuffer = nullptr;
-     GFXBuffer* _uniformBuffer = nullptr;
-     GFXBindingLayout* _bindingLayout = nullptr;
-     GFXPipelineLayout* _pipelineLayout = nullptr;
-     GFXPipelineState* _pipelineState = nullptr;
-     GFXInputAssembler* _inputAssembler = nullptr;
-    GFXBuffer *_indirectBuffer = nullptr;
-    GFXBuffer *_indexBuffer = nullptr;
+     gfx::GFXShader* _shader = nullptr;
+     gfx::GFXBuffer* _vertexBuffer = nullptr;
+     gfx::GFXBuffer* _uniformBuffer = nullptr;
+     gfx::GFXBindingLayout* _bindingLayout = nullptr;
+     gfx::GFXPipelineLayout* _pipelineLayout = nullptr;
+     gfx::GFXPipelineState* _pipelineState = nullptr;
+     gfx::GFXInputAssembler* _inputAssembler = nullptr;
+    gfx::GFXBuffer *_indirectBuffer = nullptr;
+    gfx::GFXBuffer *_indexBuffer = nullptr;
 
      float _time = 0.0f;
 };
 
-NS_CC_END
+} // namespace cc
