@@ -12,10 +12,10 @@
 
 namespace cc {
 
-    gfx::GFXDevice *TestBaseI::_device = nullptr;
-    gfx::GFXFramebuffer *TestBaseI::_fbo = nullptr;
-    gfx::GFXRenderPass *TestBaseI::_renderPass = nullptr;
-    std::vector<gfx::GFXCommandBuffer *> TestBaseI::_commandBuffers(1, nullptr);
+    gfx::Device *TestBaseI::_device = nullptr;
+    gfx::Framebuffer *TestBaseI::_fbo = nullptr;
+    gfx::RenderPass *TestBaseI::_renderPass = nullptr;
+    std::vector<gfx::CommandBuffer *> TestBaseI::_commandBuffers(1, nullptr);
 
     TestBaseI::TestBaseI(const WindowInfo &info) {
         if (_device == nullptr) {
@@ -33,7 +33,7 @@ namespace cc {
 
 #endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
 
-            gfx::GFXDeviceInfo dev_info;
+            gfx::DeviceInfo dev_info;
             dev_info.windowHandle = info.windowHandle;
             dev_info.width = info.screen.width;
             dev_info.height = info.screen.height;
@@ -42,28 +42,28 @@ namespace cc {
             _device->initialize(dev_info);
         }
         if (_fbo == nullptr) {
-            gfx::GFXRenderPassInfo renderPassInfo;
-            gfx::GFXColorAttachment colorAttachment;
+            gfx::RenderPassInfo renderPassInfo;
+            gfx::ColorAttachment colorAttachment;
             colorAttachment.format = _device->getColorFormat();
-            colorAttachment.loadOp = gfx::GFXLoadOp::CLEAR;
-            colorAttachment.storeOp = gfx::GFXStoreOp::STORE;
+            colorAttachment.loadOp = gfx::LoadOp::CLEAR;
+            colorAttachment.storeOp = gfx::StoreOp::STORE;
             colorAttachment.sampleCount = 1;
-            colorAttachment.beginLayout = gfx::GFXTextureLayout::UNDEFINED;
-            colorAttachment.endLayout = gfx::GFXTextureLayout::PRESENT_SRC;
+            colorAttachment.beginLayout = gfx::TextureLayout::UNDEFINED;
+            colorAttachment.endLayout = gfx::TextureLayout::PRESENT_SRC;
             renderPassInfo.colorAttachments.emplace_back(colorAttachment);
 
-            gfx::GFXDepthStencilAttachment &depthStencilAttachment = renderPassInfo.depthStencilAttachment;
+            gfx::DepthStencilAttachment &depthStencilAttachment = renderPassInfo.depthStencilAttachment;
             depthStencilAttachment.format = _device->getDepthStencilFormat();
-            depthStencilAttachment.depthLoadOp = gfx::GFXLoadOp::CLEAR;
-            depthStencilAttachment.depthStoreOp = gfx::GFXStoreOp::STORE;
-            depthStencilAttachment.stencilLoadOp = gfx::GFXLoadOp::CLEAR;
-            depthStencilAttachment.stencilStoreOp = gfx::GFXStoreOp::STORE;
+            depthStencilAttachment.depthLoadOp = gfx::LoadOp::CLEAR;
+            depthStencilAttachment.depthStoreOp = gfx::StoreOp::STORE;
+            depthStencilAttachment.stencilLoadOp = gfx::LoadOp::CLEAR;
+            depthStencilAttachment.stencilStoreOp = gfx::StoreOp::STORE;
             depthStencilAttachment.sampleCount = 1;
-            depthStencilAttachment.beginLayout = gfx::GFXTextureLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-            depthStencilAttachment.endLayout = gfx::GFXTextureLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            depthStencilAttachment.beginLayout = gfx::TextureLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            depthStencilAttachment.endLayout = gfx::TextureLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
             _renderPass = _device->createRenderPass(renderPassInfo);
-            gfx::GFXFramebufferInfo fboInfo;
+            gfx::FramebufferInfo fboInfo;
             fboInfo.renderPass = _renderPass;
             fboInfo.isOffscreen = false;
             _fbo = _device->createFramebuffer(fboInfo);
@@ -73,9 +73,9 @@ namespace cc {
             if (_commandBuffers[i] != nullptr)
                 continue;
 
-            gfx::GFXCommandBufferInfo cmdBuffInfo;
-            cmdBuffInfo.allocator = _device->getCommandAllocator();
-            cmdBuffInfo.type = gfx::GFXCommandBufferType::PRIMARY;
+            gfx::CommandBufferInfo cmdBuffInfo;
+            cmdBuffInfo.queue = _device->getQueue();
+            cmdBuffInfo.type = gfx::CommandBufferType::PRIMARY;
             _commandBuffers[i] = _device->createCommandBuffer(cmdBuffInfo);
         }
     }

@@ -9,16 +9,16 @@ namespace cc {
 
     typedef struct WindowInfo {
         intptr_t windowHandle;
-        gfx::GFXRect screen;
+        gfx::Rect screen;
         int physicalWidth;
         int physicalHeight;
     } WindowInfo;
 
     struct Framebuffer {
-        gfx::GFXRenderPass *renderPass = nullptr;
-        gfx::GFXTexture *colorTex = nullptr;
-        gfx::GFXTexture *depthStencilTex = nullptr;
-        gfx::GFXFramebuffer *framebuffer = nullptr;
+        gfx::RenderPass *renderPass = nullptr;
+        gfx::Texture *colorTex = nullptr;
+        gfx::Texture *depthStencilTex = nullptr;
+        gfx::Framebuffer *framebuffer = nullptr;
 
         ~Framebuffer() {
             CC_SAFE_DESTROY(framebuffer);
@@ -49,7 +49,7 @@ namespace cc {
         virtual void tick(float dt) = 0;
         virtual void resize(uint width, uint height) { _device->resize(width, height); }
 
-        static gfx::GFXDevice *getDevice() { return _device; }
+        static gfx::Device *getDevice() { return _device; }
         static void destroyGlobal();
 
         static unsigned char *RGB2RGBA(Image *img);
@@ -58,11 +58,11 @@ namespace cc {
         static uint getMipmapLevelCounts(uint width, uint height);
 
     protected:
-        static gfx::GFXDevice *_device;
-        static gfx::GFXFramebuffer* _fbo;
-        static std::vector<gfx::GFXCommandBuffer *> _commandBuffers;
+        static gfx::Device *_device;
+        static gfx::Framebuffer* _fbo;
+        static std::vector<gfx::CommandBuffer *> _commandBuffers;
 
-        static gfx::GFXRenderPass *_renderPass;
+        static gfx::RenderPass *_renderPass;
     };
 
 } // namespace cc

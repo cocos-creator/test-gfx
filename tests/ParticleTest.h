@@ -23,16 +23,15 @@ private:
     void createInputAssembler();
     void createTexture();
 
-    gfx::GFXShader* _shader = nullptr;
-    gfx::GFXBuffer* _vertexBuffer = nullptr;
-    gfx::GFXBuffer* _indexBuffer = nullptr;
-    gfx::GFXBuffer* _uniformBuffer = nullptr;
-    gfx::GFXPipelineState* _pipelineState = nullptr;
-    gfx::GFXPipelineLayout* _pipelineLayout = nullptr;
-    gfx::GFXInputAssembler* _inputAssembler = nullptr;
-    gfx::GFXBindingLayout* _bindingLayout = nullptr;
-    gfx::GFXTexture* _texture = nullptr;
-    gfx::GFXSampler* _sampler = nullptr;
+    gfx::Shader* _shader = nullptr;
+    gfx::Buffer* _vertexBuffer = nullptr;
+    gfx::Buffer* _indexBuffer = nullptr;
+    gfx::Buffer* _uniformBuffer = nullptr;
+    gfx::PipelineState* _pipelineState = nullptr;
+    gfx::InputAssembler* _inputAssembler = nullptr;
+    gfx::BindingLayout* _bindingLayout = nullptr;
+    gfx::Texture* _texture = nullptr;
+    gfx::Sampler* _sampler = nullptr;
         
 #define MAX_QUAD_COUNT 1024
 #define VERTEX_STRIDE 9

@@ -23,16 +23,15 @@ private:
     void createInputAssembler();
     void createTexture();
 
-    gfx::GFXShader* _shader = nullptr;
-    gfx::GFXBuffer* _vertexBuffer = nullptr;
-    gfx::GFXBuffer* _uniformBuffer = nullptr;
-    gfx::GFXInputAssembler* _inputAssembler = nullptr;
-    gfx::GFXBindingLayout* _bindingLayout = nullptr;
-    gfx::GFXPipelineLayout* _pipelineLayout = nullptr;
-    gfx::GFXPipelineState* _pipelineState = nullptr;
-    gfx::GFXTexture* _texture = nullptr;
-    gfx::GFXBuffer* _image = nullptr;
-    gfx::GFXSampler* _sampler = nullptr;
+    gfx::Shader* _shader = nullptr;
+    gfx::Buffer* _vertexBuffer = nullptr;
+    gfx::Buffer* _uniformBuffer = nullptr;
+    gfx::InputAssembler* _inputAssembler = nullptr;
+    gfx::BindingLayout* _bindingLayout = nullptr;
+    gfx::PipelineState* _pipelineState = nullptr;
+    gfx::Texture* _texture = nullptr;
+    gfx::Buffer* _image = nullptr;
+    gfx::Sampler* _sampler = nullptr;
 };
 
 } // namespace cc

@@ -25,16 +25,15 @@ private:
     
     const static uint BINDING_COUNT = 2;
     const static uint PIPELIE_COUNT = 6;
-    gfx::GFXShader* _shader = nullptr;
-    gfx::GFXTexture* _labelTexture = nullptr;
-    gfx::GFXTexture* _uvCheckerTexture = nullptr;
-    gfx::GFXBuffer* _vertexBuffer = nullptr;
-    gfx::GFXInputAssembler* _inputAssembler = nullptr;
-    gfx::GFXBuffer* _uniformBuffer[BINDING_COUNT] = { nullptr };
-    gfx::GFXBindingLayout* _bindingLayout[BINDING_COUNT] = { nullptr };
-    gfx::GFXPipelineLayout* _pipelineLayout[BINDING_COUNT] = { nullptr };
-    gfx::GFXPipelineState* _pipelineState[PIPELIE_COUNT] = { nullptr };
-    gfx::GFXSampler* _sampler = nullptr;
+    gfx::Shader* _shader = nullptr;
+    gfx::Texture* _labelTexture = nullptr;
+    gfx::Texture* _uvCheckerTexture = nullptr;
+    gfx::Buffer* _vertexBuffer = nullptr;
+    gfx::InputAssembler* _inputAssembler = nullptr;
+    gfx::Buffer* _uniformBuffer[BINDING_COUNT] = { nullptr };
+    gfx::BindingLayout* _bindingLayout[BINDING_COUNT] = { nullptr };
+    gfx::PipelineState* _pipelineState[PIPELIE_COUNT] = { nullptr };
+    gfx::Sampler* _sampler = nullptr;
     
     float _dt = 0.0f;
 };

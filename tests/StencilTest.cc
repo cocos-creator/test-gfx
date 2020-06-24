@@ -24,7 +24,6 @@ namespace cc {
         for (uint i = 0; i < BINDING_COUNT; i++) {
             CC_SAFE_DESTROY(_uniformBuffer[i]);
             CC_SAFE_DESTROY(_bindingLayout[i]);
-            CC_SAFE_DESTROY(_pipelineLayout[i]);
         }
         for (uint i = 0; i < PIPELIE_COUNT; i++) {
             CC_SAFE_DESTROY(_pipelineState[i]);
@@ -41,9 +40,9 @@ namespace cc {
     }
 
     void StencilTest::createShader() {
-        gfx::GFXShaderStageList shaderStageList;
-        gfx::GFXShaderStage vertexShaderStage;
-        vertexShaderStage.type = gfx::GFXShaderType::VERTEX;
+        gfx::ShaderStageList shaderStageList;
+        gfx::ShaderStage vertexShaderStage;
+        vertexShaderStage.type = gfx::ShaderType::VERTEX;
 
 #if defined(USE_VULKAN) || defined(USE_METAL)
         vertexShaderStage.source = R"(
@@ -88,8 +87,8 @@ namespace cc {
 
         shaderStageList.emplace_back(std::move(vertexShaderStage));
 
-        gfx::GFXShaderStage fragmentShaderStage;
-        fragmentShaderStage.type = gfx::GFXShaderType::FRAGMENT;
+        gfx::ShaderStage fragmentShaderStage;
+        fragmentShaderStage.type = gfx::ShaderType::FRAGMENT;
 
 #if defined(USE_VULKAN) || defined(USE_METAL)
         fragmentShaderStage.source = R"(
@@ -130,14 +129,12 @@ namespace cc {
 
         shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
-        gfx::GFXAttributeList attributeList = { { "a_position", gfx::GFXFormat::RG32F, false, 0, false, 0 } };
-        gfx::GFXUniformList mvpMatrix = { {"u_mvpMatrix", gfx::GFXType::MAT4, 1} };
-        gfx::GFXUniformBlockList uniformBlockList = {
-            {gfx::GFXShaderType::VERTEX, 0, "MVP_Matrix", mvpMatrix} };
-        gfx::GFXUniformSamplerList sampler = {
-            {gfx::GFXShaderType::FRAGMENT, 1, "u_texture", gfx::GFXType::SAMPLER2D, 1} };
+        gfx::AttributeList attributeList = { { "a_position", gfx::Format::RG32F, false, 0, false, 0 } };
+        gfx::UniformList mvpMatrix = { {"u_mvpMatrix", gfx::Type::MAT4, 1} };
+        gfx::UniformBlockList uniformBlockList = { {gfx::ShaderType::VERTEX, 0, "MVP_Matrix", mvpMatrix} };
+        gfx::UniformSamplerList sampler = { {gfx::ShaderType::FRAGMENT, 1, "u_texture", gfx::Type::SAMPLER2D, 1} };
 
-        gfx::GFXShaderInfo shaderInfo;
+        gfx::ShaderInfo shaderInfo;
         shaderInfo.name = "Stencil Test";
         shaderInfo.stages = std::move(shaderStageList);
         shaderInfo.attributes = std::move(attributeList);
@@ -148,19 +145,19 @@ namespace cc {
 
     void StencilTest::createBuffers() {
         float vertexData[] = { -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,
-
                               1.0f,  1.0f,  -1.0f, -1.0f, -1.0f, 1.0f };
 
-        gfx::GFXBufferInfo vertexBufferInfo = { gfx::GFXBufferUsage::VERTEX,
-                                          gfx::GFXMemoryUsage::DEVICE, 2 * sizeof(float),
-                                          sizeof(vertexData), gfx::GFXBufferFlagBit::NONE };
+        gfx::BufferInfo vertexBufferInfo = { gfx::BufferUsage::VERTEX,
+                                          gfx::MemoryUsage::DEVICE, 2 * sizeof(float),
+                                          sizeof(vertexData), gfx::BufferFlagBit::NONE };
 
         _vertexBuffer = _device->createBuffer(vertexBufferInfo);
         _vertexBuffer->update(vertexData, 0, sizeof(vertexData));
 
-        gfx::GFXBufferInfo uniformBufferInfo = {
-            gfx::GFXBufferUsage::UNIFORM, gfx::GFXMemoryUsage::HOST | gfx::GFXMemoryUsage::DEVICE,
-            sizeof(Mat4), sizeof(Mat4), gfx::GFXBufferFlagBit::NONE };
+        gfx::BufferInfo uniformBufferInfo = {
+            gfx::BufferUsage::UNIFORM, gfx::MemoryUsage::HOST | gfx::MemoryUsage::DEVICE,
+            sizeof(Mat4), sizeof(Mat4), gfx::BufferFlagBit::NONE,
+        };
 
         Mat4 transform[BINDING_COUNT];
         transform[0].scale(0.5f);
@@ -182,23 +179,23 @@ namespace cc {
         assert(ret);
         auto stencilImageData = TestBaseI::RGB2RGBA(stencilImage);
 
-        gfx::GFXBufferTextureCopy labelTextureRegion;
+        gfx::BufferTextureCopy labelTextureRegion;
         labelTextureRegion.buffTexHeight = stencilImage->getHeight();
         labelTextureRegion.texExtent.width = stencilImage->getWidth();
         labelTextureRegion.texExtent.height = stencilImage->getHeight();
         labelTextureRegion.texExtent.depth = 1;
 
-        gfx::GFXBufferTextureCopyList regions;
+        gfx::BufferTextureCopyList regions;
         regions.push_back(std::move(labelTextureRegion));
 
-        gfx::GFXTextureInfo labelTextureInfo;
-        labelTextureInfo.usage = gfx::GFXTextureUsage::SAMPLED;
-        labelTextureInfo.format = gfx::GFXFormat::RGBA8;
+        gfx::TextureInfo labelTextureInfo;
+        labelTextureInfo.usage = gfx::TextureUsage::SAMPLED | gfx::TextureUsage::TRANSFER_DST;
+        labelTextureInfo.format = gfx::Format::RGBA8;
         labelTextureInfo.width = stencilImage->getWidth();
         labelTextureInfo.height = stencilImage->getHeight();
         _labelTexture = _device->createTexture(labelTextureInfo);
 
-        gfx::GFXDataArray stencilBuffer = { {stencilImageData} };
+        gfx::DataArray stencilBuffer = { {stencilImageData} };
         _device->copyBuffersToTexture(stencilBuffer, _labelTexture, regions);
 
         // load uv_checker_02.jpg
@@ -208,28 +205,27 @@ namespace cc {
         assert(ret);
         auto imgData = TestBaseI::RGB2RGBA(img);
 
-        gfx::GFXTextureInfo textureInfo;
-        textureInfo.usage = gfx::GFXTextureUsage::SAMPLED;
-        textureInfo.format = gfx::GFXFormat::RGBA8;
+        gfx::TextureInfo textureInfo;
+        textureInfo.usage = gfx::TextureUsage::SAMPLED | gfx::TextureUsage::TRANSFER_DST;
+        textureInfo.format = gfx::Format::RGBA8;
         textureInfo.width = img->getWidth();
         textureInfo.height = img->getHeight();
         _uvCheckerTexture = _device->createTexture(textureInfo);
 
-        gfx::GFXBufferTextureCopy textureRegion;
+        gfx::BufferTextureCopy textureRegion;
         textureRegion.buffTexHeight = img->getHeight();
         textureRegion.texExtent.width = img->getWidth();
         textureRegion.texExtent.height = img->getHeight();
         textureRegion.texExtent.depth = 1;
 
-        gfx::GFXBufferTextureCopyList uvTextureRegions;
+        gfx::BufferTextureCopyList uvTextureRegions;
         uvTextureRegions.push_back(std::move(textureRegion));
 
-        gfx::GFXDataArray uvImageBuffer = { {imgData} };
-        _device->copyBuffersToTexture(uvImageBuffer, _uvCheckerTexture,
-            uvTextureRegions);
+        gfx::DataArray uvImageBuffer = { {imgData} };
+        _device->copyBuffersToTexture(uvImageBuffer, _uvCheckerTexture, uvTextureRegions);
 
         // create sampler
-        gfx::GFXSamplerInfo samplerInfo;
+        gfx::SamplerInfo samplerInfo;
         _sampler = _device->createSampler(samplerInfo);
 
         delete[] imgData;
@@ -237,361 +233,221 @@ namespace cc {
     }
 
     void StencilTest::createInputAssembler() {
-        gfx::GFXAttribute position = { "a_position", gfx::GFXFormat::RG32F, false, 0, false };
-        gfx::GFXInputAssemblerInfo inputAssemblerInfo;
+        gfx::Attribute position = { "a_position", gfx::Format::RG32F, false, 0, false };
+        gfx::InputAssemblerInfo inputAssemblerInfo;
         inputAssemblerInfo.attributes.emplace_back(std::move(position));
         inputAssemblerInfo.vertexBuffers.emplace_back(_vertexBuffer);
         _inputAssembler = _device->createInputAssembler(inputAssemblerInfo);
     }
 
     void StencilTest::createPipelineState() {
-        gfx::GFXBindingList bindingList = {
-            {gfx::GFXShaderType::VERTEX, 0, gfx::GFXBindingType::UNIFORM_BUFFER, "u_mvpMatrix",
-             1},
-            {gfx::GFXShaderType::FRAGMENT, 1, gfx::GFXBindingType::SAMPLER, "u_texture", 1} };
-        gfx::GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
+        gfx::BindingLayoutInfo bindingLayoutInfo = { _shader };
 
-        gfx::GFXTexture *texView[BINDING_COUNT] = { _labelTexture, _uvCheckerTexture };
+        gfx::Texture *texView[BINDING_COUNT] = { _labelTexture, _uvCheckerTexture };
         for (uint i = 0; i < BINDING_COUNT; i++) {
             _bindingLayout[i] = _device->createBindingLayout(bindingLayoutInfo);
             _bindingLayout[i]->bindBuffer(0, _uniformBuffer[i]);
             _bindingLayout[i]->bindSampler(1, _sampler);
             _bindingLayout[i]->bindTexture(1, texView[i]);
             _bindingLayout[i]->update();
-
-            gfx::GFXPipelineLayoutInfo pipelineLayoutInfo;
-            pipelineLayoutInfo.layouts = { _bindingLayout[i] };
-            _pipelineLayout[i] = _device->createPipelineLayout(pipelineLayoutInfo);
         }
 
         // lable
-        gfx::GFXPipelineStateInfo pipelineInfo[PIPELIE_COUNT];
-        pipelineInfo[(uint8_t)PipelineType::STENCIL].primitive =
-            gfx::GFXPrimitiveMode::TRIANGLE_LIST;
+        gfx::PipelineStateInfo pipelineInfo[PIPELIE_COUNT];
+        pipelineInfo[(uint8_t)PipelineType::STENCIL].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
         pipelineInfo[(uint8_t)PipelineType::STENCIL].shader = _shader;
-        pipelineInfo[(uint8_t)PipelineType::STENCIL].inputState = {
-            _inputAssembler->getAttributes() };
-        pipelineInfo[(uint8_t)PipelineType::STENCIL].layout = _pipelineLayout[0];
-        pipelineInfo[(uint8_t)PipelineType::STENCIL].renderPass =
-            _fbo->getRenderPass();
-        pipelineInfo[(uint8_t)PipelineType::STENCIL].depthStencilState.depthTest =
-            false;
-        pipelineInfo[(uint8_t)PipelineType::STENCIL]
-            .depthStencilState.stencilTestFront = false;
-        pipelineInfo[(uint8_t)PipelineType::STENCIL]
-            .depthStencilState.stencilTestBack = false;
-        pipelineInfo[(uint8_t)PipelineType::STENCIL].rasterizerState.cullMode =
-            gfx::GFXCullMode::NONE;
-        pipelineInfo[(uint8_t)PipelineType::STENCIL].dynamicStates.push_back(
-            gfx::GFXDynamicState::VIEWPORT);
-        _pipelineState[(uint8_t)PipelineType::STENCIL] = _device->createPipelineState(
-            pipelineInfo[(uint8_t)PipelineType::STENCIL]);
+        pipelineInfo[(uint8_t)PipelineType::STENCIL].inputState = { _inputAssembler->getAttributes() };
+        pipelineInfo[(uint8_t)PipelineType::STENCIL].renderPass = _fbo->getRenderPass();
+        pipelineInfo[(uint8_t)PipelineType::STENCIL].depthStencilState.depthTest = false;
+        pipelineInfo[(uint8_t)PipelineType::STENCIL].depthStencilState.stencilTestFront = false;
+        pipelineInfo[(uint8_t)PipelineType::STENCIL].depthStencilState.stencilTestBack = false;
+        pipelineInfo[(uint8_t)PipelineType::STENCIL].rasterizerState.cullMode = gfx::CullMode::NONE;
+        pipelineInfo[(uint8_t)PipelineType::STENCIL].dynamicStates.push_back(gfx::DynamicState::VIEWPORT);
+        _pipelineState[(uint8_t)PipelineType::STENCIL] = _device->createPipelineState(pipelineInfo[(uint8_t)PipelineType::STENCIL]);
 
         // uv_image
-        pipelineInfo[(uint8_t)PipelineType::IMAGE].primitive =
-            gfx::GFXPrimitiveMode::TRIANGLE_LIST;
+        pipelineInfo[(uint8_t)PipelineType::IMAGE].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
         pipelineInfo[(uint8_t)PipelineType::IMAGE].shader = _shader;
-        pipelineInfo[(uint8_t)PipelineType::IMAGE].inputState = {
-            _inputAssembler->getAttributes() };
-        pipelineInfo[(uint8_t)PipelineType::IMAGE].layout = _pipelineLayout[1];
+        pipelineInfo[(uint8_t)PipelineType::IMAGE].inputState = { _inputAssembler->getAttributes() };
         pipelineInfo[(uint8_t)PipelineType::IMAGE].renderPass = _fbo->getRenderPass();
-        pipelineInfo[(uint8_t)PipelineType::IMAGE].depthStencilState.depthTest =
-            false;
-        pipelineInfo[(uint8_t)PipelineType::IMAGE]
-            .depthStencilState.stencilTestFront = false;
-        pipelineInfo[(uint8_t)PipelineType::IMAGE].depthStencilState.stencilTestBack =
-            false;
-        pipelineInfo[(uint8_t)PipelineType::IMAGE].rasterizerState.cullMode =
-            gfx::GFXCullMode::NONE;
-        pipelineInfo[(uint8_t)PipelineType::IMAGE].dynamicStates.push_back(
-            gfx::GFXDynamicState::VIEWPORT);
-        _pipelineState[(uint8_t)PipelineType::IMAGE] =
-            _device->createPipelineState(pipelineInfo[(uint8_t)PipelineType::IMAGE]);
+        pipelineInfo[(uint8_t)PipelineType::IMAGE].depthStencilState.depthTest = false;
+        pipelineInfo[(uint8_t)PipelineType::IMAGE].depthStencilState.stencilTestFront = false;
+        pipelineInfo[(uint8_t)PipelineType::IMAGE].depthStencilState.stencilTestBack = false;
+        pipelineInfo[(uint8_t)PipelineType::IMAGE].rasterizerState.cullMode = gfx::CullMode::NONE;
+        pipelineInfo[(uint8_t)PipelineType::IMAGE].dynamicStates.push_back(gfx::DynamicState::VIEWPORT);
+        _pipelineState[(uint8_t)PipelineType::IMAGE] = _device->createPipelineState(pipelineInfo[(uint8_t)PipelineType::IMAGE]);
 
         // do back and front stencil test
-        pipelineInfo[(uint8_t)PipelineType::CAVAS].primitive =
-            gfx::GFXPrimitiveMode::TRIANGLE_LIST;
+        pipelineInfo[(uint8_t)PipelineType::CAVAS].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
         pipelineInfo[(uint8_t)PipelineType::CAVAS].shader = _shader;
-        pipelineInfo[(uint8_t)PipelineType::CAVAS].inputState = {
-            _inputAssembler->getAttributes() };
-        pipelineInfo[(uint8_t)PipelineType::CAVAS].layout = _pipelineLayout[0];
+        pipelineInfo[(uint8_t)PipelineType::CAVAS].inputState = { _inputAssembler->getAttributes() };
         pipelineInfo[(uint8_t)PipelineType::CAVAS].renderPass = _fbo->getRenderPass();
         pipelineInfo[(uint8_t)PipelineType::CAVAS].depthStencilState.depthTest = true;
-        pipelineInfo[(uint8_t)PipelineType::CAVAS].depthStencilState.depthWrite =
-            false;
-        pipelineInfo[(uint8_t)PipelineType::CAVAS]
-            .depthStencilState.stencilTestFront =
-            pipelineInfo[(uint8_t)PipelineType::CAVAS]
-            .depthStencilState.stencilTestBack = true;
-        pipelineInfo[(uint8_t)PipelineType::CAVAS]
-            .depthStencilState.stencilFuncFront =
-            pipelineInfo[(uint8_t)PipelineType::CAVAS]
-            .depthStencilState.stencilFuncBack = gfx::GFXComparisonFunc::NEVER;
-        pipelineInfo[(uint8_t)PipelineType::CAVAS]
-            .depthStencilState.stencilReadMaskFront =
-            pipelineInfo[(uint8_t)PipelineType::CAVAS]
-            .depthStencilState.stencilReadMaskBack = 0xFF;
-        pipelineInfo[(uint8_t)PipelineType::CAVAS]
-            .depthStencilState.stencilWriteMaskFront =
-            pipelineInfo[(uint8_t)PipelineType::CAVAS]
-            .depthStencilState.stencilWriteMaskBack = 0xFF;
-        pipelineInfo[(uint8_t)PipelineType::CAVAS]
-            .depthStencilState.stencilFailOpFront =
-            pipelineInfo[(uint8_t)PipelineType::CAVAS]
-            .depthStencilState.stencilFailOpBack = gfx::GFXStencilOp::REPLACE;
-        pipelineInfo[(uint8_t)PipelineType::CAVAS]
-            .depthStencilState.stencilZFailOpFront =
-            pipelineInfo[(uint8_t)PipelineType::CAVAS]
-            .depthStencilState.stencilZFailOpBack = gfx::GFXStencilOp::KEEP;
-        pipelineInfo[(uint8_t)PipelineType::CAVAS]
-            .depthStencilState.stencilPassOpFront =
-            pipelineInfo[(uint8_t)PipelineType::CAVAS]
-            .depthStencilState.stencilPassOpBack = gfx::GFXStencilOp::KEEP;
+        pipelineInfo[(uint8_t)PipelineType::CAVAS].depthStencilState.depthWrite = false;
+        pipelineInfo[(uint8_t)PipelineType::CAVAS].depthStencilState.stencilTestFront =
+            pipelineInfo[(uint8_t)PipelineType::CAVAS].depthStencilState.stencilTestBack = true;
+        pipelineInfo[(uint8_t)PipelineType::CAVAS].depthStencilState.stencilFuncFront =
+            pipelineInfo[(uint8_t)PipelineType::CAVAS].depthStencilState.stencilFuncBack = gfx::ComparisonFunc::NEVER;
+        pipelineInfo[(uint8_t)PipelineType::CAVAS].depthStencilState.stencilReadMaskFront =
+            pipelineInfo[(uint8_t)PipelineType::CAVAS].depthStencilState.stencilReadMaskBack = 0xFF;
+        pipelineInfo[(uint8_t)PipelineType::CAVAS].depthStencilState.stencilWriteMaskFront =
+            pipelineInfo[(uint8_t)PipelineType::CAVAS].depthStencilState.stencilWriteMaskBack = 0xFF;
+        pipelineInfo[(uint8_t)PipelineType::CAVAS].depthStencilState.stencilFailOpFront =
+            pipelineInfo[(uint8_t)PipelineType::CAVAS].depthStencilState.stencilFailOpBack = gfx::StencilOp::REPLACE;
+        pipelineInfo[(uint8_t)PipelineType::CAVAS].depthStencilState.stencilZFailOpFront =
+            pipelineInfo[(uint8_t)PipelineType::CAVAS].depthStencilState.stencilZFailOpBack = gfx::StencilOp::KEEP;
+        pipelineInfo[(uint8_t)PipelineType::CAVAS].depthStencilState.stencilPassOpFront =
+            pipelineInfo[(uint8_t)PipelineType::CAVAS].depthStencilState.stencilPassOpBack = gfx::StencilOp::KEEP;
         pipelineInfo[(uint8_t)PipelineType::CAVAS].depthStencilState.stencilRefFront =
-            pipelineInfo[(uint8_t)PipelineType::CAVAS]
-            .depthStencilState.stencilRefBack = 0x1;
-        pipelineInfo[(uint8_t)PipelineType::CAVAS].rasterizerState.cullMode =
-            gfx::GFXCullMode::NONE;
-        pipelineInfo[(uint8_t)PipelineType::CAVAS].dynamicStates.push_back(
-            gfx::GFXDynamicState::VIEWPORT);
-        _pipelineState[(uint8_t)PipelineType::CAVAS] =
-            _device->createPipelineState(pipelineInfo[(uint8_t)PipelineType::CAVAS]);
+            pipelineInfo[(uint8_t)PipelineType::CAVAS].depthStencilState.stencilRefBack = 0x1;
+        pipelineInfo[(uint8_t)PipelineType::CAVAS].rasterizerState.cullMode = gfx::CullMode::NONE;
+        pipelineInfo[(uint8_t)PipelineType::CAVAS].dynamicStates.push_back(gfx::DynamicState::VIEWPORT);
+        _pipelineState[(uint8_t)PipelineType::CAVAS] = _device->createPipelineState(pipelineInfo[(uint8_t)PipelineType::CAVAS]);
 
-        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].primitive =
-            gfx::GFXPrimitiveMode::TRIANGLE_LIST;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
         pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].shader = _shader;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].inputState = {
-            _inputAssembler->getAttributes() };
-        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].layout =
-            _pipelineLayout[1];
-        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].renderPass =
-            _fbo->getRenderPass();
-        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]
-            .depthStencilState.depthTest = true;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]
-            .depthStencilState.depthWrite = false;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]
-            .depthStencilState.stencilTestFront =
-            pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]
-            .depthStencilState.stencilTestBack = true;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]
-            .depthStencilState.stencilFuncFront =
-            pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]
-            .depthStencilState.stencilFuncBack = gfx::GFXComparisonFunc::EQUAL;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]
-            .depthStencilState.stencilReadMaskFront =
-            pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]
-            .depthStencilState.stencilReadMaskBack = 0xFF;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]
-            .depthStencilState.stencilWriteMaskFront =
-            pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]
-            .depthStencilState.stencilWriteMaskBack = 0xFF;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]
-            .depthStencilState.stencilFailOpFront =
-            pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]
-            .depthStencilState.stencilFailOpBack = gfx::GFXStencilOp::KEEP;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]
-            .depthStencilState.stencilZFailOpFront =
-            pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]
-            .depthStencilState.stencilZFailOpBack = gfx::GFXStencilOp::KEEP;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]
-            .depthStencilState.stencilPassOpFront =
-            pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]
-            .depthStencilState.stencilPassOpBack = gfx::GFXStencilOp::KEEP;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]
-            .depthStencilState.stencilRefFront =
-            pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]
-            .depthStencilState.stencilRefBack = 0x1;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]
-            .rasterizerState.cullMode = gfx::GFXCullMode::NONE;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]
-            .dynamicStates.push_back(gfx::GFXDynamicState::VIEWPORT);
-        _pipelineState[(uint8_t)PipelineType::FRONT_BACK_STENCIL] =
-            _device->createPipelineState(
-                pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]);
+        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].inputState = { _inputAssembler->getAttributes() };
+        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].renderPass = _fbo->getRenderPass();
+        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].depthStencilState.depthTest = true;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].depthStencilState.depthWrite = false;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].depthStencilState.stencilTestFront =
+            pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].depthStencilState.stencilTestBack = true;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].depthStencilState.stencilFuncFront =
+            pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].depthStencilState.stencilFuncBack = gfx::ComparisonFunc::EQUAL;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].depthStencilState.stencilReadMaskFront =
+            pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].depthStencilState.stencilReadMaskBack = 0xFF;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].depthStencilState.stencilWriteMaskFront =
+            pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].depthStencilState.stencilWriteMaskBack = 0xFF;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].depthStencilState.stencilFailOpFront =
+            pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].depthStencilState.stencilFailOpBack = gfx::StencilOp::KEEP;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].depthStencilState.stencilZFailOpFront =
+            pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].depthStencilState.stencilZFailOpBack = gfx::StencilOp::KEEP;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].depthStencilState.stencilPassOpFront =
+            pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].depthStencilState.stencilPassOpBack = gfx::StencilOp::KEEP;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].depthStencilState.stencilRefFront =
+            pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].depthStencilState.stencilRefBack = 0x1;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].rasterizerState.cullMode = gfx::CullMode::NONE;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].dynamicStates.push_back(gfx::DynamicState::VIEWPORT);
+        _pipelineState[(uint8_t)PipelineType::FRONT_BACK_STENCIL] = _device->createPipelineState(pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]);
 
         // do back stencil test
-        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].primitive =
-            gfx::GFXPrimitiveMode::TRIANGLE_LIST;
+        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
         pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].shader = _shader;
-        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].inputState = {
-            _inputAssembler->getAttributes() };
-        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].layout = _pipelineLayout[1];
-        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].renderPass =
-            _fbo->getRenderPass();
-        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL]
-            .depthStencilState.depthTest = true;
-        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL]
-            .depthStencilState.depthWrite = false;
-        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL]
-            .depthStencilState.stencilTestFront =
-            pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL]
-            .depthStencilState.stencilTestBack = true;
-        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL]
-            .depthStencilState.stencilFuncFront = gfx::GFXComparisonFunc::ALWAYS;
-        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL]
-            .depthStencilState.stencilFuncBack = gfx::GFXComparisonFunc::EQUAL;
-        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL]
-            .depthStencilState.stencilReadMaskFront =
-            pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL]
-            .depthStencilState.stencilReadMaskBack = 0xFF;
-        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL]
-            .depthStencilState.stencilWriteMaskFront =
-            pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL]
-            .depthStencilState.stencilWriteMaskBack = 0xFF;
-        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL]
-            .depthStencilState.stencilFailOpFront =
-            pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL]
-            .depthStencilState.stencilFailOpBack = gfx::GFXStencilOp::KEEP;
-        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL]
-            .depthStencilState.stencilZFailOpFront =
-            pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL]
-            .depthStencilState.stencilZFailOpBack = gfx::GFXStencilOp::KEEP;
-        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL]
-            .depthStencilState.stencilPassOpFront =
-            pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL]
-            .depthStencilState.stencilPassOpBack = gfx::GFXStencilOp::KEEP;
-        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL]
-            .depthStencilState.stencilRefFront =
-            pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL]
-            .depthStencilState.stencilRefBack = 0x1;
-        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].rasterizerState.cullMode =
-            gfx::GFXCullMode::NONE;
-        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].dynamicStates.push_back(
-            gfx::GFXDynamicState::VIEWPORT);
-        _pipelineState[(uint8_t)PipelineType::BACK_STENCIL] =
-            _device->createPipelineState(
-                pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL]);
+        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].inputState = { _inputAssembler->getAttributes() };
+        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].renderPass = _fbo->getRenderPass();
+        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].depthStencilState.depthTest = true;
+        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].depthStencilState.depthWrite = false;
+        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].depthStencilState.stencilTestFront =
+            pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].depthStencilState.stencilTestBack = true;
+        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].depthStencilState.stencilFuncFront = gfx::ComparisonFunc::ALWAYS;
+        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].depthStencilState.stencilFuncBack = gfx::ComparisonFunc::EQUAL;
+        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].depthStencilState.stencilReadMaskFront =
+            pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].depthStencilState.stencilReadMaskBack = 0xFF;
+        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].depthStencilState.stencilWriteMaskFront =
+            pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].depthStencilState.stencilWriteMaskBack = 0xFF;
+        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].depthStencilState.stencilFailOpFront =
+            pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].depthStencilState.stencilFailOpBack = gfx::StencilOp::KEEP;
+        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].depthStencilState.stencilZFailOpFront =
+            pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].depthStencilState.stencilZFailOpBack = gfx::StencilOp::KEEP;
+        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].depthStencilState.stencilPassOpFront =
+            pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].depthStencilState.stencilPassOpBack = gfx::StencilOp::KEEP;
+        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].depthStencilState.stencilRefFront =
+            pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].depthStencilState.stencilRefBack = 0x1;
+        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].rasterizerState.cullMode = gfx::CullMode::NONE;
+        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].dynamicStates.push_back(gfx::DynamicState::VIEWPORT);
+        _pipelineState[(uint8_t)PipelineType::BACK_STENCIL] = _device->createPipelineState(pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL]);
 
         // do front stencil test
-        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].primitive =
-            gfx::GFXPrimitiveMode::TRIANGLE_LIST;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
         pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].shader = _shader;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].inputState = {
-            _inputAssembler->getAttributes() };
-        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].layout =
-            _pipelineLayout[0];
-        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].renderPass =
-            _fbo->getRenderPass();
-        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL]
-            .depthStencilState.depthTest = true;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL]
-            .depthStencilState.depthWrite = false;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL]
-            .depthStencilState.stencilTestFront =
-            pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL]
-            .depthStencilState.stencilTestBack = true;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL]
-            .depthStencilState.stencilFuncFront = gfx::GFXComparisonFunc::EQUAL;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL]
-            .depthStencilState.stencilFuncBack = gfx::GFXComparisonFunc::ALWAYS;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL]
-            .depthStencilState.stencilReadMaskFront =
-            pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL]
-            .depthStencilState.stencilReadMaskBack = 0xFF;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL]
-            .depthStencilState.stencilWriteMaskFront =
-            pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL]
-            .depthStencilState.stencilWriteMaskBack = 0xFF;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL]
-            .depthStencilState.stencilFailOpFront =
-            pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL]
-            .depthStencilState.stencilFailOpBack = gfx::GFXStencilOp::KEEP;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL]
-            .depthStencilState.stencilZFailOpFront =
-            pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL]
-            .depthStencilState.stencilZFailOpBack = gfx::GFXStencilOp::KEEP;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL]
-            .depthStencilState.stencilPassOpFront =
-            pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL]
-            .depthStencilState.stencilPassOpBack = gfx::GFXStencilOp::KEEP;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL]
-            .depthStencilState.stencilRefFront =
-            pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL]
-            .depthStencilState.stencilRefBack = 0x1;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].rasterizerState.cullMode =
-            gfx::GFXCullMode::NONE;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].dynamicStates.push_back(
-            gfx::GFXDynamicState::VIEWPORT);
-        _pipelineState[(uint8_t)PipelineType::FRONT_STENCIL] =
-            _device->createPipelineState(
-                pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL]);
+        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].inputState = { _inputAssembler->getAttributes() };
+        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].renderPass = _fbo->getRenderPass();
+        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].depthStencilState.depthTest = true;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].depthStencilState.depthWrite = false;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].depthStencilState.stencilTestFront =
+            pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].depthStencilState.stencilTestBack = true;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].depthStencilState.stencilFuncFront = gfx::ComparisonFunc::EQUAL;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].depthStencilState.stencilFuncBack = gfx::ComparisonFunc::ALWAYS;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].depthStencilState.stencilReadMaskFront =
+            pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].depthStencilState.stencilReadMaskBack = 0xFF;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].depthStencilState.stencilWriteMaskFront =
+            pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].depthStencilState.stencilWriteMaskBack = 0xFF;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].depthStencilState.stencilFailOpFront =
+            pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].depthStencilState.stencilFailOpBack = gfx::StencilOp::KEEP;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].depthStencilState.stencilZFailOpFront =
+            pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].depthStencilState.stencilZFailOpBack = gfx::StencilOp::KEEP;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].depthStencilState.stencilPassOpFront =
+            pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].depthStencilState.stencilPassOpBack = gfx::StencilOp::KEEP;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].depthStencilState.stencilRefFront =
+            pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].depthStencilState.stencilRefBack = 0x1;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].rasterizerState.cullMode = gfx::CullMode::NONE;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].dynamicStates.push_back(gfx::DynamicState::VIEWPORT);
+        _pipelineState[(uint8_t)PipelineType::FRONT_STENCIL] = _device->createPipelineState(pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL]);
     }
 
     void StencilTest::tick(float dt) {
         _dt += dt;
-        gfx::GFXRect render_area = { 0, 0, _device->getWidth(), _device->getHeight() };
-        gfx::GFXColor clear_color = { 1.0f, 0, 0, 1.0f };
+        gfx::Rect render_area = { 0, 0, _device->getWidth(), _device->getHeight() };
+        gfx::Color clear_color = { 1.0f, 0, 0, 1.0f };
 
         _device->acquire();
 
         auto commandBuffer = _commandBuffers[0];
         commandBuffer->begin();
-        commandBuffer->beginRenderPass(
-            _fbo, render_area, gfx::GFXClearFlagBit::ALL,
-            std::move(std::vector<gfx::GFXColor>({ clear_color })), 1.0f, 0);
+        commandBuffer->beginRenderPass(_fbo, render_area, gfx::ClearFlagBit::ALL,
+            std::move(std::vector<gfx::Color>({ clear_color })), 1.0f, 0);
 
         commandBuffer->bindInputAssembler(_inputAssembler);
 
         // draw label
-        gfx::GFXViewport viewport;
+        gfx::Viewport viewport;
         viewport.left = render_area.width / 6;
-        viewport.top = uint(TestBaseI::getViewportTopBasedOnDevice(0.5f, 0.5f) *
-            render_area.height);
+        viewport.top = uint(TestBaseI::getViewportTopBasedOnDevice(0.5f, 0.5f) *            render_area.height);
         viewport.width = render_area.width / 3;
         viewport.height = render_area.height / 2;
         commandBuffer->setViewport(viewport);
-        commandBuffer->bindPipelineState(
-            _pipelineState[(uint8_t)PipelineType::STENCIL]);
+        commandBuffer->bindPipelineState(_pipelineState[(uint8_t)PipelineType::STENCIL]);
         commandBuffer->bindBindingLayout(_bindingLayout[0]);
         commandBuffer->draw(_inputAssembler);
 
         // draw uv_image
         viewport.left = render_area.width / 2;
         commandBuffer->setViewport(viewport);
-        commandBuffer->bindPipelineState(
-            _pipelineState[(uint8_t)PipelineType::IMAGE]);
+        commandBuffer->bindPipelineState(_pipelineState[(uint8_t)PipelineType::IMAGE]);
         commandBuffer->bindBindingLayout(_bindingLayout[1]);
         commandBuffer->draw(_inputAssembler);
 
         // do back and front stencil test
         viewport.left = 0;
-        viewport.top = uint(TestBaseI::getViewportTopBasedOnDevice(0.0f, 0.5f) *
-            render_area.height);
+        viewport.top = uint(TestBaseI::getViewportTopBasedOnDevice(0.0f, 0.5f) *            render_area.height);
         commandBuffer->setViewport(viewport);
-        commandBuffer->bindPipelineState(
-            _pipelineState[(uint8_t)PipelineType::CAVAS]);
+        commandBuffer->bindPipelineState(_pipelineState[(uint8_t)PipelineType::CAVAS]);
         commandBuffer->bindBindingLayout(_bindingLayout[0]);
         commandBuffer->draw(_inputAssembler);
 
-        commandBuffer->bindPipelineState(
-            _pipelineState[(uint8_t)PipelineType::FRONT_BACK_STENCIL]);
+        commandBuffer->bindPipelineState(_pipelineState[(uint8_t)PipelineType::FRONT_BACK_STENCIL]);
         commandBuffer->bindBindingLayout(_bindingLayout[1]);
         commandBuffer->draw(_inputAssembler);
 
         // do back stencil test
         viewport.left = render_area.width / 3;
         commandBuffer->setViewport(viewport);
-        commandBuffer->bindPipelineState(
-            _pipelineState[(uint8_t)PipelineType::CAVAS]);
+        commandBuffer->bindPipelineState(_pipelineState[(uint8_t)PipelineType::CAVAS]);
         commandBuffer->bindBindingLayout(_bindingLayout[0]);
         commandBuffer->draw(_inputAssembler);
 
-        commandBuffer->bindPipelineState(
-            _pipelineState[(uint8_t)PipelineType::BACK_STENCIL]);
+        commandBuffer->bindPipelineState(_pipelineState[(uint8_t)PipelineType::BACK_STENCIL]);
         commandBuffer->bindBindingLayout(_bindingLayout[1]);
         commandBuffer->draw(_inputAssembler);
 
         // do front stencil test
         viewport.left = render_area.width * 2 / 3;
         commandBuffer->setViewport(viewport);
-        commandBuffer->bindPipelineState(
-            _pipelineState[(uint8_t)PipelineType::CAVAS]);
+        commandBuffer->bindPipelineState(_pipelineState[(uint8_t)PipelineType::CAVAS]);
         commandBuffer->bindBindingLayout(_bindingLayout[0]);
         commandBuffer->draw(_inputAssembler);
 
-        commandBuffer->bindPipelineState(
-            _pipelineState[(uint8_t)PipelineType::FRONT_STENCIL]);
+        commandBuffer->bindPipelineState(_pipelineState[(uint8_t)PipelineType::FRONT_STENCIL]);
         commandBuffer->bindBindingLayout(_bindingLayout[1]);
         commandBuffer->draw(_inputAssembler);
 

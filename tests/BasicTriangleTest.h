@@ -28,15 +28,14 @@ class BasicTriangle: public TestBaseI
      void createPipeline();
      void createInputAssembler();
 
-     gfx::GFXShader* _shader = nullptr;
-     gfx::GFXBuffer* _vertexBuffer = nullptr;
-     gfx::GFXBuffer* _uniformBuffer = nullptr;
-     gfx::GFXBindingLayout* _bindingLayout = nullptr;
-     gfx::GFXPipelineLayout* _pipelineLayout = nullptr;
-     gfx::GFXPipelineState* _pipelineState = nullptr;
-     gfx::GFXInputAssembler* _inputAssembler = nullptr;
-    gfx::GFXBuffer *_indirectBuffer = nullptr;
-    gfx::GFXBuffer *_indexBuffer = nullptr;
+     gfx::Shader* _shader = nullptr;
+     gfx::Buffer* _vertexBuffer = nullptr;
+     gfx::Buffer* _uniformBuffer = nullptr;
+     gfx::BindingLayout* _bindingLayout = nullptr;
+     gfx::PipelineState* _pipelineState = nullptr;
+     gfx::InputAssembler* _inputAssembler = nullptr;
+    gfx::Buffer *_indirectBuffer = nullptr;
+    gfx::Buffer *_indexBuffer = nullptr;
 
      float _time = 0.0f;
 };

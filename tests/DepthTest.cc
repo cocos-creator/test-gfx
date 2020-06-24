@@ -5,7 +5,7 @@ namespace cc {
 
     namespace {
         struct BigTriangle : public gfx::Object {
-            BigTriangle(gfx::GFXDevice *_device, gfx::GFXFramebuffer *_fbo) : device(_device), fbo(_fbo) {
+            BigTriangle(gfx::Device *_device, gfx::Framebuffer *_fbo) : device(_device), fbo(_fbo) {
                 createShader();
                 createBuffers();
                 createSampler();
@@ -14,9 +14,9 @@ namespace cc {
             }
 
             void createShader() {
-                gfx::GFXShaderStageList shaderStageList;
-                gfx::GFXShaderStage vertexShaderStage;
-                vertexShaderStage.type = gfx::GFXShaderType::VERTEX;
+                gfx::ShaderStageList shaderStageList;
+                gfx::ShaderStage vertexShaderStage;
+                vertexShaderStage.type = gfx::ShaderType::VERTEX;
 
 #if defined(USE_VULKAN) || defined(USE_METAL)
                 vertexShaderStage.source = R"(
@@ -58,8 +58,8 @@ namespace cc {
 
                 shaderStageList.emplace_back(std::move(vertexShaderStage));
 
-                gfx::GFXShaderStage fragmentShaderStage;
-                fragmentShaderStage.type = gfx::GFXShaderType::FRAGMENT;
+                gfx::ShaderStage fragmentShaderStage;
+                fragmentShaderStage.type = gfx::ShaderType::FRAGMENT;
 
 #if defined(USE_VULKAN) || defined(USE_METAL)
                 fragmentShaderStage.source = R"(
@@ -128,15 +128,15 @@ namespace cc {
 
                 shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
-                gfx::GFXAttributeList attributeList = { { "a_position", gfx::GFXFormat::RG32F, false, 0, false, 0 } };
-                gfx::GFXUniformList nearFarUniform = { {"u_near", gfx::GFXType::FLOAT, 1},
-                                                 {"u_far", gfx::GFXType::FLOAT, 1} };
-                gfx::GFXUniformBlockList uniformBlockList = {
-                    {gfx::GFXShaderType::FRAGMENT, 0, "Near_Far_Uniform", nearFarUniform} };
-                gfx::GFXUniformSamplerList samplers = {
-                    {gfx::GFXShaderType::FRAGMENT, 1, "u_texture", gfx::GFXType::SAMPLER2D, 1} };
+                gfx::AttributeList attributeList = { { "a_position", gfx::Format::RG32F, false, 0, false, 0 } };
+                gfx::UniformList nearFarUniform = { {"u_near", gfx::Type::FLOAT, 1},
+                                                 {"u_far", gfx::Type::FLOAT, 1} };
+                gfx::UniformBlockList uniformBlockList = {
+                    {gfx::ShaderType::FRAGMENT, 0, "Near_Far_Uniform", nearFarUniform} };
+                gfx::UniformSamplerList samplers = {
+                    {gfx::ShaderType::FRAGMENT, 1, "u_texture", gfx::Type::SAMPLER2D, 1} };
 
-                gfx::GFXShaderInfo shaderInfo;
+                gfx::ShaderInfo shaderInfo;
                 shaderInfo.name = "BigTriangle";
                 shaderInfo.stages = std::move(shaderStageList);
                 shaderInfo.attributes = std::move(attributeList);
@@ -147,9 +147,9 @@ namespace cc {
 
             void createSampler() {
                 // create sampler
-                gfx::GFXSamplerInfo samplerInfo;
-                samplerInfo.addressU = gfx::GFXAddress::CLAMP;
-                samplerInfo.addressV = gfx::GFXAddress::CLAMP;
+                gfx::SamplerInfo samplerInfo;
+                samplerInfo.addressU = gfx::Address::CLAMP;
+                samplerInfo.addressV = gfx::Address::CLAMP;
                 sampler = device->createSampler(samplerInfo);
             }
 
@@ -157,28 +157,27 @@ namespace cc {
                 // create vertex buffer
                 float ySign = device->getProjectionSignY();
                 float vertices[] = { -1, 4 * ySign, -1, -1 * ySign, 4, -1 * ySign };
-                gfx::GFXBufferInfo vertexBufferInfo = { gfx::GFXBufferUsage::VERTEX,
-                                                  gfx::GFXMemoryUsage::DEVICE, 2 * sizeof(float),
-                                                  sizeof(vertices), gfx::GFXBufferFlagBit::NONE };
+                gfx::BufferInfo vertexBufferInfo = { gfx::BufferUsage::VERTEX,
+                                                  gfx::MemoryUsage::DEVICE, 2 * sizeof(float),
+                                                  sizeof(vertices), gfx::BufferFlagBit::NONE };
                 vertexBuffer = device->createBuffer(vertexBufferInfo);
                 vertexBuffer->update(vertices, 0, sizeof(vertices));
 
                 // create uniform buffer
-                gfx::GFXBufferInfo uniformBufferInfo = {
-                    gfx::GFXBufferUsage::UNIFORM, gfx::GFXMemoryUsage::DEVICE, sizeof(float),
-                    2 * sizeof(float), gfx::GFXBufferFlagBit::NONE };
+                gfx::BufferInfo uniformBufferInfo = {
+                    gfx::BufferUsage::UNIFORM, gfx::MemoryUsage::DEVICE, sizeof(float),
+                    2 * sizeof(float), gfx::BufferFlagBit::NONE };
                 nearFarUniformBuffer = device->createBuffer(uniformBufferInfo);
 
                 float nearValue = 0.1f;
                 float farValue = 100.0f;
                 nearFarUniformBuffer->update(&nearValue, 0, sizeof(nearValue));
-                nearFarUniformBuffer->update(&farValue, sizeof(nearValue),
-                    sizeof(farValue));
+                nearFarUniformBuffer->update(&farValue, sizeof(nearValue), sizeof(farValue));
             }
 
             void createInputAssembler() {
-                gfx::GFXAttribute position = { "a_position", gfx::GFXFormat::RG32F, false, 0, false };
-                gfx::GFXInputAssemblerInfo inputAssemblerInfo;
+                gfx::Attribute position = { "a_position", gfx::Format::RG32F, false, 0, false };
+                gfx::InputAssemblerInfo inputAssemblerInfo;
                 inputAssemblerInfo.attributes.emplace_back(std::move(position));
                 inputAssemblerInfo.vertexBuffers.emplace_back(vertexBuffer);
                 inputAssembler = device->createInputAssembler(inputAssemblerInfo);
@@ -186,27 +185,17 @@ namespace cc {
 
             void createPipeline() {
                 texBindingLoc = 1;
-                gfx::GFXBindingList bindingList = { {gfx::GFXShaderType::FRAGMENT, 0,
-                                               gfx::GFXBindingType::UNIFORM_BUFFER,
-                                               "Near_Far_Uniform", 1},
-                                              {gfx::GFXShaderType::FRAGMENT, texBindingLoc,
-                                               gfx::GFXBindingType::SAMPLER, "u_texture", 1} };
-                gfx::GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
+                gfx::BindingLayoutInfo bindingLayoutInfo = { shader };
                 bindingLayout = device->createBindingLayout(bindingLayoutInfo);
 
                 bindingLayout->bindBuffer(0, nearFarUniformBuffer);
                 bindingLayout->bindSampler(texBindingLoc, sampler);
                 // don't update just yet for the texture is still missing
 
-                gfx::GFXPipelineLayoutInfo pipelineLayoutInfo;
-                pipelineLayoutInfo.layouts = { bindingLayout };
-                pipelineLayout = device->createPipelineLayout(pipelineLayoutInfo);
-
-                gfx::GFXPipelineStateInfo pipelineInfo;
-                pipelineInfo.primitive = gfx::GFXPrimitiveMode::TRIANGLE_LIST;
+                gfx::PipelineStateInfo pipelineInfo;
+                pipelineInfo.primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
                 pipelineInfo.shader = shader;
                 pipelineInfo.inputState = { inputAssembler->getAttributes() };
-                pipelineInfo.layout = pipelineLayout;
                 pipelineInfo.renderPass = fbo->getRenderPass();
 
                 pipelineInfo.depthStencilState.depthTest = false;
@@ -214,7 +203,7 @@ namespace cc {
                 pipelineInfo.depthStencilState.stencilTestBack = false;
                 pipelineInfo.depthStencilState.stencilTestFront = false;
 
-                pipelineInfo.rasterizerState.cullMode = gfx::GFXCullMode::NONE;
+                pipelineInfo.rasterizerState.cullMode = gfx::CullMode::NONE;
 
                 pipelineState = device->createPipelineState(pipelineInfo);
             }
@@ -228,26 +217,24 @@ namespace cc {
                 CC_SAFE_DESTROY(sampler);
                 CC_SAFE_DESTROY(texture);
                 CC_SAFE_DESTROY(pipelineState);
-                CC_SAFE_DESTROY(pipelineLayout);
                 CC_SAFE_DESTROY(nearFarUniformBuffer);
             }
 
-            gfx::GFXShader *shader = nullptr;
-            gfx::GFXFramebuffer *fbo = nullptr;
-            gfx::GFXBuffer *vertexBuffer = nullptr;
-            gfx::GFXBuffer *nearFarUniformBuffer = nullptr;
-            gfx::GFXDevice *device = nullptr;
-            gfx::GFXInputAssembler *inputAssembler = nullptr;
-            gfx::GFXBindingLayout *bindingLayout = nullptr;
-            gfx::GFXSampler *sampler = nullptr;
-            gfx::GFXTexture *texture = nullptr;
-            gfx::GFXPipelineState *pipelineState = nullptr;
-            gfx::GFXPipelineLayout *pipelineLayout = nullptr;
+            gfx::Shader *shader = nullptr;
+            gfx::Framebuffer *fbo = nullptr;
+            gfx::Buffer *vertexBuffer = nullptr;
+            gfx::Buffer *nearFarUniformBuffer = nullptr;
+            gfx::Device *device = nullptr;
+            gfx::InputAssembler *inputAssembler = nullptr;
+            gfx::BindingLayout *bindingLayout = nullptr;
+            gfx::Sampler *sampler = nullptr;
+            gfx::Texture *texture = nullptr;
+            gfx::PipelineState *pipelineState = nullptr;
             uint texBindingLoc = 0;
         };
 
         struct Bunny : public gfx::Object {
-            Bunny(gfx::GFXDevice *_device, gfx::GFXFramebuffer *_fbo) : device(_device) {
+            Bunny(gfx::Device *_device, gfx::Framebuffer *_fbo) : device(_device) {
                 createShader();
                 createBuffers();
                 createInputAssembler();
@@ -258,9 +245,9 @@ namespace cc {
 
             void createShader() {
                 // vertex shader
-                gfx::GFXShaderStageList shaderStageList;
-                gfx::GFXShaderStage vertexShaderStage;
-                vertexShaderStage.type = gfx::GFXShaderType::VERTEX;
+                gfx::ShaderStageList shaderStageList;
+                gfx::ShaderStage vertexShaderStage;
+                vertexShaderStage.type = gfx::ShaderType::VERTEX;
 
 #if defined(USE_VULKAN) | defined(USE_METAL)
                 vertexShaderStage.source = R"(
@@ -314,8 +301,8 @@ namespace cc {
                 shaderStageList.emplace_back(std::move(vertexShaderStage));
 
                 // fragment shader
-                gfx::GFXShaderStage fragmentShaderStage;
-                fragmentShaderStage.type = gfx::GFXShaderType::FRAGMENT;
+                gfx::ShaderStage fragmentShaderStage;
+                fragmentShaderStage.type = gfx::ShaderType::FRAGMENT;
 
 #if defined(USE_VULKAN) | defined(USE_METAL)
                 fragmentShaderStage.source = R"(
@@ -353,16 +340,16 @@ namespace cc {
 
                 shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
-                gfx::GFXAttributeList attributeList = { { "a_position", gfx::GFXFormat::RGB32F, false, 0, false, 0 } };
-                gfx::GFXUniformList mvpMatrix = {
-                    {"u_model", gfx::GFXType::MAT4, 1},
-                    {"u_view", gfx::GFXType::MAT4, 1},
-                    {"u_projection", gfx::GFXType::MAT4, 1},
+                gfx::AttributeList attributeList = { { "a_position", gfx::Format::RGB32F, false, 0, false, 0 } };
+                gfx::UniformList mvpMatrix = {
+                    {"u_model", gfx::Type::MAT4, 1},
+                    {"u_view", gfx::Type::MAT4, 1},
+                    {"u_projection", gfx::Type::MAT4, 1},
                 };
-                gfx::GFXUniformBlockList uniformBlockList = {
-                    {gfx::GFXShaderType::VERTEX, 0, "MVP_Matrix", mvpMatrix} };
+                gfx::UniformBlockList uniformBlockList = {
+                    {gfx::ShaderType::VERTEX, 0, "MVP_Matrix", mvpMatrix} };
 
-                gfx::GFXShaderInfo shaderInfo;
+                gfx::ShaderInfo shaderInfo;
                 shaderInfo.name = "Bunny";
                 shaderInfo.attributes = std::move(attributeList);
                 shaderInfo.stages = std::move(shaderStageList);
@@ -372,64 +359,54 @@ namespace cc {
 
             void createBuffers() {
                 // vertex buffer
-                gfx::GFXBufferInfo vertexBufferInfo = {
-                    gfx::GFXBufferUsage::VERTEX, gfx::GFXMemoryUsage::DEVICE, 3 * sizeof(float),
-                    sizeof(bunny_positions), gfx::GFXBufferFlagBit::NONE };
+                gfx::BufferInfo vertexBufferInfo = {
+                    gfx::BufferUsage::VERTEX, gfx::MemoryUsage::DEVICE, 3 * sizeof(float),
+                    sizeof(bunny_positions), gfx::BufferFlagBit::NONE };
 
                 vertexBuffer = device->createBuffer(vertexBufferInfo);
                 vertexBuffer->update((void *)&bunny_positions[0][0], 0,
                     sizeof(bunny_positions));
 
                 // index buffer
-                gfx::GFXBufferInfo indexBufferInfo = {
-                    gfx::GFXBufferUsage::INDEX, gfx::GFXMemoryUsage::DEVICE, sizeof(unsigned short),
-                    sizeof(bunny_cells), gfx::GFXBufferFlagBit::NONE };
+                gfx::BufferInfo indexBufferInfo = {
+                    gfx::BufferUsage::INDEX, gfx::MemoryUsage::DEVICE, sizeof(unsigned short),
+                    sizeof(bunny_cells), gfx::BufferFlagBit::NONE };
                 indexBuffer = device->createBuffer(indexBufferInfo);
                 indexBuffer->update((void *)&bunny_cells[0], 0, sizeof(bunny_cells));
 
                 // uniform buffer
                 // create uniform buffer
-                gfx::GFXBufferInfo uniformBufferInfo = {
-                    gfx::GFXBufferUsage::UNIFORM, gfx::GFXMemoryUsage::HOST | gfx::GFXMemoryUsage::DEVICE,
-                    sizeof(Mat4), 3 * sizeof(Mat4), gfx::GFXBufferFlagBit::NONE };
+                gfx::BufferInfo uniformBufferInfo = {
+                    gfx::BufferUsage::UNIFORM, gfx::MemoryUsage::HOST | gfx::MemoryUsage::DEVICE,
+                    sizeof(Mat4), 3 * sizeof(Mat4), gfx::BufferFlagBit::NONE };
                 for (uint i = 0; i < BUNNY_NUM; i++)
                     mvpUniformBuffer[i] = device->createBuffer(uniformBufferInfo);
             }
 
             void createInputAssembler() {
-                gfx::GFXAttribute position = { "a_position", gfx::GFXFormat::RGB32F, false, 0, false };
-                gfx::GFXInputAssemblerInfo inputAssemblerInfo;
+                gfx::Attribute position = { "a_position", gfx::Format::RGB32F, false, 0, false };
+                gfx::InputAssemblerInfo inputAssemblerInfo;
                 inputAssemblerInfo.attributes.emplace_back(std::move(position));
                 inputAssemblerInfo.vertexBuffers.emplace_back(vertexBuffer);
                 inputAssemblerInfo.indexBuffer = indexBuffer;
                 inputAssembler = device->createInputAssembler(inputAssemblerInfo);
             }
 
-            void createPipeline(gfx::GFXFramebuffer *_fbo) {
-                gfx::GFXBindingList bindingList = {
-                    {gfx::GFXShaderType::VERTEX, 0, gfx::GFXBindingType::UNIFORM_BUFFER, "MVP_Matrix", 1},
-                };
-                gfx::GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
-
+            void createPipeline(gfx::Framebuffer *_fbo) {
                 for (uint i = 0u; i < BUNNY_NUM; i++) {
-                    bindingLayout[i] = device->createBindingLayout(bindingLayoutInfo);
+                    bindingLayout[i] = device->createBindingLayout({ shader });
                     bindingLayout[i]->bindBuffer(0, mvpUniformBuffer[i]);
                     bindingLayout[i]->update();
                 }
 
-                gfx::GFXPipelineLayoutInfo pipelineLayoutInfo;
-                pipelineLayoutInfo.layouts = { bindingLayout[0] };
-                pipelineLayout = device->createPipelineLayout(pipelineLayoutInfo);
-
-                gfx::GFXPipelineStateInfo pipelineInfo;
-                pipelineInfo.primitive = gfx::GFXPrimitiveMode::TRIANGLE_LIST;
+                gfx::PipelineStateInfo pipelineInfo;
+                pipelineInfo.primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
                 pipelineInfo.shader = shader;
                 pipelineInfo.inputState = { inputAssembler->getAttributes() };
-                pipelineInfo.layout = pipelineLayout;
                 pipelineInfo.renderPass = _fbo->getRenderPass();
                 pipelineInfo.depthStencilState.depthTest = true;
                 pipelineInfo.depthStencilState.depthWrite = true;
-                pipelineInfo.depthStencilState.depthFunc = gfx::GFXComparisonFunc::LESS;
+                pipelineInfo.depthStencilState.depthFunc = gfx::ComparisonFunc::LESS;
 
                 pipelineState = device->createPipelineState(pipelineInfo);
             }
@@ -445,21 +422,19 @@ namespace cc {
                     CC_SAFE_DESTROY(mvpUniformBuffer[i]);
                     CC_SAFE_DESTROY(bindingLayout[i]);
                 }
-                CC_SAFE_DESTROY(pipelineLayout);
                 CC_SAFE_DESTROY(pipelineState);
             }
             const static uint BUNNY_NUM = 2;
-            gfx::GFXDevice *device = nullptr;
-            gfx::GFXShader *shader = nullptr;
-            gfx::GFXBuffer *vertexBuffer = nullptr;
-            gfx::GFXBuffer *indexBuffer = nullptr;
-            gfx::GFXSampler *sampler = nullptr;
-            gfx::GFXTexture *depthTexture = nullptr;
-            gfx::GFXInputAssembler *inputAssembler = nullptr;
-            gfx::GFXBuffer *mvpUniformBuffer[BUNNY_NUM] = { nullptr, nullptr };
-            gfx::GFXBindingLayout *bindingLayout[BUNNY_NUM] = { nullptr, nullptr };
-            gfx::GFXPipelineLayout *pipelineLayout = nullptr;
-            gfx::GFXPipelineState *pipelineState = nullptr;
+            gfx::Device *device = nullptr;
+            gfx::Shader *shader = nullptr;
+            gfx::Buffer *vertexBuffer = nullptr;
+            gfx::Buffer *indexBuffer = nullptr;
+            gfx::Sampler *sampler = nullptr;
+            gfx::Texture *depthTexture = nullptr;
+            gfx::InputAssembler *inputAssembler = nullptr;
+            gfx::Buffer *mvpUniformBuffer[BUNNY_NUM] = { nullptr, nullptr };
+            gfx::BindingLayout *bindingLayout[BUNNY_NUM] = { nullptr, nullptr };
+            gfx::PipelineState *pipelineState = nullptr;
         };
 
         BigTriangle *bg;
@@ -475,32 +450,32 @@ namespace cc {
     bool DepthTexture::initialize() {
         _bunnyFBO = CC_NEW(Framebuffer);
 
-        gfx::GFXRenderPassInfo renderPassInfo;
+        gfx::RenderPassInfo renderPassInfo;
 
-        gfx::GFXColorAttachment colorAttachment;
+        gfx::ColorAttachment colorAttachment;
         colorAttachment.format = _device->getColorFormat();
-        colorAttachment.loadOp = gfx::GFXLoadOp::DISCARD;
-        colorAttachment.storeOp = gfx::GFXStoreOp::DISCARD;
+        colorAttachment.loadOp = gfx::LoadOp::DISCARD;
+        colorAttachment.storeOp = gfx::StoreOp::DISCARD;
         colorAttachment.sampleCount = 1;
-        colorAttachment.beginLayout = gfx::GFXTextureLayout::UNDEFINED;
-        colorAttachment.endLayout = gfx::GFXTextureLayout::COLOR_ATTACHMENT_OPTIMAL;
+        colorAttachment.beginLayout = gfx::TextureLayout::UNDEFINED;
+        colorAttachment.endLayout = gfx::TextureLayout::COLOR_ATTACHMENT_OPTIMAL;
         renderPassInfo.colorAttachments.emplace_back(colorAttachment);
 
-        gfx::GFXDepthStencilAttachment &depthStencilAttachment = renderPassInfo.depthStencilAttachment;
+        gfx::DepthStencilAttachment &depthStencilAttachment = renderPassInfo.depthStencilAttachment;
         depthStencilAttachment.format = _device->getDepthStencilFormat();
-        depthStencilAttachment.depthLoadOp = gfx::GFXLoadOp::CLEAR;
-        depthStencilAttachment.depthStoreOp = gfx::GFXStoreOp::STORE;
-        depthStencilAttachment.stencilLoadOp = gfx::GFXLoadOp::CLEAR;
-        depthStencilAttachment.stencilStoreOp = gfx::GFXStoreOp::STORE;
+        depthStencilAttachment.depthLoadOp = gfx::LoadOp::CLEAR;
+        depthStencilAttachment.depthStoreOp = gfx::StoreOp::STORE;
+        depthStencilAttachment.stencilLoadOp = gfx::LoadOp::CLEAR;
+        depthStencilAttachment.stencilStoreOp = gfx::StoreOp::STORE;
         depthStencilAttachment.sampleCount = 1;
-        depthStencilAttachment.beginLayout = gfx::GFXTextureLayout::UNDEFINED;
-        depthStencilAttachment.endLayout = gfx::GFXTextureLayout::SHADER_READONLY_OPTIMAL;
+        depthStencilAttachment.beginLayout = gfx::TextureLayout::UNDEFINED;
+        depthStencilAttachment.endLayout = gfx::TextureLayout::SHADER_READONLY_OPTIMAL;
 
         _bunnyFBO->renderPass = _device->createRenderPass(renderPassInfo);
 
-        gfx::GFXTextureInfo colorTexInfo;
-        colorTexInfo.type = gfx::GFXTextureType::TEX2D;
-        colorTexInfo.usage = gfx::GFXTextureUsageBit::COLOR_ATTACHMENT | gfx::GFXTextureUsageBit::SAMPLED;
+        gfx::TextureInfo colorTexInfo;
+        colorTexInfo.type = gfx::TextureType::TEX2D;
+        colorTexInfo.usage = gfx::TextureUsageBit::COLOR_ATTACHMENT | gfx::TextureUsageBit::SAMPLED;
         colorTexInfo.format = _device->getColorFormat();
         colorTexInfo.width = _device->getWidth();
         colorTexInfo.height = _device->getHeight();
@@ -509,9 +484,9 @@ namespace cc {
         colorTexInfo.mipLevel = 1;
         _bunnyFBO->colorTex = _device->createTexture(colorTexInfo);
 
-        gfx::GFXTextureInfo depthStecnilTexInfo;
-        depthStecnilTexInfo.type = gfx::GFXTextureType::TEX2D;
-        depthStecnilTexInfo.usage = gfx::GFXTextureUsageBit::DEPTH_STENCIL_ATTACHMENT | gfx::GFXTextureUsageBit::SAMPLED;
+        gfx::TextureInfo depthStecnilTexInfo;
+        depthStecnilTexInfo.type = gfx::TextureType::TEX2D;
+        depthStecnilTexInfo.usage = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT | gfx::TextureUsageBit::SAMPLED;
         depthStecnilTexInfo.format = _device->getDepthStencilFormat();
         depthStecnilTexInfo.width = _device->getWidth();
         depthStecnilTexInfo.height = _device->getHeight();
@@ -520,7 +495,7 @@ namespace cc {
         depthStecnilTexInfo.mipLevel = 1;
         _bunnyFBO->depthStencilTex = _device->createTexture(depthStecnilTexInfo);
 
-        gfx::GFXFramebufferInfo fboInfo;
+        gfx::FramebufferInfo fboInfo;
         fboInfo.renderPass = _bunnyFBO->renderPass;
         fboInfo.colorTextures.push_back(_bunnyFBO->colorTex);
         fboInfo.depthStencilTexture = _bunnyFBO->depthStencilTex;
@@ -542,7 +517,7 @@ namespace cc {
         _bunnyFBO->colorTex->resize(width, height);
         _bunnyFBO->depthStencilTex->resize(width, height);
 
-        gfx::GFXFramebufferInfo fboInfo;
+        gfx::FramebufferInfo fboInfo;
         fboInfo.renderPass = _bunnyFBO->renderPass;
         fboInfo.colorTextures.push_back(_bunnyFBO->colorTex);
         fboInfo.depthStencilTexture = _bunnyFBO->depthStencilTex;
@@ -550,7 +525,7 @@ namespace cc {
 
         _bunnyFBO->framebuffer->destroy();
         _bunnyFBO->framebuffer->initialize(fboInfo);
-        
+
         // TODO: this hack works around binding update issue in vulkan backend
         // can be removed after binding layout refactor (#3591)
         bg->bindingLayout->bindTexture(bg->texBindingLoc, nullptr);
@@ -570,8 +545,8 @@ namespace cc {
             0.1f, 100.f, &_projection);
         TestBaseI::modifyProjectionBasedOnDevice(_projection);
 
-        gfx::GFXRect render_area = { 0, 0, _device->getWidth(), _device->getHeight() };
-        gfx::GFXColor clear_color = { 1.0, 0, 0, 1.0f };
+        gfx::Rect render_area = { 0, 0, _device->getWidth(), _device->getHeight() };
+        gfx::Color clear_color = { 1.0, 0, 0, 1.0f };
 
         _device->acquire();
 
@@ -579,8 +554,8 @@ namespace cc {
         commandBuffer->begin();
 
         // render bunny
-        commandBuffer->beginRenderPass(_bunnyFBO->framebuffer, render_area, gfx::GFXClearFlagBit::DEPTH,
-            std::move(std::vector<gfx::GFXColor>({ clear_color })), 1.0f, 0);
+        commandBuffer->beginRenderPass(_bunnyFBO->framebuffer, render_area, gfx::ClearFlagBit::DEPTH,
+            std::move(std::vector<gfx::Color>({ clear_color })), 1.0f, 0);
         commandBuffer->bindPipelineState(bunny->pipelineState);
         commandBuffer->bindInputAssembler(bunny->inputAssembler);
         for (uint i = 0; i < Bunny::BUNNY_NUM; i++) {
@@ -600,8 +575,8 @@ namespace cc {
         commandBuffer->endRenderPass();
 
         // render bg
-        commandBuffer->beginRenderPass(_fbo, render_area, gfx::GFXClearFlagBit::ALL,
-            std::move(std::vector<gfx::GFXColor>({ clear_color })), 1.0f, 0);
+        commandBuffer->beginRenderPass(_fbo, render_area, gfx::ClearFlagBit::ALL,
+            std::move(std::vector<gfx::Color>({ clear_color })), 1.0f, 0);
         commandBuffer->bindInputAssembler(bg->inputAssembler);
         commandBuffer->bindPipelineState(bg->pipelineState);
         commandBuffer->bindBindingLayout(bg->bindingLayout);

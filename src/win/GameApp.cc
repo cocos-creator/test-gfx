@@ -108,9 +108,9 @@ namespace cc {
         static bool first = true;
         if (first) {
             _tests = {
-                //ClearScreen::create,
-                //BasicTriangle::create,
-                //BasicTexture::create,
+                ClearScreen::create,
+                BasicTriangle::create,
+                BasicTexture::create,
                 DepthTexture::create,
                 StencilTest::create,
                 BlendTest::create,
@@ -134,9 +134,9 @@ namespace cc {
     void GameApp::resize(uint width, uint height) {
         if (!width || !height) {
             _minimized = true;
+            TestBaseI::getDevice()->resize(width, height);
             return;
         }
-
         _minimized = false;
         _test->resize(width, height);
     }

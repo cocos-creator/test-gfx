@@ -57,7 +57,7 @@ set(CC_BASE_HEADERS
     ${COCOS_SRC_PATH}/base/ccConfig.h
     ${COCOS_SRC_PATH}/base/CCData.h
     # ${COCOS_SRC_PATH}/base/CCGLUtils.h
-    ${COCOS_SRC_PATH}/base/CCLog.h
+    ${COCOS_SRC_PATH}/base/Log.h
     ${COCOS_SRC_PATH}/base/ccMacros.h
     ${COCOS_SRC_PATH}/base/CCMap.h
     ${COCOS_SRC_PATH}/base/ccRandom.h
@@ -66,6 +66,8 @@ set(CC_BASE_HEADERS
     # ${COCOS_SRC_PATH}/base/CCRenderTexture.h
     # ${COCOS_SRC_PATH}/base/CCScheduler.h
     # ${COCOS_SRC_PATH}/base/CCThreadPool.h
+    ${COCOS_SRC_PATH}/base/StringUtil.h
+    ${COCOS_SRC_PATH}/base/UTFString.h
     ${COCOS_SRC_PATH}/base/ccUTF8.h
     ${COCOS_SRC_PATH}/base/ccUtils.h
     ${COCOS_SRC_PATH}/base/CCValue.h
@@ -84,10 +86,12 @@ set(CC_BASE_SOURCES
     ${COCOS_SRC_PATH}/base/ccCArray.cpp
     ${COCOS_SRC_PATH}/base/CCData.cpp
     # ${COCOS_SRC_PATH}/base/CCGLUtils.cpp
-    ${COCOS_SRC_PATH}/base/CCLog.cpp
+    ${COCOS_SRC_PATH}/base/Log.cc
     ${COCOS_SRC_PATH}/base/ccRandom.cpp
     ${COCOS_SRC_PATH}/base/CCRef.cpp
 
+    ${COCOS_SRC_PATH}/base/StringUtil.cc
+    ${COCOS_SRC_PATH}/base/UTFString.cc
     ${COCOS_SRC_PATH}/base/ccUTF8.cpp
     ${COCOS_SRC_PATH}/base/ccUtils.cpp
     ${COCOS_SRC_PATH}/base/CCValue.cpp

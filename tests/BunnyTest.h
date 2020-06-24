@@ -22,15 +22,14 @@ private:
     void createInputAssembler();
     void createPipelineState();
     
-    gfx::GFXShader* _shader = nullptr;
-    gfx::GFXBuffer* _vertexBuffer = nullptr;
-    gfx::GFXBuffer* _indexBuffer = nullptr;
-    gfx::GFXBuffer* _mvpMatrix = nullptr;
-    gfx::GFXBuffer* _color = nullptr;
-    gfx::GFXBindingLayout* _bindingLayout = nullptr;
-    gfx::GFXInputAssembler* _inputAssembler = nullptr;
-    gfx::GFXPipelineState* _pipelineState = nullptr;
-    gfx::GFXPipelineLayout* _pipelineLayout = nullptr;
+    gfx::Shader* _shader = nullptr;
+    gfx::Buffer* _vertexBuffer = nullptr;
+    gfx::Buffer* _indexBuffer = nullptr;
+    gfx::Buffer* _mvpMatrix = nullptr;
+    gfx::Buffer* _color = nullptr;
+    gfx::BindingLayout* _bindingLayout = nullptr;
+    gfx::InputAssembler* _inputAssembler = nullptr;
+    gfx::PipelineState* _pipelineState = nullptr;
     
     Mat4 _view;
     float _dt = 0.0f;

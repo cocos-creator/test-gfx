@@ -8,7 +8,6 @@ namespace cc {
         CC_SAFE_DESTROY(_uniformBuffer);
         CC_SAFE_DESTROY(_shader);
         CC_SAFE_DESTROY(_bindingLayout);
-        CC_SAFE_DESTROY(_pipelineLayout);
         CC_SAFE_DESTROY(_pipelineState);
         CC_SAFE_DESTROY(_indexBuffer);
         CC_SAFE_DESTROY(_indirectBuffer);
@@ -24,9 +23,9 @@ namespace cc {
     }
 
     void BasicTriangle::createShader() {
-        gfx::GFXShaderStageList shaderStageList;
-        gfx::GFXShaderStage vertexShaderStage;
-        vertexShaderStage.type = gfx::GFXShaderType::VERTEX;
+        gfx::ShaderStageList shaderStageList;
+        gfx::ShaderStage vertexShaderStage;
+        vertexShaderStage.type = gfx::ShaderType::VERTEX;
 
 #if defined(USE_VULKAN) || defined(USE_METAL)
         vertexShaderStage.source = R"(
@@ -56,8 +55,8 @@ namespace cc {
 
         shaderStageList.emplace_back(std::move(vertexShaderStage));
 
-        gfx::GFXShaderStage fragmentShaderStage;
-        fragmentShaderStage.type = gfx::GFXShaderType::FRAGMENT;
+        gfx::ShaderStage fragmentShaderStage;
+        fragmentShaderStage.type = gfx::ShaderType::FRAGMENT;
 
 #if defined(USE_VULKAN) || defined(USE_METAL)
         fragmentShaderStage.source = R"(
@@ -101,11 +100,11 @@ namespace cc {
 
         shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
-        gfx::GFXUniformList uniformList = { { "u_color", gfx::GFXType::FLOAT4, 1 } };
-        gfx::GFXUniformBlockList uniformBlockList = { { gfx::GFXShaderType::FRAGMENT, 0, "Color", uniformList } };
-        gfx::GFXAttributeList attributeList = { { "a_position", gfx::GFXFormat::RG32F, false, 0, false, 0 } };
+        gfx::UniformList uniformList = { { "u_color", gfx::Type::FLOAT4, 1 } };
+        gfx::UniformBlockList uniformBlockList = { { gfx::ShaderType::FRAGMENT, 0, "Color", uniformList } };
+        gfx::AttributeList attributeList = { { "a_position", gfx::Format::RG32F, false, 0, false, 0 } };
 
-        gfx::GFXShaderInfo shaderInfo;
+        gfx::ShaderInfo shaderInfo;
         shaderInfo.name = "Basic Triangle";
         shaderInfo.stages = std::move(shaderStageList);
         shaderInfo.attributes = std::move(attributeList);
@@ -124,56 +123,56 @@ namespace cc {
              0.5f,  0.5f * ySign,
         };
 
-        gfx::GFXBufferInfo vertexBufferInfo = {
-              gfx::GFXBufferUsage::VERTEX,
-              gfx::GFXMemoryUsage::DEVICE,
+        gfx::BufferInfo vertexBufferInfo = {
+              gfx::BufferUsage::VERTEX,
+              gfx::MemoryUsage::DEVICE,
               2 * sizeof(float),
               sizeof(vertexData),
-              gfx::GFXBufferFlagBit::NONE,
+              gfx::BufferFlagBit::NONE,
         };
 
         _vertexBuffer = _device->createBuffer(vertexBufferInfo);
         _vertexBuffer->update(vertexData, 0, sizeof(vertexData));
 
-        gfx::GFXBufferInfo uniformBufferInfo = {
-               gfx::GFXBufferUsage::UNIFORM,
-               gfx::GFXMemoryUsage::DEVICE | gfx::GFXMemoryUsage::HOST,
+        gfx::BufferInfo uniformBufferInfo = {
+               gfx::BufferUsage::UNIFORM,
+               gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
                4 * sizeof(float),
-               sizeof(gfx::GFXColor),
-               gfx::GFXBufferFlagBit::NONE,
+               sizeof(gfx::Color),
+               gfx::BufferFlagBit::NONE,
         };
         _uniformBuffer = _device->createBuffer(uniformBufferInfo);
 
         unsigned short indices[] = { 1,3,0,1,2,3,2,4,3 };
-        gfx::GFXBufferInfo indexBufferInfo = {
-            gfx::GFXBufferUsageBit::INDEX,
-            gfx::GFXMemoryUsage::DEVICE,
+        gfx::BufferInfo indexBufferInfo = {
+            gfx::BufferUsageBit::INDEX,
+            gfx::MemoryUsage::DEVICE,
             sizeof(unsigned short),
             sizeof(indices),
-            gfx::GFXBufferFlagBit::NONE
+            gfx::BufferFlagBit::NONE
         };
         _indexBuffer = _device->createBuffer(indexBufferInfo);
         _indexBuffer->update(indices, 0, sizeof(indices));
 
-        gfx::GFXDrawInfo drawInfo;
+        gfx::DrawInfo drawInfo;
         drawInfo.firstIndex = 3;
         drawInfo.indexCount = 3;
 
-        gfx::GFXBufferInfo indirectBufferInfo = {
-            gfx::GFXBufferUsageBit::INDIRECT,
-            gfx::GFXMemoryUsage::DEVICE | gfx::GFXMemoryUsage::HOST,
-            sizeof(gfx::GFXDrawInfo),
-            sizeof(gfx::GFXDrawInfo),
-            gfx::GFXBufferFlagBit::NONE
+        gfx::BufferInfo indirectBufferInfo = {
+            gfx::BufferUsageBit::INDIRECT,
+            gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
+            sizeof(gfx::DrawInfo),
+            sizeof(gfx::DrawInfo),
+            gfx::BufferFlagBit::NONE
         };
         _indirectBuffer = _device->createBuffer(indirectBufferInfo);
-        _indirectBuffer->update(&drawInfo, 0, sizeof(gfx::GFXDrawInfo));
+        _indirectBuffer->update(&drawInfo, 0, sizeof(gfx::DrawInfo));
 
     }
 
     void BasicTriangle::createInputAssembler() {
-        gfx::GFXAttribute position = { "a_position", gfx::GFXFormat::RG32F, false, 0, false };
-        gfx::GFXInputAssemblerInfo inputAssemblerInfo;
+        gfx::Attribute position = { "a_position", gfx::Format::RG32F, false, 0, false };
+        gfx::InputAssemblerInfo inputAssemblerInfo;
         inputAssemblerInfo.attributes.emplace_back(std::move(position));
         inputAssemblerInfo.vertexBuffers.emplace_back(_vertexBuffer);
         inputAssemblerInfo.indexBuffer = _indexBuffer;
@@ -182,19 +181,13 @@ namespace cc {
     }
 
     void BasicTriangle::createPipeline() {
-        gfx::GFXBindingList bindingList = { { gfx::GFXShaderType::FRAGMENT, 0, gfx::GFXBindingType::UNIFORM_BUFFER, "u_color", 1 } };
-        gfx::GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
+        gfx::BindingLayoutInfo bindingLayoutInfo = { _shader };
         _bindingLayout = _device->createBindingLayout(bindingLayoutInfo);
 
-        gfx::GFXPipelineLayoutInfo pipelineLayoutInfo;
-        pipelineLayoutInfo.layouts = { _bindingLayout };
-        _pipelineLayout = _device->createPipelineLayout(pipelineLayoutInfo);
-
-        gfx::GFXPipelineStateInfo pipelineInfo;
-        pipelineInfo.primitive = gfx::GFXPrimitiveMode::TRIANGLE_LIST;
+        gfx::PipelineStateInfo pipelineInfo;
+        pipelineInfo.primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
         pipelineInfo.shader = _shader;
         pipelineInfo.inputState = { _inputAssembler->getAttributes() };
-        pipelineInfo.layout = _pipelineLayout;
         pipelineInfo.renderPass = _fbo->getRenderPass();
 
         _pipelineState = _device->createPipelineState(pipelineInfo);
@@ -202,11 +195,11 @@ namespace cc {
 
     void BasicTriangle::tick(float dt) {
 
-        gfx::GFXRect render_area = { 0, 0, _device->getWidth(), _device->getHeight() };
+        gfx::Rect render_area = { 0, 0, _device->getWidth(), _device->getHeight() };
         _time += dt;
-        gfx::GFXColor clear_color = { 1.0f, 0, 0, 1.0f };
+        gfx::Color clear_color = { 1.0f, 0, 0, 1.0f };
 
-        gfx::GFXColor uniformColor;
+        gfx::Color uniformColor;
         uniformColor.r = std::abs(std::sin(_time));
         uniformColor.g = 1.0f;
         uniformColor.b = 0.0f;
@@ -220,7 +213,7 @@ namespace cc {
 
         auto commandBuffer = _commandBuffers[0];
         commandBuffer->begin();
-        commandBuffer->beginRenderPass(_fbo, render_area, gfx::GFXClearFlagBit::ALL, std::move(std::vector<gfx::GFXColor>({ clear_color })), 1.0f, 0);
+        commandBuffer->beginRenderPass(_fbo, render_area, gfx::ClearFlagBit::ALL, std::move(std::vector<gfx::Color>({ clear_color })), 1.0f, 0);
         commandBuffer->bindInputAssembler(_inputAssembler);
         commandBuffer->bindPipelineState(_pipelineState);
         commandBuffer->bindBindingLayout(_bindingLayout);

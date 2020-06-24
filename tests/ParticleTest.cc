@@ -58,7 +58,6 @@ namespace cc {
         CC_SAFE_DESTROY(_indexBuffer);
         CC_SAFE_DESTROY(_inputAssembler);
         CC_SAFE_DESTROY(_pipelineState);
-        CC_SAFE_DESTROY(_pipelineLayout);
         CC_SAFE_DESTROY(_bindingLayout);
         CC_SAFE_DESTROY(_uniformBuffer);
         CC_SAFE_DESTROY(_texture);
@@ -75,9 +74,9 @@ namespace cc {
     }
 
     void ParticleTest::createShader() {
-        gfx::GFXShaderStageList shaderStageList;
-        gfx::GFXShaderStage vertexShaderStage;
-        vertexShaderStage.type = gfx::GFXShaderType::VERTEX;
+        gfx::ShaderStageList shaderStageList;
+        gfx::ShaderStage vertexShaderStage;
+        vertexShaderStage.type = gfx::ShaderType::VERTEX;
 
 #if defined(USE_VULKAN) || defined(USE_METAL)
         vertexShaderStage.source = R"(
@@ -161,8 +160,8 @@ namespace cc {
 
         shaderStageList.emplace_back(std::move(vertexShaderStage));
 
-        gfx::GFXShaderStage fragmentShaderStage;
-        fragmentShaderStage.type = gfx::GFXShaderType::FRAGMENT;
+        gfx::ShaderStage fragmentShaderStage;
+        fragmentShaderStage.type = gfx::ShaderType::FRAGMENT;
 
 #if defined(USE_VULKAN) || defined(USE_METAL)
         fragmentShaderStage.source = R"(
@@ -212,21 +211,21 @@ namespace cc {
 
         shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
-        gfx::GFXAttributeList attributeList = {
-            { "a_quad", gfx::GFXFormat::RG32F, false, 0, false, 0 },
-            { "a_position", gfx::GFXFormat::RGB32F, false, 0, false, 1 },
-            { "a_color", gfx::GFXFormat::RGBA32F, false, 0, false, 2 },
+        gfx::AttributeList attributeList = {
+            { "a_quad", gfx::Format::RG32F, false, 0, false, 0 },
+            { "a_position", gfx::Format::RGB32F, false, 0, false, 1 },
+            { "a_color", gfx::Format::RGBA32F, false, 0, false, 2 },
         };
-        gfx::GFXUniformList mvpMatrix = { {"u_model", gfx::GFXType::MAT4, 1},
-                                    {"u_view", gfx::GFXType::MAT4, 1},
-                                    {"u_projection", gfx::GFXType::MAT4, 1} };
-        gfx::GFXUniformBlockList uniformBlockList = {
-            {gfx::GFXShaderType::VERTEX, 0, "MVP_Matrix", mvpMatrix} };
+        gfx::UniformList mvpMatrix = { {"u_model", gfx::Type::MAT4, 1},
+                                    {"u_view", gfx::Type::MAT4, 1},
+                                    {"u_projection", gfx::Type::MAT4, 1} };
+        gfx::UniformBlockList uniformBlockList = {
+            {gfx::ShaderType::VERTEX, 0, "MVP_Matrix", mvpMatrix} };
 
-        gfx::GFXUniformSamplerList sampler = {
-            {gfx::GFXShaderType::FRAGMENT, 1, "u_texture", gfx::GFXType::SAMPLER2D, 1} };
+        gfx::UniformSamplerList sampler = {
+            {gfx::ShaderType::FRAGMENT, 1, "u_texture", gfx::Type::SAMPLER2D, 1} };
 
-        gfx::GFXShaderInfo shaderInfo;
+        gfx::ShaderInfo shaderInfo;
         shaderInfo.name = "Particle Test";
         shaderInfo.stages = std::move(shaderStageList);
         shaderInfo.attributes = std::move(attributeList);
@@ -237,10 +236,10 @@ namespace cc {
 
     void ParticleTest::createVertexBuffer() {
         // vertex buffer: _vbufferArray[MAX_QUAD_COUNT][4][VERTEX_STRIDE];
-        gfx::GFXBufferInfo vertexBufferInfo = {
-            gfx::GFXBufferUsage::VERTEX, gfx::GFXMemoryUsage::DEVICE | gfx::GFXMemoryUsage::HOST,
+        gfx::BufferInfo vertexBufferInfo = {
+            gfx::BufferUsage::VERTEX, gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
             VERTEX_STRIDE * sizeof(float), sizeof(_vbufferArray),
-            gfx::GFXBufferFlagBit::NONE };
+            gfx::BufferFlagBit::NONE };
 
         _vertexBuffer = _device->createBuffer(vertexBufferInfo);
 
@@ -256,9 +255,9 @@ namespace cc {
             p[dst++] = baseIndex + 2;
             p[dst++] = baseIndex + 3;
         }
-        gfx::GFXBufferInfo indexBufferInfo = {
-            gfx::GFXBufferUsage::INDEX, gfx::GFXMemoryUsage::DEVICE, sizeof(uint16_t),
-            sizeof(_ibufferArray), gfx::GFXBufferFlagBit::NONE };
+        gfx::BufferInfo indexBufferInfo = {
+            gfx::BufferUsage::INDEX, gfx::MemoryUsage::DEVICE, sizeof(uint16_t),
+            sizeof(_ibufferArray), gfx::BufferFlagBit::NONE };
 
         _indexBuffer = _device->createBuffer(indexBufferInfo);
         _indexBuffer->update(_ibufferArray, 0, sizeof(_ibufferArray));
@@ -269,9 +268,9 @@ namespace cc {
             _particles[i].life = cc::random(1.0f, 10.0f);
         }
 
-        gfx::GFXBufferInfo uniformBufferInfo = { gfx::GFXBufferUsage::UNIFORM,
-                                           gfx::GFXMemoryUsage::DEVICE, sizeof(Mat4),
-                                           3 * sizeof(Mat4), gfx::GFXBufferFlagBit::NONE };
+        gfx::BufferInfo uniformBufferInfo = { gfx::BufferUsage::UNIFORM,
+                                           gfx::MemoryUsage::DEVICE, sizeof(Mat4),
+                                           3 * sizeof(Mat4), gfx::BufferFlagBit::NONE };
         _uniformBuffer = _device->createBuffer(uniformBufferInfo);
         Mat4 model, view, projection;
         Mat4::createLookAt(Vec3(30.0f, 20.0f, 30.0f), Vec3(0.0f, 2.5f, 0.0f),
@@ -287,10 +286,10 @@ namespace cc {
     }
 
     void ParticleTest::createInputAssembler() {
-        gfx::GFXAttribute position = { "a_position", gfx::GFXFormat::RGB32F, false, 0, false };
-        gfx::GFXAttribute quad = { "a_quad", gfx::GFXFormat::RG32F, false, 0, false };
-        gfx::GFXAttribute color = { "a_color", gfx::GFXFormat::RGBA32F, false, 0, false };
-        gfx::GFXInputAssemblerInfo inputAssemblerInfo;
+        gfx::Attribute position = { "a_position", gfx::Format::RGB32F, false, 0, false };
+        gfx::Attribute quad = { "a_quad", gfx::Format::RG32F, false, 0, false };
+        gfx::Attribute color = { "a_color", gfx::Format::RGBA32F, false, 0, false };
+        gfx::InputAssemblerInfo inputAssemblerInfo;
         inputAssemblerInfo.attributes.emplace_back(std::move(quad));
         inputAssemblerInfo.attributes.emplace_back(std::move(position));
         inputAssemblerInfo.attributes.emplace_back(std::move(color));
@@ -300,11 +299,7 @@ namespace cc {
     }
 
     void ParticleTest::createPipeline() {
-        gfx::GFXBindingList bindingList = {
-            {gfx::GFXShaderType::VERTEX, 0, gfx::GFXBindingType::UNIFORM_BUFFER, "MVP_Martix",
-             1},
-            {gfx::GFXShaderType::FRAGMENT, 1, gfx::GFXBindingType::SAMPLER, "u_texture", 1} };
-        gfx::GFXBindingLayoutInfo bindingLayoutInfo = { bindingList };
+        gfx::BindingLayoutInfo bindingLayoutInfo = { _shader };
         _bindingLayout = _device->createBindingLayout(bindingLayoutInfo);
 
         _bindingLayout->bindBuffer(0, _uniformBuffer);
@@ -312,24 +307,18 @@ namespace cc {
         _bindingLayout->bindTexture(1, _texture);
         _bindingLayout->update();
 
-        gfx::GFXPipelineLayoutInfo pipelineLayoutInfo;
-        pipelineLayoutInfo.layouts = { _bindingLayout };
-        _pipelineLayout = _device->createPipelineLayout(pipelineLayoutInfo);
-
-        gfx::GFXPipelineStateInfo pipelineInfo;
-        pipelineInfo.primitive = gfx::GFXPrimitiveMode::TRIANGLE_LIST;
+        gfx::PipelineStateInfo pipelineInfo;
+        pipelineInfo.primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
         pipelineInfo.shader = _shader;
         pipelineInfo.inputState = { _inputAssembler->getAttributes() };
-        pipelineInfo.layout = _pipelineLayout;
         pipelineInfo.renderPass = _fbo->getRenderPass();
         pipelineInfo.blendState.targets[0].blend = true;
-        pipelineInfo.blendState.targets[0].blendEq = gfx::GFXBlendOp::ADD;
-        pipelineInfo.blendState.targets[0].blendAlphaEq = gfx::GFXBlendOp::ADD;
-        pipelineInfo.blendState.targets[0].blendSrc = gfx::GFXBlendFactor::SRC_ALPHA;
-        pipelineInfo.blendState.targets[0].blendDst =
-            gfx::GFXBlendFactor::ONE_MINUS_SRC_ALPHA;
-        pipelineInfo.blendState.targets[0].blendSrcAlpha = gfx::GFXBlendFactor::ONE;
-        pipelineInfo.blendState.targets[0].blendDstAlpha = gfx::GFXBlendFactor::ONE;
+        pipelineInfo.blendState.targets[0].blendEq = gfx::BlendOp::ADD;
+        pipelineInfo.blendState.targets[0].blendAlphaEq = gfx::BlendOp::ADD;
+        pipelineInfo.blendState.targets[0].blendSrc = gfx::BlendFactor::SRC_ALPHA;
+        pipelineInfo.blendState.targets[0].blendDst = gfx::BlendFactor::ONE_MINUS_SRC_ALPHA;
+        pipelineInfo.blendState.targets[0].blendSrcAlpha = gfx::BlendFactor::ONE;
+        pipelineInfo.blendState.targets[0].blendDstAlpha = gfx::BlendFactor::ONE;
 
         _pipelineState = _device->createPipelineState(pipelineInfo);
     }
@@ -339,52 +328,46 @@ namespace cc {
         const size_t LINE_HEIGHT = 128;
         const size_t BUFFER_SIZE = LINE_WIDHT * LINE_HEIGHT * 4;
         uint8_t *imageData = (uint8_t *)CC_MALLOC(BUFFER_SIZE);
-        fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 0, 0, 128, 128, 0xD0,
-            0xD0, 0xD0);
-        fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 0, 0, 64, 64, 0x50,
-            0x50, 0x50);
-        fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 32, 32, 32, 32, 0xFF,
-            0x00, 0x00);
-        fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 64, 64, 64, 64, 0x00,
-            0xFF, 0x00);
-        fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 96, 96, 32, 32, 0x00,
-            0x00, 0xFF);
+        fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 0, 0, 128, 128, 0xD0, 0xD0, 0xD0);
+        fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 0, 0, 64, 64, 0x50, 0x50, 0x50);
+        fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 32, 32, 32, 32, 0xFF, 0x00, 0x00);
+        fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 64, 64, 64, 64, 0x00, 0xFF, 0x00);
+        fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 96, 96, 32, 32, 0x00, 0x00, 0xFF);
 
-        gfx::GFXTextureInfo textureInfo;
-        textureInfo.usage = gfx::GFXTextureUsage::SAMPLED;
-        textureInfo.format = gfx::GFXFormat::RGBA8;
+        gfx::TextureInfo textureInfo;
+        textureInfo.usage = gfx::TextureUsage::SAMPLED | gfx::TextureUsage::TRANSFER_DST;
+        textureInfo.format = gfx::Format::RGBA8;
         textureInfo.width = LINE_WIDHT;
         textureInfo.height = LINE_HEIGHT;
-        textureInfo.flags = gfx::GFXTextureFlagBit::GEN_MIPMAP;
-        textureInfo.mipLevel =
-            TestBaseI::getMipmapLevelCounts(textureInfo.width, textureInfo.height);
+        textureInfo.flags = gfx::TextureFlagBit::GEN_MIPMAP;
+        textureInfo.mipLevel = TestBaseI::getMipmapLevelCounts(textureInfo.width, textureInfo.height);
         _texture = _device->createTexture(textureInfo);
 
-        gfx::GFXBufferTextureCopy textureRegion;
+        gfx::BufferTextureCopy textureRegion;
         textureRegion.buffTexHeight = 0;
         textureRegion.texExtent.width = LINE_WIDHT;
         textureRegion.texExtent.height = LINE_HEIGHT;
         textureRegion.texExtent.depth = 1;
 
-        gfx::GFXBufferTextureCopyList regions;
+        gfx::BufferTextureCopyList regions;
         regions.push_back(std::move(textureRegion));
 
-        gfx::GFXDataArray imageBuffer = { {imageData} };
+        gfx::DataArray imageBuffer = { {imageData} };
         _device->copyBuffersToTexture(imageBuffer, _texture, regions);
         CC_SAFE_FREE(imageData);
 
         // create sampler
-        gfx::GFXSamplerInfo samplerInfo;
-        samplerInfo.addressU = gfx::GFXAddress::WRAP;
-        samplerInfo.addressV = gfx::GFXAddress::WRAP;
-        samplerInfo.mipFilter = gfx::GFXFilter::LINEAR;
+        gfx::SamplerInfo samplerInfo;
+        samplerInfo.addressU = gfx::Address::WRAP;
+        samplerInfo.addressV = gfx::Address::WRAP;
+        samplerInfo.mipFilter = gfx::Filter::LINEAR;
         _sampler = _device->createSampler(samplerInfo);
     }
 
     void ParticleTest::tick(float dt) {
 
-        gfx::GFXRect render_area = { 0, 0, _device->getWidth(), _device->getHeight() };
-        gfx::GFXColor clear_color = { 0, 0, 0, 1.0f };
+        gfx::Rect render_area = { 0, 0, _device->getWidth(), _device->getHeight() };
+        gfx::Color clear_color = { 0, 0, 0, 1.0f };
 
         // update particles
         for (size_t i = 0; i < PARTICLE_COUNT; ++i) {
@@ -427,9 +410,8 @@ namespace cc {
 
         auto commandBuffer = _commandBuffers[0];
         commandBuffer->begin();
-        commandBuffer->beginRenderPass(
-            _fbo, render_area, gfx::GFXClearFlagBit::ALL,
-            std::move(std::vector<gfx::GFXColor>({ clear_color })), 1.0f, 0);
+        commandBuffer->beginRenderPass(_fbo, render_area, gfx::ClearFlagBit::ALL,
+            std::move(std::vector<gfx::Color>({ clear_color })), 1.0f, 0);
         commandBuffer->bindInputAssembler(_inputAssembler);
         commandBuffer->bindPipelineState(_pipelineState);
         commandBuffer->bindBindingLayout(_bindingLayout);
