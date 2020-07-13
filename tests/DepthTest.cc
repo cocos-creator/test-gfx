@@ -155,7 +155,7 @@ namespace cc {
 
             void createBuffers() {
                 // create vertex buffer
-                float ySign = device->getProjectionSignY();
+                float ySign = device->getScreenSpaceSignY();
                 float vertices[] = { -1, 4 * ySign, -1, -1 * ySign, 4, -1 * ySign };
                 gfx::BufferInfo vertexBufferInfo = { gfx::BufferUsage::VERTEX,
                                                   gfx::MemoryUsage::DEVICE, 2 * sizeof(float),
@@ -499,7 +499,6 @@ namespace cc {
         fboInfo.renderPass = _bunnyFBO->renderPass;
         fboInfo.colorTextures.push_back(_bunnyFBO->colorTex);
         fboInfo.depthStencilTexture = _bunnyFBO->depthStencilTex;
-        fboInfo.isOffscreen = true;
         _bunnyFBO->framebuffer = _device->createFramebuffer(fboInfo);
 
         bunny = CC_NEW(Bunny(_device, _bunnyFBO->framebuffer));
@@ -521,7 +520,6 @@ namespace cc {
         fboInfo.renderPass = _bunnyFBO->renderPass;
         fboInfo.colorTextures.push_back(_bunnyFBO->colorTex);
         fboInfo.depthStencilTexture = _bunnyFBO->depthStencilTex;
-        fboInfo.isOffscreen = true;
 
         _bunnyFBO->framebuffer->destroy();
         _bunnyFBO->framebuffer->initialize(fboInfo);
@@ -554,7 +552,7 @@ namespace cc {
         commandBuffer->begin();
 
         // render bunny
-        commandBuffer->beginRenderPass(_bunnyFBO->framebuffer, render_area, gfx::ClearFlagBit::DEPTH,
+        commandBuffer->beginRenderPass(_bunnyFBO->renderPass, _bunnyFBO->framebuffer, render_area,
             std::move(std::vector<gfx::Color>({ clear_color })), 1.0f, 0);
         commandBuffer->bindPipelineState(bunny->pipelineState);
         commandBuffer->bindInputAssembler(bunny->inputAssembler);
@@ -575,7 +573,7 @@ namespace cc {
         commandBuffer->endRenderPass();
 
         // render bg
-        commandBuffer->beginRenderPass(_fbo, render_area, gfx::ClearFlagBit::ALL,
+        commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, render_area, 
             std::move(std::vector<gfx::Color>({ clear_color })), 1.0f, 0);
         commandBuffer->bindInputAssembler(bg->inputAssembler);
         commandBuffer->bindPipelineState(bg->pipelineState);

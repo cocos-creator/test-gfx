@@ -59,13 +59,13 @@ namespace cc {
             depthStencilAttachment.stencilLoadOp = gfx::LoadOp::CLEAR;
             depthStencilAttachment.stencilStoreOp = gfx::StoreOp::STORE;
             depthStencilAttachment.sampleCount = 1;
-            depthStencilAttachment.beginLayout = gfx::TextureLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            depthStencilAttachment.beginLayout = gfx::TextureLayout::UNDEFINED;
             depthStencilAttachment.endLayout = gfx::TextureLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
             _renderPass = _device->createRenderPass(renderPassInfo);
             gfx::FramebufferInfo fboInfo;
+            fboInfo.colorTextures.resize(1);
             fboInfo.renderPass = _renderPass;
-            fboInfo.isOffscreen = false;
             _fbo = _device->createFramebuffer(fboInfo);
         }
 
@@ -104,14 +104,14 @@ namespace cc {
 
     void TestBaseI::modifyProjectionBasedOnDevice(Mat4 &projection) {
         Mat4 trans, scale;
-        Mat4::createTranslation(0.0f, 0.0f, 1.0f + _device->getMinClipZ(), &trans);
-        Mat4::createScale(1.0f, _device->getProjectionSignY(),
-            0.5f - 0.5f * _device->getMinClipZ(), &scale);
+        Mat4::createTranslation(0.0f, 0.0f, 1.0f + _device->getClipSpaceMinZ(), &trans);
+        Mat4::createScale(1.0f, _device->getScreenSpaceSignY(),
+            0.5f - 0.5f * _device->getClipSpaceMinZ(), &scale);
         projection = scale * trans * projection;
     }
 
     float TestBaseI::getViewportTopBasedOnDevice(float top, float height) {
-        float s = _device->getProjectionSignY();
+        float s = _device->getScreenSpaceSignY();
         if (s > 0) return top;
         else return 1.0f - top - height;
     }

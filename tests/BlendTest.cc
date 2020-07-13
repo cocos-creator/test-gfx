@@ -32,7 +32,7 @@ namespace cc {
             gfx::BufferTextureCopyList regions;
             regions.push_back(std::move(textureRegion));
 
-            gfx::DataArray imageBuffers = { {imgData} };
+            gfx::BufferDataList imageBuffers = {imgData};
             device->copyBuffersToTexture(imageBuffers, texture, regions);
             delete[] imgData;
             return texture;
@@ -489,7 +489,7 @@ namespace cc {
             }
 
             void createVertexBuffer() {
-                float ySign = device->getProjectionSignY();
+                float ySign = device->getScreenSpaceSignY();
                 float vertexData[] = { -1.0f,         4.0f * ySign, -1.0f,
                                       -1.0f * ySign, 4.0f,         -1.0f * ySign };
 
@@ -601,7 +601,7 @@ namespace cc {
         auto commandBuffer = _commandBuffers[0];
         commandBuffer->begin();
         commandBuffer->beginRenderPass(
-            _fbo, render_area, gfx::ClearFlagBit::ALL,
+            _fbo->getRenderPass(), _fbo, render_area,
             std::move(std::vector<gfx::Color>({ clear_color })), 1.0f, 0);
 
         // draw background

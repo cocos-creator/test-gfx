@@ -229,7 +229,7 @@ namespace cc {
 
         auto commandBuffer = _commandBuffers[0];
         commandBuffer->begin();
-        commandBuffer->beginRenderPass(_fbo, render_area, gfx::ClearFlagBit::ALL,
+        commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, render_area, 
             std::move(std::vector<gfx::Color>({ clear_color })), 1.0f, 0);
 
         commandBuffer->bindInputAssembler(_inputAssembler);
