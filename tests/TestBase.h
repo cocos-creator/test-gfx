@@ -2,9 +2,6 @@
 #include "Core.h"
 #include "cocos2d.h"
 
-//#define USE_METAL
-//#define USE_VULKAN
-//#define USE_GLES2
 namespace cc {
 
     typedef struct WindowInfo {
@@ -26,6 +23,16 @@ namespace cc {
             CC_SAFE_DESTROY(colorTex);
             CC_SAFE_DESTROY(renderPass);
         }
+    };
+
+    struct ShaderSource {
+        String vert;
+        String frag;
+    };
+    struct ShaderSources {
+        ShaderSource glsl4;
+        ShaderSource glsl3;
+        ShaderSource glsl1;
     };
 
 #define DEFINE_CREATE_METHOD(className)                \
@@ -56,6 +63,7 @@ namespace cc {
         static void modifyProjectionBasedOnDevice(Mat4 &projection);
         static float getViewportTopBasedOnDevice(float top, float height);
         static uint getMipmapLevelCounts(uint width, uint height);
+        static ShaderSource &getAppropriateShaderSource(gfx::Device *device, ShaderSources &sources);
 
     protected:
         static gfx::Device *_device;

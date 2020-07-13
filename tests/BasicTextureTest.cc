@@ -24,95 +24,90 @@ namespace cc {
     }
 
     void BasicTexture::createShader() {
+
+        ShaderSources sources;
+        sources.glsl4 = {
+R"(
+            layout(location = 0) in vec2 a_position;
+            layout(location = 0) out vec2 texcoord;
+            layout(binding = 0) uniform MVP_Matrix
+            {
+                mat4 u_mvpMatrix;
+            };
+   
+            void main()
+            {
+                gl_Position = u_mvpMatrix * vec4(a_position, 0, 1);
+                texcoord = a_position * 0.5 + 0.5;
+                texcoord = vec2(texcoord.x, 1.0 - texcoord.y);
+            }
+)", R"(
+            layout(location = 0) in vec2 texcoord;
+            layout(binding = 1) uniform sampler2D u_texture;
+            layout(location = 0) out vec4 o_color;
+            void main () {
+                o_color = texture(u_texture, texcoord);
+            }
+)"
+        };
+
+        sources.glsl3 = {
+R"(
+            in vec2 a_position;
+            out vec2 texcoord;
+            layout(std140) uniform MVP_Matrix
+            {
+                mat4 u_mvpMatrix;
+            };
+   
+            void main()
+            {
+                gl_Position = u_mvpMatrix * vec4(a_position, 0, 1);
+                texcoord = a_position * 0.5 + 0.5;
+                texcoord = vec2(texcoord.x, 1.0 - texcoord.y);
+            }
+)", R"(
+            in vec2 texcoord;
+            uniform sampler2D u_texture;
+            out vec4 o_color;
+            void main () {
+                o_color = texture(u_texture, texcoord);
+            }
+)"
+        };
+
+        sources.glsl1 = {
+R"(
+            attribute vec2 a_position;
+            uniform mat4 u_mvpMatrix;
+            varying vec2 v_texcoord;
+            void main ()
+            {
+                gl_Position = u_mvpMatrix * vec4(a_position, 0, 1);
+                v_texcoord = a_position * 0.5 + 0.5;
+                v_texcoord = vec2(v_texcoord.x, 1.0 - v_texcoord.y);
+            }
+)", R"(
+            uniform sampler2D u_texture;
+            varying vec2 v_texcoord;
+            void main () {
+                gl_FragColor = texture2D(u_texture, v_texcoord);
+            }
+)"
+        };
+
+        ShaderSource &source = TestBaseI::getAppropriateShaderSource(_device, sources);
+
+
         gfx::ShaderStageList shaderStageList;
         gfx::ShaderStage vertexShaderStage;
         vertexShaderStage.type = gfx::ShaderType::VERTEX;
-
-#if defined(USE_VULKAN) || defined(USE_METAL)
-        vertexShaderStage.source = R"(
-    layout(location = 0) in vec2 a_position;
-    layout(location = 0) out vec2 texcoord;
-    layout(binding = 0) uniform MVP_Matrix
-    {
-        mat4 u_mvpMatrix;
-    };
-   
-    void main()
-    {
-        gl_Position = u_mvpMatrix * vec4(a_position, 0, 1);
-        texcoord = a_position * 0.5 + 0.5;
-        texcoord = vec2(texcoord.x, 1.0 - texcoord.y);
-    }
-    )";
-#elif defined(USE_GLES2)
-        vertexShaderStage.source = R"(
-    attribute vec2 a_position;
-    uniform mat4 u_mvpMatrix;
-    varying vec2 v_texcoord;
-    void main ()
-    {
-        gl_Position = u_mvpMatrix * vec4(a_position, 0, 1);
-        v_texcoord = a_position * 0.5 + 0.5;
-        v_texcoord = vec2(v_texcoord.x, 1.0 - v_texcoord.y);
-    }
-    )";
-#else
-        vertexShaderStage.source = R"(
-    in vec2 a_position;
-    out vec2 texcoord;
-    layout(std140) uniform MVP_Matrix
-    {
-        mat4 u_mvpMatrix;
-    };
-   
-    void main()
-    {
-        gl_Position = u_mvpMatrix * vec4(a_position, 0, 1);
-        texcoord = a_position * 0.5 + 0.5;
-        texcoord = vec2(texcoord.x, 1.0 - texcoord.y);
-    }
-    )";
-#endif // USE_GLES2
-
+        vertexShaderStage.source = source.vert;
         shaderStageList.emplace_back(std::move(vertexShaderStage));
 
         gfx::ShaderStage fragmentShaderStage;
         fragmentShaderStage.type = gfx::ShaderType::FRAGMENT;
-
-#if defined(USE_VULKAN) || defined(USE_METAL)
-        fragmentShaderStage.source = R"(
-    layout(location = 0) in vec2 texcoord;
-    layout(binding = 1) uniform sampler2D u_texture;
-    layout(location = 0) out vec4 o_color;
-    void main () {
-        o_color = texture(u_texture, texcoord);
-    }
-    )";
-#elif defined(USE_GLES2)
-        fragmentShaderStage.source = R"(
-    #ifdef GL_ES
-    precision highp float;
-    #endif
-    uniform sampler2D u_texture;
-    varying vec2 v_texcoord;
-    void main () {
-        gl_FragColor = texture2D(u_texture, v_texcoord);
-    }
-    )";
-#else
-        fragmentShaderStage.source = R"(
-    #ifdef GL_ES
-    precision highp float;
-    #endif
-    in vec2 texcoord;
-    uniform sampler2D u_texture;
-    out vec4 o_color;
-    void main () {
-        o_color = texture(u_texture, texcoord);
-    }
-    )";
-#endif // USE_GLES2
-
+        fragmentShaderStage.source = source.frag;
         shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
         gfx::AttributeList attributeList = { { "a_position", gfx::Format::RG32F, false, 0, false, 0 } };
@@ -140,25 +135,20 @@ namespace cc {
             -1.0f, -1.0f
         };
 
-        //    unsigned short indices[6] = {0, 1, 2, 1, 2, 3};
-
-        gfx::BufferInfo vertexBufferInfo = {
+        _vertexBuffer = _device->createBuffer({
               gfx::BufferUsage::VERTEX,
               gfx::MemoryUsage::DEVICE,
               2 * sizeof(float),
               sizeof(vertexData),
-              gfx::BufferFlagBit::NONE };
-
-        _vertexBuffer = _device->createBuffer(vertexBufferInfo);
+        });
         _vertexBuffer->update(vertexData, 0, sizeof(vertexData));
 
-        gfx::BufferInfo uniformBufferInfo = {
+        _uniformBuffer = _device->createBuffer({
                gfx::BufferUsage::UNIFORM,
                gfx::MemoryUsage::DEVICE,
                sizeof(Mat4),
                sizeof(Mat4),
-               gfx::BufferFlagBit::NONE };
-        _uniformBuffer = _device->createBuffer(uniformBufferInfo);
+        });
     }
 
     void BasicTexture::createInputAssembler() {

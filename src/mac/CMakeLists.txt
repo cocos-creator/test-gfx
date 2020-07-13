@@ -18,7 +18,7 @@ set(INCLUDE_FILES
 if(COCOS_PLATFORM_OSX)
   list(APPEND INCLUDE_FILES ${GFX_EXTERNAL_PATH}/pvrsdk/include)
   set(PVRSDK_LIB_DIR ${GFX_EXTERNAL_PATH}/pvrsdk/lib/OSX_x86)
-  
+
   link_libraries(
     ${PVRSDK_LIB_DIR}/libEGL.dylib
     ${PVRSDK_LIB_DIR}/libGLESv2.dylib
@@ -40,16 +40,16 @@ list(APPEND APP_UI_RES
     ${CMAKE_CURRENT_LIST_DIR}/Assets.xcassets/AppIcon.appiconset/Contents.json
 )
 
-set(ALL_FILES 
-    ${HEADER_FILES} 
-    ${SOURCE_CPP_FILES} 
-    ${SOURCE_C_FILES} 
-    ${SOURCE_MM_FILES} 
-    ${GFX_TESTCASE_HEADER} 
-    ${GFX_TESTCASE_SOURCE} 
+set(ALL_FILES
+    ${HEADER_FILES}
+    ${SOURCE_CPP_FILES}
+    ${SOURCE_C_FILES}
+    ${SOURCE_MM_FILES}
+    ${GFX_TESTCASE_HEADER}
+    ${GFX_TESTCASE_SOURCE}
     ${APP_UI_RES}
     ${CC_PLATFORM_SOURCES}
-    ${CC_BASE_HEADERS} 
+    ${CC_BASE_HEADERS}
     ${CC_BASE_SOURCES}
     ${CC_MATH_HEADERS}
     ${CC_MATH_SOURCES}
@@ -92,15 +92,15 @@ list(APPEND PLATFORM_SPECIFIC_LIBS
      ${METALKIT_LIBRARY}
 )
 
-target_link_libraries(${APP_NAME} 
-    ${PLATFORM_SPECIFIC_LIBS} 
-    Core 
+target_link_libraries(${APP_NAME}
+    ${PLATFORM_SPECIFIC_LIBS}
+    Core
     GFXMetal
     ${CC_EXTERNAL_LIBS}
     z
 )
 
-target_include_directories(${APP_NAME} PUBLIC 
+target_include_directories(${APP_NAME} PUBLIC
     ${PROJECT_SOURCE_DIR}
     ${COCOS_SRC_PATH}/platform
     ${COCOS_EXTERNAL_PATH}/sources
@@ -109,7 +109,7 @@ target_include_directories(${APP_NAME} PUBLIC
 )
 
 if(MACOSX)
-    target_include_directories(${APP_NAME} PRIVATE 
+    target_include_directories(${APP_NAME} PRIVATE
         ##FIXME: bad dependency
         ${COCOS_SRC_PATH}/platform/ios
     )
@@ -123,7 +123,7 @@ source_group(TREE ${COCOS_SRC_PATH}/math PREFIX "Source Files/math" FILES ${CC_M
 source_group(TREE ${COCOS_EXTERNAL_PATH}/sources PREFIX "Header Files/external" FILES ${CC_EXTERNAL_SROUCES})
 
 # setup default flags
-target_compile_definitions(${APP_NAME} PUBLIC 
+target_compile_definitions(${APP_NAME} PUBLIC
     $<$<NOT:$<BOOL:${USE_VIDEO}>>:USE_VIDEO=0>
     $<$<NOT:$<BOOL:${USE_WEB_VIEW}>>:USE_WEB_VIEW=0>
     $<$<NOT:$<BOOL:${USE_AUDIO}>>:USE_AUDIO=0>
@@ -144,4 +144,4 @@ foreach(PVRDLL ${PVRDLLS})
                          copy ${PVRDLL} $<TARGET_FILE_DIR:${APP_NAME}>/../Frameworks/)
 endforeach()
 
-message(STATUS "${APP_NAME} configuration completed.") 
+message(STATUS "${APP_NAME} configuration completed.")

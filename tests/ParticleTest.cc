@@ -3,8 +3,7 @@
 namespace cc {
 
     namespace {
-        static const float quadVerts[][2] = {
-            {-1.0f, -1.0f}, {1.0f, -1.0f}, {1.0f, 1.0f}, {-1.0f, 1.0f} };
+        static const float quadVerts[][2] = { {-1.0f, -1.0f}, {1.0f, -1.0f}, {1.0f, 1.0f}, {-1.0f, 1.0f} };
 
         void fillRectWithColor(uint8_t *buf, uint32_t totalWidth, uint32_t totalHeight,
             uint32_t x, uint32_t y, uint32_t width, uint32_t height,
@@ -74,141 +73,130 @@ namespace cc {
     }
 
     void ParticleTest::createShader() {
+
+        ShaderSources sources;
+        sources.glsl4 = {
+R"(
+            layout(location = 0) in vec2 a_quad;
+            layout(location = 1) in vec3 a_position;
+            layout(location = 2) in vec4 a_color;
+    
+            layout(binding = 0) uniform MVP_Matrix {
+                mat4 u_model, u_view, u_projection;
+            };
+    
+            layout(location = 0) out vec4 v_color;
+            layout(location = 1) out vec2 v_texcoord;
+    
+            void main() {
+                // billboard
+                vec4 pos = u_view * u_model * vec4(a_position, 1);
+                pos.xy += a_quad.xy;
+                pos = u_projection * pos;
+        
+                v_texcoord = vec2(a_quad * -0.5 + 0.5);
+        
+                gl_Position = pos;
+                gl_PointSize = 2.0;
+                v_color = a_color;
+            }
+)", R"(
+            layout(binding = 1) uniform sampler2D u_texture;
+    
+            layout(location = 0) in vec4 v_color;
+            layout(location = 1) in vec2 v_texcoord;
+    
+            layout(location = 0) out vec4 o_color;
+            void main () {
+                o_color = v_color * texture(u_texture, v_texcoord);
+            }
+)"
+        };
+
+        sources.glsl3 = {
+R"(
+            in vec2 a_quad;
+            in vec3 a_position;
+            in vec4 a_color;
+    
+            uniform MVP_Matrix {
+                mat4 u_model, u_view, u_projection;
+            };
+    
+            out vec4 v_color;
+            out vec2 v_texcoord;
+    
+            void main() {
+                // billboard
+                vec4 pos = u_view * u_model * vec4(a_position, 1);
+                pos.xy += a_quad.xy;
+                pos = u_projection * pos;
+        
+                v_texcoord = vec2(a_quad * -0.5 + 0.5);
+        
+                gl_Position = pos;
+                gl_PointSize = 2.0;
+                v_color = a_color;
+            }
+)", R"(
+            uniform sampler2D u_texture;
+    
+            in vec4 v_color;
+            in vec2 v_texcoord;
+    
+            out vec4 o_color;
+            void main () {
+                o_color = v_color * texture(u_texture, v_texcoord);
+            }
+)"
+        };
+
+        sources.glsl1 = {
+R"(
+            attribute vec2 a_quad;
+            attribute vec3 a_position;
+            attribute vec4 a_color;
+    
+            uniform mat4 u_model, u_view, u_projection;
+    
+            varying vec4 v_color;
+            varying vec2 v_texcoord;
+    
+            void main() {
+                // billboard
+                vec4 pos = u_view * u_model * vec4(a_position, 1);
+                pos.xy += a_quad.xy;
+                pos = u_projection * pos;
+        
+                v_texcoord = vec2(a_quad * -0.5 + 0.5);
+        
+                gl_Position = pos;
+                gl_PointSize = 2.0;
+                v_color = a_color;
+            }
+)", R"(
+            uniform sampler2D u_texture;
+    
+            varying vec4 v_color;
+            varying vec2 v_texcoord;
+    
+            void main () {
+                gl_FragColor = v_color * texture2D(u_texture, v_texcoord);
+            }
+)"
+        };
+
+        ShaderSource &source = TestBaseI::getAppropriateShaderSource(_device, sources);
+
         gfx::ShaderStageList shaderStageList;
         gfx::ShaderStage vertexShaderStage;
         vertexShaderStage.type = gfx::ShaderType::VERTEX;
-
-#if defined(USE_VULKAN) || defined(USE_METAL)
-        vertexShaderStage.source = R"(
-    layout(location = 0) in vec2 a_quad;
-    layout(location = 1) in vec3 a_position;
-    layout(location = 2) in vec4 a_color;
-    
-    layout(binding = 0) uniform MVP_Matrix
-    {
-        mat4 u_model, u_view, u_projection;
-    };
-    
-    layout(location = 0) out vec4 v_color;
-    layout(location = 1) out vec2 v_texcoord;
-    
-    void main() {
-        // billboard
-        vec4 pos = u_view * u_model * vec4(a_position, 1);
-        pos.xy += a_quad.xy;
-        pos = u_projection * pos;
-        
-        v_texcoord = vec2(a_quad * -0.5 + 0.5);
-        
-        gl_Position = pos;
-        gl_PointSize = 2.0;
-        v_color = a_color;
-    }
-    )";
-#elif defined(USE_GLES2)
-        vertexShaderStage.source = R"(
-    attribute vec2 a_quad;
-    attribute vec3 a_position;
-    attribute vec4 a_color;
-    
-    uniform mat4 u_model, u_view, u_projection;
-    
-    varying vec4 v_color;
-    varying vec2 v_texcoord;
-    
-    void main() {
-        // billboard
-        vec4 pos = u_view * u_model * vec4(a_position, 1);
-        pos.xy += a_quad.xy;
-        pos = u_projection * pos;
-        
-        v_texcoord = vec2(a_quad * -0.5 + 0.5);
-        
-        gl_Position = pos;
-        gl_PointSize = 2.0;
-        v_color = a_color;
-    }
-    )";
-#else
-        vertexShaderStage.source = R"(
-    in vec2 a_quad;
-    in vec3 a_position;
-    in vec4 a_color;
-    
-    layout(std140) uniform MVP_Matrix
-    {
-        mat4 u_model, u_view, u_projection;
-    };
-    
-    out vec4 v_color;
-    out vec2 v_texcoord;
-    
-    void main() {
-        // billboard
-        vec4 pos = u_view * u_model * vec4(a_position, 1);
-        pos.xy += a_quad.xy;
-        pos = u_projection * pos;
-        
-        v_texcoord = vec2(a_quad * -0.5 + 0.5);
-        
-        gl_Position = pos;
-        gl_PointSize = 2.0;
-        v_color = a_color;
-    }
-    )";
-#endif // USE_GLES2
-
+        vertexShaderStage.source = source.vert;
         shaderStageList.emplace_back(std::move(vertexShaderStage));
 
         gfx::ShaderStage fragmentShaderStage;
         fragmentShaderStage.type = gfx::ShaderType::FRAGMENT;
-
-#if defined(USE_VULKAN) || defined(USE_METAL)
-        fragmentShaderStage.source = R"(
-    #ifdef GL_ES
-                precision highp float;
-    #endif
-    layout(binding = 1) uniform sampler2D u_texture;
-    
-    layout(location = 0) in vec4 v_color;
-    layout(location = 1) in vec2 v_texcoord;
-    
-    layout(location = 0) out vec4 o_color;
-    void main () {
-        o_color = v_color * texture(u_texture, v_texcoord);
-    }
-    )";
-#elif defined(USE_GLES2)
-        fragmentShaderStage.source = R"(
-    #ifdef GL_ES
-    precision highp float;
-    #endif
-    uniform sampler2D u_texture;
-    
-    varying vec4 v_color;
-    varying vec2 v_texcoord;
-    
-    void main () {
-        gl_FragColor = v_color * texture2D(u_texture, v_texcoord);
-    }
-    )";
-#else
-        fragmentShaderStage.source = R"(
-    #ifdef GL_ES
-    precision highp float;
-    #endif
-    uniform sampler2D u_texture;
-    
-    in vec4 v_color;
-    in vec2 v_texcoord;
-    
-    out vec4 o_color;
-    void main () {
-        o_color = v_color * texture(u_texture, v_texcoord);
-    }
-    )";
-#endif // USE_GLES2
-
+        fragmentShaderStage.source = source.frag;
         shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
         gfx::AttributeList attributeList = {
@@ -216,14 +204,14 @@ namespace cc {
             { "a_position", gfx::Format::RGB32F, false, 0, false, 1 },
             { "a_color", gfx::Format::RGBA32F, false, 0, false, 2 },
         };
-        gfx::UniformList mvpMatrix = { {"u_model", gfx::Type::MAT4, 1},
-                                    {"u_view", gfx::Type::MAT4, 1},
-                                    {"u_projection", gfx::Type::MAT4, 1} };
-        gfx::UniformBlockList uniformBlockList = {
-            {gfx::ShaderType::VERTEX, 0, "MVP_Matrix", mvpMatrix} };
+        gfx::UniformList mvpMatrix = {
+            {"u_model", gfx::Type::MAT4, 1},
+            {"u_view", gfx::Type::MAT4, 1},
+            {"u_projection", gfx::Type::MAT4, 1}
+        };
+        gfx::UniformBlockList uniformBlockList = { {gfx::ShaderType::VERTEX, 0, "MVP_Matrix", mvpMatrix} };
 
-        gfx::UniformSamplerList sampler = {
-            {gfx::ShaderType::FRAGMENT, 1, "u_texture", gfx::Type::SAMPLER2D, 1} };
+        gfx::UniformSamplerList sampler = { {gfx::ShaderType::FRAGMENT, 1, "u_texture", gfx::Type::SAMPLER2D, 1} };
 
         gfx::ShaderInfo shaderInfo;
         shaderInfo.name = "Particle Test";
@@ -236,12 +224,12 @@ namespace cc {
 
     void ParticleTest::createVertexBuffer() {
         // vertex buffer: _vbufferArray[MAX_QUAD_COUNT][4][VERTEX_STRIDE];
-        gfx::BufferInfo vertexBufferInfo = {
-            gfx::BufferUsage::VERTEX, gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
-            VERTEX_STRIDE * sizeof(float), sizeof(_vbufferArray),
-            gfx::BufferFlagBit::NONE };
-
-        _vertexBuffer = _device->createBuffer(vertexBufferInfo);
+        _vertexBuffer = _device->createBuffer({
+            gfx::BufferUsage::VERTEX,
+            gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
+            VERTEX_STRIDE * sizeof(float),
+            sizeof(_vbufferArray),
+        });
 
         // index buffer: _ibufferArray[MAX_QUAD_COUNT][6];
         uint16_t dst = 0;
@@ -255,11 +243,12 @@ namespace cc {
             p[dst++] = baseIndex + 2;
             p[dst++] = baseIndex + 3;
         }
-        gfx::BufferInfo indexBufferInfo = {
-            gfx::BufferUsage::INDEX, gfx::MemoryUsage::DEVICE, sizeof(uint16_t),
-            sizeof(_ibufferArray), gfx::BufferFlagBit::NONE };
-
-        _indexBuffer = _device->createBuffer(indexBufferInfo);
+        _indexBuffer = _device->createBuffer({
+            gfx::BufferUsage::INDEX,
+            gfx::MemoryUsage::DEVICE,
+            sizeof(uint16_t),
+            sizeof(_ibufferArray),
+        });
         _indexBuffer->update(_ibufferArray, 0, sizeof(_ibufferArray));
 
         for (size_t i = 0; i < PARTICLE_COUNT; ++i) {
@@ -268,21 +257,19 @@ namespace cc {
             _particles[i].life = cc::random(1.0f, 10.0f);
         }
 
-        gfx::BufferInfo uniformBufferInfo = { gfx::BufferUsage::UNIFORM,
-                                           gfx::MemoryUsage::DEVICE, sizeof(Mat4),
-                                           3 * sizeof(Mat4), gfx::BufferFlagBit::NONE };
-        _uniformBuffer = _device->createBuffer(uniformBufferInfo);
+        _uniformBuffer = _device->createBuffer({
+            gfx::BufferUsage::UNIFORM,
+            gfx::MemoryUsage::DEVICE,
+            sizeof(Mat4),
+            3 * sizeof(Mat4),
+        });
         Mat4 model, view, projection;
-        Mat4::createLookAt(Vec3(30.0f, 20.0f, 30.0f), Vec3(0.0f, 2.5f, 0.0f),
-            Vec3(0.0f, 1.0f, 0.f), &view);
-        Mat4::createPerspective(60.0f,
-            1.0f * _device->getWidth() / _device->getHeight(),
-            0.01f, 1000.0f, &projection);
+        Mat4::createLookAt(Vec3(30.0f, 20.0f, 30.0f), Vec3(0.0f, 2.5f, 0.0f), Vec3(0.0f, 1.0f, 0.f), &view);
+        Mat4::createPerspective(60.0f, 1.0f * _device->getWidth() / _device->getHeight(), 0.01f, 1000.0f, &projection);
         TestBaseI::modifyProjectionBasedOnDevice(projection);
         _uniformBuffer->update(model.m, 0, sizeof(model));
         _uniformBuffer->update(view.m, sizeof(model), sizeof(view));
-        _uniformBuffer->update(projection.m, sizeof(model) + sizeof(view),
-            sizeof(projection));
+        _uniformBuffer->update(projection.m, sizeof(model) + sizeof(view), sizeof(projection));
     }
 
     void ParticleTest::createInputAssembler() {
@@ -352,7 +339,7 @@ namespace cc {
         gfx::BufferTextureCopyList regions;
         regions.push_back(std::move(textureRegion));
 
-        gfx::BufferDataList imageBuffer = {imageData};
+        gfx::BufferDataList imageBuffer = { imageData };
         _device->copyBuffersToTexture(imageBuffer, _texture, regions);
         CC_SAFE_FREE(imageData);
 

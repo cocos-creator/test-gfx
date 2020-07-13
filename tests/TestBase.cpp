@@ -1,13 +1,17 @@
 #include "TestBase.h"
 
-#if defined(USE_METAL)
-#include "gfx-metal/GFXMTL.h"
-#elif defined(USE_VULKAN)
-#include "gfx-vulkan/GFXVulkan.h"
-#elif defined(USE_GLES2)
+//#define USE_METAL
+//#define USE_GLES3
+//#define USE_GLES2
+
+#if   defined(USE_GLES2)
 #include "gfx-gles2/GFXGLES2.h"
+#elif defined(USE_GLES3)
+#include "gfx-gles2/GFXGLES3.h"
+#elif defined(USE_METAL)
+#include "gfx-metal/GFXMTL.h"
 #else
-#include "gfx-gles3/GFXGLES3.h"
+#include "gfx-vulkan/GFXVulkan.h"
 #endif
 
 namespace cc {
@@ -19,19 +23,15 @@ namespace cc {
 
     TestBaseI::TestBaseI(const WindowInfo &info) {
         if (_device == nullptr) {
-#if defined(USE_METAL)
+#if   defined(USE_GLES2)
+            _device = CC_NEW(gfx::GLES2Device);
+#elif defined(USE_GLES3)
+            _device = CC_NEW(gfx::GLES3Device);
+#elif defined(USE_METAL)
             _device = CC_NEW(gfx::CCMTLDevice);
 #else
-
-#if defined(USE_VULKAN)
             _device = CC_NEW(gfx::CCVKDevice);
-#elif defined(USE_GLES2)
-            _device = CC_NEW(gfx::GLES2Device);
-#else
-            _device = CC_NEW(gfx::GLES3Device);
 #endif
-
-#endif // (CC_PLATFORM == CC_PLATFORM_MAC_OSX)
 
             gfx::DeviceInfo dev_info;
             dev_info.windowHandle = info.windowHandle;
@@ -120,4 +120,16 @@ namespace cc {
         return static_cast<uint>(std::floor(std::log2(std::max(width, height)))) + 1;
     }
 
+    ShaderSource &TestBaseI::getAppropriateShaderSource(gfx::Device *device, ShaderSources &sources) {
+        switch (device->getGfxAPI()) {
+        case gfx::API::GLES2:
+            return sources.glsl1;
+        case gfx::API::GLES3:
+            return sources.glsl3;
+        case gfx::API::METAL:
+        case gfx::API::VULKAN:
+            return sources.glsl4;
+        }
+        return sources.glsl4;
+    }
 } // namespace cc

@@ -64,104 +64,83 @@ namespace cc {
             }
 
             void createShader() {
+
+                ShaderSources sources;
+                sources.glsl4 = {
+R"(
+                    layout(location = 0) in vec2 a_position;
+                    layout(location = 1) in vec2 a_uv;
+                    layout(location = 0) out vec2 uv;
+                    layout(binding = 0) uniform MVP_Matrix {
+                        mat4 u_model, u_projection;
+                    };
+                    void main() {
+                        uv = a_uv;
+                        gl_Position = u_projection * u_model * vec4(a_position, 0, 1);
+                    }
+)", R"(
+                    layout(location = 0) in vec2 uv;
+                    layout(binding = 1) uniform sampler2D u_texture;
+                    layout(location = 0) out vec4 o_color;
+                    void main() {
+                        o_color = texture(u_texture, uv);
+                    }
+)"
+                };
+
+                sources.glsl3 = {
+R"(
+                    in vec2 a_position;
+                    in vec2 a_uv;
+                    out vec2 uv;
+                    uniform MVP_Matrix {
+                        mat4 u_model, u_projection;
+                    };
+                    void main() {
+                        uv = a_uv;
+                        gl_Position = u_projection * u_model * vec4(a_position, 0, 1);
+                    }
+)", R"(
+                    in vec2 uv;
+                    uniform sampler2D u_texture;
+                    out vec4 o_color;
+                    void main() {
+                        o_color = texture(u_texture, uv);
+                    }
+)"
+                };
+
+                sources.glsl1 = {
+R"(
+                    attribute vec2 a_position;
+                    attribute vec2 a_uv;
+                    varying vec2 uv;
+                    uniform mat4 u_model, u_projection;
+            
+                    void main() {
+                        uv = a_uv;
+                        gl_Position = u_projection * u_model * vec4(a_position, 0, 1);
+                    }
+)", R"(
+                    varying vec2 uv;
+                    uniform sampler2D u_texture;
+                    void main() {
+                        gl_FragColor = texture2D(u_texture, uv);
+                    }
+)"
+                };
+
+                ShaderSource &source = TestBaseI::getAppropriateShaderSource(device, sources);
+
                 gfx::ShaderStageList shaderStageList;
                 gfx::ShaderStage vertexShaderStage;
                 vertexShaderStage.type = gfx::ShaderType::VERTEX;
-
-#if defined(USE_VULKAN) || defined(USE_METAL)
-                vertexShaderStage.source = R"(
-            #ifdef GL_ES
-                        precision highp float;
-            #endif
-            layout(location = 0) in vec2 a_position;
-            layout(location = 1) in vec2 a_uv;
-            layout(location = 0) out vec2 uv;
-            layout(binding = 0) uniform MVP_Matrix
-            {
-                mat4 u_model, u_projection;
-            };
-            void main()
-            {
-                uv = a_uv;
-                gl_Position = u_projection * u_model * vec4(a_position, 0, 1);
-            }
-            )";
-#elif defined(USE_GLES2)
-                vertexShaderStage.source = R"(
-            attribute vec2 a_position;
-            attribute vec2 a_uv;
-            varying vec2 uv;
-            uniform mat4 u_model, u_projection;
-            
-            void main()
-            {
-                uv = a_uv;
-                gl_Position = u_projection * u_model * vec4(a_position, 0, 1);
-            }
-            )";
-#else
-                vertexShaderStage.source = R"(
-            in vec2 a_position;
-            in vec2 a_uv;
-            out vec2 uv;
-            layout(std140) uniform MVP_Matrix
-            {
-                mat4 u_model, u_projection;
-            };
-            void main()
-            {
-                uv = a_uv;
-                gl_Position = u_projection * u_model * vec4(a_position, 0, 1);
-            }
-            )";
-#endif // USE_GLES2
-
+                vertexShaderStage.source = source.vert;
                 shaderStageList.emplace_back(std::move(vertexShaderStage));
 
                 gfx::ShaderStage fragmentShaderStage;
                 fragmentShaderStage.type = gfx::ShaderType::FRAGMENT;
-
-#if defined(USE_VULKAN) || defined(USE_METAL)
-                fragmentShaderStage.source = R"(
-            #ifdef GL_ES
-                        precision highp float;
-            #endif
-            layout(location = 0) in vec2 uv;
-            layout(binding = 1) uniform sampler2D u_texture;
-            layout(location = 0) out vec4 o_color;
-            void main()
-            {
-                o_color = texture(u_texture, uv);
-            }
-            )";
-#elif defined(USE_GLES2)
-                fragmentShaderStage.source = R"(
-#ifdef GL_ES
-            precision highp float;
-#endif
-            varying vec2 uv;
-            uniform sampler2D u_texture;
-            
-            void main()
-            {
-                gl_FragColor = texture2D(u_texture, uv);
-            }
-            )";
-#else
-                fragmentShaderStage.source = R"(
-#ifdef GL_ES
-            precision highp float;
-#endif
-            in vec2 uv;
-            uniform sampler2D u_texture;
-            out vec4 o_color;
-            void main()
-            {
-                o_color = texture(u_texture, uv);
-            }
-            )";
-#endif // USE_GLES2
-
+                fragmentShaderStage.source = source.frag;
                 shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
                 gfx::AttributeList attributeList = {
@@ -188,35 +167,42 @@ namespace cc {
             }
 
             void createVertexBuffer() {
-                float vertexData[] = { -0.5f, -0.5f, 0,   0,   -0.5f, 0.5f,  0,   1.f,
-                                      0.5f,  0.5f,  1.f, 1.f, 0.5f,  -0.5f, 1.f, 0 };
+                float vertexData[] = {
+                    -0.5f, -0.5f, 0.f, 0.f, -0.5f,  0.5f, 0.f, 1.f,
+                     0.5f,  0.5f, 1.f, 1.f,  0.5f, -0.5f, 1.f, 0.f, 
+                };
 
                 unsigned short indices[6] = { 0, 3, 1, 1, 3, 2 };
 
                 // vertex buffer
-                gfx::BufferInfo vertexBufferInfo = {
-                    gfx::BufferUsage::VERTEX, gfx::MemoryUsage::DEVICE, 4 * sizeof(float),
-                    sizeof(vertexData), gfx::BufferFlagBit::NONE };
-
-                vertexBuffer = device->createBuffer(vertexBufferInfo);
+                vertexBuffer = device->createBuffer({
+                    gfx::BufferUsage::VERTEX,
+                    gfx::MemoryUsage::DEVICE,
+                    4 * sizeof(float),
+                    sizeof(vertexData),
+                });
                 vertexBuffer->update(vertexData, 0, sizeof(vertexData));
 
                 // index buffer
-                gfx::BufferInfo indexBufferInfo = {
-                    gfx::BufferUsage::INDEX, gfx::MemoryUsage::DEVICE, sizeof(unsigned short),
-                    sizeof(indices), gfx::BufferFlagBit::NONE };
-                indexBuffer = device->createBuffer(indexBufferInfo);
+                indexBuffer = device->createBuffer({
+                    gfx::BufferUsage::INDEX, 
+                    gfx::MemoryUsage::DEVICE, 
+                    sizeof(unsigned short),
+                    sizeof(indices),
+                });
                 indexBuffer->update(indices, 0, sizeof(indices));
 
                 // uniform buffer
                 gfx::BufferInfo uniformBufferInfo = {
-                    gfx::BufferUsage::UNIFORM, gfx::MemoryUsage::DEVICE, sizeof(Mat4),
-                    2 * sizeof(Mat4), gfx::BufferFlagBit::NONE };
+                    gfx::BufferUsage::UNIFORM, 
+                    gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST, 
+                    sizeof(Mat4),
+                    2 * sizeof(Mat4), 
+                };
 
                 Mat4 projection;
-                Mat4::createOrthographicOffCenter(0.0f, (float)device->getWidth(),
-                    (float)device->getHeight(), 0.0f, 0.0f,
-                    1000.f, &projection);
+                Mat4::createOrthographicOffCenter(0.0f, (float)device->getWidth(), (float)device->getHeight(),
+                    0.0f, 0.0f, 1000.f, &projection);
                 TestBaseI::modifyProjectionBasedOnDevice(projection);
                 for (int i = 0; i < TOTAL_BLEND; i++) {
                     uniformBuffer[i] = device->createBuffer(uniformBufferInfo);
@@ -375,109 +361,89 @@ namespace cc {
             }
 
             void createShader() {
+
+                ShaderSources sources;
+                sources.glsl4 = {
+R"(
+                    layout(location = 0) in vec2 a_position;
+                    layout(location = 0) out vec2 uv;
+                    void main() {
+                        uv = (a_position + 1.0) * 0.5;
+                        gl_Position = vec4(a_position, 0.1, 1);
+                    }
+)", R"(
+                    layout(location = 0) in vec2 uv;
+                    layout(binding = 0) uniform Time {
+                        float u_time;
+                    };
+                    layout(binding = 1) uniform sampler2D u_texture;
+                    layout(location = 0) out vec4 o_color;
+                    void main() {
+                        vec2 offset = vec2(u_time * -0.01);
+                        o_color = texture(u_texture, 20.0 * (uv + offset));
+                    }
+)"
+                };
+
+                sources.glsl3 = {
+R"(
+                    in vec2 a_position;
+                    out vec2 uv;
+                    void main() {
+                        uv = (a_position + 1.0) * 0.5;
+                        gl_Position = vec4(a_position, 0.1, 1);
+                    }
+)", R"(
+                    in vec2 uv;
+                    uniform sampler2D u_texture;
+                    uniform Time {
+                        float u_time;
+                    };
+                    out vec4 o_color;
+                    void main() {
+                        vec2 offset = vec2(u_time * -0.01);
+                        o_color = texture(u_texture, 20.0 * (uv + offset));
+                    }
+)"
+                };
+
+                sources.glsl1 = {
+R"(
+                    attribute vec2 a_position;
+                    varying vec2 uv;
+                    void main() {
+                        uv = (a_position + 1.0) * 0.5;
+                        gl_Position = vec4(a_position, 0.1, 1);
+                    }
+)", R"(
+                    varying vec2 uv;
+                    uniform sampler2D u_texture;
+                    uniform float u_time;
+            
+                    void main() {
+                        vec2 offset = vec2(u_time * -0.01);
+                        gl_FragColor = texture2D(u_texture, 20.0 * (uv + offset));
+                    }
+)"
+                };
+
+                ShaderSource &source = TestBaseI::getAppropriateShaderSource(device, sources);
+
                 gfx::ShaderStageList shaderStageList;
                 gfx::ShaderStage vertexShaderStage;
                 vertexShaderStage.type = gfx::ShaderType::VERTEX;
-
-#if defined(USE_VULKAN) | defined(USE_METAL)
-                vertexShaderStage.source = R"(
-            layout(location = 0) in vec2 a_position;
-            layout(location = 0) out vec2 uv;
-            void main()
-            {
-                uv = (a_position + 1.0) * 0.5;
-                gl_Position = vec4(a_position, 0.1, 1);
-            }
-            )";
-#elif defined(USE_GLES2)
-                vertexShaderStage.source = R"(
-            attribute vec2 a_position;
-            varying vec2 uv;
-            void main()
-            {
-                uv = (a_position + 1.0) * 0.5;
-                gl_Position = vec4(a_position, 0.1, 1);
-            }
-            )";
-#else
-                vertexShaderStage.source = R"(
-            in vec2 a_position;
-            out vec2 uv;
-            void main()
-            {
-                uv = (a_position + 1.0) * 0.5;
-                gl_Position = vec4(a_position, 0.1, 1);
-            }
-            )";
-#endif // USE_GLES2
-
+                vertexShaderStage.source = source.vert;
                 shaderStageList.emplace_back(std::move(vertexShaderStage));
 
                 gfx::ShaderStage fragmentShaderStage;
                 fragmentShaderStage.type = gfx::ShaderType::FRAGMENT;
-
-#if defined(USE_VULKAN) | defined(USE_METAL)
-                fragmentShaderStage.source = R"(
-            #ifdef GL_ES
-                        precision highp float;
-            #endif
-            layout(location = 0) in vec2 uv;
-            layout(binding = 0) uniform Time
-            {
-                float u_time;
-            };
-            layout(binding = 1) uniform sampler2D u_texture;
-            layout(location = 0) out vec4 o_color;
-            void main()
-            {
-                vec2 offset = vec2(u_time * -0.01);
-                o_color = texture(u_texture, 20.0 * (uv + offset));
-            }
-            )";
-#elif defined(USE_GLES2)
-                fragmentShaderStage.source = R"(
-#ifdef GL_ES
-            precision highp float;
-#endif
-            varying vec2 uv;
-            uniform sampler2D u_texture;
-            uniform float u_time;
-            
-            void main()
-            {
-                vec2 offset = vec2(u_time * -0.01);
-                gl_FragColor = texture2D(u_texture, 20.0 * (uv + offset));
-            }
-            )";
-#else
-                fragmentShaderStage.source = R"(
-#ifdef GL_ES
-            precision highp float;
-#endif
-            in vec2 uv;
-            uniform sampler2D u_texture;
-            layout(std140) uniform Time
-            {
-                float u_time;
-            };
-            out vec4 o_color;
-            void main()
-            {
-                vec2 offset = vec2(u_time * -0.01);
-                o_color = texture(u_texture, 20.0 * (uv + offset));
-            }
-            )";
-#endif // USE_GLES2
-
+                fragmentShaderStage.source = source.frag;
                 shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
                 gfx::AttributeList attributeList = { { "a_position", gfx::Format::RG32F, false, 0, false, 0 } };
                 gfx::UniformList time = { {"u_time", gfx::Type::FLOAT, 1} };
-                gfx::UniformBlockList uniformBlockList = {
-                    {gfx::ShaderType::FRAGMENT, 0, "Time", time} };
-
-                gfx::UniformSamplerList samplers = {
-                    {gfx::ShaderType::FRAGMENT, 1, "u_texture", gfx::Type::SAMPLER2D, 1} };
+                gfx::UniformBlockList uniformBlockList = { {gfx::ShaderType::FRAGMENT, 0, "Time", time} };
+                gfx::UniformSamplerList samplers = { {gfx::ShaderType::FRAGMENT, 1, "u_texture", gfx::Type::SAMPLER2D, 1} };
 
                 gfx::ShaderInfo shaderInfo;
                 shaderInfo.name = "Blend Test: BigTriangle";
@@ -490,22 +456,28 @@ namespace cc {
 
             void createVertexBuffer() {
                 float ySign = device->getScreenSpaceSignY();
-                float vertexData[] = { -1.0f,         4.0f * ySign, -1.0f,
-                                      -1.0f * ySign, 4.0f,         -1.0f * ySign };
+                float vertexData[] = {
+                    -1.0f,  4.0f * ySign,
+                    -1.0f, -1.0f * ySign,
+                     4.0f, -1.0f * ySign 
+                };
 
                 // vertex buffer
-                gfx::BufferInfo vertexBufferInfo = {
-                    gfx::BufferUsage::VERTEX, gfx::MemoryUsage::HOST, 2 * sizeof(float),
-                    sizeof(vertexData), gfx::BufferFlagBit::NONE };
-
-                vertexBuffer = device->createBuffer(vertexBufferInfo);
+                vertexBuffer = device->createBuffer({
+                    gfx::BufferUsage::VERTEX,
+                    gfx::MemoryUsage::HOST,
+                    2 * sizeof(float),
+                    sizeof(vertexData),
+                });
                 vertexBuffer->update(vertexData, 0, sizeof(vertexData));
 
                 // uniform buffer
-                gfx::BufferInfo uniformBufferInfo = {
-                    gfx::BufferUsage::UNIFORM, gfx::MemoryUsage::HOST | gfx::MemoryUsage::DEVICE,
-                    sizeof(float), sizeof(float), gfx::BufferFlagBit::NONE };
-                timeBuffer = device->createBuffer(uniformBufferInfo);
+                timeBuffer = device->createBuffer({
+                    gfx::BufferUsage::UNIFORM,
+                    gfx::MemoryUsage::HOST | gfx::MemoryUsage::DEVICE,
+                    sizeof(float),
+                    sizeof(float),
+                });
             }
 
             void createInputAssembler() {
@@ -523,9 +495,8 @@ namespace cc {
                 textureInfo.width = 128;
                 textureInfo.height = 128;
                 textureInfo.flags = gfx::TextureFlagBit::GEN_MIPMAP;
-                textureInfo.mipLevel =
-                    TestBaseI::getMipmapLevelCounts(textureInfo.width, textureInfo.height);
-                texture = ::cc::createTexture(device, textureInfo, "background.png");
+                textureInfo.mipLevel = TestBaseI::getMipmapLevelCounts(textureInfo.width, textureInfo.height);
+                texture = cc::createTexture(device, textureInfo, "background.png");
 
                 // create sampler
                 gfx::SamplerInfo samplerInfo;
@@ -600,8 +571,7 @@ namespace cc {
 
         auto commandBuffer = _commandBuffers[0];
         commandBuffer->begin();
-        commandBuffer->beginRenderPass(
-            _fbo->getRenderPass(), _fbo, render_area,
+        commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, render_area,
             std::move(std::vector<gfx::Color>({ clear_color })), 1.0f, 0);
 
         // draw background
@@ -618,50 +588,40 @@ namespace cc {
         float halfSize = size * 0.5f;
         float offsetX = 5.f + halfSize;
         float offsetY = 50.f + halfSize;
-        quad->model = std::move(
-            createModelTransform(Vec3(offsetX, offsetY, 0), Vec3(size, size, 1)));
-        quad->uniformBuffer[NO_BLEND]->update(quad->model.m, 0,
-            sizeof(quad->model));
+        quad->model = std::move(createModelTransform(Vec3(offsetX, offsetY, 0), Vec3(size, size, 1)));
+        quad->uniformBuffer[NO_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
         commandBuffer->bindPipelineState(quad->pipelineState[NO_BLEND]);
         commandBuffer->bindBindingLayout(quad->bindingLayout[NO_BLEND]);
         commandBuffer->draw(quad->inputAssembler);
 
         // normal
         offsetY += 5.f + size;
-        quad->model = std::move(createModelTransform(
-            cc::Vec3(offsetX, offsetY, 0), cc::Vec3(size, size, 1)));
-        quad->uniformBuffer[NORMAL_BLEND]->update(quad->model.m, 0,
-            sizeof(quad->model));
+        quad->model = std::move(createModelTransform(cc::Vec3(offsetX, offsetY, 0), cc::Vec3(size, size, 1)));
+        quad->uniformBuffer[NORMAL_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
         commandBuffer->bindPipelineState(quad->pipelineState[NORMAL_BLEND]);
         commandBuffer->bindBindingLayout(quad->bindingLayout[NORMAL_BLEND]);
         commandBuffer->draw(quad->inputAssembler);
 
         // additive
         offsetY += 5.f + size;
-        quad->model = std::move(createModelTransform(
-            cc::Vec3(offsetX, offsetY, 0), cc::Vec3(size, size, 1)));
-        quad->uniformBuffer[ADDITIVE_BLEND]->update(quad->model.m, 0,
-            sizeof(quad->model));
+        quad->model = std::move(createModelTransform(cc::Vec3(offsetX, offsetY, 0), cc::Vec3(size, size, 1)));
+        quad->uniformBuffer[ADDITIVE_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
         commandBuffer->bindPipelineState(quad->pipelineState[ADDITIVE_BLEND]);
         commandBuffer->bindBindingLayout(quad->bindingLayout[ADDITIVE_BLEND]);
         commandBuffer->draw(quad->inputAssembler);
 
         // substract
         offsetY += 5.f + size;
-        quad->model = std::move(createModelTransform(
-            cc::Vec3(offsetX, offsetY, 0), cc::Vec3(size, size, 1)));
-        quad->uniformBuffer[SUBSTRACT_BLEND]->update(quad->model.m, 0,
-            sizeof(quad->model));
+        quad->model = std::move(createModelTransform(cc::Vec3(offsetX, offsetY, 0), cc::Vec3(size, size, 1)));
+        quad->uniformBuffer[SUBSTRACT_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
         commandBuffer->bindPipelineState(quad->pipelineState[SUBSTRACT_BLEND]);
         commandBuffer->bindBindingLayout(quad->bindingLayout[SUBSTRACT_BLEND]);
         commandBuffer->draw(quad->inputAssembler);
 
         // multiply
         offsetY += 5.f + size;
-        quad->model = std::move(createModelTransform(
-            cc::Vec3(offsetX, offsetY, 0), cc::Vec3(size, size, 1)));
-        quad->uniformBuffer[MULTIPLY_BLEND]->update(quad->model.m, 0,
-            sizeof(quad->model));
+        quad->model = std::move(createModelTransform(cc::Vec3(offsetX, offsetY, 0), cc::Vec3(size, size, 1)));
+        quad->uniformBuffer[MULTIPLY_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
         commandBuffer->bindPipelineState(quad->pipelineState[MULTIPLY_BLEND]);
         commandBuffer->bindBindingLayout(quad->bindingLayout[MULTIPLY_BLEND]);
         commandBuffer->draw(quad->inputAssembler);

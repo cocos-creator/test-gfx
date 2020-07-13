@@ -23,81 +23,69 @@ namespace cc {
     }
 
     void BasicTriangle::createShader() {
+
+        ShaderSources sources;
+        sources.glsl4 = {
+R"(
+            layout(location = 0) in vec2 a_position;
+            void main() {
+                gl_Position = vec4(a_position, 0.0, 1.0);
+            }
+)", R"(
+            layout(binding = 0) uniform Color {
+                vec4 u_color;
+            };
+            layout(location = 0) out vec4 o_color;
+
+            void main() {
+                o_color = u_color;
+            }
+)"
+        };
+
+        sources.glsl3 = {
+R"(
+            in vec2 a_position;
+            void main() {
+                gl_Position = vec4(a_position, 0.0, 1.0);
+            }
+)", R"(
+            uniform Color {
+                vec4 u_color;
+            };
+
+            out vec4 o_color;
+            void main() {
+                o_color = vec4(1, 1, 0, 1); // u_color;
+            }
+)" 
+        };
+
+        sources.glsl1 = {
+R"(
+            attribute vec2 a_position;
+            void main() {
+                gl_Position = vec4(a_position, 0.0, 1.0);
+            }
+)", R"(
+            uniform vec4 u_color;
+            void main() {
+                gl_FragColor = vec4(1, 1, 0, 1); // u_color;
+            }
+)"
+        };
+
+        ShaderSource &source = TestBaseI::getAppropriateShaderSource(_device, sources);
+
         gfx::ShaderStageList shaderStageList;
         gfx::ShaderStage vertexShaderStage;
         vertexShaderStage.type = gfx::ShaderType::VERTEX;
-
-#if defined(USE_VULKAN) || defined(USE_METAL)
-        vertexShaderStage.source = R"(
-        layout(location = 0) in vec2 a_position;
-        void main()
-        {
-            gl_Position = vec4(a_position, 0.0, 1.0);
-        }
-    )";
-#elif defined(USE_GLES2)
-        vertexShaderStage.source = R"(
-        attribute vec2 a_position;
-        void main()
-        {
-            gl_Position = vec4(a_position, 0.0, 1.0);
-        }
-    )";
-#else
-        vertexShaderStage.source = R"(
-    in vec2 a_position;
-    void main()
-    {
-    gl_Position = vec4(a_position, 0.0, 1.0);
-    }
-    )";
-#endif // USE_GLES2
-
+        vertexShaderStage.source = source.vert;
         shaderStageList.emplace_back(std::move(vertexShaderStage));
 
         gfx::ShaderStage fragmentShaderStage;
         fragmentShaderStage.type = gfx::ShaderType::FRAGMENT;
-
-#if defined(USE_VULKAN) || defined(USE_METAL)
-        fragmentShaderStage.source = R"(
-        layout(binding = 0) uniform Color
-        {
-            vec4 u_color;
-        };
-        layout(location = 0) out vec4 o_color;
-    
-        void main()
-        {
-            o_color = u_color;
-        }
-    )";
-#elif defined(USE_GLES2)
-        fragmentShaderStage.source = R"(
-        precision highp float;
-        uniform vec4 u_color;
-        void main()
-        {
-            gl_FragColor = vec4(1, 1, 0, 1); // u_color;
-        }
-    )";
-#else
-        fragmentShaderStage.source = R"(
-    #ifdef GL_ES
-    precision highp float;
-    #endif
-    layout(std140) uniform Color
-    {
-        vec4 u_color;
-    };
-    out vec4 o_color;
-    
-    void main()
-    {
-        o_color = vec4(1, 1, 0, 1); // u_color;
-    }
-    )";
-#endif // #ifdef USE_GLES2
-
+        fragmentShaderStage.source = source.frag;
         shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
         gfx::UniformList uniformList = { { "u_color", gfx::Type::FLOAT4, 1 } };

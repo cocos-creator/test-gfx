@@ -74,7 +74,6 @@ set(CC_BASE_HEADERS
     ${COCOS_SRC_PATH}/base/CCVector.h
     ${COCOS_SRC_PATH}/base/etc1.h
     ${COCOS_SRC_PATH}/base/etc2.h
-    ${COCOS_SRC_PATH}/base/pvr.h
     ${COCOS_SRC_PATH}/base/uthash.h
     ${COCOS_SRC_PATH}/base/utlist.h
     ${COCOS_SRC_PATH}/base/ZipUtils.h
@@ -98,7 +97,6 @@ set(CC_BASE_SOURCES
     ${COCOS_SRC_PATH}/base/csscolorparser.cpp
     ${COCOS_SRC_PATH}/base/etc1.cpp
     ${COCOS_SRC_PATH}/base/etc2.cpp
-    ${COCOS_SRC_PATH}/base/pvr.cpp
     ${COCOS_SRC_PATH}/base/ZipUtils.cpp
 )
 
@@ -148,7 +146,6 @@ include(${PROJECT_SOURCE_DIR}/tests/CMakeLists.txt)
 
 if(WIN32)
     add_definitions("-DCC_STATIC")
-    add_definitions("-DUSE_VULKAN")
     add_subdirectory(win)
 elseif(IOS)
 	add_subdirectory(ios)
