@@ -1,2 +1,4 @@
-# gfx-test-case
-Add test case for gfx
+Should be put alongside the native engine repo:
+
+    |-gfx-test-case
+    |-cocos2d-x-lite
