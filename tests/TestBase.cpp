@@ -7,7 +7,7 @@
 #if   defined(USE_GLES2)
 #include "gfx-gles2/GFXGLES2.h"
 #elif defined(USE_GLES3)
-#include "gfx-gles2/GFXGLES3.h"
+#include "gfx-gles3/GFXGLES3.h"
 #elif defined(USE_METAL)
 #include "gfx-metal/GFXMTL.h"
 #else

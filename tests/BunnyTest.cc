@@ -72,6 +72,7 @@ R"(
                 gl_Position = pos;
             }
 )", R"(
+            precision mediump float;
             uniform Color {
                 vec4 u_color;
             };
@@ -95,6 +96,7 @@ R"(
                 gl_Position = pos;
             }
 )", R"(
+            precision mediump float;
             uniform vec4 u_color;
             varying vec3 v_position;
 

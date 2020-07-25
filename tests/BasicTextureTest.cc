@@ -67,6 +67,7 @@ R"(
                 texcoord = vec2(texcoord.x, 1.0 - texcoord.y);
             }
 )", R"(
+            precision mediump float;
             in vec2 texcoord;
             uniform sampler2D u_texture;
             out vec4 o_color;
@@ -88,6 +89,7 @@ R"(
                 v_texcoord = vec2(v_texcoord.x, 1.0 - v_texcoord.y);
             }
 )", R"(
+            precision mediump float;
             uniform sampler2D u_texture;
             varying vec2 v_texcoord;
             void main () {

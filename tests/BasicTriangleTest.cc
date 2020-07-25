@@ -50,6 +50,7 @@ R"(
                 gl_Position = vec4(a_position, 0.0, 1.0);
             }
 )", R"(
+            precision mediump float;
             uniform Color {
                 vec4 u_color;
             };
@@ -68,6 +69,7 @@ R"(
                 gl_Position = vec4(a_position, 0.0, 1.0);
             }
 )", R"(
+            precision mediump float;
             uniform vec4 u_color;
             void main() {
                 gl_FragColor = vec4(1, 1, 0, 1); // u_color;

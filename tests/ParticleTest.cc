@@ -139,6 +139,7 @@ R"(
                 v_color = a_color;
             }
 )", R"(
+            precision mediump float;
             uniform sampler2D u_texture;
     
             in vec4 v_color;
@@ -175,6 +176,7 @@ R"(
                 v_color = a_color;
             }
 )", R"(
+            precision mediump float;
             uniform sampler2D u_texture;
     
             varying vec4 v_color;
@@ -327,7 +329,7 @@ R"(
         textureInfo.width = LINE_WIDHT;
         textureInfo.height = LINE_HEIGHT;
         textureInfo.flags = gfx::TextureFlagBit::GEN_MIPMAP;
-        textureInfo.mipLevel = TestBaseI::getMipmapLevelCounts(textureInfo.width, textureInfo.height);
+        textureInfo.levelCount = TestBaseI::getMipmapLevelCounts(textureInfo.width, textureInfo.height);
         _texture = _device->createTexture(textureInfo);
 
         gfx::BufferTextureCopy textureRegion;

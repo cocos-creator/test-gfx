@@ -101,6 +101,7 @@ R"(
                         gl_Position = u_projection * u_model * vec4(a_position, 0, 1);
                     }
 )", R"(
+                    precision mediump float;
                     in vec2 uv;
                     uniform sampler2D u_texture;
                     out vec4 o_color;
@@ -122,6 +123,7 @@ R"(
                         gl_Position = u_projection * u_model * vec4(a_position, 0, 1);
                     }
 )", R"(
+                    precision mediump float;
                     varying vec2 uv;
                     uniform sampler2D u_texture;
                     void main() {
@@ -394,6 +396,7 @@ R"(
                         gl_Position = vec4(a_position, 0.1, 1);
                     }
 )", R"(
+                    precision mediump float;
                     in vec2 uv;
                     uniform sampler2D u_texture;
                     uniform Time {
@@ -416,6 +419,7 @@ R"(
                         gl_Position = vec4(a_position, 0.1, 1);
                     }
 )", R"(
+                    precision mediump float;
                     varying vec2 uv;
                     uniform sampler2D u_texture;
                     uniform float u_time;
@@ -495,7 +499,7 @@ R"(
                 textureInfo.width = 128;
                 textureInfo.height = 128;
                 textureInfo.flags = gfx::TextureFlagBit::GEN_MIPMAP;
-                textureInfo.mipLevel = TestBaseI::getMipmapLevelCounts(textureInfo.width, textureInfo.height);
+                textureInfo.levelCount = TestBaseI::getMipmapLevelCounts(textureInfo.width, textureInfo.height);
                 texture = cc::createTexture(device, textureInfo, "background.png");
 
                 // create sampler

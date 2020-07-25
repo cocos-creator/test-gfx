@@ -85,12 +85,12 @@ set(CC_BASE_SOURCES
     ${COCOS_SRC_PATH}/base/ccCArray.cpp
     ${COCOS_SRC_PATH}/base/CCData.cpp
     # ${COCOS_SRC_PATH}/base/CCGLUtils.cpp
-    ${COCOS_SRC_PATH}/base/Log.cc
+    ${COCOS_SRC_PATH}/base/Log.cpp
     ${COCOS_SRC_PATH}/base/ccRandom.cpp
     ${COCOS_SRC_PATH}/base/CCRef.cpp
 
-    ${COCOS_SRC_PATH}/base/StringUtil.cc
-    ${COCOS_SRC_PATH}/base/UTFString.cc
+    ${COCOS_SRC_PATH}/base/StringUtil.cpp
+    ${COCOS_SRC_PATH}/base/UTFString.cpp
     ${COCOS_SRC_PATH}/base/ccUTF8.cpp
     ${COCOS_SRC_PATH}/base/ccUtils.cpp
     ${COCOS_SRC_PATH}/base/CCValue.cpp

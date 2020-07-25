@@ -58,6 +58,7 @@ R"(
                         gl_Position = vec4(a_position, 0, 1);
                     }
 )", R"(
+                    precision mediump float;
                     in vec2 v_texcoord;
                     uniform sampler2D u_texture;
                     uniform Near_Far_Uniform {
@@ -89,6 +90,7 @@ R"(
                         gl_Position = vec4(a_position, 0, 1);
                     }
 )", R"(
+                    precision mediump float;
                     varying vec2 v_texcoord;
                     uniform sampler2D u_texture;
                     uniform float u_near;
@@ -272,6 +274,7 @@ R"(
                         gl_Position = pos;
                     }
 )", R"(
+                    precision mediump float;
                     out vec4 o_color;
                     void main () {
                         o_color = vec4(1, 1, 1, 1);
@@ -290,6 +293,7 @@ R"(
                         gl_Position = pos;
                     }
 )", R"(
+                    precision mediump float;
                     void main () {
                         gl_FragColor = vec4(1, 1, 1, 1);
                     }
@@ -446,9 +450,6 @@ R"(
         depthStecnilTexInfo.format = _device->getDepthStencilFormat();
         depthStecnilTexInfo.width = _device->getWidth();
         depthStecnilTexInfo.height = _device->getHeight();
-        depthStecnilTexInfo.depth = 1;
-        depthStecnilTexInfo.arrayLayer = 1;
-        depthStecnilTexInfo.mipLevel = 1;
         _bunnyFBO->depthStencilTex = _device->createTexture(depthStecnilTexInfo);
 
         gfx::FramebufferInfo fboInfo;
@@ -501,14 +502,6 @@ R"(
 
         _device->acquire();
 
-        auto commandBuffer = _commandBuffers[0];
-        commandBuffer->begin();
-
-        // render bunny
-        commandBuffer->beginRenderPass(_bunnyFBO->renderPass, _bunnyFBO->framebuffer, render_area,
-            std::move(std::vector<gfx::Color>({ clear_color })), 1.0f, 0);
-        commandBuffer->bindPipelineState(bunny->pipelineState);
-        commandBuffer->bindInputAssembler(bunny->inputAssembler);
         for (uint i = 0; i < Bunny::BUNNY_NUM; i++) {
             _model = Mat4::IDENTITY;
             if (i % 2 == 0) _model.translate(5, 0, 0);
@@ -516,8 +509,17 @@ R"(
             bunny->mvpUniformBuffer[i]->update(_model.m, 0, sizeof(_model));
             bunny->mvpUniformBuffer[i]->update(_view.m, sizeof(_model), sizeof(_view));
             bunny->mvpUniformBuffer[i]->update(_projection.m, sizeof(_model) + sizeof(_view), sizeof(_projection));
-            bunny->bindingLayout[i]->update();
+        }
 
+        auto commandBuffer = _commandBuffers[0];
+        commandBuffer->begin();
+
+        // render bunny
+        commandBuffer->beginRenderPass(_bunnyFBO->renderPass, _bunnyFBO->framebuffer, render_area,
+            {}, 1.0f, 0);
+        commandBuffer->bindPipelineState(bunny->pipelineState);
+        commandBuffer->bindInputAssembler(bunny->inputAssembler);
+        for (uint i = 0; i < Bunny::BUNNY_NUM; i++) {
             commandBuffer->bindBindingLayout(bunny->bindingLayout[i]);
             commandBuffer->draw(bunny->inputAssembler);
         }
