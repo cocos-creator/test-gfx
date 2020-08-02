@@ -4,8 +4,8 @@
 namespace cc {
 
     namespace {
-        struct BigTriangle : public gfx::Object {
-            BigTriangle(gfx::Device *_device, gfx::Framebuffer *_fbo) : device(_device), fbo(_fbo) {
+        struct BigTriangle : public cc::Object {
+            BigTriangle(gfx::Device *_device, gfx::Framebuffer *_fbo) : fbo(_fbo), device(_device) {
                 createShader();
                 createBuffers();
                 createSampler();
@@ -19,10 +19,12 @@ namespace cc {
                 sources.glsl4 = {
 R"(
                     layout(location = 0) in vec2 a_position;
+                    layout(location = 1) in vec2 a_texCoord;
+
                     layout(location = 0) out vec2 v_texcoord;
             
                     void main() {
-                        v_texcoord = (a_position + 1.0) * 0.5;
+                        v_texcoord = a_texCoord;
                         gl_Position = vec4(a_position, 0, 1);
                     }
 )", R"(
@@ -48,13 +50,12 @@ R"(
                 sources.glsl3 = {
 R"(
                     in vec2 a_position;
+                    in vec2 a_texCoord;
+
                     out vec2 v_texcoord;
             
                     void main() {
-                        v_texcoord = (a_position + 1.0) * 0.5;
-                    #ifndef GL_ES
-                        v_texcoord = vec2(v_texcoord.x, 1.0 - v_texcoord.y);
-                    #endif
+                        v_texcoord = a_texCoord;
                         gl_Position = vec4(a_position, 0, 1);
                     }
 )", R"(
@@ -80,13 +81,12 @@ R"(
                 sources.glsl1 = {
 R"(
                     attribute vec2 a_position;
+                    attribute vec2 a_texCoord;
+
                     varying vec2 v_texcoord;
             
                     void main() {
-                        v_texcoord = (a_position + 1.0) * 0.5;
-                    #ifndef GL_ES
-                        v_texcoord = vec2(v_texcoord.x, 1.0 - v_texcoord.y);
-                    #endif
+                        v_texcoord = a_texCoord;
                         gl_Position = vec4(a_position, 0, 1);
                     }
 )", R"(
@@ -120,7 +120,10 @@ R"(
                 fragmentShaderStage.source = source.frag;
                 shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
-                gfx::AttributeList attributeList = { { "a_position", gfx::Format::RG32F, false, 0, false, 0 } };
+                gfx::AttributeList attributeList = {
+                    { "a_position", gfx::Format::RG32F, false, 0, false, 0 },
+                    { "a_texCoord", gfx::Format::RG32F, false, 0, false, 1 },
+                };
                 gfx::UniformList nearFarUniform = { {"u_near", gfx::Type::FLOAT, 1}, {"u_far", gfx::Type::FLOAT, 1} };
                 gfx::UniformBlockList uniformBlockList = { {gfx::ShaderType::FRAGMENT, 0, "Near_Far_Uniform", nearFarUniform} };
                 gfx::UniformSamplerList samplers = { {gfx::ShaderType::FRAGMENT, 1, "u_texture", gfx::Type::SAMPLER2D, 1} };
@@ -137,21 +140,23 @@ R"(
             void createSampler() {
                 // create sampler
                 gfx::SamplerInfo samplerInfo;
-                samplerInfo.addressU = gfx::Address::CLAMP;
-                samplerInfo.addressV = gfx::Address::CLAMP;
                 sampler = device->createSampler(samplerInfo);
             }
 
             void createBuffers() {
                 // create vertex buffer
                 float ySign = device->getScreenSpaceSignY();
-                float vertices[] = { -1, 4 * ySign, -1, -1 * ySign, 4, -1 * ySign };
+                float vertices[] = { // UV space origin is at top-left
+                    -1,  4 * ySign, 0.0, -1.5,
+                    -1, -1 * ySign, 0.0,  1.0,
+                     4, -1 * ySign, 2.5,  1.0,
+                };
                 vertexBuffer = device->createBuffer({
                     gfx::BufferUsage::VERTEX,
                     gfx::MemoryUsage::DEVICE,
-                    2 * sizeof(float),
+                    4 * sizeof(float),
                     sizeof(vertices),
-                    });
+                });
                 vertexBuffer->update(vertices, 0, sizeof(vertices));
 
                 // create uniform buffer
@@ -160,7 +165,7 @@ R"(
                     gfx::MemoryUsage::DEVICE,
                     sizeof(float),
                     2 * sizeof(float),
-                    });
+                });
 
                 float nearValue = 0.1f;
                 float farValue = 100.0f;
@@ -169,9 +174,9 @@ R"(
             }
 
             void createInputAssembler() {
-                gfx::Attribute position = { "a_position", gfx::Format::RG32F, false, 0, false };
                 gfx::InputAssemblerInfo inputAssemblerInfo;
-                inputAssemblerInfo.attributes.emplace_back(std::move(position));
+                inputAssemblerInfo.attributes.push_back({ "a_position", gfx::Format::RG32F, false, 0, false });
+                inputAssemblerInfo.attributes.push_back({ "a_texCoord", gfx::Format::RG32F, false, 0, false });
                 inputAssemblerInfo.vertexBuffers.emplace_back(vertexBuffer);
                 inputAssembler = device->createInputAssembler(inputAssemblerInfo);
             }
@@ -226,7 +231,7 @@ R"(
             uint texBindingLoc = 0;
         };
 
-        struct Bunny : public gfx::Object {
+        struct Bunny : public cc::Object {
             Bunny(gfx::Device *_device, gfx::Framebuffer *_fbo) : device(_device) {
                 createShader();
                 createBuffers();
@@ -253,10 +258,7 @@ R"(
                         gl_Position = pos;
                     }
 )", R"(
-                    layout(location = 0) out vec4 o_color;
-                    void main () {
-                        o_color = vec4(1, 1, 1, 1);
-                    }
+                    void main () {}
 )"
                 };
 
@@ -275,10 +277,7 @@ R"(
                     }
 )", R"(
                     precision mediump float;
-                    out vec4 o_color;
-                    void main () {
-                        o_color = vec4(1, 1, 1, 1);
-                    }
+                    void main () {}
 )"
                 };
 
@@ -294,9 +293,7 @@ R"(
                     }
 )", R"(
                     precision mediump float;
-                    void main () {
-                        gl_FragColor = vec4(1, 1, 1, 1);
-                    }
+                    void main () {}
 )"
                 };
 
@@ -495,7 +492,7 @@ R"(
         _up.set(0, 1.f, 0);
         Mat4::createLookAt(_eye, _center, _up, &_view);
         Mat4::createPerspective(45.f, 1.0f * _device->getWidth() / _device->getHeight(), 0.1f, 100.f, &_projection);
-        TestBaseI::modifyProjectionBasedOnDevice(_projection);
+        TestBaseI::modifyProjectionBasedOnDevice(_projection, true); // offscreen
 
         gfx::Rect render_area = { 0, 0, _device->getWidth(), _device->getHeight() };
         gfx::Color clear_color = { 1.0, 0, 0, 1.0f };

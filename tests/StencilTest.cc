@@ -254,7 +254,7 @@ R"(
         pipelineInfo[(uint8_t)PipelineType::STENCIL].depthStencilState.stencilTestFront = false;
         pipelineInfo[(uint8_t)PipelineType::STENCIL].depthStencilState.stencilTestBack = false;
         pipelineInfo[(uint8_t)PipelineType::STENCIL].rasterizerState.cullMode = gfx::CullMode::NONE;
-        pipelineInfo[(uint8_t)PipelineType::STENCIL].dynamicStates.push_back(gfx::DynamicState::VIEWPORT);
+        pipelineInfo[(uint8_t)PipelineType::STENCIL].dynamicStates = gfx::DynamicStateFlagBit::VIEWPORT;
         _pipelineState[(uint8_t)PipelineType::STENCIL] = _device->createPipelineState(pipelineInfo[(uint8_t)PipelineType::STENCIL]);
 
         pipelineInfo[(uint8_t)PipelineType::IMAGE].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
@@ -265,7 +265,7 @@ R"(
         pipelineInfo[(uint8_t)PipelineType::IMAGE].depthStencilState.stencilTestFront = false;
         pipelineInfo[(uint8_t)PipelineType::IMAGE].depthStencilState.stencilTestBack = false;
         pipelineInfo[(uint8_t)PipelineType::IMAGE].rasterizerState.cullMode = gfx::CullMode::NONE;
-        pipelineInfo[(uint8_t)PipelineType::IMAGE].dynamicStates.push_back(gfx::DynamicState::VIEWPORT);
+        pipelineInfo[(uint8_t)PipelineType::IMAGE].dynamicStates = gfx::DynamicStateFlagBit::VIEWPORT;
         _pipelineState[(uint8_t)PipelineType::IMAGE] = _device->createPipelineState(pipelineInfo[(uint8_t)PipelineType::IMAGE]);
 
         pipelineInfo[(uint8_t)PipelineType::CAVAS].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
@@ -284,7 +284,7 @@ R"(
         dss2.stencilPassOpFront = dss2.stencilPassOpBack = gfx::StencilOp::KEEP;
         dss2.stencilRefFront = dss2.stencilRefBack = 0x1;
         pipelineInfo[(uint8_t)PipelineType::CAVAS].rasterizerState.cullMode = gfx::CullMode::NONE;
-        pipelineInfo[(uint8_t)PipelineType::CAVAS].dynamicStates.push_back(gfx::DynamicState::VIEWPORT);
+        pipelineInfo[(uint8_t)PipelineType::CAVAS].dynamicStates = gfx::DynamicStateFlagBit::VIEWPORT;
         _pipelineState[(uint8_t)PipelineType::CAVAS] = _device->createPipelineState(pipelineInfo[(uint8_t)PipelineType::CAVAS]);
 
         pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
@@ -304,7 +304,7 @@ R"(
         dss3.stencilPassOpFront = dss3.stencilPassOpBack = gfx::StencilOp::KEEP;
         dss3.stencilRefFront = dss3.stencilRefBack = 0x1;
         pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].rasterizerState.cullMode = gfx::CullMode::NONE;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].dynamicStates.push_back(gfx::DynamicState::VIEWPORT);
+        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].dynamicStates = gfx::DynamicStateFlagBit::VIEWPORT;
         _pipelineState[(uint8_t)PipelineType::FRONT_STENCIL] = _device->createPipelineState(pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL]);
 
         pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
@@ -324,7 +324,7 @@ R"(
         dss4.stencilPassOpFront = dss4.stencilPassOpBack = gfx::StencilOp::KEEP;
         dss4.stencilRefFront = dss4.stencilRefBack = 0x1;
         pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].rasterizerState.cullMode = gfx::CullMode::NONE;
-        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].dynamicStates.push_back(gfx::DynamicState::VIEWPORT);
+        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].dynamicStates = gfx::DynamicStateFlagBit::VIEWPORT;
         _pipelineState[(uint8_t)PipelineType::BACK_STENCIL] = _device->createPipelineState(pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL]);
 
         pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
@@ -343,7 +343,7 @@ R"(
         dss5.stencilPassOpFront = dss5.stencilPassOpBack = gfx::StencilOp::KEEP;
         dss5.stencilRefFront = dss5.stencilRefBack = 0x1;
         pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].rasterizerState.cullMode = gfx::CullMode::NONE;
-        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].dynamicStates.push_back(gfx::DynamicState::VIEWPORT);
+        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].dynamicStates = gfx::DynamicStateFlagBit::VIEWPORT;
         _pipelineState[(uint8_t)PipelineType::FRONT_BACK_STENCIL] = _device->createPipelineState(pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]);
     }
 

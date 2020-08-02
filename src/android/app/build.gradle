@@ -34,7 +34,7 @@ android {
     }
     externalNativeBuild {
         cmake {
-            //version '3.10.2'
+            version '3.10.2'
             path "../../../CMakeLists.txt"
         }
     }
@@ -43,6 +43,11 @@ android {
         res.srcDir "src/main/res"
         manifest.srcFile "src/main/AndroidManifest.xml"
         assets.srcDir "../../Resources"
+
+        jniLibs {
+            // Vulkan validation layer
+            srcDir "${android.ndkDirectory}/sources/third_party/vulkan/src/build-android/jniLibs"
+        }
     }
 }
 
@@ -67,6 +72,6 @@ android.applicationVariants.all { variant ->
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'androidx.appcompat:appcompat:1.0.2'
+    implementation 'androidx.appcompat:appcompat:1.1.0'
     implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
 }

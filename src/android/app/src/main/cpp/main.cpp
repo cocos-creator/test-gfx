@@ -11,14 +11,20 @@
 #include "tests/BunnyTest.h"
 
 #include <android/log.h>
-//#include "AppDelegate.h"
+#include <time.h>
 
 #define LOG_TAG "main"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
-using namespace cocos2d;
+using namespace cc;
 
 namespace
 {
+    static double now() {
+        struct timespec res;
+        clock_gettime(CLOCK_MONOTONIC, &res);
+        return res.tv_sec + (double) res.tv_nsec / 1e9;
+    }
+
     /**
      * Shared state for our app.
      */
@@ -99,9 +105,7 @@ namespace
      * Process the next input event.
      */
     int32_t engineHandleInput(struct android_app* app, AInputEvent* event) {
-        struct engine* engine = (struct engine*)app->userData;
         int type = AInputEvent_getType(event);
-        int src = AInputEvent_getSource(event);
         if(type == AINPUT_EVENT_TYPE_KEY){
             return 1;
         } else if(type == AINPUT_EVENT_TYPE_MOTION){
@@ -134,6 +138,8 @@ void android_main(struct android_app* state) {
     state->onInputEvent = engineHandleInput;
     savedState.app = state;
     static_cast<FileUtilsAndroid*>(FileUtils::getInstance())->setassetmanager(state->activity->assetManager);
+    double lastTime = now();
+
     while (1)
     {
         // Read all pending events.
@@ -158,10 +164,12 @@ void android_main(struct android_app* state) {
             return;
         }
 
+        double time = now();
+
         if (savedState.animating)
         {
-            //TODO: calculate dt
-            g_test->tick(1.0f / 60);
+            g_test->tick(time - lastTime);
+            lastTime = time;
         }
     }
 }

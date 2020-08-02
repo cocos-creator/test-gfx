@@ -38,7 +38,7 @@ namespace cc {
             return texture;
         }
 
-        struct Quad : public gfx::Object {
+        struct Quad : public cc::Object {
             Quad(gfx::Device *_device, gfx::Framebuffer *_fbo) : device(_device), fbo(_fbo) {
                 createShader();
                 createVertexBuffer();
@@ -342,7 +342,7 @@ R"(
             Mat4 model;
         };
 
-        struct BigTriangle : public gfx::Object {
+        struct BigTriangle : public cc::Object {
             BigTriangle(gfx::Device *_device, gfx::Framebuffer* _fbo) : device(_device), fbo(_fbo) {
                 createShader();
                 createVertexBuffer();

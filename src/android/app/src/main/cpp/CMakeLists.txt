@@ -37,6 +37,7 @@ set(INCLUDE_FILES
         ${COCOS_SRC_PATH}/renderer/core
         ${COCOS_SRC_PATH}/renderer/gfx-gles2
         ${COCOS_SRC_PATH}/renderer/gfx-gles3
+        ${COCOS_SRC_PATH}/renderer/gfx-vulkan
         ./
         ${COCOS_ROOT_PATH}
         )
@@ -59,6 +60,8 @@ set(ALL_FILES
         main.cpp
         JniImp.cpp
         JniImp.h
+        EventDispatcher.cpp
+        EventDispatcher.h
         )
 
 if(COCOS_UNICODE)
@@ -99,6 +102,7 @@ target_link_libraries(${APP_NAME}
     Core
     GFXGLES3
     GFXGLES2
+    GFXVulkan
     ${CC_EXTERNAL_LIBS}
 )
 

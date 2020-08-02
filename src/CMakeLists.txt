@@ -31,16 +31,15 @@ if(WIN32)
 elseif(ANDROID)
     list(APPEND CC_PLATFORM_SOURCES
         ${COCOS_SRC_PATH}/platform/android/CCFileUtils-android.h
-        ${COCOS_SRC_PATH}/platform/android/CCPlatformDefine-android.h
-         ${COCOS_SRC_PATH}/platform/android/jni/JniHelper.h
-#         ${COCOS_SRC_PATH}/platform/android/jni/JniImp.h
+        ${COCOS_SRC_PATH}/platform/android/jni/JniHelper.h
+        # ${COCOS_SRC_PATH}/platform/android/jni/JniImp.h
 
         # ${COCOS_SRC_PATH}/platform/android/CCDevice-android.cpp
         ${COCOS_SRC_PATH}/platform/android/CCFileUtils-android.cpp
         # ${COCOS_SRC_PATH}/platform/android/CCApplication-android.cpp
         # ${COCOS_SRC_PATH}/platform/android/CCCanvasRenderingContext2D-android.cpp
-#         ${COCOS_SRC_PATH}/platform/android/jni/JniImp.cpp
-         ${COCOS_SRC_PATH}/platform/android/jni/JniHelper.cpp
+        # ${COCOS_SRC_PATH}/platform/android/jni/JniImp.cpp
+        ${COCOS_SRC_PATH}/platform/android/jni/JniHelper.cpp
     )
 elseif(APPLE)
     list(APPEND CC_PLATFORM_SOURCES

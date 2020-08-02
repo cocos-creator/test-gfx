@@ -28,7 +28,7 @@
  * Functions invoke from cpp to Java.
  ***********************************************************/
 
-std::string getApkPathJNI() 
+std::string getObbFilePathJNI()
 {
     return "";
 }

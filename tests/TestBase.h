@@ -46,7 +46,7 @@ namespace cc {
         }                                              \
     }
 
-    class TestBaseI : public gfx::Object {
+    class TestBaseI : public cc::Object {
     public:
         TestBaseI(const WindowInfo &info);
         virtual ~TestBaseI() = default;
@@ -60,7 +60,7 @@ namespace cc {
         static void destroyGlobal();
 
         static unsigned char *RGB2RGBA(Image *img);
-        static void modifyProjectionBasedOnDevice(Mat4 &projection);
+        static void modifyProjectionBasedOnDevice(Mat4 &projection, bool isOffscreen = false);
         static float getViewportTopBasedOnDevice(float top, float height);
         static uint getMipmapLevelCounts(uint width, uint height);
         static ShaderSource &getAppropriateShaderSource(gfx::Device *device, ShaderSources &sources);

@@ -102,11 +102,13 @@ namespace cc {
         return dstData;
     }
 
-    void TestBaseI::modifyProjectionBasedOnDevice(Mat4 &projection) {
+    void TestBaseI::modifyProjectionBasedOnDevice(Mat4 &projection, bool isOffscreen) {
+        float minZ = _device->getClipSpaceMinZ();
+        float signY = _device->getScreenSpaceSignY() * (isOffscreen ? _device->getUVSpaceSignY() : 1);
+        
         Mat4 trans, scale;
-        Mat4::createTranslation(0.0f, 0.0f, 1.0f + _device->getClipSpaceMinZ(), &trans);
-        Mat4::createScale(1.0f, _device->getScreenSpaceSignY(),
-            0.5f - 0.5f * _device->getClipSpaceMinZ(), &scale);
+        Mat4::createTranslation(0.0f, 0.0f, 1.0f + minZ, &trans);
+        Mat4::createScale(1.0f, signY, 0.5f - 0.5f * minZ, &scale);
         projection = scale * trans * projection;
     }
 
@@ -129,6 +131,7 @@ namespace cc {
         case gfx::API::METAL:
         case gfx::API::VULKAN:
             return sources.glsl4;
+        default: break;
         }
         return sources.glsl4;
     }

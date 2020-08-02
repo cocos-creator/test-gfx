@@ -7,7 +7,7 @@
 
 namespace cc {
 
-    class GameApp : public gfx::Object {
+    class GameApp : public cc::Object {
     public:
         GameApp();
         virtual ~GameApp();

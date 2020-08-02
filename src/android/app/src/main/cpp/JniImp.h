@@ -26,4 +26,4 @@
 
 #include <string>
 
-extern std::string getApkPathJNI();
+extern std::string getObbFilePathJNI();
