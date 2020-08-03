@@ -119,7 +119,7 @@ R"(
             in vec3 a_position;
             in vec4 a_color;
     
-            uniform MVP_Matrix {
+            layout(std140) uniform MVP_Matrix {
                 mat4 u_model, u_view, u_projection;
             };
     
@@ -262,8 +262,8 @@ R"(
         _uniformBuffer = _device->createBuffer({
             gfx::BufferUsage::UNIFORM,
             gfx::MemoryUsage::DEVICE,
-            sizeof(Mat4),
-            3 * sizeof(Mat4),
+            0,
+            TestBaseI::getUBOSize(3 * sizeof(Mat4)),
         });
         Mat4 model, view, projection;
         Mat4::createLookAt(Vec3(30.0f, 20.0f, 30.0f), Vec3(0.0f, 2.5f, 0.0f), Vec3(0.0f, 1.0f, 0.f), &view);

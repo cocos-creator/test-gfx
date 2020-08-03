@@ -51,7 +51,7 @@ R"(
             }
 )", R"(
             precision mediump float;
-            uniform Color {
+            layout(std140) uniform Color {
                 vec4 u_color;
             };
 
@@ -127,9 +127,8 @@ R"(
         gfx::BufferInfo uniformBufferInfo = {
                gfx::BufferUsage::UNIFORM,
                gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
-               4 * sizeof(float),
-               sizeof(gfx::Color),
-               gfx::BufferFlagBit::NONE,
+               0,
+               TestBaseI::getUBOSize(sizeof(gfx::Color)),
         };
         _uniformBuffer = _device->createBuffer(uniformBufferInfo);
 
@@ -139,7 +138,6 @@ R"(
             gfx::MemoryUsage::DEVICE,
             sizeof(unsigned short),
             sizeof(indices),
-            gfx::BufferFlagBit::NONE
         };
         _indexBuffer = _device->createBuffer(indexBufferInfo);
         _indexBuffer->update(indices, 0, sizeof(indices));
@@ -153,7 +151,6 @@ R"(
             gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
             sizeof(gfx::DrawInfo),
             sizeof(gfx::DrawInfo),
-            gfx::BufferFlagBit::NONE
         };
         _indirectBuffer = _device->createBuffer(indirectBufferInfo);
         _indirectBuffer->update(&drawInfo, 0, sizeof(gfx::DrawInfo));

@@ -60,7 +60,7 @@ R"(
 R"(
             in vec3 a_position;
     
-            uniform MVP_Matrix {
+            layout(std140) uniform MVP_Matrix {
                 mat4 u_model, u_view, u_projection;
             };
     
@@ -73,7 +73,7 @@ R"(
             }
 )", R"(
             precision mediump float;
-            uniform Color {
+            layout(std140) uniform Color {
                 vec4 u_color;
             };
             in vec3 v_position;
@@ -164,9 +164,9 @@ R"(
         _mvpMatrix = _device->createBuffer({
             gfx::BufferUsage::UNIFORM,
             gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
-            sizeof(Mat4),
-            3 * sizeof(Mat4),
-            });
+            0,
+            TestBaseI::getUBOSize(3 * sizeof(Mat4)),
+        });
         Mat4 model, projection;
         Mat4::createPerspective(60.0f, 1.0f * _device->getWidth() / _device->getHeight(), 0.01f, 1000.0f, &projection);
         TestBaseI::modifyProjectionBasedOnDevice(projection);
@@ -177,8 +177,8 @@ R"(
         _color = _device->createBuffer({
             gfx::BufferUsage::UNIFORM,
             gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
-            sizeof(float),
-            4 * sizeof(float),
+            0,
+            TestBaseI::getUBOSize(4 * sizeof(float)),
         });
         float color[4] = { 0.5f, 0.5f, 0.5f, 1.0f };
         _color->update(color, 0, sizeof(color));

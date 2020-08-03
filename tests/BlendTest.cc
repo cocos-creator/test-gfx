@@ -18,9 +18,7 @@ namespace cc {
             img->autorelease();
             bool valid = img->initWithImageFile(imageFile);
             CCASSERT(valid, "load image failed");
-            auto imgData = img->getRenderFormat() == gfx::Format::RGB8
-                ? TestBaseI::RGB2RGBA(img)
-                : img->getData();
+            auto imgData = img->getRenderFormat() == gfx::Format::RGB8 ? TestBaseI::RGB2RGBA(img) : img->getData();
 
             auto texture = device->createTexture(textureInfo);
 
@@ -93,7 +91,7 @@ R"(
                     in vec2 a_position;
                     in vec2 a_uv;
                     out vec2 uv;
-                    uniform MVP_Matrix {
+                    layout(std140) uniform MVP_Matrix {
                         mat4 u_model, u_projection;
                     };
                     void main() {
@@ -198,8 +196,8 @@ R"(
                 gfx::BufferInfo uniformBufferInfo = {
                     gfx::BufferUsage::UNIFORM, 
                     gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST, 
-                    sizeof(Mat4),
-                    2 * sizeof(Mat4), 
+                    0,
+                    TestBaseI::getUBOSize(2 * sizeof(Mat4)),
                 };
 
                 Mat4 projection;
@@ -399,7 +397,7 @@ R"(
                     precision mediump float;
                     in vec2 uv;
                     uniform sampler2D u_texture;
-                    uniform Time {
+                    layout(std140) uniform Time {
                         float u_time;
                     };
                     out vec4 o_color;
@@ -479,8 +477,8 @@ R"(
                 timeBuffer = device->createBuffer({
                     gfx::BufferUsage::UNIFORM,
                     gfx::MemoryUsage::HOST | gfx::MemoryUsage::DEVICE,
-                    sizeof(float),
-                    sizeof(float),
+                    0, 
+                    TestBaseI::getUBOSize(sizeof(float)),
                 });
             }
 

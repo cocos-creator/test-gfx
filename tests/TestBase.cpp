@@ -122,6 +122,10 @@ namespace cc {
         return static_cast<uint>(std::floor(std::log2(std::max(width, height)))) + 1;
     }
 
+    uint TestBaseI::getUBOSize(uint size) {
+        return (size + 15) / 16 * 16;
+    }
+
     ShaderSource &TestBaseI::getAppropriateShaderSource(gfx::Device *device, ShaderSources &sources) {
         switch (device->getGfxAPI()) {
         case gfx::API::GLES2:

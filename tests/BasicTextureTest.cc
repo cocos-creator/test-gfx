@@ -100,7 +100,6 @@ R"(
 
         ShaderSource &source = TestBaseI::getAppropriateShaderSource(_device, sources);
 
-
         gfx::ShaderStageList shaderStageList;
         gfx::ShaderStage vertexShaderStage;
         vertexShaderStage.type = gfx::ShaderType::VERTEX;
@@ -148,8 +147,8 @@ R"(
         _uniformBuffer = _device->createBuffer({
                gfx::BufferUsage::UNIFORM,
                gfx::MemoryUsage::DEVICE,
-               sizeof(Mat4),
-               sizeof(Mat4),
+               0,
+               TestBaseI::getUBOSize(sizeof(Mat4)),
         });
     }
 
@@ -166,7 +165,7 @@ R"(
         _bindingLayout = _device->createBindingLayout(bindingLayoutInfo);
 
         Mat4 mvpMatrix;
-        TestBaseI::modifyProjectionBasedOnDevice(mvpMatrix);
+        modifyProjectionBasedOnDevice(mvpMatrix);
         _uniformBuffer->update(&mvpMatrix, 0, sizeof(mvpMatrix));
         _bindingLayout->bindBuffer(0, _uniformBuffer);
         _bindingLayout->bindSampler(1, _sampler);

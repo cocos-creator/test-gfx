@@ -62,7 +62,7 @@ R"(
                     precision mediump float;
                     in vec2 v_texcoord;
                     uniform sampler2D u_texture;
-                    uniform Near_Far_Uniform {
+                    layout(std140) uniform Near_Far_Uniform {
                         float u_near;
                         float u_far;
                     };
@@ -163,14 +163,12 @@ R"(
                 nearFarUniformBuffer = device->createBuffer({
                     gfx::BufferUsage::UNIFORM,
                     gfx::MemoryUsage::DEVICE,
-                    sizeof(float),
-                    2 * sizeof(float),
+                    0,
+                    TestBaseI::getUBOSize(2 * sizeof(float)),
                 });
 
-                float nearValue = 0.1f;
-                float farValue = 100.0f;
-                nearFarUniformBuffer->update(&nearValue, 0, sizeof(nearValue));
-                nearFarUniformBuffer->update(&farValue, sizeof(nearValue), sizeof(farValue));
+                float uboData[] = { 0.1f, 100.0f };
+                nearFarUniformBuffer->update(uboData, 0, sizeof(uboData));
             }
 
             void createInputAssembler() {
@@ -193,14 +191,10 @@ R"(
                 gfx::PipelineStateInfo pipelineInfo;
                 pipelineInfo.primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
                 pipelineInfo.shader = shader;
-                pipelineInfo.inputState = { inputAssembler->getAttributes() };
+                pipelineInfo.inputState.attributes = inputAssembler->getAttributes();
                 pipelineInfo.renderPass = fbo->getRenderPass();
-
                 pipelineInfo.depthStencilState.depthTest = false;
                 pipelineInfo.depthStencilState.depthWrite = false;
-                pipelineInfo.depthStencilState.stencilTestBack = false;
-                pipelineInfo.depthStencilState.stencilTestFront = false;
-
                 pipelineInfo.rasterizerState.cullMode = gfx::CullMode::NONE;
 
                 pipelineState = device->createPipelineState(pipelineInfo);
@@ -265,7 +259,7 @@ R"(
                 sources.glsl3 = {
 R"(
                     in vec3 a_position;
-                    uniform MVP_Matrix {
+                    layout(std140) uniform MVP_Matrix {
                         mat4 u_model;
                         mat4 u_view;
                         mat4 u_projection;
@@ -353,8 +347,8 @@ R"(
                 gfx::BufferInfo uniformBufferInfo = {
                     gfx::BufferUsage::UNIFORM,
                     gfx::MemoryUsage::HOST | gfx::MemoryUsage::DEVICE,
-                    sizeof(Mat4),
-                    3 * sizeof(Mat4),
+                    0,
+                    TestBaseI::getUBOSize(3 * sizeof(Mat4)),
                 };
                 for (uint i = 0; i < BUNNY_NUM; i++)
                     mvpUniformBuffer[i] = device->createBuffer(uniformBufferInfo);
@@ -466,22 +460,14 @@ R"(
     void DepthTexture::resize(uint width, uint height) {
         TestBaseI::resize(width, height);
 
-        _bunnyFBO->colorTex->resize(width, height);
         _bunnyFBO->depthStencilTex->resize(width, height);
 
         gfx::FramebufferInfo fboInfo;
         fboInfo.renderPass = _bunnyFBO->renderPass;
-        fboInfo.colorTextures.push_back(_bunnyFBO->colorTex);
         fboInfo.depthStencilTexture = _bunnyFBO->depthStencilTex;
 
         _bunnyFBO->framebuffer->destroy();
         _bunnyFBO->framebuffer->initialize(fboInfo);
-
-        // TODO: this hack works around binding update issue in vulkan backend
-        // can be removed after binding layout refactor (#3591)
-        bg->bindingLayout->bindTexture(bg->texBindingLoc, nullptr);
-        bg->bindingLayout->bindTexture(bg->texBindingLoc, _bunnyFBO->depthStencilTex);
-        bg->bindingLayout->update();
     }
 
     void DepthTexture::tick(float dt) {

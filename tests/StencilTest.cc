@@ -67,7 +67,7 @@ R"(
         sources.glsl3 = {
 R"(
             in vec2 a_position;
-            uniform MVP_Matrix {
+            layout(std140) uniform MVP_Matrix {
                 mat4 u_mvpMatrix;
             };
             out vec2 v_texcoord;
@@ -149,8 +149,8 @@ R"(
         gfx::BufferInfo uniformBufferInfo = {
             gfx::BufferUsage::UNIFORM, 
             gfx::MemoryUsage::HOST | gfx::MemoryUsage::DEVICE,
-            sizeof(Mat4), 
-            sizeof(Mat4), 
+            0, 
+            TestBaseI::getUBOSize(sizeof(Mat4)),
         };
 
         Mat4 transform[BINDING_COUNT];
