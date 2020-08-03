@@ -21,14 +21,14 @@ R"(
                     layout(location = 0) in vec2 a_position;
                     layout(location = 1) in vec2 a_texCoord;
 
-                    layout(location = 0) out vec2 v_texcoord;
+                    layout(location = 0) out vec2 v_texCoord;
             
                     void main() {
-                        v_texcoord = a_texCoord;
+                        v_texCoord = a_texCoord;
                         gl_Position = vec4(a_position, 0, 1);
                     }
 )", R"(
-                    layout(location = 0) in vec2 v_texcoord;
+                    layout(location = 0) in vec2 v_texCoord;
                     layout(binding = 0) uniform Near_Far_Uniform
                     {
                         float u_near;
@@ -37,7 +37,7 @@ R"(
                     layout(binding = 1) uniform sampler2D u_texture;
                     layout(location = 0) out vec4 o_color;
                     void main() {
-                        float z = texture(u_texture, v_texcoord).x;
+                        float z = texture(u_texture, v_texCoord).x;
                         float viewZ = (u_near * u_far) / ((u_far - u_near) * z - u_far);
                         float depth = (viewZ + u_near) / (u_near - u_far);
                 
@@ -52,15 +52,15 @@ R"(
                     in vec2 a_position;
                     in vec2 a_texCoord;
 
-                    out vec2 v_texcoord;
+                    out vec2 v_texCoord;
             
                     void main() {
-                        v_texcoord = a_texCoord;
+                        v_texCoord = a_texCoord;
                         gl_Position = vec4(a_position, 0, 1);
                     }
 )", R"(
                     precision mediump float;
-                    in vec2 v_texcoord;
+                    in vec2 v_texCoord;
                     uniform sampler2D u_texture;
                     layout(std140) uniform Near_Far_Uniform {
                         float u_near;
@@ -68,7 +68,7 @@ R"(
                     };
                     out vec4 o_color;
                     void main() {
-                        float z = texture(u_texture, v_texcoord).x;
+                        float z = texture(u_texture, v_texCoord).x;
                         float viewZ = (u_near * u_far) / ((u_far - u_near) * z - u_far);
                         float depth = (viewZ + u_near) / (u_near - u_far);
                 
@@ -83,21 +83,21 @@ R"(
                     attribute vec2 a_position;
                     attribute vec2 a_texCoord;
 
-                    varying vec2 v_texcoord;
+                    varying vec2 v_texCoord;
             
                     void main() {
-                        v_texcoord = a_texCoord;
+                        v_texCoord = a_texCoord;
                         gl_Position = vec4(a_position, 0, 1);
                     }
 )", R"(
                     precision mediump float;
-                    varying vec2 v_texcoord;
+                    varying vec2 v_texCoord;
                     uniform sampler2D u_texture;
                     uniform float u_near;
                     uniform float u_far;
             
                     void main() {
-                        float z = texture2D(u_texture, v_texcoord).x;
+                        float z = texture2D(u_texture, v_texCoord).x;
                         float viewZ = (u_near * u_far) / ((u_far - u_near) * z - u_far);
                         float depth = (viewZ + u_near) / (u_near - u_far);
                 

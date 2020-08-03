@@ -45,21 +45,21 @@ namespace cc {
         sources.glsl4 = {
 R"(
             layout(location = 0) in vec2 a_position;
-            layout(binding = 0) uniform MVP_Matrix {
-                mat4 u_mvpMatrix;
+            layout(location = 1) in vec2 a_texCoord;
+            layout(binding = 0) uniform World_Matrix {
+                mat4 u_worldMatrix;
             };
-            layout(location = 0) out vec2 v_texcoord;
+            layout(location = 0) out vec2 v_texCoord;
             void main () {
-                gl_Position = u_mvpMatrix * vec4(a_position, 0, 1);
-                v_texcoord = a_position * 0.5 + 0.5;
-                v_texcoord = vec2(v_texcoord.x, 1.0 - v_texcoord.y);
+                v_texCoord = a_texCoord;
+                gl_Position = u_worldMatrix * vec4(a_position, 0, 1);
             }
 )", R"(
             layout(binding = 1) uniform sampler2D u_texture;
-            layout(location = 0) in vec2 v_texcoord;
+            layout(location = 0) in vec2 v_texCoord;
             layout(location = 0) out vec4 o_color;
             void main () {
-                o_color = texture(u_texture, v_texcoord);
+                o_color = texture(u_texture, v_texCoord);
             }
 )"
         };
@@ -67,22 +67,22 @@ R"(
         sources.glsl3 = {
 R"(
             in vec2 a_position;
-            layout(std140) uniform MVP_Matrix {
-                mat4 u_mvpMatrix;
+            in vec2 a_texCoord;
+            layout(std140) uniform World_Matrix {
+                mat4 u_worldMatrix;
             };
-            out vec2 v_texcoord;
+            out vec2 v_texCoord;
             void main () {
-                gl_Position = u_mvpMatrix * vec4(a_position, 0, 1);
-                v_texcoord = a_position * 0.5 + 0.5;
-                v_texcoord = vec2(v_texcoord.x, 1.0 - v_texcoord.y);
+                v_texCoord = a_texCoord;
+                gl_Position = u_worldMatrix * vec4(a_position, 0, 1);
             }
 )", R"(
             precision mediump float;
             uniform sampler2D u_texture;
-            in vec2 v_texcoord;
+            in vec2 v_texCoord;
             out vec4 o_color;
             void main () {
-                o_color = texture(u_texture, v_texcoord);
+                o_color = texture(u_texture, v_texCoord);
             }
 )"
         };
@@ -90,19 +90,20 @@ R"(
         sources.glsl1 = {
 R"(
             attribute vec2 a_position;
-            uniform mat4 u_mvpMatrix;
-            varying vec2 v_texcoord;
+            attribute vec2 a_texCoord;
+            varying vec2 v_texCoord;
+
+            uniform mat4 u_worldMatrix;
             void main () {
-                gl_Position = u_mvpMatrix * vec4(a_position, 0, 1);
-                v_texcoord = a_position * 0.5 + 0.5;
-                v_texcoord = vec2(v_texcoord.x, 1.0 - v_texcoord.y);
+                v_texCoord = a_texCoord;
+                gl_Position = u_worldMatrix * vec4(a_position, 0, 1);
             }
 )", R"(
             precision mediump float;
             uniform sampler2D u_texture;
-            varying vec2 v_texcoord;
+            varying vec2 v_texCoord;
             void main () {
-                gl_FragColor = texture2D(u_texture, v_texcoord);
+                gl_FragColor = texture2D(u_texture, v_texCoord);
             }
 )"
         };
@@ -120,9 +121,12 @@ R"(
         fragmentShaderStage.source = source.frag;
         shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
-        gfx::AttributeList attributeList = { { "a_position", gfx::Format::RG32F, false, 0, false, 0 } };
-        gfx::UniformList mvpMatrix = { {"u_mvpMatrix", gfx::Type::MAT4, 1} };
-        gfx::UniformBlockList uniformBlockList = { {gfx::ShaderType::VERTEX, 0, "MVP_Matrix", mvpMatrix} };
+        gfx::AttributeList attributeList = {
+            { "a_position", gfx::Format::RG32F, false, 0, false, 0 },
+            { "a_texCoord", gfx::Format::RG32F, false, 0, false, 1 },
+        };
+        gfx::UniformList worldMatrix = { {"u_worldMatrix", gfx::Type::MAT4, 1} };
+        gfx::UniformBlockList uniformBlockList = { {gfx::ShaderType::VERTEX, 0, "World_Matrix", worldMatrix} };
         gfx::UniformSamplerList sampler = { {gfx::ShaderType::FRAGMENT, 1, "u_texture", gfx::Type::SAMPLER2D, 1} };
 
         gfx::ShaderInfo shaderInfo;
@@ -135,13 +139,21 @@ R"(
     }
 
     void StencilTest::createBuffers() {
-        float vertexData[] = { -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,
-                              1.0f,  1.0f,  -1.0f, -1.0f, -1.0f, 1.0f };
+        float ySign = _device->getScreenSpaceSignY();
+
+        float vertexData[] = {
+            -1.0f, -1.0f * ySign, 0.0f, 1.0f,
+             1.0f, -1.0f * ySign, 1.0f, 1.0f,
+             1.0f,  1.0f * ySign, 1.0f, 0.0f,
+             1.0f,  1.0f * ySign, 1.0f, 0.0f,
+            -1.0f, -1.0f * ySign, 0.0f, 1.0f,
+            -1.0f,  1.0f * ySign, 0.0f, 0.0f,
+        };
 
         _vertexBuffer = _device->createBuffer({
             gfx::BufferUsage::VERTEX,
             gfx::MemoryUsage::DEVICE,
-            2 * sizeof(float),
+            4 * sizeof(float),
             sizeof(vertexData),
         });
         _vertexBuffer->update(vertexData, 0, sizeof(vertexData));
@@ -226,9 +238,9 @@ R"(
     }
 
     void StencilTest::createInputAssembler() {
-        gfx::Attribute position = { "a_position", gfx::Format::RG32F, false, 0, false };
         gfx::InputAssemblerInfo inputAssemblerInfo;
-        inputAssemblerInfo.attributes.emplace_back(std::move(position));
+        inputAssemblerInfo.attributes.push_back({ "a_position", gfx::Format::RG32F, false, 0, false });
+        inputAssemblerInfo.attributes.push_back({ "a_texCoord", gfx::Format::RG32F, false, 0, false });
         inputAssemblerInfo.vertexBuffers.emplace_back(_vertexBuffer);
         _inputAssembler = _device->createInputAssembler(inputAssemblerInfo);
     }

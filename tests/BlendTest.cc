@@ -152,10 +152,12 @@ R"(
                     {"u_projection", gfx::Type::MAT4, 1},
                 };
                 gfx::UniformBlockList uniformBlockList = {
-                    {gfx::ShaderType::VERTEX, 0, "MVP_Matrix", mvpMatrix} };
+                    {gfx::ShaderType::VERTEX, 0, "MVP_Matrix", mvpMatrix}
+                };
 
                 gfx::UniformSamplerList samplers = {
-                    {gfx::ShaderType::FRAGMENT, 1, "u_texture", gfx::Type::SAMPLER2D, 1} };
+                    {gfx::ShaderType::FRAGMENT, 1, "u_texture", gfx::Type::SAMPLER2D, 1}
+                };
 
                 gfx::ShaderInfo shaderInfo;
                 shaderInfo.name = "Blend Test: Quad";
@@ -168,8 +170,10 @@ R"(
 
             void createVertexBuffer() {
                 float vertexData[] = {
-                    -0.5f, -0.5f, 0.f, 0.f, -0.5f,  0.5f, 0.f, 1.f,
-                     0.5f,  0.5f, 1.f, 1.f,  0.5f, -0.5f, 1.f, 0.f, 
+                    -0.5f, -0.5f, 0.f, 0.f,
+                    -0.5f,  0.5f, 0.f, 1.f,
+                     0.5f,  0.5f, 1.f, 1.f,
+                     0.5f, -0.5f, 1.f, 0.f, 
                 };
 
                 unsigned short indices[6] = { 0, 3, 1, 1, 3, 2 };
@@ -366,9 +370,10 @@ R"(
                 sources.glsl4 = {
 R"(
                     layout(location = 0) in vec2 a_position;
+                    layout(location = 1) in vec2 a_texCoord;
                     layout(location = 0) out vec2 uv;
                     void main() {
-                        uv = (a_position + 1.0) * 0.5;
+                        uv = a_texCoord;
                         gl_Position = vec4(a_position, 0.1, 1);
                     }
 )", R"(
@@ -388,9 +393,10 @@ R"(
                 sources.glsl3 = {
 R"(
                     in vec2 a_position;
+                    in vec2 a_texCoord;
                     out vec2 uv;
                     void main() {
-                        uv = (a_position + 1.0) * 0.5;
+                        uv = a_texCoord;
                         gl_Position = vec4(a_position, 0.1, 1);
                     }
 )", R"(
@@ -411,9 +417,10 @@ R"(
                 sources.glsl1 = {
 R"(
                     attribute vec2 a_position;
+                    attribute vec2 a_texCoord;
                     varying vec2 uv;
                     void main() {
-                        uv = (a_position + 1.0) * 0.5;
+                        uv = a_texCoord;
                         gl_Position = vec4(a_position, 0.1, 1);
                     }
 )", R"(
@@ -442,7 +449,10 @@ R"(
                 fragmentShaderStage.source = source.frag;
                 shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
-                gfx::AttributeList attributeList = { { "a_position", gfx::Format::RG32F, false, 0, false, 0 } };
+                gfx::AttributeList attributeList = {
+                    { "a_position", gfx::Format::RG32F, false, 0, false, 0 },
+                    { "a_texCoord", gfx::Format::RG32F, false, 0, false, 1 },
+                };
                 gfx::UniformList time = { {"u_time", gfx::Type::FLOAT, 1} };
                 gfx::UniformBlockList uniformBlockList = { {gfx::ShaderType::FRAGMENT, 0, "Time", time} };
                 gfx::UniformSamplerList samplers = { {gfx::ShaderType::FRAGMENT, 1, "u_texture", gfx::Type::SAMPLER2D, 1} };
@@ -459,16 +469,16 @@ R"(
             void createVertexBuffer() {
                 float ySign = device->getScreenSpaceSignY();
                 float vertexData[] = {
-                    -1.0f,  4.0f * ySign,
-                    -1.0f, -1.0f * ySign,
-                     4.0f, -1.0f * ySign 
+                    -1.0f,  4.0f * ySign, 0.0, -1.5,
+                    -1.0f, -1.0f * ySign, 0.0,  1.0,
+                     4.0f, -1.0f * ySign, 2.5,  1.0,
                 };
 
                 // vertex buffer
                 vertexBuffer = device->createBuffer({
                     gfx::BufferUsage::VERTEX,
                     gfx::MemoryUsage::HOST,
-                    2 * sizeof(float),
+                    4 * sizeof(float),
                     sizeof(vertexData),
                 });
                 vertexBuffer->update(vertexData, 0, sizeof(vertexData));
@@ -483,9 +493,9 @@ R"(
             }
 
             void createInputAssembler() {
-                gfx::Attribute position = { "a_position", gfx::Format::RG32F, false, 0, false };
                 gfx::InputAssemblerInfo inputAssemblerInfo;
-                inputAssemblerInfo.attributes.emplace_back(std::move(position));
+                inputAssemblerInfo.attributes.push_back({ "a_position", gfx::Format::RG32F, false, 0, false });
+                inputAssemblerInfo.attributes.push_back({ "a_texCoord", gfx::Format::RG32F, false, 0, false });
                 inputAssemblerInfo.vertexBuffers.emplace_back(vertexBuffer);
                 inputAssembler = device->createInputAssembler(inputAssemblerInfo);
             }

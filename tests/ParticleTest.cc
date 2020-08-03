@@ -393,9 +393,10 @@ R"(
                 pVbuffer[offset + 8] = 1.0f - p.age / p.life;
             }
         }
-        _vertexBuffer->update(_vbufferArray, 0, sizeof(_vbufferArray));
 
         _device->acquire();
+
+        _vertexBuffer->update(_vbufferArray, 0, sizeof(_vbufferArray));
 
         auto commandBuffer = _commandBuffers[0];
         commandBuffer->begin();
