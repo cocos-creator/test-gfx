@@ -6,7 +6,7 @@ namespace cc {
         enum class PipelineType : uint8_t {
             STENCIL,
             IMAGE,
-            CAVAS,
+            CANVAS,
             FRONT_STENCIL,
             BACK_STENCIL,
             FRONT_BACK_STENCIL,
@@ -23,8 +23,10 @@ namespace cc {
         CC_SAFE_DESTROY(_sampler);
         for (uint i = 0; i < BINDING_COUNT; i++) {
             CC_SAFE_DESTROY(_uniformBuffer[i]);
-            CC_SAFE_DESTROY(_bindingLayout[i]);
+            CC_SAFE_DESTROY(_descriptorSet[i]);
         }
+        CC_SAFE_DESTROY(_descriptorSetLayout);
+        CC_SAFE_DESTROY(_pipelineLayout);
         for (uint i = 0; i < PIPELIE_COUNT; i++) {
             CC_SAFE_DESTROY(_pipelineState[i]);
         }
@@ -46,7 +48,7 @@ namespace cc {
 R"(
             layout(location = 0) in vec2 a_position;
             layout(location = 1) in vec2 a_texCoord;
-            layout(binding = 0) uniform World_Matrix {
+            layout(set = 0, binding = 0) uniform World_Matrix {
                 mat4 u_worldMatrix;
             };
             layout(location = 0) out vec2 v_texCoord;
@@ -55,7 +57,7 @@ R"(
                 gl_Position = u_worldMatrix * vec4(a_position, 0, 1);
             }
 )", R"(
-            layout(binding = 1) uniform sampler2D u_texture;
+            layout(set = 0, binding = 1) uniform sampler2D u_texture;
             layout(location = 0) in vec2 v_texCoord;
             layout(location = 0) out vec4 o_color;
             void main () {
@@ -112,12 +114,12 @@ R"(
 
         gfx::ShaderStageList shaderStageList;
         gfx::ShaderStage vertexShaderStage;
-        vertexShaderStage.type = gfx::ShaderType::VERTEX;
+        vertexShaderStage.type = gfx::ShaderStageFlagBit::VERTEX;
         vertexShaderStage.source = source.vert;
         shaderStageList.emplace_back(std::move(vertexShaderStage));
 
         gfx::ShaderStage fragmentShaderStage;
-        fragmentShaderStage.type = gfx::ShaderType::FRAGMENT;
+        fragmentShaderStage.type = gfx::ShaderStageFlagBit::FRAGMENT;
         fragmentShaderStage.source = source.frag;
         shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
@@ -126,8 +128,8 @@ R"(
             { "a_texCoord", gfx::Format::RG32F, false, 0, false, 1 },
         };
         gfx::UniformList worldMatrix = { {"u_worldMatrix", gfx::Type::MAT4, 1} };
-        gfx::UniformBlockList uniformBlockList = { {gfx::ShaderType::VERTEX, 0, "World_Matrix", worldMatrix} };
-        gfx::UniformSamplerList sampler = { {gfx::ShaderType::FRAGMENT, 1, "u_texture", gfx::Type::SAMPLER2D, 1} };
+        gfx::UniformBlockList uniformBlockList = { { 0, 0, "World_Matrix", worldMatrix, 1 } };
+        gfx::UniformSamplerList sampler = { { 0, 1, "u_texture", gfx::Type::SAMPLER2D, 1 } };
 
         gfx::ShaderInfo shaderInfo;
         shaderInfo.name = "Stencil Test";
@@ -246,15 +248,20 @@ R"(
     }
 
     void StencilTest::createPipelineState() {
-        gfx::BindingLayoutInfo bindingLayoutInfo = { _shader };
+        gfx::DescriptorSetLayoutInfo dslInfo;
+        dslInfo.bindings.push_back({ gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX });
+        dslInfo.bindings.push_back({ gfx::DescriptorType::SAMPLER, 1, gfx::ShaderStageFlagBit::FRAGMENT });
+        _descriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
+
+        _pipelineLayout = _device->createPipelineLayout({ { _descriptorSetLayout } });
 
         gfx::Texture *texView[BINDING_COUNT] = { _labelTexture, _uvCheckerTexture };
         for (uint i = 0; i < BINDING_COUNT; i++) {
-            _bindingLayout[i] = _device->createBindingLayout(bindingLayoutInfo);
-            _bindingLayout[i]->bindBuffer(0, _uniformBuffer[i]);
-            _bindingLayout[i]->bindSampler(1, _sampler);
-            _bindingLayout[i]->bindTexture(1, texView[i]);
-            _bindingLayout[i]->update();
+            _descriptorSet[i] = _device->createDescriptorSet({ _descriptorSetLayout });
+            _descriptorSet[i]->bindBuffer(0, _uniformBuffer[i]);
+            _descriptorSet[i]->bindSampler(1, _sampler);
+            _descriptorSet[i]->bindTexture(1, texView[i]);
+            _descriptorSet[i]->update();
         }
 
         gfx::PipelineStateInfo pipelineInfo[PIPELIE_COUNT];
@@ -267,6 +274,7 @@ R"(
         pipelineInfo[(uint8_t)PipelineType::STENCIL].depthStencilState.stencilTestBack = false;
         pipelineInfo[(uint8_t)PipelineType::STENCIL].rasterizerState.cullMode = gfx::CullMode::NONE;
         pipelineInfo[(uint8_t)PipelineType::STENCIL].dynamicStates = gfx::DynamicStateFlagBit::VIEWPORT;
+        pipelineInfo[(uint8_t)PipelineType::STENCIL].pipelineLayout = _pipelineLayout;
         _pipelineState[(uint8_t)PipelineType::STENCIL] = _device->createPipelineState(pipelineInfo[(uint8_t)PipelineType::STENCIL]);
 
         pipelineInfo[(uint8_t)PipelineType::IMAGE].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
@@ -278,13 +286,14 @@ R"(
         pipelineInfo[(uint8_t)PipelineType::IMAGE].depthStencilState.stencilTestBack = false;
         pipelineInfo[(uint8_t)PipelineType::IMAGE].rasterizerState.cullMode = gfx::CullMode::NONE;
         pipelineInfo[(uint8_t)PipelineType::IMAGE].dynamicStates = gfx::DynamicStateFlagBit::VIEWPORT;
+        pipelineInfo[(uint8_t)PipelineType::IMAGE].pipelineLayout = _pipelineLayout;
         _pipelineState[(uint8_t)PipelineType::IMAGE] = _device->createPipelineState(pipelineInfo[(uint8_t)PipelineType::IMAGE]);
 
-        pipelineInfo[(uint8_t)PipelineType::CAVAS].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
-        pipelineInfo[(uint8_t)PipelineType::CAVAS].shader = _shader;
-        pipelineInfo[(uint8_t)PipelineType::CAVAS].inputState = { _inputAssembler->getAttributes() };
-        pipelineInfo[(uint8_t)PipelineType::CAVAS].renderPass = _fbo->getRenderPass();
-        gfx::DepthStencilState &dss2 = pipelineInfo[(uint8_t)PipelineType::CAVAS].depthStencilState;
+        pipelineInfo[(uint8_t)PipelineType::CANVAS].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
+        pipelineInfo[(uint8_t)PipelineType::CANVAS].shader = _shader;
+        pipelineInfo[(uint8_t)PipelineType::CANVAS].inputState = { _inputAssembler->getAttributes() };
+        pipelineInfo[(uint8_t)PipelineType::CANVAS].renderPass = _fbo->getRenderPass();
+        gfx::DepthStencilState &dss2 = pipelineInfo[(uint8_t)PipelineType::CANVAS].depthStencilState;
         dss2.depthTest = true;
         dss2.depthWrite = false;
         dss2.stencilTestFront = dss2.stencilTestBack = true;
@@ -295,9 +304,10 @@ R"(
         dss2.stencilZFailOpFront = dss2.stencilZFailOpBack = gfx::StencilOp::KEEP;
         dss2.stencilPassOpFront = dss2.stencilPassOpBack = gfx::StencilOp::KEEP;
         dss2.stencilRefFront = dss2.stencilRefBack = 0x1;
-        pipelineInfo[(uint8_t)PipelineType::CAVAS].rasterizerState.cullMode = gfx::CullMode::NONE;
-        pipelineInfo[(uint8_t)PipelineType::CAVAS].dynamicStates = gfx::DynamicStateFlagBit::VIEWPORT;
-        _pipelineState[(uint8_t)PipelineType::CAVAS] = _device->createPipelineState(pipelineInfo[(uint8_t)PipelineType::CAVAS]);
+        pipelineInfo[(uint8_t)PipelineType::CANVAS].rasterizerState.cullMode = gfx::CullMode::NONE;
+        pipelineInfo[(uint8_t)PipelineType::CANVAS].dynamicStates = gfx::DynamicStateFlagBit::VIEWPORT;
+        pipelineInfo[(uint8_t)PipelineType::CANVAS].pipelineLayout = _pipelineLayout;
+        _pipelineState[(uint8_t)PipelineType::CANVAS] = _device->createPipelineState(pipelineInfo[(uint8_t)PipelineType::CANVAS]);
 
         pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
         pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].shader = _shader;
@@ -317,6 +327,7 @@ R"(
         dss3.stencilRefFront = dss3.stencilRefBack = 0x1;
         pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].rasterizerState.cullMode = gfx::CullMode::NONE;
         pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].dynamicStates = gfx::DynamicStateFlagBit::VIEWPORT;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].pipelineLayout = _pipelineLayout;
         _pipelineState[(uint8_t)PipelineType::FRONT_STENCIL] = _device->createPipelineState(pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL]);
 
         pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
@@ -337,6 +348,7 @@ R"(
         dss4.stencilRefFront = dss4.stencilRefBack = 0x1;
         pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].rasterizerState.cullMode = gfx::CullMode::NONE;
         pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].dynamicStates = gfx::DynamicStateFlagBit::VIEWPORT;
+        pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].pipelineLayout = _pipelineLayout;
         _pipelineState[(uint8_t)PipelineType::BACK_STENCIL] = _device->createPipelineState(pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL]);
 
         pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
@@ -356,6 +368,7 @@ R"(
         dss5.stencilRefFront = dss5.stencilRefBack = 0x1;
         pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].rasterizerState.cullMode = gfx::CullMode::NONE;
         pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].dynamicStates = gfx::DynamicStateFlagBit::VIEWPORT;
+        pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].pipelineLayout = _pipelineLayout;
         _pipelineState[(uint8_t)PipelineType::FRONT_BACK_STENCIL] = _device->createPipelineState(pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]);
     }
 
@@ -381,48 +394,48 @@ R"(
         viewport.height = render_area.height / 2;
         commandBuffer->setViewport(viewport);
         commandBuffer->bindPipelineState(_pipelineState[(uint8_t)PipelineType::STENCIL]);
-        commandBuffer->bindBindingLayout(_bindingLayout[0]);
+        commandBuffer->bindDescriptorSet(0, _descriptorSet[0]);
         commandBuffer->draw(_inputAssembler);
 
         // draw uv_image
         viewport.left = render_area.width / 2;
         commandBuffer->setViewport(viewport);
         commandBuffer->bindPipelineState(_pipelineState[(uint8_t)PipelineType::IMAGE]);
-        commandBuffer->bindBindingLayout(_bindingLayout[1]);
+        commandBuffer->bindDescriptorSet(0, _descriptorSet[1]);
         commandBuffer->draw(_inputAssembler);
 
         // do back and front stencil test
         viewport.left = 0;
         viewport.top = uint(TestBaseI::getViewportTopBasedOnDevice(0.0f, 0.5f) * render_area.height);
         commandBuffer->setViewport(viewport);
-        commandBuffer->bindPipelineState(_pipelineState[(uint8_t)PipelineType::CAVAS]);
-        commandBuffer->bindBindingLayout(_bindingLayout[0]);
+        commandBuffer->bindPipelineState(_pipelineState[(uint8_t)PipelineType::CANVAS]);
+        commandBuffer->bindDescriptorSet(0, _descriptorSet[0]);
         commandBuffer->draw(_inputAssembler);
 
         commandBuffer->bindPipelineState(_pipelineState[(uint8_t)PipelineType::FRONT_BACK_STENCIL]);
-        commandBuffer->bindBindingLayout(_bindingLayout[1]);
+        commandBuffer->bindDescriptorSet(0, _descriptorSet[1]);
         commandBuffer->draw(_inputAssembler);
 
         // do back stencil test
         viewport.left = render_area.width / 3;
         commandBuffer->setViewport(viewport);
-        commandBuffer->bindPipelineState(_pipelineState[(uint8_t)PipelineType::CAVAS]);
-        commandBuffer->bindBindingLayout(_bindingLayout[0]);
+        commandBuffer->bindPipelineState(_pipelineState[(uint8_t)PipelineType::CANVAS]);
+        commandBuffer->bindDescriptorSet(0, _descriptorSet[0]);
         commandBuffer->draw(_inputAssembler);
 
         commandBuffer->bindPipelineState(_pipelineState[(uint8_t)PipelineType::BACK_STENCIL]);
-        commandBuffer->bindBindingLayout(_bindingLayout[1]);
+        commandBuffer->bindDescriptorSet(0, _descriptorSet[1]);
         commandBuffer->draw(_inputAssembler);
 
         // do front stencil test
         viewport.left = render_area.width * 2 / 3;
         commandBuffer->setViewport(viewport);
-        commandBuffer->bindPipelineState(_pipelineState[(uint8_t)PipelineType::CAVAS]);
-        commandBuffer->bindBindingLayout(_bindingLayout[0]);
+        commandBuffer->bindPipelineState(_pipelineState[(uint8_t)PipelineType::CANVAS]);
+        commandBuffer->bindDescriptorSet(0, _descriptorSet[0]);
         commandBuffer->draw(_inputAssembler);
 
         commandBuffer->bindPipelineState(_pipelineState[(uint8_t)PipelineType::FRONT_STENCIL]);
-        commandBuffer->bindBindingLayout(_bindingLayout[1]);
+        commandBuffer->bindDescriptorSet(0, _descriptorSet[1]);
         commandBuffer->draw(_inputAssembler);
 
         commandBuffer->endRenderPass();

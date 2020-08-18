@@ -27,7 +27,9 @@ private:
     gfx::Buffer* _indexBuffer = nullptr;
     gfx::Buffer* _mvpMatrix = nullptr;
     gfx::Buffer* _color = nullptr;
-    gfx::BindingLayout* _bindingLayout = nullptr;
+    gfx::DescriptorSet* _descriptorSet = nullptr;
+    gfx::DescriptorSetLayout* _descriptorSetLayout = nullptr;
+    gfx::PipelineLayout* _pipelineLayout = nullptr;
     gfx::InputAssembler* _inputAssembler = nullptr;
     gfx::PipelineState* _pipelineState = nullptr;
     

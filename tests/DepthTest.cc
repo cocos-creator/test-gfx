@@ -29,12 +29,12 @@ R"(
                     }
 )", R"(
                     layout(location = 0) in vec2 v_texCoord;
-                    layout(binding = 0) uniform Near_Far_Uniform
+                    layout(set = 0, binding = 0) uniform Near_Far_Uniform
                     {
                         float u_near;
                         float u_far;
                     };
-                    layout(binding = 1) uniform sampler2D u_texture;
+                    layout(set = 0, binding = 1) uniform sampler2D u_texture;
                     layout(location = 0) out vec4 o_color;
                     void main() {
                         float z = texture(u_texture, v_texCoord).x;
@@ -111,12 +111,12 @@ R"(
 
                 gfx::ShaderStageList shaderStageList;
                 gfx::ShaderStage vertexShaderStage;
-                vertexShaderStage.type = gfx::ShaderType::VERTEX;
+                vertexShaderStage.type = gfx::ShaderStageFlagBit::VERTEX;
                 vertexShaderStage.source = source.vert;
                 shaderStageList.emplace_back(std::move(vertexShaderStage));
 
                 gfx::ShaderStage fragmentShaderStage;
-                fragmentShaderStage.type = gfx::ShaderType::FRAGMENT;
+                fragmentShaderStage.type = gfx::ShaderStageFlagBit::FRAGMENT;
                 fragmentShaderStage.source = source.frag;
                 shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
@@ -125,8 +125,8 @@ R"(
                     { "a_texCoord", gfx::Format::RG32F, false, 0, false, 1 },
                 };
                 gfx::UniformList nearFarUniform = { {"u_near", gfx::Type::FLOAT, 1}, {"u_far", gfx::Type::FLOAT, 1} };
-                gfx::UniformBlockList uniformBlockList = { {gfx::ShaderType::FRAGMENT, 0, "Near_Far_Uniform", nearFarUniform} };
-                gfx::UniformSamplerList samplers = { {gfx::ShaderType::FRAGMENT, 1, "u_texture", gfx::Type::SAMPLER2D, 1} };
+                gfx::UniformBlockList uniformBlockList = { { 0, 0, "Near_Far_Uniform", nearFarUniform, 1 } };
+                gfx::UniformSamplerList samplers = { { 0, 1, "u_texture", gfx::Type::SAMPLER2D, 1 } };
 
                 gfx::ShaderInfo shaderInfo;
                 shaderInfo.name = "BigTriangle";
@@ -156,7 +156,7 @@ R"(
                     gfx::MemoryUsage::DEVICE,
                     4 * sizeof(float),
                     sizeof(vertices),
-                });
+                    });
                 vertexBuffer->update(vertices, 0, sizeof(vertices));
 
                 // create uniform buffer
@@ -165,7 +165,7 @@ R"(
                     gfx::MemoryUsage::DEVICE,
                     0,
                     TestBaseI::getUBOSize(2 * sizeof(float)),
-                });
+                    });
 
                 float uboData[] = { 0.1f, 100.0f };
                 nearFarUniformBuffer->update(uboData, 0, sizeof(uboData));
@@ -180,12 +180,17 @@ R"(
             }
 
             void createPipeline() {
-                texBindingLoc = 1;
-                gfx::BindingLayoutInfo bindingLayoutInfo = { shader };
-                bindingLayout = device->createBindingLayout(bindingLayoutInfo);
+                gfx::DescriptorSetLayoutInfo dslInfo;
+                dslInfo.bindings.push_back({ gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::FRAGMENT });
+                dslInfo.bindings.push_back({ gfx::DescriptorType::SAMPLER, 1, gfx::ShaderStageFlagBit::FRAGMENT });
+                descriptorSetLayout = device->createDescriptorSetLayout(dslInfo);
 
-                bindingLayout->bindBuffer(0, nearFarUniformBuffer);
-                bindingLayout->bindSampler(texBindingLoc, sampler);
+                pipelineLayout = device->createPipelineLayout({ { descriptorSetLayout } });
+
+                descriptorSet = device->createDescriptorSet({ descriptorSetLayout });
+
+                descriptorSet->bindBuffer(0, nearFarUniformBuffer);
+                descriptorSet->bindSampler(1, sampler);
                 // don't update just yet for the texture is still missing
 
                 gfx::PipelineStateInfo pipelineInfo;
@@ -196,6 +201,7 @@ R"(
                 pipelineInfo.depthStencilState.depthTest = false;
                 pipelineInfo.depthStencilState.depthWrite = false;
                 pipelineInfo.rasterizerState.cullMode = gfx::CullMode::NONE;
+                pipelineInfo.pipelineLayout = pipelineLayout;
 
                 pipelineState = device->createPipelineState(pipelineInfo);
             }
@@ -205,7 +211,9 @@ R"(
                 CC_SAFE_DESTROY(shader);
                 CC_SAFE_DESTROY(vertexBuffer);
                 CC_SAFE_DESTROY(inputAssembler);
-                CC_SAFE_DESTROY(bindingLayout);
+                CC_SAFE_DESTROY(descriptorSet);
+                CC_SAFE_DESTROY(descriptorSetLayout);
+                CC_SAFE_DESTROY(pipelineLayout);
                 CC_SAFE_DESTROY(sampler);
                 CC_SAFE_DESTROY(texture);
                 CC_SAFE_DESTROY(pipelineState);
@@ -218,11 +226,12 @@ R"(
             gfx::Buffer *nearFarUniformBuffer = nullptr;
             gfx::Device *device = nullptr;
             gfx::InputAssembler *inputAssembler = nullptr;
-            gfx::BindingLayout *bindingLayout = nullptr;
+            gfx::DescriptorSet *descriptorSet = nullptr;
+            gfx::DescriptorSetLayout *descriptorSetLayout = nullptr;
+            gfx::PipelineLayout *pipelineLayout = nullptr;
             gfx::Sampler *sampler = nullptr;
             gfx::Texture *texture = nullptr;
             gfx::PipelineState *pipelineState = nullptr;
-            uint texBindingLoc = 0;
         };
 
         struct Bunny : public cc::Object {
@@ -241,7 +250,7 @@ R"(
                 sources.glsl4 = {
 R"(
                     layout(location = 0) in vec3 a_position;
-                    layout(binding = 0) uniform MVP_Matrix {
+                    layout(set = 0, binding = 0) uniform MVP_Matrix {
                         mat4 u_model;
                         mat4 u_view;
                         mat4 u_projection;
@@ -296,13 +305,13 @@ R"(
                 // vertex shader
                 gfx::ShaderStageList shaderStageList;
                 gfx::ShaderStage vertexShaderStage;
-                vertexShaderStage.type = gfx::ShaderType::VERTEX;
+                vertexShaderStage.type = gfx::ShaderStageFlagBit::VERTEX;
                 vertexShaderStage.source = source.vert;
                 shaderStageList.emplace_back(std::move(vertexShaderStage));
 
                 // fragment shader
                 gfx::ShaderStage fragmentShaderStage;
-                fragmentShaderStage.type = gfx::ShaderType::FRAGMENT;
+                fragmentShaderStage.type = gfx::ShaderStageFlagBit::FRAGMENT;
                 fragmentShaderStage.source = source.frag;
                 shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
@@ -313,7 +322,7 @@ R"(
                     {"u_projection", gfx::Type::MAT4, 1},
                 };
                 gfx::UniformBlockList uniformBlockList = {
-                    {gfx::ShaderType::VERTEX, 0, "MVP_Matrix", mvpMatrix} };
+                    { 0, 0, "MVP_Matrix", mvpMatrix, 1 } };
 
                 gfx::ShaderInfo shaderInfo;
                 shaderInfo.name = "Bunny";
@@ -364,10 +373,17 @@ R"(
             }
 
             void createPipeline(gfx::Framebuffer *_fbo) {
+                gfx::DescriptorSetLayoutInfo dslInfo;
+                dslInfo.bindings.push_back({ gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX });
+                descriptorSetLayout = device->createDescriptorSetLayout(dslInfo);
+
+                pipelineLayout = device->createPipelineLayout({ { descriptorSetLayout } });
+
                 for (uint i = 0u; i < BUNNY_NUM; i++) {
-                    bindingLayout[i] = device->createBindingLayout({ shader });
-                    bindingLayout[i]->bindBuffer(0, mvpUniformBuffer[i]);
-                    bindingLayout[i]->update();
+                    descriptorSet[i] = device->createDescriptorSet({ descriptorSetLayout });
+
+                    descriptorSet[i]->bindBuffer(0, mvpUniformBuffer[i]);
+                    descriptorSet[i]->update();
                 }
 
                 gfx::PipelineStateInfo pipelineInfo;
@@ -378,6 +394,7 @@ R"(
                 pipelineInfo.depthStencilState.depthTest = true;
                 pipelineInfo.depthStencilState.depthWrite = true;
                 pipelineInfo.depthStencilState.depthFunc = gfx::ComparisonFunc::LESS;
+                pipelineInfo.pipelineLayout = pipelineLayout;
 
                 pipelineState = device->createPipelineState(pipelineInfo);
             }
@@ -391,8 +408,10 @@ R"(
                 CC_SAFE_DESTROY(inputAssembler);
                 for (uint i = 0; i < BUNNY_NUM; i++) {
                     CC_SAFE_DESTROY(mvpUniformBuffer[i]);
-                    CC_SAFE_DESTROY(bindingLayout[i]);
+                    CC_SAFE_DESTROY(descriptorSet[i]);
                 }
+                CC_SAFE_DESTROY(descriptorSetLayout);
+                CC_SAFE_DESTROY(pipelineState);
                 CC_SAFE_DESTROY(pipelineState);
             }
             const static uint BUNNY_NUM = 2;
@@ -403,8 +422,10 @@ R"(
             gfx::Sampler *sampler = nullptr;
             gfx::Texture *depthTexture = nullptr;
             gfx::InputAssembler *inputAssembler = nullptr;
+            gfx::DescriptorSetLayout* descriptorSetLayout = nullptr;
+            gfx::PipelineLayout* pipelineLayout = nullptr;
             gfx::Buffer *mvpUniformBuffer[BUNNY_NUM] = { nullptr, nullptr };
-            gfx::BindingLayout *bindingLayout[BUNNY_NUM] = { nullptr, nullptr };
+            gfx::DescriptorSet* descriptorSet[BUNNY_NUM] = { nullptr, nullptr };
             gfx::PipelineState *pipelineState = nullptr;
         };
 
@@ -451,8 +472,8 @@ R"(
         bunny = CC_NEW(Bunny(_device, _bunnyFBO->framebuffer));
         bg = CC_NEW(BigTriangle(_device, _fbo));
 
-        bg->bindingLayout->bindTexture(bg->texBindingLoc, _bunnyFBO->depthStencilTex);
-        bg->bindingLayout->update();
+        bg->descriptorSet->bindTexture(1, _bunnyFBO->depthStencilTex);
+        bg->descriptorSet->update();
 
         return true;
     }
@@ -503,7 +524,7 @@ R"(
         commandBuffer->bindPipelineState(bunny->pipelineState);
         commandBuffer->bindInputAssembler(bunny->inputAssembler);
         for (uint i = 0; i < Bunny::BUNNY_NUM; i++) {
-            commandBuffer->bindBindingLayout(bunny->bindingLayout[i]);
+            commandBuffer->bindDescriptorSet(0, bunny->descriptorSet[i]);
             commandBuffer->draw(bunny->inputAssembler);
         }
         commandBuffer->endRenderPass();
@@ -513,7 +534,7 @@ R"(
             std::move(std::vector<gfx::Color>({ clear_color })), 1.0f, 0);
         commandBuffer->bindInputAssembler(bg->inputAssembler);
         commandBuffer->bindPipelineState(bg->pipelineState);
-        commandBuffer->bindBindingLayout(bg->bindingLayout);
+        commandBuffer->bindDescriptorSet(0, bg->descriptorSet);
         commandBuffer->draw(bg->inputAssembler);
         commandBuffer->endRenderPass();
 

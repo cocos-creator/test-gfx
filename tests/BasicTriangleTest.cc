@@ -7,7 +7,9 @@ namespace cc {
         CC_SAFE_DESTROY(_inputAssembler);
         CC_SAFE_DESTROY(_uniformBuffer);
         CC_SAFE_DESTROY(_shader);
-        CC_SAFE_DESTROY(_bindingLayout);
+        CC_SAFE_DESTROY(_descriptorSet);
+        CC_SAFE_DESTROY(_descriptorSetLayout);
+        CC_SAFE_DESTROY(_pipelineLayout);
         CC_SAFE_DESTROY(_pipelineState);
         CC_SAFE_DESTROY(_indexBuffer);
         CC_SAFE_DESTROY(_indirectBuffer);
@@ -32,7 +34,7 @@ R"(
                 gl_Position = vec4(a_position, 0.0, 1.0);
             }
 )", R"(
-            layout(binding = 0) uniform Color {
+            layout(set = 0, binding = 0) uniform Color {
                 vec4 u_color;
             };
             layout(location = 0) out vec4 o_color;
@@ -81,17 +83,17 @@ R"(
 
         gfx::ShaderStageList shaderStageList;
         gfx::ShaderStage vertexShaderStage;
-        vertexShaderStage.type = gfx::ShaderType::VERTEX;
+        vertexShaderStage.type = gfx::ShaderStageFlagBit::VERTEX;
         vertexShaderStage.source = source.vert;
         shaderStageList.emplace_back(std::move(vertexShaderStage));
 
         gfx::ShaderStage fragmentShaderStage;
-        fragmentShaderStage.type = gfx::ShaderType::FRAGMENT;
+        fragmentShaderStage.type = gfx::ShaderStageFlagBit::FRAGMENT;
         fragmentShaderStage.source = source.frag;
         shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
         gfx::UniformList uniformList = { { "u_color", gfx::Type::FLOAT4, 1 } };
-        gfx::UniformBlockList uniformBlockList = { { gfx::ShaderType::FRAGMENT, 0, "Color", uniformList } };
+        gfx::UniformBlockList uniformBlockList = { { 0, 0, "Color", uniformList, 1 } };
         gfx::AttributeList attributeList = { { "a_position", gfx::Format::RG32F, false, 0, false, 0 } };
 
         gfx::ShaderInfo shaderInfo;
@@ -168,14 +170,20 @@ R"(
     }
 
     void BasicTriangle::createPipeline() {
-        gfx::BindingLayoutInfo bindingLayoutInfo = { _shader };
-        _bindingLayout = _device->createBindingLayout(bindingLayoutInfo);
+        gfx::DescriptorSetLayoutInfo dslInfo;
+        dslInfo.bindings.push_back({ gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::FRAGMENT });
+        _descriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
+
+        _pipelineLayout = _device->createPipelineLayout({ { _descriptorSetLayout } });
+
+        _descriptorSet = _device->createDescriptorSet({ _descriptorSetLayout });
 
         gfx::PipelineStateInfo pipelineInfo;
         pipelineInfo.primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
         pipelineInfo.shader = _shader;
         pipelineInfo.inputState = { _inputAssembler->getAttributes() };
         pipelineInfo.renderPass = _fbo->getRenderPass();
+        pipelineInfo.pipelineLayout = _pipelineLayout;
 
         _pipelineState = _device->createPipelineState(pipelineInfo);
     }
@@ -193,8 +201,8 @@ R"(
         uniformColor.a = 1.0f;
 
         _uniformBuffer->update(&uniformColor, 0, sizeof(uniformColor));
-        _bindingLayout->bindBuffer(0, _uniformBuffer);
-        _bindingLayout->update();
+        _descriptorSet->bindBuffer(0, _uniformBuffer);
+        _descriptorSet->update();
 
         _device->acquire();
 
@@ -203,7 +211,7 @@ R"(
         commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, render_area, std::move(std::vector<gfx::Color>({ clear_color })), 1.0f, 0);
         commandBuffer->bindInputAssembler(_inputAssembler);
         commandBuffer->bindPipelineState(_pipelineState);
-        commandBuffer->bindBindingLayout(_bindingLayout);
+        commandBuffer->bindDescriptorSet(0, _descriptorSet);
         commandBuffer->draw(_inputAssembler);
         commandBuffer->endRenderPass();
         commandBuffer->end();

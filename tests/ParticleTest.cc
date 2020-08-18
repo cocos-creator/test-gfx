@@ -57,7 +57,9 @@ namespace cc {
         CC_SAFE_DESTROY(_indexBuffer);
         CC_SAFE_DESTROY(_inputAssembler);
         CC_SAFE_DESTROY(_pipelineState);
-        CC_SAFE_DESTROY(_bindingLayout);
+        CC_SAFE_DESTROY(_descriptorSet);
+        CC_SAFE_DESTROY(_descriptorSetLayout);
+        CC_SAFE_DESTROY(_pipelineLayout);
         CC_SAFE_DESTROY(_uniformBuffer);
         CC_SAFE_DESTROY(_texture);
         CC_SAFE_DESTROY(_sampler);
@@ -81,7 +83,7 @@ R"(
             layout(location = 1) in vec3 a_position;
             layout(location = 2) in vec4 a_color;
     
-            layout(binding = 0) uniform MVP_Matrix {
+            layout(set = 0, binding = 0) uniform MVP_Matrix {
                 mat4 u_model, u_view, u_projection;
             };
     
@@ -101,7 +103,7 @@ R"(
                 v_color = a_color;
             }
 )", R"(
-            layout(binding = 1) uniform sampler2D u_texture;
+            layout(set = 0, binding = 1) uniform sampler2D u_texture;
     
             layout(location = 0) in vec4 v_color;
             layout(location = 1) in vec2 v_texcoord;
@@ -192,12 +194,12 @@ R"(
 
         gfx::ShaderStageList shaderStageList;
         gfx::ShaderStage vertexShaderStage;
-        vertexShaderStage.type = gfx::ShaderType::VERTEX;
+        vertexShaderStage.type = gfx::ShaderStageFlagBit::VERTEX;
         vertexShaderStage.source = source.vert;
         shaderStageList.emplace_back(std::move(vertexShaderStage));
 
         gfx::ShaderStage fragmentShaderStage;
-        fragmentShaderStage.type = gfx::ShaderType::FRAGMENT;
+        fragmentShaderStage.type = gfx::ShaderStageFlagBit::FRAGMENT;
         fragmentShaderStage.source = source.frag;
         shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
@@ -211,9 +213,9 @@ R"(
             {"u_view", gfx::Type::MAT4, 1},
             {"u_projection", gfx::Type::MAT4, 1}
         };
-        gfx::UniformBlockList uniformBlockList = { {gfx::ShaderType::VERTEX, 0, "MVP_Matrix", mvpMatrix} };
+        gfx::UniformBlockList uniformBlockList = { { 0, 0, "MVP_Matrix", mvpMatrix, 1 } };
 
-        gfx::UniformSamplerList sampler = { {gfx::ShaderType::FRAGMENT, 1, "u_texture", gfx::Type::SAMPLER2D, 1} };
+        gfx::UniformSamplerList sampler = { { 0, 1, "u_texture", gfx::Type::SAMPLER2D, 1 } };
 
         gfx::ShaderInfo shaderInfo;
         shaderInfo.name = "Particle Test";
@@ -288,13 +290,19 @@ R"(
     }
 
     void ParticleTest::createPipeline() {
-        gfx::BindingLayoutInfo bindingLayoutInfo = { _shader };
-        _bindingLayout = _device->createBindingLayout(bindingLayoutInfo);
+        gfx::DescriptorSetLayoutInfo dslInfo;
+        dslInfo.bindings.push_back({ gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX });
+        dslInfo.bindings.push_back({ gfx::DescriptorType::SAMPLER, 1, gfx::ShaderStageFlagBit::FRAGMENT });
+        _descriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
 
-        _bindingLayout->bindBuffer(0, _uniformBuffer);
-        _bindingLayout->bindSampler(1, _sampler);
-        _bindingLayout->bindTexture(1, _texture);
-        _bindingLayout->update();
+        _pipelineLayout = _device->createPipelineLayout({ { _descriptorSetLayout } });
+
+        _descriptorSet = _device->createDescriptorSet({ _descriptorSetLayout });
+
+        _descriptorSet->bindBuffer(0, _uniformBuffer);
+        _descriptorSet->bindSampler(1, _sampler);
+        _descriptorSet->bindTexture(1, _texture);
+        _descriptorSet->update();
 
         gfx::PipelineStateInfo pipelineInfo;
         pipelineInfo.primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
@@ -308,6 +316,7 @@ R"(
         pipelineInfo.blendState.targets[0].blendDst = gfx::BlendFactor::ONE_MINUS_SRC_ALPHA;
         pipelineInfo.blendState.targets[0].blendSrcAlpha = gfx::BlendFactor::ONE;
         pipelineInfo.blendState.targets[0].blendDstAlpha = gfx::BlendFactor::ONE;
+        pipelineInfo.pipelineLayout = _pipelineLayout;
 
         _pipelineState = _device->createPipelineState(pipelineInfo);
     }
@@ -404,7 +413,7 @@ R"(
             std::move(std::vector<gfx::Color>({ clear_color })), 1.0f, 0);
         commandBuffer->bindInputAssembler(_inputAssembler);
         commandBuffer->bindPipelineState(_pipelineState);
-        commandBuffer->bindBindingLayout(_bindingLayout);
+        commandBuffer->bindDescriptorSet(0, _descriptorSet);
         commandBuffer->draw(_inputAssembler);
         commandBuffer->endRenderPass();
         commandBuffer->end();

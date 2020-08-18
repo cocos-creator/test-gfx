@@ -14,7 +14,9 @@ namespace cc {
         CC_SAFE_DESTROY(_mvpMatrix);
         CC_SAFE_DESTROY(_color);
         CC_SAFE_DESTROY(_inputAssembler);
-        CC_SAFE_DESTROY(_bindingLayout);
+        CC_SAFE_DESTROY(_descriptorSet);
+        CC_SAFE_DESTROY(_descriptorSetLayout);
+        CC_SAFE_DESTROY(_pipelineLayout);
         CC_SAFE_DESTROY(_pipelineState);
     }
 
@@ -33,7 +35,7 @@ namespace cc {
 R"(
             layout(location = 0) in vec3 a_position;
     
-            layout(binding = 0) uniform MVP_Matrix {
+            layout(set = 0, binding = 0) uniform MVP_Matrix {
                 mat4 u_model, u_view, u_projection;
             };
     
@@ -45,7 +47,7 @@ R"(
                 gl_Position = pos;
             }
 )", R"(
-            layout(binding = 1) uniform Color {
+            layout(set = 0, binding = 1) uniform Color {
                 vec4 u_color;
             };
             layout(location = 0) in vec3 v_position;
@@ -110,13 +112,13 @@ R"(
 
         gfx::ShaderStageList shaderStageList;
         gfx::ShaderStage vertexShaderStage;
-        vertexShaderStage.type = gfx::ShaderType::VERTEX;
+        vertexShaderStage.type = gfx::ShaderStageFlagBit::VERTEX;
         vertexShaderStage.source = source.vert;
         shaderStageList.emplace_back(std::move(vertexShaderStage));
 
         // fragment shader
         gfx::ShaderStage fragmentShaderStage;
-        fragmentShaderStage.type = gfx::ShaderType::FRAGMENT;
+        fragmentShaderStage.type = gfx::ShaderStageFlagBit::FRAGMENT;
         fragmentShaderStage.source = source.frag;
         shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
@@ -128,8 +130,8 @@ R"(
         };
         gfx::UniformList color = { {"u_color", gfx::Type::FLOAT4, 1} };
         gfx::UniformBlockList uniformBlockList = {
-            {gfx::ShaderType::VERTEX, static_cast<uint>(Binding::MVP), "MVP_Matrix", mvpMatrix},
-            {gfx::ShaderType::FRAGMENT, static_cast<uint>(Binding::COLOR), "Color", color}
+            {0, static_cast<uint>(Binding::MVP), "MVP_Matrix", mvpMatrix, 1},
+            {0, static_cast<uint>(Binding::COLOR), "Color", color, 1}
         };
 
         gfx::ShaderInfo shaderInfo;
@@ -194,11 +196,18 @@ R"(
     }
 
     void BunnyTest::createPipelineState() {
-        gfx::BindingLayoutInfo bindingLayoutInfo = { _shader };
-        _bindingLayout = _device->createBindingLayout(bindingLayoutInfo);
-        _bindingLayout->bindBuffer(static_cast<uint>(Binding::MVP), _mvpMatrix);
-        _bindingLayout->bindBuffer(static_cast<uint>(Binding::COLOR), _color);
-        _bindingLayout->update();
+        gfx::DescriptorSetLayoutInfo dslInfo;
+        dslInfo.bindings.push_back({ gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX });
+        dslInfo.bindings.push_back({ gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::FRAGMENT });
+        _descriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
+
+        _pipelineLayout = _device->createPipelineLayout({ { _descriptorSetLayout } });
+
+        _descriptorSet = _device->createDescriptorSet({ _descriptorSetLayout });
+
+        _descriptorSet->bindBuffer(static_cast<uint>(Binding::MVP), _mvpMatrix);
+        _descriptorSet->bindBuffer(static_cast<uint>(Binding::COLOR), _color);
+        _descriptorSet->update();
 
         gfx::PipelineStateInfo pipelineStateInfo;
         pipelineStateInfo.primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
@@ -208,6 +217,7 @@ R"(
         pipelineStateInfo.depthStencilState.depthTest = true;
         pipelineStateInfo.depthStencilState.depthWrite = true;
         pipelineStateInfo.depthStencilState.depthFunc = gfx::ComparisonFunc::LESS;
+        pipelineStateInfo.pipelineLayout = _pipelineLayout;
         _pipelineState = _device->createPipelineState(pipelineStateInfo);
     }
 
@@ -229,7 +239,7 @@ R"(
 
         commandBuffer->bindInputAssembler(_inputAssembler);
         commandBuffer->bindPipelineState(_pipelineState);
-        commandBuffer->bindBindingLayout(_bindingLayout);
+        commandBuffer->bindDescriptorSet(0 ,_descriptorSet);
         commandBuffer->draw(_inputAssembler);
 
         commandBuffer->endRenderPass();

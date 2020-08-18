@@ -40,10 +40,8 @@ namespace cc {
         TestBaseI *test = CC_NEW(className(info));     \
         if (test->initialize())                        \
             return test;                               \
-        else {                                         \
-            CC_SAFE_DESTROY(test);                     \
-            return nullptr;                            \
-        }                                              \
+        CC_SAFE_DESTROY(test);                         \
+        return nullptr;                                \
     }
 
     class TestBaseI : public cc::Object {
@@ -65,6 +63,7 @@ namespace cc {
         static uint getUBOSize(uint size);
         static uint getMipmapLevelCounts(uint width, uint height);
         static ShaderSource &getAppropriateShaderSource(gfx::Device *device, ShaderSources &sources);
+        static uint getAlignedUBOStride(gfx::Device *device, uint stride);
 
     protected:
         static gfx::Device *_device;

@@ -31,7 +31,9 @@ private:
     gfx::Buffer* _vertexBuffer = nullptr;
     gfx::InputAssembler* _inputAssembler = nullptr;
     gfx::Buffer* _uniformBuffer[BINDING_COUNT] = { nullptr };
-    gfx::BindingLayout* _bindingLayout[BINDING_COUNT] = { nullptr };
+    gfx::DescriptorSet* _descriptorSet[BINDING_COUNT] = { nullptr };
+    gfx::DescriptorSetLayout* _descriptorSetLayout = nullptr;
+    gfx::PipelineLayout* _pipelineLayout = nullptr;
     gfx::PipelineState* _pipelineState[PIPELIE_COUNT] = { nullptr };
     gfx::Sampler* _sampler = nullptr;
     

@@ -30,7 +30,7 @@ namespace cc {
             gfx::BufferTextureCopyList regions;
             regions.push_back(std::move(textureRegion));
 
-            gfx::BufferDataList imageBuffers = {imgData};
+            gfx::BufferDataList imageBuffers = { imgData };
             device->copyBuffersToTexture(imageBuffers, texture, regions);
             delete[] imgData;
             return texture;
@@ -54,10 +54,13 @@ namespace cc {
                 CC_SAFE_DESTROY(indexBuffer);
                 CC_SAFE_DESTROY(texture);
                 CC_SAFE_DESTROY(sampler);
+                CC_SAFE_DESTROY(descriptorSet);
+                CC_SAFE_DESTROY(uniformBufferView);
+                CC_SAFE_DESTROY(uniformBuffer);
+                CC_SAFE_DESTROY(descriptorSetLayout);
+                CC_SAFE_DESTROY(pipelineLayout);
                 for (int i = 0; i < TOTAL_BLEND; i++) {
                     CC_SAFE_DESTROY(pipelineState[i]);
-                    CC_SAFE_DESTROY(bindingLayout[i]);
-                    CC_SAFE_DESTROY(uniformBuffer[i]);
                 }
             }
 
@@ -69,7 +72,7 @@ R"(
                     layout(location = 0) in vec2 a_position;
                     layout(location = 1) in vec2 a_uv;
                     layout(location = 0) out vec2 uv;
-                    layout(binding = 0) uniform MVP_Matrix {
+                    layout(set = 0, binding = 0) uniform MVP_Matrix {
                         mat4 u_model, u_projection;
                     };
                     void main() {
@@ -78,7 +81,7 @@ R"(
                     }
 )", R"(
                     layout(location = 0) in vec2 uv;
-                    layout(binding = 1) uniform sampler2D u_texture;
+                    layout(set = 0, binding = 1) uniform sampler2D u_texture;
                     layout(location = 0) out vec4 o_color;
                     void main() {
                         o_color = texture(u_texture, uv);
@@ -134,12 +137,12 @@ R"(
 
                 gfx::ShaderStageList shaderStageList;
                 gfx::ShaderStage vertexShaderStage;
-                vertexShaderStage.type = gfx::ShaderType::VERTEX;
+                vertexShaderStage.type = gfx::ShaderStageFlagBit::VERTEX;
                 vertexShaderStage.source = source.vert;
                 shaderStageList.emplace_back(std::move(vertexShaderStage));
 
                 gfx::ShaderStage fragmentShaderStage;
-                fragmentShaderStage.type = gfx::ShaderType::FRAGMENT;
+                fragmentShaderStage.type = gfx::ShaderStageFlagBit::FRAGMENT;
                 fragmentShaderStage.source = source.frag;
                 shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
@@ -148,15 +151,14 @@ R"(
                     { "a_uv", gfx::Format::RG32F, false, 0, false, 1 },
                 };
                 gfx::UniformList mvpMatrix = {
-                    {"u_model", gfx::Type::MAT4, 1},
-                    {"u_projection", gfx::Type::MAT4, 1},
+                    { "u_model", gfx::Type::MAT4, 1 },
+                    { "u_projection", gfx::Type::MAT4, 1 },
                 };
                 gfx::UniformBlockList uniformBlockList = {
-                    {gfx::ShaderType::VERTEX, 0, "MVP_Matrix", mvpMatrix}
+                    { 0, 0, "MVP_Matrix", mvpMatrix, 1 }
                 };
-
                 gfx::UniformSamplerList samplers = {
-                    {gfx::ShaderType::FRAGMENT, 1, "u_texture", gfx::Type::SAMPLER2D, 1}
+                    { 0, 1, "u_texture", gfx::Type::SAMPLER2D, 1 }
                 };
 
                 gfx::ShaderInfo shaderInfo;
@@ -173,7 +175,7 @@ R"(
                     -0.5f, -0.5f, 0.f, 0.f,
                     -0.5f,  0.5f, 0.f, 1.f,
                      0.5f,  0.5f, 1.f, 1.f,
-                     0.5f, -0.5f, 1.f, 0.f, 
+                     0.5f, -0.5f, 1.f, 0.f,
                 };
 
                 unsigned short indices[6] = { 0, 3, 1, 1, 3, 2 };
@@ -184,33 +186,39 @@ R"(
                     gfx::MemoryUsage::DEVICE,
                     4 * sizeof(float),
                     sizeof(vertexData),
-                });
+                    });
                 vertexBuffer->update(vertexData, 0, sizeof(vertexData));
 
                 // index buffer
                 indexBuffer = device->createBuffer({
-                    gfx::BufferUsage::INDEX, 
-                    gfx::MemoryUsage::DEVICE, 
+                    gfx::BufferUsage::INDEX,
+                    gfx::MemoryUsage::DEVICE,
                     sizeof(unsigned short),
                     sizeof(indices),
-                });
+                    });
                 indexBuffer->update(indices, 0, sizeof(indices));
-
-                // uniform buffer
-                gfx::BufferInfo uniformBufferInfo = {
-                    gfx::BufferUsage::UNIFORM, 
-                    gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST, 
-                    0,
-                    TestBaseI::getUBOSize(2 * sizeof(Mat4)),
-                };
 
                 Mat4 projection;
                 Mat4::createOrthographicOffCenter(0.0f, (float)device->getWidth(), (float)device->getHeight(),
                     0.0f, 0.0f, 1000.f, &projection);
                 TestBaseI::modifyProjectionBasedOnDevice(projection);
-                for (int i = 0; i < TOTAL_BLEND; i++) {
-                    uniformBuffer[i] = device->createBuffer(uniformBufferInfo);
-                    uniformBuffer[i]->update(projection.m, sizeof(Mat4), sizeof(projection));
+
+                // dynamic uniform buffer
+                uboStride = TestBaseI::getAlignedUBOStride(device, sizeof(Mat4) * 2);
+                uniformBuffer = device->createBuffer({
+                    gfx::BufferUsage::UNIFORM,
+                    gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
+                    uboStride,
+                    uboStride * TOTAL_BLEND,
+                    });
+                uniformBufferView = device->createBuffer({
+                    uniformBuffer,
+                    0,
+                    uboStride
+                });
+                for (uint i = 0; i < TOTAL_BLEND; i++) {
+                    uniformBuffer->update(projection.m, uboStride * i + sizeof(Mat4), sizeof(projection));
+                    dynamicOffsets[i] = i * uboStride;
                 }
             }
 
@@ -241,16 +249,19 @@ R"(
             }
 
             void createPipeline() {
-                gfx::BindingLayoutInfo bindingLayoutInfo = { shader };
+                gfx::DescriptorSetLayoutInfo dslInfo;
+                dslInfo.bindings.push_back({ gfx::DescriptorType::DYNAMIC_UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX });
+                dslInfo.bindings.push_back({ gfx::DescriptorType::SAMPLER, 1, gfx::ShaderStageFlagBit::FRAGMENT });
+                descriptorSetLayout = device->createDescriptorSetLayout(dslInfo);
 
-                for (int i = 0; i < TOTAL_BLEND; i++) {
-                    bindingLayout[i] = device->createBindingLayout(bindingLayoutInfo);
+                pipelineLayout = device->createPipelineLayout({ { descriptorSetLayout } });
 
-                    bindingLayout[i]->bindBuffer(0, uniformBuffer[i]);
-                    bindingLayout[i]->bindSampler(1, sampler);
-                    bindingLayout[i]->bindTexture(1, texture);
-                    bindingLayout[i]->update();
-                }
+                descriptorSet = device->createDescriptorSet({ descriptorSetLayout });
+
+                descriptorSet->bindBuffer(0, uniformBufferView);
+                descriptorSet->bindSampler(1, sampler);
+                descriptorSet->bindTexture(1, texture);
+                descriptorSet->update();
 
                 gfx::PipelineStateInfo pipelineInfo[TOTAL_BLEND];
                 pipelineInfo[NO_BLEND].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
@@ -266,6 +277,7 @@ R"(
                 pipelineInfo[NO_BLEND].blendState.targets[0].blendDst = gfx::BlendFactor::ZERO;
                 pipelineInfo[NO_BLEND].blendState.targets[0].blendSrcAlpha = gfx::BlendFactor::ONE;
                 pipelineInfo[NO_BLEND].blendState.targets[0].blendDstAlpha = gfx::BlendFactor::ONE_MINUS_SRC_ALPHA;
+                pipelineInfo[NO_BLEND].pipelineLayout = pipelineLayout;
                 pipelineState[NO_BLEND] = device->createPipelineState(pipelineInfo[NO_BLEND]);
 
                 pipelineInfo[NORMAL_BLEND].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
@@ -281,6 +293,7 @@ R"(
                 pipelineInfo[NORMAL_BLEND].blendState.targets[0].blendDst = gfx::BlendFactor::ONE_MINUS_SRC_ALPHA;
                 pipelineInfo[NORMAL_BLEND].blendState.targets[0].blendSrcAlpha = gfx::BlendFactor::ONE;
                 pipelineInfo[NORMAL_BLEND].blendState.targets[0].blendDstAlpha = gfx::BlendFactor::ONE_MINUS_SRC_ALPHA;
+                pipelineInfo[NORMAL_BLEND].pipelineLayout = pipelineLayout;
                 pipelineState[NORMAL_BLEND] = device->createPipelineState(pipelineInfo[NORMAL_BLEND]);
 
                 pipelineInfo[ADDITIVE_BLEND].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
@@ -296,6 +309,7 @@ R"(
                 pipelineInfo[ADDITIVE_BLEND].blendState.targets[0].blendDst = gfx::BlendFactor::ONE;
                 pipelineInfo[ADDITIVE_BLEND].blendState.targets[0].blendSrcAlpha = gfx::BlendFactor::ONE;
                 pipelineInfo[ADDITIVE_BLEND].blendState.targets[0].blendDstAlpha = gfx::BlendFactor::ONE_MINUS_SRC_ALPHA;
+                pipelineInfo[ADDITIVE_BLEND].pipelineLayout = pipelineLayout;
                 pipelineState[ADDITIVE_BLEND] = device->createPipelineState(pipelineInfo[ADDITIVE_BLEND]);
 
                 pipelineInfo[SUBSTRACT_BLEND].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
@@ -311,6 +325,7 @@ R"(
                 pipelineInfo[SUBSTRACT_BLEND].blendState.targets[0].blendDst = gfx::BlendFactor::ONE_MINUS_SRC_COLOR;
                 pipelineInfo[SUBSTRACT_BLEND].blendState.targets[0].blendSrcAlpha = gfx::BlendFactor::ONE;
                 pipelineInfo[SUBSTRACT_BLEND].blendState.targets[0].blendDstAlpha = gfx::BlendFactor::ONE_MINUS_SRC_ALPHA;
+                pipelineInfo[SUBSTRACT_BLEND].pipelineLayout = pipelineLayout;
                 pipelineState[SUBSTRACT_BLEND] = device->createPipelineState(pipelineInfo[SUBSTRACT_BLEND]);
 
                 pipelineInfo[MULTIPLY_BLEND].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
@@ -326,6 +341,7 @@ R"(
                 pipelineInfo[MULTIPLY_BLEND].blendState.targets[0].blendDst = gfx::BlendFactor::SRC_COLOR;
                 pipelineInfo[MULTIPLY_BLEND].blendState.targets[0].blendSrcAlpha = gfx::BlendFactor::ONE;
                 pipelineInfo[MULTIPLY_BLEND].blendState.targets[0].blendDstAlpha = gfx::BlendFactor::ONE_MINUS_SRC_ALPHA;
+                pipelineInfo[MULTIPLY_BLEND].pipelineLayout = pipelineLayout;
                 pipelineState[MULTIPLY_BLEND] = device->createPipelineState(pipelineInfo[MULTIPLY_BLEND]);
             }
 
@@ -337,11 +353,16 @@ R"(
             gfx::InputAssembler *inputAssembler = nullptr;
             gfx::Sampler *sampler = nullptr;
             gfx::Texture *texture = nullptr;
-            gfx::Buffer *uniformBuffer[TOTAL_BLEND] = { nullptr };
-            gfx::BindingLayout *bindingLayout[TOTAL_BLEND] = { nullptr };
+            gfx::DescriptorSetLayout *descriptorSetLayout = nullptr;
+            gfx::PipelineLayout *pipelineLayout = nullptr;
+            gfx::Buffer *uniformBuffer = nullptr;
+            gfx::Buffer *uniformBufferView = nullptr;
+            gfx::DescriptorSet *descriptorSet = nullptr;
             gfx::PipelineState *pipelineState[TOTAL_BLEND] = { nullptr };
+            uint dynamicOffsets[TOTAL_BLEND];
 
             Mat4 model;
+            size_t uboStride;
         };
 
         struct BigTriangle : public cc::Object {
@@ -357,8 +378,10 @@ R"(
                 CC_SAFE_DESTROY(shader);
                 CC_SAFE_DESTROY(vertexBuffer);
                 CC_SAFE_DESTROY(inputAssembler);
+                CC_SAFE_DESTROY(descriptorSet);
+                CC_SAFE_DESTROY(descriptorSetLayout);
+                CC_SAFE_DESTROY(pipelineLayout);
                 CC_SAFE_DESTROY(pipelineState);
-                CC_SAFE_DESTROY(bindingLayout);
                 CC_SAFE_DESTROY(timeBuffer);
                 CC_SAFE_DESTROY(texture);
                 CC_SAFE_DESTROY(sampler);
@@ -378,10 +401,10 @@ R"(
                     }
 )", R"(
                     layout(location = 0) in vec2 uv;
-                    layout(binding = 0) uniform Time {
+                    layout(set = 0, binding = 0) uniform Time {
                         float u_time;
                     };
-                    layout(binding = 1) uniform sampler2D u_texture;
+                    layout(set = 0, binding = 1) uniform sampler2D u_texture;
                     layout(location = 0) out vec4 o_color;
                     void main() {
                         vec2 offset = vec2(u_time * -0.01);
@@ -440,12 +463,12 @@ R"(
 
                 gfx::ShaderStageList shaderStageList;
                 gfx::ShaderStage vertexShaderStage;
-                vertexShaderStage.type = gfx::ShaderType::VERTEX;
+                vertexShaderStage.type = gfx::ShaderStageFlagBit::VERTEX;
                 vertexShaderStage.source = source.vert;
                 shaderStageList.emplace_back(std::move(vertexShaderStage));
 
                 gfx::ShaderStage fragmentShaderStage;
-                fragmentShaderStage.type = gfx::ShaderType::FRAGMENT;
+                fragmentShaderStage.type = gfx::ShaderStageFlagBit::FRAGMENT;
                 fragmentShaderStage.source = source.frag;
                 shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
@@ -454,8 +477,8 @@ R"(
                     { "a_texCoord", gfx::Format::RG32F, false, 0, false, 1 },
                 };
                 gfx::UniformList time = { {"u_time", gfx::Type::FLOAT, 1} };
-                gfx::UniformBlockList uniformBlockList = { {gfx::ShaderType::FRAGMENT, 0, "Time", time} };
-                gfx::UniformSamplerList samplers = { {gfx::ShaderType::FRAGMENT, 1, "u_texture", gfx::Type::SAMPLER2D, 1} };
+                gfx::UniformBlockList uniformBlockList = { { 0, 0, "Time", time, 1 } };
+                gfx::UniformSamplerList samplers = { { 0, 1, "u_texture", gfx::Type::SAMPLER2D, 1 } };
 
                 gfx::ShaderInfo shaderInfo;
                 shaderInfo.name = "Blend Test: BigTriangle";
@@ -480,16 +503,16 @@ R"(
                     gfx::MemoryUsage::HOST,
                     4 * sizeof(float),
                     sizeof(vertexData),
-                });
+                    });
                 vertexBuffer->update(vertexData, 0, sizeof(vertexData));
 
                 // uniform buffer
                 timeBuffer = device->createBuffer({
                     gfx::BufferUsage::UNIFORM,
                     gfx::MemoryUsage::HOST | gfx::MemoryUsage::DEVICE,
-                    0, 
+                    0,
                     TestBaseI::getUBOSize(sizeof(float)),
-                });
+                    });
             }
 
             void createInputAssembler() {
@@ -520,19 +543,26 @@ R"(
             }
 
             void createPipeline() {
-                gfx::BindingLayoutInfo bindingLayoutInfo = { shader };
-                bindingLayout = device->createBindingLayout(bindingLayoutInfo);
+                gfx::DescriptorSetLayoutInfo dslInfo;
+                dslInfo.bindings.push_back({ gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::FRAGMENT });
+                dslInfo.bindings.push_back({ gfx::DescriptorType::SAMPLER, 1, gfx::ShaderStageFlagBit::FRAGMENT });
+                descriptorSetLayout = device->createDescriptorSetLayout(dslInfo);
 
-                bindingLayout->bindBuffer(0, timeBuffer);
-                bindingLayout->bindSampler(1, sampler);
-                bindingLayout->bindTexture(1, texture);
-                bindingLayout->update();
+                pipelineLayout = device->createPipelineLayout({ { descriptorSetLayout } });
+
+                descriptorSet = device->createDescriptorSet({ descriptorSetLayout });
+
+                descriptorSet->bindBuffer(0, timeBuffer);
+                descriptorSet->bindSampler(1, sampler);
+                descriptorSet->bindTexture(1, texture);
+                descriptorSet->update();
 
                 gfx::PipelineStateInfo pipelineInfo;
                 pipelineInfo.primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
                 pipelineInfo.shader = shader;
                 pipelineInfo.inputState = { inputAssembler->getAttributes() };
                 pipelineInfo.renderPass = fbo->getRenderPass();
+                pipelineInfo.pipelineLayout = pipelineLayout;
 
                 pipelineState = device->createPipelineState(pipelineInfo);
             }
@@ -544,8 +574,10 @@ R"(
             gfx::Buffer *timeBuffer = nullptr;
             gfx::InputAssembler *inputAssembler = nullptr;
             gfx::Sampler *sampler = nullptr;
-            gfx::BindingLayout *bindingLayout = nullptr;
             gfx::Texture *texture = nullptr;
+            gfx::DescriptorSet *descriptorSet = nullptr;
+            gfx::DescriptorSetLayout *descriptorSetLayout = nullptr;
+            gfx::PipelineLayout *pipelineLayout = nullptr;
             gfx::PipelineState *pipelineState = nullptr;
         };
 
@@ -590,7 +622,7 @@ R"(
         bigTriangle->timeBuffer->update(&_dt, 0, sizeof(_dt));
         commandBuffer->bindInputAssembler(bigTriangle->inputAssembler);
         commandBuffer->bindPipelineState(bigTriangle->pipelineState);
-        commandBuffer->bindBindingLayout(bigTriangle->bindingLayout);
+        commandBuffer->bindDescriptorSet(0, bigTriangle->descriptorSet);
         commandBuffer->draw(bigTriangle->inputAssembler);
 
         commandBuffer->bindInputAssembler(quad->inputAssembler);
@@ -600,42 +632,43 @@ R"(
         float halfSize = size * 0.5f;
         float offsetX = 5.f + halfSize;
         float offsetY = 50.f + halfSize;
+
         quad->model = std::move(createModelTransform(Vec3(offsetX, offsetY, 0), Vec3(size, size, 1)));
-        quad->uniformBuffer[NO_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
+        quad->uniformBuffer->update(quad->model.m, NO_BLEND * quad->uboStride, sizeof(quad->model));
         commandBuffer->bindPipelineState(quad->pipelineState[NO_BLEND]);
-        commandBuffer->bindBindingLayout(quad->bindingLayout[NO_BLEND]);
+        commandBuffer->bindDescriptorSet(0, quad->descriptorSet, 1, &quad->dynamicOffsets[NO_BLEND]);
         commandBuffer->draw(quad->inputAssembler);
 
         // normal
         offsetY += 5.f + size;
         quad->model = std::move(createModelTransform(cc::Vec3(offsetX, offsetY, 0), cc::Vec3(size, size, 1)));
-        quad->uniformBuffer[NORMAL_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
+        quad->uniformBuffer->update(quad->model.m, NORMAL_BLEND * quad->uboStride, sizeof(quad->model));
         commandBuffer->bindPipelineState(quad->pipelineState[NORMAL_BLEND]);
-        commandBuffer->bindBindingLayout(quad->bindingLayout[NORMAL_BLEND]);
+        commandBuffer->bindDescriptorSet(0, quad->descriptorSet, 1, &quad->dynamicOffsets[NORMAL_BLEND]);
         commandBuffer->draw(quad->inputAssembler);
 
         // additive
         offsetY += 5.f + size;
         quad->model = std::move(createModelTransform(cc::Vec3(offsetX, offsetY, 0), cc::Vec3(size, size, 1)));
-        quad->uniformBuffer[ADDITIVE_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
+        quad->uniformBuffer->update(quad->model.m, ADDITIVE_BLEND * quad->uboStride, sizeof(quad->model));
         commandBuffer->bindPipelineState(quad->pipelineState[ADDITIVE_BLEND]);
-        commandBuffer->bindBindingLayout(quad->bindingLayout[ADDITIVE_BLEND]);
+        commandBuffer->bindDescriptorSet(0, quad->descriptorSet, 1, &quad->dynamicOffsets[ADDITIVE_BLEND]);
         commandBuffer->draw(quad->inputAssembler);
 
         // substract
         offsetY += 5.f + size;
         quad->model = std::move(createModelTransform(cc::Vec3(offsetX, offsetY, 0), cc::Vec3(size, size, 1)));
-        quad->uniformBuffer[SUBSTRACT_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
+        quad->uniformBuffer->update(quad->model.m, SUBSTRACT_BLEND * quad->uboStride, sizeof(quad->model));
         commandBuffer->bindPipelineState(quad->pipelineState[SUBSTRACT_BLEND]);
-        commandBuffer->bindBindingLayout(quad->bindingLayout[SUBSTRACT_BLEND]);
+        commandBuffer->bindDescriptorSet(0, quad->descriptorSet, 1, &quad->dynamicOffsets[SUBSTRACT_BLEND]);
         commandBuffer->draw(quad->inputAssembler);
 
         // multiply
         offsetY += 5.f + size;
         quad->model = std::move(createModelTransform(cc::Vec3(offsetX, offsetY, 0), cc::Vec3(size, size, 1)));
-        quad->uniformBuffer[MULTIPLY_BLEND]->update(quad->model.m, 0, sizeof(quad->model));
+        quad->uniformBuffer->update(quad->model.m, MULTIPLY_BLEND * quad->uboStride, sizeof(quad->model));
         commandBuffer->bindPipelineState(quad->pipelineState[MULTIPLY_BLEND]);
-        commandBuffer->bindBindingLayout(quad->bindingLayout[MULTIPLY_BLEND]);
+        commandBuffer->bindDescriptorSet(0, quad->descriptorSet, 1, &quad->dynamicOffsets[MULTIPLY_BLEND]);
         commandBuffer->draw(quad->inputAssembler);
 
         commandBuffer->endRenderPass();
