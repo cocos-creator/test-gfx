@@ -411,7 +411,7 @@ R"(
                     CC_SAFE_DESTROY(descriptorSet[i]);
                 }
                 CC_SAFE_DESTROY(descriptorSetLayout);
-                CC_SAFE_DESTROY(pipelineState);
+                CC_SAFE_DESTROY(pipelineLayout);
                 CC_SAFE_DESTROY(pipelineState);
             }
             const static uint BUNNY_NUM = 2;
