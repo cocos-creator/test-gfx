@@ -112,13 +112,13 @@ R"(
 
         gfx::ShaderStageList shaderStageList;
         gfx::ShaderStage vertexShaderStage;
-        vertexShaderStage.type = gfx::ShaderStageFlagBit::VERTEX;
+        vertexShaderStage.stage = gfx::ShaderStageFlagBit::VERTEX;
         vertexShaderStage.source = source.vert;
         shaderStageList.emplace_back(std::move(vertexShaderStage));
 
         // fragment shader
         gfx::ShaderStage fragmentShaderStage;
-        fragmentShaderStage.type = gfx::ShaderStageFlagBit::FRAGMENT;
+        fragmentShaderStage.stage = gfx::ShaderStageFlagBit::FRAGMENT;
         fragmentShaderStage.source = source.frag;
         shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
