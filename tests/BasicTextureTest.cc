@@ -234,7 +234,7 @@ R"(
 
         auto commandBuffer = _commandBuffers[0];
         commandBuffer->begin();
-        commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, render_area, std::move(std::vector<gfx::Color>({ clear_color })), 1.0f, 0);
+        commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, render_area, &clear_color, 1.0f, 0);
         commandBuffer->bindInputAssembler(_inputAssembler);
         commandBuffer->bindPipelineState(_pipelineState);
         commandBuffer->bindDescriptorSet(0, _descriptorSet);

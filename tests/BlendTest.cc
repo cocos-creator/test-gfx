@@ -215,7 +215,7 @@ R"(
                     uniformBuffer,
                     0,
                     uboStride
-                });
+                    });
                 for (uint i = 0; i < TOTAL_BLEND; i++) {
                     uniformBuffer->update(projection.m, uboStride * i + sizeof(Mat4), sizeof(projection));
                     dynamicOffsets[i] = i * uboStride;
@@ -615,8 +615,7 @@ R"(
 
         auto commandBuffer = _commandBuffers[0];
         commandBuffer->begin();
-        commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, render_area,
-            std::move(std::vector<gfx::Color>({ clear_color })), 1.0f, 0);
+        commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, render_area, &clear_color, 1.0f, 0);
 
         // draw background
         bigTriangle->timeBuffer->update(&_dt, 0, sizeof(_dt));

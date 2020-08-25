@@ -519,8 +519,7 @@ R"(
         commandBuffer->begin();
 
         // render bunny
-        commandBuffer->beginRenderPass(_bunnyFBO->renderPass, _bunnyFBO->framebuffer, render_area,
-            {}, 1.0f, 0);
+        commandBuffer->beginRenderPass(_bunnyFBO->renderPass, _bunnyFBO->framebuffer, render_area, nullptr, 1.0f, 0);
         commandBuffer->bindPipelineState(bunny->pipelineState);
         commandBuffer->bindInputAssembler(bunny->inputAssembler);
         for (uint i = 0; i < Bunny::BUNNY_NUM; i++) {
@@ -530,8 +529,7 @@ R"(
         commandBuffer->endRenderPass();
 
         // render bg
-        commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, render_area,
-            std::move(std::vector<gfx::Color>({ clear_color })), 1.0f, 0);
+        commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, render_area, &clear_color, 1.0f, 0);
         commandBuffer->bindInputAssembler(bg->inputAssembler);
         commandBuffer->bindPipelineState(bg->pipelineState);
         commandBuffer->bindDescriptorSet(0, bg->descriptorSet);
