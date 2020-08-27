@@ -32,6 +32,7 @@ private:
     gfx::PipelineLayout* _pipelineLayout = nullptr;
     gfx::PipelineState* _pipelineState = nullptr;
     gfx::Texture* _texture = nullptr;
+    gfx::Texture* _texture2 = nullptr;
     gfx::Buffer* _image = nullptr;
     gfx::Sampler* _sampler = nullptr;
 };

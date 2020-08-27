@@ -12,6 +12,7 @@ namespace cc {
         CC_SAFE_DESTROY(_pipelineState);
         CC_SAFE_DESTROY(_uniformBuffer);
         CC_SAFE_DESTROY(_texture);
+        CC_SAFE_DESTROY(_texture2);
         CC_SAFE_DESTROY(_image);
         CC_SAFE_DESTROY(_sampler);
     }
@@ -45,10 +46,11 @@ R"(
             }
 )", R"(
             layout(location = 0) in vec2 texcoord;
-            layout(binding = 1) uniform sampler2D u_texture;
+            layout(binding = 1) uniform sampler2D u_texture[2];
             layout(location = 0) out vec4 o_color;
             void main () {
-                o_color = texture(u_texture, texcoord);
+                const int idx = 1; // texcoord.x > 0.5 ? 1 : 0;
+                o_color = texture(u_texture[idx], texcoord);
             }
 )"
         };
@@ -71,10 +73,11 @@ R"(
 )", R"(
             precision mediump float;
             in vec2 texcoord;
-            uniform sampler2D u_texture;
+            uniform sampler2D u_texture[2];
             out vec4 o_color;
             void main () {
-                o_color = texture(u_texture, texcoord);
+                const int idx = 1; // texcoord.x > 0.5 ? 1 : 0;
+                o_color = texture(u_texture[idx], texcoord);
             }
 )"
         };
@@ -83,19 +86,20 @@ R"(
 R"(
             attribute vec2 a_position;
             uniform mat4 u_mvpMatrix;
-            varying vec2 v_texcoord;
+            varying vec2 texcoord;
             void main ()
             {
                 gl_Position = u_mvpMatrix * vec4(a_position, 0, 1);
-                v_texcoord = a_position * 0.5 + 0.5;
-                v_texcoord = vec2(v_texcoord.x, 1.0 - v_texcoord.y);
+                texcoord = a_position * 0.5 + 0.5;
+                texcoord = vec2(texcoord.x, 1.0 - texcoord.y);
             }
 )", R"(
             precision mediump float;
-            uniform sampler2D u_texture;
-            varying vec2 v_texcoord;
+            uniform sampler2D u_texture[2];
+            varying vec2 texcoord;
             void main () {
-                gl_FragColor = texture2D(u_texture, v_texcoord);
+                const int idx = 1; // texcoord.x > 0.5 ? 1 : 0;
+                gl_FragColor = texture2D(u_texture[idx], texcoord);
             }
 )"
         };
@@ -116,7 +120,7 @@ R"(
         gfx::AttributeList attributeList = { { "a_position", gfx::Format::RG32F, false, 0, false, 0 } };
         gfx::UniformList mvpMatrix = { { "u_mvpMatrix", gfx::Type::MAT4, 1} };
         gfx::UniformBlockList uniformBlockList = { { 0, 0, "MVP_Matrix", mvpMatrix, 1 } };
-        gfx::UniformSamplerList sampler = { { 0, 1, "u_texture", gfx::Type::SAMPLER2D, 1 } };
+        gfx::UniformSamplerList sampler = { { 0, 1, "u_texture", gfx::Type::SAMPLER2D, 2 } };
 
         gfx::ShaderInfo shaderInfo;
         shaderInfo.name = "Basic Texture";
@@ -165,7 +169,7 @@ R"(
     void BasicTexture::createPipeline() {
         gfx::DescriptorSetLayoutInfo dslInfo;
         dslInfo.bindings.push_back({ gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX });
-        dslInfo.bindings.push_back({ gfx::DescriptorType::SAMPLER, 1, gfx::ShaderStageFlagBit::FRAGMENT });
+        dslInfo.bindings.push_back({ gfx::DescriptorType::SAMPLER, 2, gfx::ShaderStageFlagBit::FRAGMENT });
         _descriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
 
         _pipelineLayout = _device->createPipelineLayout({ { _descriptorSetLayout } });
@@ -178,7 +182,9 @@ R"(
 
         _descriptorSet->bindBuffer(0, _uniformBuffer);
         _descriptorSet->bindSampler(1, _sampler);
-        _descriptorSet->bindTexture(1, _texture);
+        _descriptorSet->bindTexture(1, _texture2);
+        _descriptorSet->bindSampler(1, _sampler, 1);
+        _descriptorSet->bindTexture(1, _texture, 1);
         _descriptorSet->update();
 
         gfx::PipelineStateInfo pipelineInfo;
@@ -218,6 +224,32 @@ R"(
         gfx::BufferDataList imageBuffer = { data };
         _device->copyBuffersToTexture(imageBuffer, _texture, regions);
 
+        auto img2 = new cc::Image();
+        img2->autorelease();
+        bool valid2 = img2->initWithImageFile("uv_checker_02.jpg");
+        CCASSERT(valid2, "BasicTexture load image failed");
+
+        auto data2 = TestBaseI::RGB2RGBA(img2);
+
+        gfx::TextureInfo textureInfo2;
+        textureInfo2.usage = gfx::TextureUsage::SAMPLED | gfx::TextureUsage::TRANSFER_DST;
+        textureInfo2.format = gfx::Format::RGBA8;
+        textureInfo2.width = img2->getWidth();
+        textureInfo2.height = img2->getHeight();
+        _texture2 = _device->createTexture(textureInfo2);
+
+        gfx::BufferTextureCopy textureRegion2;
+        textureRegion2.buffTexHeight = img2->getHeight();
+        textureRegion2.texExtent.width = img2->getWidth();
+        textureRegion2.texExtent.height = img2->getHeight();
+        textureRegion2.texExtent.depth = 1;
+
+        gfx::BufferTextureCopyList regions2;
+        regions2.push_back(std::move(textureRegion2));
+
+        gfx::BufferDataList imageBuffer2 = { data2 };
+        _device->copyBuffersToTexture(imageBuffer2, _texture2, regions2);
+
         //create sampler
         gfx::SamplerInfo samplerInfo;
         _sampler = _device->createSampler(samplerInfo);
@@ -227,14 +259,14 @@ R"(
 
     void BasicTexture::tick(float dt) {
 
-        gfx::Rect render_area = { 0, 0, _device->getWidth(), _device->getHeight() };
-        gfx::Color clear_color = { 0, 0, 0, 1.0f };
+        gfx::Rect renderArea = { 0, 0, _device->getWidth(), _device->getHeight() };
+        gfx::Color clearColor = { 0, 0, 0, 1.0f };
 
         _device->acquire();
 
         auto commandBuffer = _commandBuffers[0];
         commandBuffer->begin();
-        commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, render_area, &clear_color, 1.0f, 0);
+        commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
         commandBuffer->bindInputAssembler(_inputAssembler);
         commandBuffer->bindPipelineState(_pipelineState);
         commandBuffer->bindDescriptorSet(0, _descriptorSet);

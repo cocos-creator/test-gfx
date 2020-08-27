@@ -210,12 +210,12 @@ R"(
                     gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
                     uboStride,
                     uboStride * TOTAL_BLEND,
-                    });
+                });
                 uniformBufferView = device->createBuffer({
                     uniformBuffer,
                     0,
                     uboStride
-                    });
+                });
                 for (uint i = 0; i < TOTAL_BLEND; i++) {
                     uniformBuffer->update(projection.m, uboStride * i + sizeof(Mat4), sizeof(projection));
                     dynamicOffsets[i] = i * uboStride;

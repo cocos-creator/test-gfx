@@ -25,6 +25,8 @@ private:
     gfx::Shader* _shader = nullptr;
     gfx::Buffer* _vertexBuffer = nullptr;
     gfx::Buffer* _indexBuffer = nullptr;
+    gfx::Buffer* _rootUBO = nullptr;
+    vector<float> _rootBuffer;
     gfx::Buffer* _mvpMatrix = nullptr;
     gfx::Buffer* _color = nullptr;
     gfx::DescriptorSet* _descriptorSet = nullptr;

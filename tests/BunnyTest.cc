@@ -13,6 +13,7 @@ namespace cc {
         CC_SAFE_DESTROY(_indexBuffer);
         CC_SAFE_DESTROY(_mvpMatrix);
         CC_SAFE_DESTROY(_color);
+        CC_SAFE_DESTROY(_rootUBO);
         CC_SAFE_DESTROY(_inputAssembler);
         CC_SAFE_DESTROY(_descriptorSet);
         CC_SAFE_DESTROY(_descriptorSetLayout);
@@ -140,7 +141,7 @@ R"(
         shaderInfo.attributes = std::move(attributeList);
         shaderInfo.blocks = std::move(uniformBlockList);
         _shader = _device->createShader(shaderInfo);
-        }
+    }
 
     void BunnyTest::createBuffers() {
         // vertex buffer
@@ -159,31 +160,41 @@ R"(
             gfx::MemoryUsage::DEVICE,
             sizeof(uint16_t),
             sizeof(bunny_cells),
-        });
+            });
         _indexBuffer->update((void *)&bunny_cells[0], 0, sizeof(bunny_cells));
+
+        // root UBO
+        uint offset = TestBaseI::getAlignedUBOStride(_device, 3 * sizeof(Mat4));
+        uint size = offset + 4 * sizeof(float);
+        _rootUBO = _device->createBuffer({
+            gfx::BufferUsage::UNIFORM,
+            gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
+            0,
+            TestBaseI::getUBOSize(size),
+        });
+        _rootBuffer.resize(size / sizeof(float));
 
         // mvp matrix uniform
         _mvpMatrix = _device->createBuffer({
-            gfx::BufferUsage::UNIFORM,
-            gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
+            _rootUBO,
             0,
-            TestBaseI::getUBOSize(3 * sizeof(Mat4)),
+            3 * sizeof(Mat4),
         });
+        // color uniform
+        _color = _device->createBuffer({
+            _rootUBO,
+            offset,
+            4 * sizeof(float),
+        });
+
         Mat4 model, projection;
         Mat4::createPerspective(60.0f, 1.0f * _device->getWidth() / _device->getHeight(), 0.01f, 1000.0f, &projection);
         TestBaseI::modifyProjectionBasedOnDevice(projection);
-        _mvpMatrix->update(model.m, 0, sizeof(model));
-        _mvpMatrix->update(projection.m, 2 * sizeof(Mat4), sizeof(projection));
-
-        // color uniform
-        _color = _device->createBuffer({
-            gfx::BufferUsage::UNIFORM,
-            gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
-            0,
-            TestBaseI::getUBOSize(4 * sizeof(float)),
-        });
         float color[4] = { 0.5f, 0.5f, 0.5f, 1.0f };
-        _color->update(color, 0, sizeof(color));
+
+        std::copy(model.m, model.m + 16, &_rootBuffer[0]);
+        std::copy(projection.m, projection.m + 16, &_rootBuffer[32]);
+        std::copy(color, color + 4, &_rootBuffer[offset / sizeof(float)]);
     }
 
     void BunnyTest::createInputAssembler() {
@@ -223,22 +234,24 @@ R"(
 
     void BunnyTest::tick(float dt) {
         _dt += dt;
+
         Mat4::createLookAt(Vec3(30.0f * std::cos(_dt), 20.0f, 30.0f * std::sin(_dt)),
             Vec3(0.0f, 2.5f, 0.0f), Vec3(0.0f, 1.0f, 0.f), &_view);
-        _mvpMatrix->update(_view.m, sizeof(Mat4), sizeof(_view));
+        std::copy(_view.m, _view.m + 16, &_rootBuffer[16]);
+        _rootUBO->update(_rootBuffer.data(), 0, _rootBuffer.size() * sizeof(float));
 
-        gfx::Rect render_area = { 0, 0, _device->getWidth(), _device->getHeight() };
-        gfx::Color clear_color = { 0.0f, 0, 0, 1.0f };
+        gfx::Rect renderArea = { 0, 0, _device->getWidth(), _device->getHeight() };
+        gfx::Color clearColor = { 0.0f, 0, 0, 1.0f };
 
         _device->acquire();
 
         auto commandBuffer = _commandBuffers[0];
         commandBuffer->begin();
-        commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, render_area, &clear_color, 1.0f, 0);
+        commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
 
         commandBuffer->bindInputAssembler(_inputAssembler);
         commandBuffer->bindPipelineState(_pipelineState);
-        commandBuffer->bindDescriptorSet(0 ,_descriptorSet);
+        commandBuffer->bindDescriptorSet(0, _descriptorSet);
         commandBuffer->draw(_inputAssembler);
 
         commandBuffer->endRenderPass();
@@ -248,4 +261,4 @@ R"(
         _device->present();
     }
 
-    } // namespace cc
+} // namespace cc

@@ -49,6 +49,7 @@ add_definitions(-DCC_PLATFORM_MAC_OSX=${CC_PLATFORM_MAC_OSX} )
 add_definitions(-DCC_PLATFORM_MAC_IOS=${CC_PLATFORM_MAC_IOS} )
 add_definitions(-DCC_PLATFORM_ANDROID=${CC_PLATFORM_ANDROID} )
 add_definitions(-DCC_PLATFORM=${CC_PLATFORM})
+add_definitions(-DCC_DEBUG=1)
 
 message(STATUS "### Cocos 3D Build System ###")
 message(STATUS "Configuring build system...")
