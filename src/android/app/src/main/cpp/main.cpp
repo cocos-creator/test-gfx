@@ -1,6 +1,6 @@
 #include <jni.h>
 #include <android_native_app_glue.h>
-#include "platform/android/CCFileUtils-android.h"
+#include "platform/android/FileUtils-android.h"
 #include "tests/ClearScreenTest.h"
 #include "tests/BasicTriangleTest.h"
 #include "tests/BasicTextureTest.h"

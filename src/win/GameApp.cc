@@ -1,6 +1,6 @@
 #include "GameApp.h"
-#include "base/ccMacros.h"
-#include "platform/CCFileUtils.h"
+#include "base/Macros.h"
+#include "platform/FileUtils.h"
 #include "tests/ClearScreenTest.h"
 #include "tests/BasicTriangleTest.h"
 #include "tests/BasicTextureTest.h"

@@ -362,7 +362,7 @@ R"(
             uint dynamicOffsets[TOTAL_BLEND];
 
             Mat4 model;
-            size_t uboStride;
+            uint uboStride;
         };
 
         struct BigTriangle : public cc::Object {

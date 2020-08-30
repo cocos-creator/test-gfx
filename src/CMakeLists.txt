@@ -9,68 +9,65 @@ endif()
 # ---------------------------------------------
 # set cocos platform, base, math, external files
 set(CC_PLATFORM_SOURCES
-    ${COCOS_SRC_PATH}/platform/CCApplication.h
-    ${COCOS_SRC_PATH}/platform/CCDevice.h
-    ${COCOS_SRC_PATH}/platform/CCFileUtils.h
-    ${COCOS_SRC_PATH}/platform/CCImage.h
-    ${COCOS_SRC_PATH}/platform/CCSAXParser.h
+    ${COCOS_SRC_PATH}/platform/Application.h
+    ${COCOS_SRC_PATH}/platform/Device.h
+    ${COCOS_SRC_PATH}/platform/FileUtils.h
+    ${COCOS_SRC_PATH}/platform/Image.h
+    ${COCOS_SRC_PATH}/platform/SAXParser.h
 
-    ${COCOS_SRC_PATH}/platform/CCFileUtils.cpp
-    ${COCOS_SRC_PATH}/platform/CCImage.cpp
-    ${COCOS_SRC_PATH}/platform/CCSAXParser.cpp
+    ${COCOS_SRC_PATH}/platform/FileUtils.cpp
+    ${COCOS_SRC_PATH}/platform/Image.cpp
+    ${COCOS_SRC_PATH}/platform/SAXParser.cpp
 )
 if(WIN32)
     list(APPEND CC_PLATFORM_SOURCES
-        ${COCOS_SRC_PATH}/platform/win32/CCFileUtils-win32.h
-        ${COCOS_SRC_PATH}/platform/win32/CCUtils-win32.h
+        ${COCOS_SRC_PATH}/platform/win32/FileUtils-win32.h
+        ${COCOS_SRC_PATH}/platform/win32/Utils-win32.h
 
-        ${COCOS_SRC_PATH}/platform/win32/CCDevice-win32.cpp
-        ${COCOS_SRC_PATH}/platform/win32/CCFileUtils-win32.cpp
-        ${COCOS_SRC_PATH}/platform/win32/CCUtils-win32.cpp
+        ${COCOS_SRC_PATH}/platform/win32/Device-win32.cpp
+        ${COCOS_SRC_PATH}/platform/win32/FileUtils-win32.cpp
+        ${COCOS_SRC_PATH}/platform/win32/Utils-win32.cpp
     )
 elseif(ANDROID)
     list(APPEND CC_PLATFORM_SOURCES
-        ${COCOS_SRC_PATH}/platform/android/CCFileUtils-android.h
+        ${COCOS_SRC_PATH}/platform/android/FileUtils-android.h
         ${COCOS_SRC_PATH}/platform/android/jni/JniHelper.h
         # ${COCOS_SRC_PATH}/platform/android/jni/JniImp.h
 
-        # ${COCOS_SRC_PATH}/platform/android/CCDevice-android.cpp
-        ${COCOS_SRC_PATH}/platform/android/CCFileUtils-android.cpp
-        # ${COCOS_SRC_PATH}/platform/android/CCApplication-android.cpp
-        # ${COCOS_SRC_PATH}/platform/android/CCCanvasRenderingContext2D-android.cpp
+        # ${COCOS_SRC_PATH}/platform/android/Device-android.cpp
+        ${COCOS_SRC_PATH}/platform/android/FileUtils-android.cpp
+        # ${COCOS_SRC_PATH}/platform/android/Application-android.cpp
+        # ${COCOS_SRC_PATH}/platform/android/CanvasRenderingContext2D-android.cpp
         # ${COCOS_SRC_PATH}/platform/android/jni/JniImp.cpp
         ${COCOS_SRC_PATH}/platform/android/jni/JniHelper.cpp
     )
 elseif(APPLE)
     list(APPEND CC_PLATFORM_SOURCES
-        ${COCOS_SRC_PATH}/platform/apple/CCFileUtils-apple.h
+        ${COCOS_SRC_PATH}/platform/apple/FileUtils-apple.h
 
-        ${COCOS_SRC_PATH}/platform/apple/CCFileUtils-apple.mm
+        ${COCOS_SRC_PATH}/platform/apple/FileUtils-apple.mm
     )
 endif()
 
 set(CC_BASE_HEADERS
     ${COCOS_SRC_PATH}/base/base64.h
-    ${COCOS_SRC_PATH}/base/CCAutoreleasePool.h
-    ${COCOS_SRC_PATH}/base/ccCArray.h
-    ${COCOS_SRC_PATH}/base/ccConfig.h
-    ${COCOS_SRC_PATH}/base/CCData.h
-    # ${COCOS_SRC_PATH}/base/CCGLUtils.h
+    ${COCOS_SRC_PATH}/base/AutoreleasePool.h
+    ${COCOS_SRC_PATH}/base/CachedArray.h
+    ${COCOS_SRC_PATH}/base/Config.h
+    ${COCOS_SRC_PATH}/base/Data.h
     ${COCOS_SRC_PATH}/base/Log.h
-    ${COCOS_SRC_PATH}/base/ccMacros.h
-    ${COCOS_SRC_PATH}/base/CCMap.h
-    ${COCOS_SRC_PATH}/base/ccRandom.h
-    ${COCOS_SRC_PATH}/base/CCRef.h
-    ${COCOS_SRC_PATH}/base/CCRefPtr.h
-    # ${COCOS_SRC_PATH}/base/CCRenderTexture.h
-    # ${COCOS_SRC_PATH}/base/CCScheduler.h
-    # ${COCOS_SRC_PATH}/base/CCThreadPool.h
+    ${COCOS_SRC_PATH}/base/Macros.h
+    ${COCOS_SRC_PATH}/base/Map.h
+    ${COCOS_SRC_PATH}/base/Random.h
+    ${COCOS_SRC_PATH}/base/Ref.h
+    # ${COCOS_SRC_PATH}/base/Scheduler.h
+    # ${COCOS_SRC_PATH}/base/ThreadPool.h
     ${COCOS_SRC_PATH}/base/StringUtil.h
     ${COCOS_SRC_PATH}/base/UTFString.h
-    ${COCOS_SRC_PATH}/base/ccUTF8.h
-    ${COCOS_SRC_PATH}/base/ccUtils.h
-    ${COCOS_SRC_PATH}/base/CCValue.h
-    ${COCOS_SRC_PATH}/base/CCVector.h
+    ${COCOS_SRC_PATH}/base/UTF8.h
+    ${COCOS_SRC_PATH}/base/Utils.h
+    ${COCOS_SRC_PATH}/base/Value.h
+    ${COCOS_SRC_PATH}/base/Vector.h
     ${COCOS_SRC_PATH}/base/etc1.h
     ${COCOS_SRC_PATH}/base/etc2.h
     ${COCOS_SRC_PATH}/base/uthash.h
@@ -80,19 +77,17 @@ set(CC_BASE_HEADERS
 
 set(CC_BASE_SOURCES
     ${COCOS_SRC_PATH}/base/base64.cpp
-    ${COCOS_SRC_PATH}/base/CCAutoreleasePool.cpp
-    ${COCOS_SRC_PATH}/base/ccCArray.cpp
-    ${COCOS_SRC_PATH}/base/CCData.cpp
-    # ${COCOS_SRC_PATH}/base/CCGLUtils.cpp
+    ${COCOS_SRC_PATH}/base/AutoreleasePool.cpp
+    ${COCOS_SRC_PATH}/base/Data.cpp
     ${COCOS_SRC_PATH}/base/Log.cpp
-    ${COCOS_SRC_PATH}/base/ccRandom.cpp
-    ${COCOS_SRC_PATH}/base/CCRef.cpp
+    ${COCOS_SRC_PATH}/base/Random.cpp
+    ${COCOS_SRC_PATH}/base/Ref.cpp
 
     ${COCOS_SRC_PATH}/base/StringUtil.cpp
     ${COCOS_SRC_PATH}/base/UTFString.cpp
-    ${COCOS_SRC_PATH}/base/ccUTF8.cpp
-    ${COCOS_SRC_PATH}/base/ccUtils.cpp
-    ${COCOS_SRC_PATH}/base/CCValue.cpp
+    ${COCOS_SRC_PATH}/base/UTF8.cpp
+    ${COCOS_SRC_PATH}/base/Utils.cpp
+    ${COCOS_SRC_PATH}/base/Value.cpp
     ${COCOS_SRC_PATH}/base/csscolorparser.cpp
     ${COCOS_SRC_PATH}/base/etc1.cpp
     ${COCOS_SRC_PATH}/base/etc2.cpp
@@ -100,10 +95,10 @@ set(CC_BASE_SOURCES
 )
 
 set(CC_MATH_HEADERS
-    ${COCOS_SRC_PATH}/math/CCGeometry.h
-    ${COCOS_SRC_PATH}/math/CCMath.h
-    ${COCOS_SRC_PATH}/math/CCMathBase.h
-    ${COCOS_SRC_PATH}/math/CCVertex.h
+    ${COCOS_SRC_PATH}/math/Geometry.h
+    ${COCOS_SRC_PATH}/math/Math.h
+    ${COCOS_SRC_PATH}/math/MathBase.h
+    ${COCOS_SRC_PATH}/math/Vertex.h
     ${COCOS_SRC_PATH}/math/Mat4.h
     ${COCOS_SRC_PATH}/math/MathUtil.h
     ${COCOS_SRC_PATH}/math/Quaternion.h
@@ -113,8 +108,8 @@ set(CC_MATH_HEADERS
 )
 
 set(CC_MATH_SOURCES
-    ${COCOS_SRC_PATH}/math/CCGeometry.cpp
-    ${COCOS_SRC_PATH}/math/CCVertex.cpp
+    ${COCOS_SRC_PATH}/math/Geometry.cpp
+    ${COCOS_SRC_PATH}/math/Vertex.cpp
     ${COCOS_SRC_PATH}/math/Mat4.cpp
     ${COCOS_SRC_PATH}/math/MathUtil.cpp
     ${COCOS_SRC_PATH}/math/Quaternion.cpp
