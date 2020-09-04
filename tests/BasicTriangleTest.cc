@@ -178,6 +178,9 @@ R"(
 
         _descriptorSet = _device->createDescriptorSet({ _descriptorSetLayout });
 
+        _descriptorSet->bindBuffer(0, _uniformBuffer);
+        _descriptorSet->update();
+
         gfx::PipelineStateInfo pipelineInfo;
         pipelineInfo.primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
         pipelineInfo.shader = _shader;
@@ -200,11 +203,9 @@ R"(
         uniformColor.b = 0.0f;
         uniformColor.a = 1.0f;
 
-        _uniformBuffer->update(&uniformColor, 0, sizeof(uniformColor));
-        _descriptorSet->bindBuffer(0, _uniformBuffer);
-        _descriptorSet->update();
-
         _device->acquire();
+
+        _uniformBuffer->update(&uniformColor, 0, sizeof(uniformColor));
 
         auto commandBuffer = _commandBuffers[0];
         commandBuffer->begin();

@@ -364,8 +364,8 @@ R"(
 
     void ParticleTest::tick(float dt) {
 
-        gfx::Rect render_area = { 0, 0, _device->getWidth(), _device->getHeight() };
-        gfx::Color clear_color = { 0, 0, 0, 1.0f };
+        gfx::Rect renderArea = { 0, 0, _device->getWidth(), _device->getHeight() };
+        gfx::Color clearColor = { 0.2f, 0.2f, 0.2f, 1.0f };
 
         // update particles
         for (size_t i = 0; i < PARTICLE_COUNT; ++i) {
@@ -409,7 +409,7 @@ R"(
 
         auto commandBuffer = _commandBuffers[0];
         commandBuffer->begin();
-        commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, render_area, &clear_color, 1.0f, 0);
+        commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
         commandBuffer->bindInputAssembler(_inputAssembler);
         commandBuffer->bindPipelineState(_pipelineState);
         commandBuffer->bindDescriptorSet(0, _descriptorSet);
