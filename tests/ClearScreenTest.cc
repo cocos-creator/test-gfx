@@ -14,10 +14,10 @@ namespace cc {
         gfx::Rect render_area = { 0, 0, _device->getWidth(), _device->getHeight() };
         _time += dt;
         gfx::Color clear_color;
-        clear_color.r = 1.0f;
-        clear_color.g = std::abs(std::sin(_time));
-        clear_color.b = 0.0f;
-        clear_color.a = 1.0f;
+        clear_color.x = 1.0f;
+        clear_color.y = std::abs(std::sin(_time));
+        clear_color.z = 0.0f;
+        clear_color.w = 1.0f;
 
         _device->acquire();
 

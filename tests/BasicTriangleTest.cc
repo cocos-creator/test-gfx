@@ -198,10 +198,10 @@ R"(
         gfx::Color clear_color = { 1.0f, 0, 0, 1.0f };
 
         gfx::Color uniformColor;
-        uniformColor.r = std::abs(std::sin(_time));
-        uniformColor.g = 1.0f;
-        uniformColor.b = 0.0f;
-        uniformColor.a = 1.0f;
+        uniformColor.x = std::abs(std::sin(_time));
+        uniformColor.y = 1.0f;
+        uniformColor.z = 0.0f;
+        uniformColor.w = 1.0f;
 
         _device->acquire();
 
