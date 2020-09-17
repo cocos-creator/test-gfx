@@ -19,7 +19,7 @@ namespace cc {
     gfx::Device *TestBaseI::_device = nullptr;
     gfx::Framebuffer *TestBaseI::_fbo = nullptr;
     gfx::RenderPass *TestBaseI::_renderPass = nullptr;
-    std::vector<gfx::CommandBuffer *> TestBaseI::_commandBuffers(1, nullptr);
+    std::vector<gfx::CommandBuffer *> TestBaseI::_commandBuffers;
 
     TestBaseI::TestBaseI(const WindowInfo &info) {
         if (_device == nullptr) {
@@ -69,21 +69,12 @@ namespace cc {
             _fbo = _device->createFramebuffer(fboInfo);
         }
 
-        for (uint i = 0; i < static_cast<uint>(_commandBuffers.size()); i++) {
-            if (_commandBuffers[i] != nullptr)
-                continue;
-
-            gfx::CommandBufferInfo cmdBuffInfo;
-            cmdBuffInfo.queue = _device->getQueue();
-            cmdBuffInfo.type = gfx::CommandBufferType::PRIMARY;
-            _commandBuffers[i] = _device->createCommandBuffer(cmdBuffInfo);
+        if (!_commandBuffers.size()) {
+            _commandBuffers.push_back(_device->getCommandBuffer());
         }
     }
 
     void TestBaseI::destroyGlobal() {
-        for (auto &cmdBuff : _commandBuffers) {
-            CC_SAFE_DESTROY(cmdBuff);
-        }
         CC_SAFE_DESTROY(_fbo);
         CC_SAFE_DESTROY(_renderPass);
         CC_SAFE_DESTROY(_device);

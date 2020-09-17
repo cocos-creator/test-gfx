@@ -205,6 +205,8 @@ R"(
 
                 // dynamic uniform buffer
                 uboStride = TestBaseI::getAlignedUBOStride(device, sizeof(Mat4) * 2);
+                models.resize(uboStride * TOTAL_BLEND / sizeof(float), 0);
+
                 uniformBuffer = device->createBuffer({
                     gfx::BufferUsage::UNIFORM,
                     gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
@@ -217,7 +219,7 @@ R"(
                     uboStride
                 });
                 for (uint i = 0; i < TOTAL_BLEND; i++) {
-                    uniformBuffer->update(projection.m, uboStride * i + sizeof(Mat4), sizeof(projection));
+                    memcpy(models.data() + (uboStride * i + sizeof(Mat4)) / sizeof(float), projection.m, sizeof(projection));
                     dynamicOffsets[i] = i * uboStride;
                 }
             }
@@ -361,7 +363,7 @@ R"(
             gfx::PipelineState *pipelineState[TOTAL_BLEND] = { nullptr };
             uint dynamicOffsets[TOTAL_BLEND];
 
-            Mat4 model;
+            vector<float> models;
             uint uboStride;
         };
 
@@ -499,7 +501,7 @@ R"(
 
                 // vertex buffer
                 vertexBuffer = device->createBuffer({
-                    gfx::BufferUsage::VERTEX,
+                    gfx::BufferUsage::VERTEX | gfx::BufferUsage::TRANSFER_DST,
                     gfx::MemoryUsage::HOST,
                     4 * sizeof(float),
                     sizeof(vertexData),
@@ -581,12 +583,9 @@ R"(
             gfx::PipelineState *pipelineState = nullptr;
         };
 
-        Mat4 createModelTransform(const Vec3 &t, const Vec3 &s) {
-            Mat4 model;
-            model.translate(t);
+        void createModelTransform(Mat4 &model, const Vec3 &t, const Vec3 &s) {
+            Mat4::createTranslation(t, &model);
             model.scale(s);
-
-            return model;
         }
 
         BigTriangle *bigTriangle = nullptr;
@@ -611,14 +610,38 @@ R"(
         gfx::Rect render_area = { 0, 0, _device->getWidth(), _device->getHeight() };
         gfx::Color clear_color = { 0.0f, 0, 0, 1.0f };
 
+        float size = std::min(render_area.width, render_area.height) * 0.15f;
+        float halfSize = size * 0.5f;
+        float offsetX = 5.f + halfSize;
+        float offsetY = 50.f + halfSize;
+        Mat4 model;
+
+        createModelTransform(model, Vec3(offsetX, offsetY, 0), Vec3(size, size, 1));
+        memcpy(quad->models.data() + NO_BLEND * quad->uboStride / sizeof(float), model.m, sizeof(model));
+        offsetY += 5.f + size;
+        createModelTransform(model, Vec3(offsetX, offsetY, 0), Vec3(size, size, 1));
+        memcpy(quad->models.data() + NORMAL_BLEND * quad->uboStride / sizeof(float), model.m, sizeof(model));
+        offsetY += 5.f + size;
+        createModelTransform(model, Vec3(offsetX, offsetY, 0), Vec3(size, size, 1));
+        memcpy(quad->models.data() + ADDITIVE_BLEND * quad->uboStride / sizeof(float), model.m, sizeof(model));
+        offsetY += 5.f + size;
+        createModelTransform(model, Vec3(offsetX, offsetY, 0), Vec3(size, size, 1));
+        memcpy(quad->models.data() + SUBSTRACT_BLEND * quad->uboStride / sizeof(float), model.m, sizeof(model));
+        offsetY += 5.f + size;
+        createModelTransform(model, Vec3(offsetX, offsetY, 0), Vec3(size, size, 1));
+        memcpy(quad->models.data() + MULTIPLY_BLEND * quad->uboStride / sizeof(float), model.m, sizeof(model));
+
         _device->acquire();
 
         auto commandBuffer = _commandBuffers[0];
         commandBuffer->begin();
+
+        commandBuffer->updateBuffer(bigTriangle->timeBuffer, &_dt, sizeof(_dt));
+        commandBuffer->updateBuffer(quad->uniformBuffer, quad->models.data(), quad->models.size() * sizeof(float));
+
         commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, render_area, &clear_color, 1.0f, 0);
 
         // draw background
-        bigTriangle->timeBuffer->update(&_dt, 0, sizeof(_dt));
         commandBuffer->bindInputAssembler(bigTriangle->inputAssembler);
         commandBuffer->bindPipelineState(bigTriangle->pipelineState);
         commandBuffer->bindDescriptorSet(0, bigTriangle->descriptorSet);
@@ -627,45 +650,26 @@ R"(
         commandBuffer->bindInputAssembler(quad->inputAssembler);
 
         // draw sprite without blending
-        float size = std::min(render_area.width, render_area.height) * 0.15f;
-        float halfSize = size * 0.5f;
-        float offsetX = 5.f + halfSize;
-        float offsetY = 50.f + halfSize;
-
-        quad->model = std::move(createModelTransform(Vec3(offsetX, offsetY, 0), Vec3(size, size, 1)));
-        quad->uniformBuffer->update(quad->model.m, NO_BLEND * quad->uboStride, sizeof(quad->model));
         commandBuffer->bindPipelineState(quad->pipelineState[NO_BLEND]);
         commandBuffer->bindDescriptorSet(0, quad->descriptorSet, 1, &quad->dynamicOffsets[NO_BLEND]);
         commandBuffer->draw(quad->inputAssembler);
 
         // normal
-        offsetY += 5.f + size;
-        quad->model = std::move(createModelTransform(cc::Vec3(offsetX, offsetY, 0), cc::Vec3(size, size, 1)));
-        quad->uniformBuffer->update(quad->model.m, NORMAL_BLEND * quad->uboStride, sizeof(quad->model));
         commandBuffer->bindPipelineState(quad->pipelineState[NORMAL_BLEND]);
         commandBuffer->bindDescriptorSet(0, quad->descriptorSet, 1, &quad->dynamicOffsets[NORMAL_BLEND]);
         commandBuffer->draw(quad->inputAssembler);
 
         // additive
-        offsetY += 5.f + size;
-        quad->model = std::move(createModelTransform(cc::Vec3(offsetX, offsetY, 0), cc::Vec3(size, size, 1)));
-        quad->uniformBuffer->update(quad->model.m, ADDITIVE_BLEND * quad->uboStride, sizeof(quad->model));
         commandBuffer->bindPipelineState(quad->pipelineState[ADDITIVE_BLEND]);
         commandBuffer->bindDescriptorSet(0, quad->descriptorSet, 1, &quad->dynamicOffsets[ADDITIVE_BLEND]);
         commandBuffer->draw(quad->inputAssembler);
 
         // substract
-        offsetY += 5.f + size;
-        quad->model = std::move(createModelTransform(cc::Vec3(offsetX, offsetY, 0), cc::Vec3(size, size, 1)));
-        quad->uniformBuffer->update(quad->model.m, SUBSTRACT_BLEND * quad->uboStride, sizeof(quad->model));
         commandBuffer->bindPipelineState(quad->pipelineState[SUBSTRACT_BLEND]);
         commandBuffer->bindDescriptorSet(0, quad->descriptorSet, 1, &quad->dynamicOffsets[SUBSTRACT_BLEND]);
         commandBuffer->draw(quad->inputAssembler);
 
         // multiply
-        offsetY += 5.f + size;
-        quad->model = std::move(createModelTransform(cc::Vec3(offsetX, offsetY, 0), cc::Vec3(size, size, 1)));
-        quad->uniformBuffer->update(quad->model.m, MULTIPLY_BLEND * quad->uboStride, sizeof(quad->model));
         commandBuffer->bindPipelineState(quad->pipelineState[MULTIPLY_BLEND]);
         commandBuffer->bindDescriptorSet(0, quad->descriptorSet, 1, &quad->dynamicOffsets[MULTIPLY_BLEND]);
         commandBuffer->draw(quad->inputAssembler);
