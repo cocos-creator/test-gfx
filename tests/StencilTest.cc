@@ -169,7 +169,7 @@ R"(
 
         Mat4 transform[BINDING_COUNT];
         transform[0].scale(0.5f);
-        transform[0].rotateZ(gfx::math::PI / 4);
+        transform[0].rotateZ(cc::math::PI / 4);
         transform[1].scale(0.5f, 0.5f, 0.25f);
 
         for (uint i = 0; i < BINDING_COUNT; i++) {
@@ -249,8 +249,8 @@ R"(
 
     void StencilTest::createPipelineState() {
         gfx::DescriptorSetLayoutInfo dslInfo;
-        dslInfo.bindings.push_back({ gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX });
-        dslInfo.bindings.push_back({ gfx::DescriptorType::SAMPLER, 1, gfx::ShaderStageFlagBit::FRAGMENT });
+        dslInfo.bindings.push_back({ 0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX });
+        dslInfo.bindings.push_back({ 1, gfx::DescriptorType::SAMPLER, 1, gfx::ShaderStageFlagBit::FRAGMENT });
         _descriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
 
         _pipelineLayout = _device->createPipelineLayout({ { _descriptorSetLayout } });

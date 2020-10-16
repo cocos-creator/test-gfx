@@ -181,8 +181,8 @@ R"(
 
             void createPipeline() {
                 gfx::DescriptorSetLayoutInfo dslInfo;
-                dslInfo.bindings.push_back({ gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::FRAGMENT });
-                dslInfo.bindings.push_back({ gfx::DescriptorType::SAMPLER, 1, gfx::ShaderStageFlagBit::FRAGMENT });
+                dslInfo.bindings.push_back({ 0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::FRAGMENT });
+                dslInfo.bindings.push_back({ 1, gfx::DescriptorType::SAMPLER, 1, gfx::ShaderStageFlagBit::FRAGMENT });
                 descriptorSetLayout = device->createDescriptorSetLayout(dslInfo);
 
                 pipelineLayout = device->createPipelineLayout({ { descriptorSetLayout } });
@@ -374,7 +374,7 @@ R"(
 
             void createPipeline(gfx::Framebuffer *_fbo) {
                 gfx::DescriptorSetLayoutInfo dslInfo;
-                dslInfo.bindings.push_back({ gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX });
+                dslInfo.bindings.push_back({ 0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX });
                 descriptorSetLayout = device->createDescriptorSetLayout(dslInfo);
 
                 pipelineLayout = device->createPipelineLayout({ { descriptorSetLayout } });

@@ -32,7 +32,7 @@ namespace cc {
          */
         Vec3 vec3Random(float scale /* = 1.0f */) {
             Vec3 out;
-            float r = cc::rand_0_1() * 2.0f * gfx::math::PI;
+            float r = cc::rand_0_1() * 2.0f * cc::math::PI;
             float z = (cc::rand_0_1() * 2.0f) - 1.0f;
             float zScale = sqrtf(1.0f - z * z) * scale;
 
@@ -291,8 +291,8 @@ R"(
 
     void ParticleTest::createPipeline() {
         gfx::DescriptorSetLayoutInfo dslInfo;
-        dslInfo.bindings.push_back({ gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX });
-        dslInfo.bindings.push_back({ gfx::DescriptorType::SAMPLER, 1, gfx::ShaderStageFlagBit::FRAGMENT });
+        dslInfo.bindings.push_back({ 0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX });
+        dslInfo.bindings.push_back({ 1, gfx::DescriptorType::SAMPLER, 1, gfx::ShaderStageFlagBit::FRAGMENT });
         _descriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
 
         _pipelineLayout = _device->createPipelineLayout({ { _descriptorSetLayout } });

@@ -108,6 +108,7 @@ set(CC_MATH_HEADERS
 )
 
 set(CC_MATH_SOURCES
+    ${COCOS_SRC_PATH}/math/Math.cpp
     ${COCOS_SRC_PATH}/math/Geometry.cpp
     ${COCOS_SRC_PATH}/math/Vertex.cpp
     ${COCOS_SRC_PATH}/math/Mat4.cpp

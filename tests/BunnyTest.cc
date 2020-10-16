@@ -208,8 +208,8 @@ R"(
 
     void BunnyTest::createPipelineState() {
         gfx::DescriptorSetLayoutInfo dslInfo;
-        dslInfo.bindings.push_back({ gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX });
-        dslInfo.bindings.push_back({ gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::FRAGMENT });
+        dslInfo.bindings.push_back({ 0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX });
+        dslInfo.bindings.push_back({ 1, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::FRAGMENT });
         _descriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
 
         _pipelineLayout = _device->createPipelineLayout({ { _descriptorSetLayout } });
