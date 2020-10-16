@@ -184,8 +184,8 @@ R"(
                 vertexBuffer = device->createBuffer({
                     gfx::BufferUsage::VERTEX,
                     gfx::MemoryUsage::DEVICE,
-                    4 * sizeof(float),
                     sizeof(vertexData),
+                    4 * sizeof(float),
                     });
                 vertexBuffer->update(vertexData, 0, sizeof(vertexData));
 
@@ -193,8 +193,8 @@ R"(
                 indexBuffer = device->createBuffer({
                     gfx::BufferUsage::INDEX,
                     gfx::MemoryUsage::DEVICE,
-                    sizeof(unsigned short),
                     sizeof(indices),
+                    sizeof(unsigned short),
                     });
                 indexBuffer->update(indices, 0, sizeof(indices));
 
@@ -210,9 +210,9 @@ R"(
                 uniformBuffer = device->createBuffer({
                     gfx::BufferUsage::UNIFORM,
                     gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
-                    uboStride,
                     uboStride * TOTAL_BLEND,
-                });
+                    uboStride,
+                    });
                 uniformBufferView = device->createBuffer({
                     uniformBuffer,
                     0,
@@ -503,8 +503,8 @@ R"(
                 vertexBuffer = device->createBuffer({
                     gfx::BufferUsage::VERTEX | gfx::BufferUsage::TRANSFER_DST,
                     gfx::MemoryUsage::HOST,
-                    4 * sizeof(float),
                     sizeof(vertexData),
+                    4 * sizeof(float),
                     });
                 vertexBuffer->update(vertexData, 0, sizeof(vertexData));
 
@@ -512,7 +512,6 @@ R"(
                 timeBuffer = device->createBuffer({
                     gfx::BufferUsage::UNIFORM,
                     gfx::MemoryUsage::HOST | gfx::MemoryUsage::DEVICE,
-                    0,
                     TestBaseI::getUBOSize(sizeof(float)),
                     });
             }

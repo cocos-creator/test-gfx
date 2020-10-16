@@ -231,9 +231,9 @@ R"(
         _vertexBuffer = _device->createBuffer({
             gfx::BufferUsage::VERTEX,
             gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
-            VERTEX_STRIDE * sizeof(float),
             sizeof(_vbufferArray),
-        });
+            VERTEX_STRIDE * sizeof(float),
+            });
 
         // index buffer: _ibufferArray[MAX_QUAD_COUNT][6];
         uint16_t dst = 0;
@@ -250,9 +250,9 @@ R"(
         _indexBuffer = _device->createBuffer({
             gfx::BufferUsage::INDEX,
             gfx::MemoryUsage::DEVICE,
-            sizeof(uint16_t),
             sizeof(_ibufferArray),
-        });
+            sizeof(uint16_t),
+            });
         _indexBuffer->update(_ibufferArray, 0, sizeof(_ibufferArray));
 
         for (size_t i = 0; i < PARTICLE_COUNT; ++i) {
@@ -264,9 +264,9 @@ R"(
         _uniformBuffer = _device->createBuffer({
             gfx::BufferUsage::UNIFORM,
             gfx::MemoryUsage::DEVICE,
-            0,
             TestBaseI::getUBOSize(3 * sizeof(Mat4)),
-        });
+            0,
+            });
         Mat4 model, view, projection;
         Mat4::createLookAt(Vec3(30.0f, 20.0f, 30.0f), Vec3(0.0f, 2.5f, 0.0f), Vec3(0.0f, 1.0f, 0.f), &view);
         Mat4::createPerspective(60.0f, 1.0f * _device->getWidth() / _device->getHeight(), 0.01f, 1000.0f, &projection);

@@ -118,8 +118,8 @@ R"(
         gfx::BufferInfo vertexBufferInfo = {
               gfx::BufferUsage::VERTEX,
               gfx::MemoryUsage::DEVICE,
-              2 * sizeof(float),
               sizeof(vertexData),
+              2 * sizeof(float),
               gfx::BufferFlagBit::NONE,
         };
 
@@ -129,8 +129,8 @@ R"(
         gfx::BufferInfo uniformBufferInfo = {
                gfx::BufferUsage::UNIFORM,
                gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
-               0,
                TestBaseI::getUBOSize(sizeof(gfx::Color)),
+               0,
         };
         _uniformBuffer = _device->createBuffer(uniformBufferInfo);
 
@@ -138,8 +138,8 @@ R"(
         gfx::BufferInfo indexBufferInfo = {
             gfx::BufferUsageBit::INDEX,
             gfx::MemoryUsage::DEVICE,
-            sizeof(unsigned short),
             sizeof(indices),
+            sizeof(unsigned short),
         };
         _indexBuffer = _device->createBuffer(indexBufferInfo);
         _indexBuffer->update(indices, 0, sizeof(indices));

@@ -155,16 +155,16 @@ R"(
         _vertexBuffer = _device->createBuffer({
             gfx::BufferUsage::VERTEX,
             gfx::MemoryUsage::DEVICE,
-            4 * sizeof(float),
             sizeof(vertexData),
-        });
+            4 * sizeof(float),
+            });
         _vertexBuffer->update(vertexData, 0, sizeof(vertexData));
 
         gfx::BufferInfo uniformBufferInfo = {
             gfx::BufferUsage::UNIFORM, 
             gfx::MemoryUsage::HOST | gfx::MemoryUsage::DEVICE,
-            0, 
             TestBaseI::getUBOSize(sizeof(Mat4)),
+            0,
         };
 
         Mat4 transform[BINDING_COUNT];

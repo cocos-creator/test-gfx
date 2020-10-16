@@ -154,8 +154,8 @@ R"(
                 vertexBuffer = device->createBuffer({
                     gfx::BufferUsage::VERTEX,
                     gfx::MemoryUsage::DEVICE,
-                    4 * sizeof(float),
                     sizeof(vertices),
+                    4 * sizeof(float),
                     });
                 vertexBuffer->update(vertices, 0, sizeof(vertices));
 
@@ -163,7 +163,6 @@ R"(
                 nearFarUniformBuffer = device->createBuffer({
                     gfx::BufferUsage::UNIFORM,
                     gfx::MemoryUsage::DEVICE,
-                    0,
                     TestBaseI::getUBOSize(2 * sizeof(float)),
                     });
 
@@ -337,8 +336,8 @@ R"(
                 vertexBuffer = device->createBuffer({
                     gfx::BufferUsage::VERTEX,
                     gfx::MemoryUsage::DEVICE,
-                    3 * sizeof(float),
                     sizeof(bunny_positions),
+                    3 * sizeof(float),
                     });
                 vertexBuffer->update((void *)&bunny_positions[0][0], 0, sizeof(bunny_positions));
 
@@ -346,8 +345,8 @@ R"(
                 indexBuffer = device->createBuffer({
                     gfx::BufferUsage::INDEX,
                     gfx::MemoryUsage::DEVICE,
-                    sizeof(unsigned short),
                     sizeof(bunny_cells),
+                    sizeof(unsigned short),
                     });
                 indexBuffer->update((void *)&bunny_cells[0], 0, sizeof(bunny_cells));
 
@@ -356,8 +355,8 @@ R"(
                 gfx::BufferInfo uniformBufferInfo = {
                     gfx::BufferUsage::UNIFORM,
                     gfx::MemoryUsage::HOST | gfx::MemoryUsage::DEVICE,
-                    0,
                     TestBaseI::getUBOSize(3 * sizeof(Mat4)),
+                    0,
                 };
                 for (uint i = 0; i < BUNNY_NUM; i++)
                     mvpUniformBuffer[i] = device->createBuffer(uniformBufferInfo);

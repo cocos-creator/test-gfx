@@ -96,8 +96,8 @@ set(CC_BASE_SOURCES
 
 set(CC_MATH_HEADERS
     ${COCOS_SRC_PATH}/math/Geometry.h
-    ${COCOS_SRC_PATH}/math/Math.h
     ${COCOS_SRC_PATH}/math/MathBase.h
+    ${COCOS_SRC_PATH}/math/Math.h
     ${COCOS_SRC_PATH}/math/Vertex.h
     ${COCOS_SRC_PATH}/math/Mat4.h
     ${COCOS_SRC_PATH}/math/MathUtil.h
@@ -108,7 +108,6 @@ set(CC_MATH_HEADERS
 )
 
 set(CC_MATH_SOURCES
-    ${COCOS_SRC_PATH}/math/Math.cpp
     ${COCOS_SRC_PATH}/math/Geometry.cpp
     ${COCOS_SRC_PATH}/math/Vertex.cpp
     ${COCOS_SRC_PATH}/math/Mat4.cpp
@@ -117,6 +116,7 @@ set(CC_MATH_SOURCES
     ${COCOS_SRC_PATH}/math/Vec2.cpp
     ${COCOS_SRC_PATH}/math/Vec3.cpp
     ${COCOS_SRC_PATH}/math/Vec4.cpp
+    ${COCOS_SRC_PATH}/math/Math.cpp
 )
 
 set(USE_SE_V8 ON)

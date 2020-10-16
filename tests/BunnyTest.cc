@@ -148,9 +148,8 @@ R"(
         _vertexBuffer = _device->createBuffer({
             gfx::BufferUsage::VERTEX,
             gfx::MemoryUsage::DEVICE,
-            3 * sizeof(float),
             sizeof(bunny_positions),
-            gfx::BufferFlagBit::NONE
+            3 * sizeof(float),
             });
         _vertexBuffer->update((void *)&bunny_positions[0][0], 0, sizeof(bunny_positions));
 
@@ -158,8 +157,8 @@ R"(
         _indexBuffer = _device->createBuffer({
             gfx::BufferUsage::INDEX,
             gfx::MemoryUsage::DEVICE,
-            sizeof(uint16_t),
             sizeof(bunny_cells),
+            sizeof(uint16_t),
             });
         _indexBuffer->update((void *)&bunny_cells[0], 0, sizeof(bunny_cells));
 
@@ -169,9 +168,8 @@ R"(
         _rootUBO = _device->createBuffer({
             gfx::BufferUsage::UNIFORM,
             gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
-            0,
             TestBaseI::getUBOSize(size),
-        });
+            });
         _rootBuffer.resize(size / sizeof(float));
 
         // mvp matrix uniform
@@ -179,7 +177,7 @@ R"(
             _rootUBO,
             0,
             3 * sizeof(Mat4),
-        });
+            });
         // color uniform
         _color = _device->createBuffer({
             _rootUBO,
