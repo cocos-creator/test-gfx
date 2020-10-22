@@ -59,7 +59,7 @@ namespace cc {
 
         static unsigned char *RGB2RGBA(Image *img);
         static void modifyProjectionBasedOnDevice(Mat4 &projection, bool isOffscreen = false);
-        static float getViewportTopBasedOnDevice(float top, float height);
+        static gfx::Viewport getViewportBasedOnDevice(Vec4 &relativeArea);
         static uint getUBOSize(uint size);
         static uint getMipmapLevelCounts(uint width, uint height);
         static ShaderSource &getAppropriateShaderSource(gfx::Device *device, ShaderSources &sources);

@@ -387,27 +387,23 @@ void StencilTest::tick(float dt) {
     commandBuffer->bindInputAssembler(_inputAssembler);
 
     // draw label
-    gfx::Viewport viewport;
-    viewport.left = render_area.width / 6;
-    viewport.top = uint(TestBaseI::getViewportTopBasedOnDevice(0.5f, 0.5f) * render_area.height);
-    viewport.width = render_area.width / 3;
-    viewport.height = render_area.height / 2;
-    commandBuffer->setViewport(viewport);
+    Vec4 relativeViewport{1.f / 6.f, 0.5f, 1.f / 3.f, 0.5f};
+    commandBuffer->setViewport(TestBaseI::getViewportBasedOnDevice(relativeViewport));
     commandBuffer->bindPipelineState(_pipelineState[(uint8_t)PipelineType::STENCIL]);
     commandBuffer->bindDescriptorSet(0, _descriptorSet[0]);
     commandBuffer->draw(_inputAssembler);
 
     // draw uv_image
-    viewport.left = render_area.width / 2;
-    commandBuffer->setViewport(viewport);
+    relativeViewport.x = 0.5f;
+    commandBuffer->setViewport(TestBaseI::getViewportBasedOnDevice(relativeViewport));
     commandBuffer->bindPipelineState(_pipelineState[(uint8_t)PipelineType::IMAGE]);
     commandBuffer->bindDescriptorSet(0, _descriptorSet[1]);
     commandBuffer->draw(_inputAssembler);
 
     // do back and front stencil test
-    viewport.left = 0;
-    viewport.top = uint(TestBaseI::getViewportTopBasedOnDevice(0.0f, 0.5f) * render_area.height);
-    commandBuffer->setViewport(viewport);
+    relativeViewport.x = 0.f;
+    relativeViewport.y = 0.f;
+    commandBuffer->setViewport(TestBaseI::getViewportBasedOnDevice(relativeViewport));
     commandBuffer->bindPipelineState(_pipelineState[(uint8_t)PipelineType::CANVAS]);
     commandBuffer->bindDescriptorSet(0, _descriptorSet[0]);
     commandBuffer->draw(_inputAssembler);
@@ -417,8 +413,8 @@ void StencilTest::tick(float dt) {
     commandBuffer->draw(_inputAssembler);
 
     // do back stencil test
-    viewport.left = render_area.width / 3;
-    commandBuffer->setViewport(viewport);
+    relativeViewport.x = 1.f / 3.f;
+    commandBuffer->setViewport(TestBaseI::getViewportBasedOnDevice(relativeViewport));
     commandBuffer->bindPipelineState(_pipelineState[(uint8_t)PipelineType::CANVAS]);
     commandBuffer->bindDescriptorSet(0, _descriptorSet[0]);
     commandBuffer->draw(_inputAssembler);
@@ -428,8 +424,8 @@ void StencilTest::tick(float dt) {
     commandBuffer->draw(_inputAssembler);
 
     // do front stencil test
-    viewport.left = render_area.width * 2 / 3;
-    commandBuffer->setViewport(viewport);
+    relativeViewport.x = 2.f / 3.f;
+    commandBuffer->setViewport(TestBaseI::getViewportBasedOnDevice(relativeViewport));
     commandBuffer->bindPipelineState(_pipelineState[(uint8_t)PipelineType::CANVAS]);
     commandBuffer->bindDescriptorSet(0, _descriptorSet[0]);
     commandBuffer->draw(_inputAssembler);

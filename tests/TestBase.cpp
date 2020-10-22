@@ -103,12 +103,43 @@ void TestBaseI::modifyProjectionBasedOnDevice(Mat4 &projection, bool isOffscreen
     projection = scale * trans * projection;
 }
 
-float TestBaseI::getViewportTopBasedOnDevice(float top, float height) {
-    float s = _device->getScreenSpaceSignY();
-    if (s > 0)
-        return top;
-    else
-        return 1.0f - top - height;
+gfx::Viewport TestBaseI::getViewportBasedOnDevice(Vec4 &relativeArea) {
+    float x = relativeArea.x;
+    float y = _device->getScreenSpaceSignY() < 0 ? 1.f - relativeArea.y - relativeArea.w : relativeArea.y;
+    float w = relativeArea.z;
+    float h = relativeArea.w;
+
+    gfx::Extent size{_device->getWidth(), _device->getHeight()};
+    gfx::Viewport viewport;
+
+    switch (_device->getSurfaceTransform()) {
+        case gfx::SurfaceTransform::ROTATE_90:
+            viewport.left = uint(1.f - y - h) * size.width;
+            viewport.top = uint(x) * size.height;
+            viewport.width = uint(h) * size.width;
+            viewport.height = uint(w) * size.height;
+            break;
+        case gfx::SurfaceTransform::ROTATE_180:
+            viewport.left = uint(1.f - x - w) * size.width;
+            viewport.top = uint(1.f - y - h) * size.height;
+            viewport.width = uint(w) * size.width;
+            viewport.height = uint(h) * size.height;
+            break;
+        case gfx::SurfaceTransform::ROTATE_270:
+            viewport.left = uint(y) * size.width;
+            viewport.top = uint(1.f - x - w) * size.height;
+            viewport.width = uint(h) * size.width;
+            viewport.height = uint(w) * size.height;
+            break;
+        case gfx::SurfaceTransform::IDENTITY:
+            viewport.left = uint(x) * size.width;
+            viewport.top = uint(y) * size.height;
+            viewport.width = uint(w) * size.width;
+            viewport.height = uint(h) * size.height;
+            break;
+    }
+
+    return viewport;
 }
 
 uint TestBaseI::getMipmapLevelCounts(uint width, uint height) {
