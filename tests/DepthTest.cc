@@ -22,7 +22,7 @@ struct BigTriangle : public cc::Object {
                 layout(location = 1) in vec2 a_texCoord;
 
                 layout(location = 0) out vec2 v_texCoord;
-            
+
                 void main() {
                     v_texCoord = a_texCoord;
                     gl_Position = vec4(a_position, 0, 1);
@@ -41,7 +41,7 @@ struct BigTriangle : public cc::Object {
                     float z = texture(u_texture, v_texCoord).x;
                     float viewZ = (u_near * u_far) / ((u_far - u_near) * z - u_far);
                     float depth = (viewZ + u_near) / (u_near - u_far);
-                
+
                     o_color.rgb = vec3(depth);
                     o_color.a = 1.0;
                 }
@@ -54,7 +54,7 @@ struct BigTriangle : public cc::Object {
                 in vec2 a_texCoord;
 
                 out vec2 v_texCoord;
-            
+
                 void main() {
                     v_texCoord = a_texCoord;
                     gl_Position = vec4(a_position, 0, 1);
@@ -73,7 +73,7 @@ struct BigTriangle : public cc::Object {
                     float z = texture(u_texture, v_texCoord).x;
                     float viewZ = (u_near * u_far) / ((u_far - u_near) * z - u_far);
                     float depth = (viewZ + u_near) / (u_near - u_far);
-                
+
                     o_color.rgb = vec3(depth);
                     o_color.a = 1.0;
                 }
@@ -86,7 +86,7 @@ struct BigTriangle : public cc::Object {
                 attribute vec2 a_texCoord;
 
                 varying vec2 v_texCoord;
-            
+
                 void main() {
                     v_texCoord = a_texCoord;
                     gl_Position = vec4(a_position, 0, 1);
@@ -98,19 +98,19 @@ struct BigTriangle : public cc::Object {
                 uniform sampler2D u_texture;
                 uniform float u_near;
                 uniform float u_far;
-            
+
                 void main() {
                     float z = texture2D(u_texture, v_texCoord).x;
                     float viewZ = (u_near * u_far) / ((u_far - u_near) * z - u_far);
                     float depth = (viewZ + u_near) / (u_near - u_far);
-                
+
                     gl_FragColor.rgb = vec3(depth);
                     gl_FragColor.a = 1.0;
                 }
             )",
         };
 
-        ShaderSource &source = TestBaseI::getAppropriateShaderSource(device, sources);
+        ShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
 
         gfx::ShaderStageList shaderStageList;
         gfx::ShaderStage vertexShaderStage;
@@ -259,7 +259,7 @@ struct Bunny : public cc::Object {
                 };
                 void main () {
                     vec4 pos = u_projection * u_view * u_model * vec4(a_position, 1);
-                
+
                     gl_Position = pos;
                 }
             )",
@@ -278,7 +278,7 @@ struct Bunny : public cc::Object {
                 };
                 void main () {
                     vec4 pos = u_projection * u_view * u_model * vec4(a_position, 1);
-                
+
                     gl_Position = pos;
                 }
             )",
@@ -292,10 +292,10 @@ struct Bunny : public cc::Object {
             R"(
                 attribute vec3 a_position;
                 uniform mat4 u_model, u_view, u_projection;
-            
+
                 void main () {
                     vec4 pos = u_projection * u_view * u_model * vec4(a_position, 1);
-                
+
                     gl_Position = pos;
                 }
             )",
@@ -305,7 +305,7 @@ struct Bunny : public cc::Object {
             )",
         };
 
-        ShaderSource &source = TestBaseI::getAppropriateShaderSource(device, sources);
+        ShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
 
         // vertex shader
         gfx::ShaderStageList shaderStageList;
@@ -501,8 +501,8 @@ void DepthTexture::tick(float dt) {
     _center.set(0, 2.5f, 0);
     _up.set(0, 1.f, 0);
     Mat4::createLookAt(_eye, _center, _up, &_view);
-    Mat4::createPerspective(45.f, 1.0f * _device->getWidth() / _device->getHeight(), 0.1f, 100.f, &_projection);
-    TestBaseI::modifyProjectionBasedOnDevice(_projection, true); // offscreen
+    gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize();
+    TestBaseI::createPerspective(45.f, 1.0f * orientedSize.width / orientedSize.height, 0.1f, 100.f, &_projection, true);
 
     gfx::Rect render_area = {0, 0, _device->getWidth(), _device->getHeight()};
     gfx::Color clear_color = {1.0, 0, 0, 1.0f};

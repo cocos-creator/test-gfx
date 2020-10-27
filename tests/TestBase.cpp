@@ -14,6 +14,8 @@
     #include "gfx-vulkan/GFXVulkan.h"
 #endif
 
+#define DEFAULT_MATRIX_MATH
+
 namespace cc {
 
 gfx::Device *TestBaseI::_device = nullptr;
@@ -96,16 +98,94 @@ unsigned char *TestBaseI::RGB2RGBA(Image *img) {
 void TestBaseI::modifyProjectionBasedOnDevice(Mat4 &projection, bool isOffscreen) {
     float minZ = _device->getClipSpaceMinZ();
     float signY = _device->getScreenSpaceSignY() * (isOffscreen ? _device->getUVSpaceSignY() : 1);
+    float orientation = (float)_device->getSurfaceTransform();
 
-    Mat4 trans, scale;
+    Mat4 trans, scale, rot;
     Mat4::createTranslation(0.0f, 0.0f, 1.0f + minZ, &trans);
     Mat4::createScale(1.0f, signY, 0.5f - 0.5f * minZ, &scale);
-    projection = scale * trans * projection;
+    Mat4::createRotationZ(orientation * MATH_PIOVER2, &rot);
+    projection = rot * scale * trans * projection;
 }
 
-gfx::Viewport TestBaseI::getViewportBasedOnDevice(Vec4 &relativeArea) {
+constexpr float preTransforms[4][4] = {
+    {1, 0, 0, 1},   // GFXSurfaceTransform.IDENTITY
+    {0, 1, -1, 0},  // GFXSurfaceTransform.ROTATE_90
+    {-1, 0, 0, -1}, // GFXSurfaceTransform.ROTATE_180
+    {0, -1, 1, 0},  // GFXSurfaceTransform.ROTATE_270
+};
+
+void TestBaseI::createOrthographic(float left, float right, float bottom, float top, float ZNear, float ZFar, Mat4 *dst, bool isOffscreen) {
+#ifdef DEFAULT_MATRIX_MATH
+    Mat4::createOrthographic(left, right, bottom, top, ZNear, ZFar, dst);
+    TestBaseI::modifyProjectionBasedOnDevice(*dst, isOffscreen);
+#else
+    float minZ = _device->getClipSpaceMinZ();
+    float signY = _device->getScreenSpaceSignY() * (isOffscreen ? _device->getUVSpaceSignY() : 1);
+    gfx::SurfaceTransform orientation = _device->getSurfaceTransform();
+    const float *preTransform = preTransforms[(uint)orientation];
+
+    memset(dst, 0, MATRIX_SIZE);
+
+    float x = 2.f / (right - left);
+    float y = 2.f / (top - bottom) * signY;
+    float dx = (left + right) / (left - right);
+    float dy = (bottom + top) / (bottom - top) * signY;
+
+    dst->m[0] = x * preTransform[0];
+    dst->m[1] = x * preTransform[1];
+    dst->m[4] = y * preTransform[2];
+    dst->m[5] = y * preTransform[3];
+    dst->m[10] = (1.0f - minZ) / (ZNear - ZFar);
+    dst->m[12] = dx * preTransform[0] + dy * preTransform[2];
+    dst->m[13] = dx * preTransform[1] + dy * preTransform[3];
+    dst->m[14] = (ZNear - minZ * ZFar) / (ZNear - ZFar);
+    dst->m[15] = 1.0f;
+#endif
+}
+
+void TestBaseI::createPerspective(float fov, float aspect, float zNear, float ZFar, Mat4 *dst, bool isOffscreen) {
+#ifdef DEFAULT_MATRIX_MATH
+    Mat4::createPerspective(fov, aspect, zNear, ZFar, dst);
+    TestBaseI::modifyProjectionBasedOnDevice(*dst, isOffscreen);
+#else
+    float minZ = _device->getClipSpaceMinZ();
+    float signY = _device->getScreenSpaceSignY() * (isOffscreen ? _device->getUVSpaceSignY() : 1);
+    gfx::SurfaceTransform orientation = _device->getSurfaceTransform();
+    const float *preTransform = preTransforms[(uint)orientation];
+
+    memset(dst, 0, MATRIX_SIZE);
+
+    float f = 1.0f / std::tan(MATH_DEG_TO_RAD(fov * 0.5f));
+    float nf = 1.0f / (zNear - ZFar);
+
+    float x = f / aspect;
+    float y = f * signY;
+
+    dst->m[0] = x * preTransform[0];
+    dst->m[1] = x * preTransform[1];
+    dst->m[4] = y * preTransform[2];
+    dst->m[5] = y * preTransform[3];
+    dst->m[10] = (ZFar - minZ * zNear) * nf;
+    dst->m[11] = -1.0f;
+    dst->m[14] = ZFar * zNear * nf * (1.0f - minZ);
+#endif
+}
+
+gfx::Extent TestBaseI::getOrientedSurfaceSize() {
+    switch (_device->getSurfaceTransform()) {
+        case gfx::SurfaceTransform::ROTATE_90:
+        case gfx::SurfaceTransform::ROTATE_270:
+            return {_device->getHeight(), _device->getWidth()};
+        case gfx::SurfaceTransform::IDENTITY:
+        case gfx::SurfaceTransform::ROTATE_180:
+        default:
+            return {_device->getWidth(), _device->getHeight()};
+    }
+}
+
+gfx::Viewport TestBaseI::getViewportBasedOnDevice(const Vec4 &relativeArea) {
     float x = relativeArea.x;
-    float y = _device->getScreenSpaceSignY() < 0 ? 1.f - relativeArea.y - relativeArea.w : relativeArea.y;
+    float y = _device->getScreenSpaceSignY() < 0.0f ? 1.f - relativeArea.y - relativeArea.w : relativeArea.y;
     float w = relativeArea.z;
     float h = relativeArea.w;
 
@@ -114,28 +194,28 @@ gfx::Viewport TestBaseI::getViewportBasedOnDevice(Vec4 &relativeArea) {
 
     switch (_device->getSurfaceTransform()) {
         case gfx::SurfaceTransform::ROTATE_90:
-            viewport.left = uint(1.f - y - h) * size.width;
-            viewport.top = uint(x) * size.height;
-            viewport.width = uint(h) * size.width;
-            viewport.height = uint(w) * size.height;
+            viewport.left = uint((1.f - y - h) * size.width);
+            viewport.top = uint(x * size.height);
+            viewport.width = uint(h * size.width);
+            viewport.height = uint(w * size.height);
             break;
         case gfx::SurfaceTransform::ROTATE_180:
-            viewport.left = uint(1.f - x - w) * size.width;
-            viewport.top = uint(1.f - y - h) * size.height;
-            viewport.width = uint(w) * size.width;
-            viewport.height = uint(h) * size.height;
+            viewport.left = uint((1.f - x - w) * size.width);
+            viewport.top = uint((1.f - y - h) * size.height);
+            viewport.width = uint(w * size.width);
+            viewport.height = uint(h * size.height);
             break;
         case gfx::SurfaceTransform::ROTATE_270:
-            viewport.left = uint(y) * size.width;
-            viewport.top = uint(1.f - x - w) * size.height;
-            viewport.width = uint(h) * size.width;
-            viewport.height = uint(w) * size.height;
+            viewport.left = uint(y * size.width);
+            viewport.top = uint((1.f - x - w) * size.height);
+            viewport.width = uint(h * size.width);
+            viewport.height = uint(w * size.height);
             break;
         case gfx::SurfaceTransform::IDENTITY:
-            viewport.left = uint(x) * size.width;
-            viewport.top = uint(y) * size.height;
-            viewport.width = uint(w) * size.width;
-            viewport.height = uint(h) * size.height;
+            viewport.left = uint(x * size.width);
+            viewport.top = uint(y * size.height);
+            viewport.width = uint(w * size.width);
+            viewport.height = uint(h * size.height);
             break;
     }
 
@@ -150,8 +230,8 @@ uint TestBaseI::getUBOSize(uint size) {
     return (size + 15) / 16 * 16;
 }
 
-ShaderSource &TestBaseI::getAppropriateShaderSource(gfx::Device *device, ShaderSources &sources) {
-    switch (device->getGfxAPI()) {
+ShaderSource &TestBaseI::getAppropriateShaderSource(ShaderSources &sources) {
+    switch (_device->getGfxAPI()) {
         case gfx::API::GLES2:
             return sources.glsl1;
         case gfx::API::GLES3:

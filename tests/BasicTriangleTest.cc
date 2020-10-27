@@ -6,6 +6,7 @@ void BasicTriangle::destroy() {
     CC_SAFE_DESTROY(_vertexBuffer);
     CC_SAFE_DESTROY(_inputAssembler);
     CC_SAFE_DESTROY(_uniformBuffer);
+    CC_SAFE_DESTROY(_uniformBufferMVP);
     CC_SAFE_DESTROY(_shader);
     CC_SAFE_DESTROY(_descriptorSet);
     CC_SAFE_DESTROY(_descriptorSetLayout);
@@ -30,8 +31,10 @@ void BasicTriangle::createShader() {
     sources.glsl4 = {
         R"(
             layout(location = 0) in vec2 a_position;
+            layout(set = 0, binding = 1) uniform MVP { mat4 u_MVP; };
+
             void main() {
-                gl_Position = vec4(a_position, 0.0, 1.0);
+                gl_Position = u_MVP * vec4(a_position, 0.0, 1.0);
             }
         )",
         R"(
@@ -49,8 +52,10 @@ void BasicTriangle::createShader() {
     sources.glsl3 = {
         R"(
             in vec2 a_position;
+            layout(std140) uniform MVP { mat4 u_MVP; };
+
             void main() {
-                gl_Position = vec4(a_position, 0.0, 1.0);
+                gl_Position = u_MVP * vec4(a_position, 0.0, 1.0);
             }
         )",
         R"(
@@ -69,8 +74,10 @@ void BasicTriangle::createShader() {
     sources.glsl1 = {
         R"(
             attribute vec2 a_position;
+            uniform mat4 u_MVP;
+
             void main() {
-                gl_Position = vec4(a_position, 0.0, 1.0);
+                gl_Position = u_MVP * vec4(a_position, 0.0, 1.0);
             }
         )",
         R"(
@@ -82,7 +89,7 @@ void BasicTriangle::createShader() {
         )",
     };
 
-    ShaderSource &source = TestBaseI::getAppropriateShaderSource(_device, sources);
+    ShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
 
     gfx::ShaderStageList shaderStageList;
     gfx::ShaderStage vertexShaderStage;
@@ -95,8 +102,10 @@ void BasicTriangle::createShader() {
     fragmentShaderStage.source = source.frag;
     shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
-    gfx::UniformList uniformList = {{"u_color", gfx::Type::FLOAT4, 1}};
-    gfx::UniformBlockList uniformBlockList = {{0, 0, "Color", uniformList, 1}};
+    gfx::UniformBlockList uniformBlockList = {
+        {0, 0, "Color", {{"u_color", gfx::Type::FLOAT4, 1}}, 1},
+        {0, 1, "MVP", {{"u_MVP", gfx::Type::MAT4, 1}}, 1},
+    };
     gfx::AttributeList attributeList = {{"a_position", gfx::Format::RG32F, false, 0, false, 0}};
 
     gfx::ShaderInfo shaderInfo;
@@ -108,13 +117,11 @@ void BasicTriangle::createShader() {
 }
 
 void BasicTriangle::createVertexBuffer() {
-    float ySign = _device->getScreenSpaceSignY();
-
-    float vertexData[] = {-0.5f, 0.5f * ySign,
-                          -0.5f, -0.5f * ySign,
-                          0.5f, -0.5f * ySign,
-                          0.0f, 0.5f * ySign,
-                          0.5f, 0.5f * ySign};
+    float vertexData[] = {-0.5f, 0.5f,
+                          -0.5f, -0.5f,
+                          0.5f, -0.5f,
+                          0.0f, 0.5f,
+                          0.5f, 0.5f};
 
     gfx::BufferInfo vertexBufferInfo = {
         gfx::BufferUsage::VERTEX,
@@ -133,6 +140,17 @@ void BasicTriangle::createVertexBuffer() {
         TestBaseI::getUBOSize(sizeof(gfx::Color)),
     };
     _uniformBuffer = _device->createBuffer(uniformBufferInfo);
+
+    gfx::BufferInfo uniformBufferMVPInfo = {
+        gfx::BufferUsage::UNIFORM,
+        gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
+        TestBaseI::getUBOSize(sizeof(Mat4)),
+    };
+    _uniformBufferMVP = _device->createBuffer(uniformBufferMVPInfo);
+
+    Mat4 MVP;
+    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &MVP);
+    _uniformBufferMVP->update(MVP.m, 0, sizeof(Mat4));
 
     unsigned short indices[] = {1, 3, 0, 1, 2, 3, 2, 4, 3};
     gfx::BufferInfo indexBufferInfo = {
@@ -171,6 +189,7 @@ void BasicTriangle::createInputAssembler() {
 void BasicTriangle::createPipeline() {
     gfx::DescriptorSetLayoutInfo dslInfo;
     dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::FRAGMENT});
+    dslInfo.bindings.push_back({1, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX});
     _descriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
 
     _pipelineLayout = _device->createPipelineLayout({{_descriptorSetLayout}});
@@ -178,6 +197,7 @@ void BasicTriangle::createPipeline() {
     _descriptorSet = _device->createDescriptorSet({_descriptorSetLayout});
 
     _descriptorSet->bindBuffer(0, _uniformBuffer);
+    _descriptorSet->bindBuffer(1, _uniformBufferMVP);
     _descriptorSet->update();
 
     gfx::PipelineStateInfo pipelineInfo;
@@ -202,9 +222,13 @@ void BasicTriangle::tick(float dt) {
     uniformColor.z = 0.0f;
     uniformColor.w = 1.0f;
 
+    Mat4 MVP;
+    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &MVP);
+
     _device->acquire();
 
     _uniformBuffer->update(&uniformColor, 0, sizeof(uniformColor));
+    _uniformBufferMVP->update(MVP.m, 0, sizeof(Mat4));
 
     auto commandBuffer = _commandBuffers[0];
     commandBuffer->begin();

@@ -4,8 +4,7 @@
 namespace cc {
 
 namespace {
-enum class Binding : uint8_t { MVP,
-                               COLOR };
+enum class Binding : uint8_t { MVP, COLOR };
 }
 
 void BunnyTest::destroy() {
@@ -36,11 +35,11 @@ void BunnyTest::createShader() {
     sources.glsl4 = {
         R"(
             layout(location = 0) in vec3 a_position;
-    
+
             layout(set = 0, binding = 0) uniform MVP_Matrix {
                 mat4 u_model, u_view, u_projection;
             };
-    
+
             layout(location = 0) out vec3 v_position;
 
             void main () {
@@ -64,11 +63,11 @@ void BunnyTest::createShader() {
     sources.glsl3 = {
         R"(
             in vec3 a_position;
-    
+
             layout(std140) uniform MVP_Matrix {
                 mat4 u_model, u_view, u_projection;
             };
-    
+
             out vec3 v_position;
 
             void main () {
@@ -113,7 +112,7 @@ void BunnyTest::createShader() {
         )",
     };
 
-    ShaderSource &source = TestBaseI::getAppropriateShaderSource(_device, sources);
+    ShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
 
     gfx::ShaderStageList shaderStageList;
     gfx::ShaderStage vertexShaderStage;
@@ -189,13 +188,10 @@ void BunnyTest::createBuffers() {
         4 * sizeof(float),
     });
 
-    Mat4 model, projection;
-    Mat4::createPerspective(60.0f, 1.0f * _device->getWidth() / _device->getHeight(), 0.01f, 1000.0f, &projection);
-    TestBaseI::modifyProjectionBasedOnDevice(projection);
-    float color[4] = {0.5f, 0.5f, 0.5f, 1.0f};
-
+    Mat4 model;
     std::copy(model.m, model.m + 16, &_rootBuffer[0]);
-    std::copy(projection.m, projection.m + 16, &_rootBuffer[32]);
+
+    float color[4] = {0.5f, 0.5f, 0.5f, 1.0f};
     std::copy(color, color + 4, &_rootBuffer[offset / sizeof(float)]);
 }
 
@@ -240,12 +236,18 @@ void BunnyTest::tick(float dt) {
     Mat4::createLookAt(Vec3(30.0f * std::cos(_dt), 20.0f, 30.0f * std::sin(_dt)),
                        Vec3(0.0f, 2.5f, 0.0f), Vec3(0.0f, 1.0f, 0.f), &_view);
     std::copy(_view.m, _view.m + 16, &_rootBuffer[16]);
-    _rootUBO->update(_rootBuffer.data(), 0, _rootBuffer.size() * sizeof(float));
+
+    Mat4 projection;
+    gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize();
+    TestBaseI::createPerspective(60.0f, 1.0f * orientedSize.width / orientedSize.height, 0.01f, 1000.0f, &projection);
+    std::copy(projection.m, projection.m + 16, &_rootBuffer[32]);
 
     gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
     gfx::Color clearColor = {0.0f, 0, 0, 1.0f};
 
     _device->acquire();
+    
+    _rootUBO->update(_rootBuffer.data(), 0, _rootBuffer.size() * sizeof(float));
 
     auto commandBuffer = _commandBuffers[0];
     commandBuffer->begin();

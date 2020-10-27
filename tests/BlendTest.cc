@@ -120,7 +120,7 @@ struct Quad : public cc::Object {
                 attribute vec2 a_uv;
                 varying vec2 uv;
                 uniform mat4 u_model, u_projection;
-            
+
                 void main() {
                     uv = a_uv;
                     gl_Position = u_projection * u_model * vec4(a_position, 0, 1);
@@ -136,7 +136,7 @@ struct Quad : public cc::Object {
             )",
         };
 
-        ShaderSource &source = TestBaseI::getAppropriateShaderSource(device, sources);
+        ShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
 
         gfx::ShaderStageList shaderStageList;
         gfx::ShaderStage vertexShaderStage;
@@ -195,11 +195,6 @@ struct Quad : public cc::Object {
         });
         indexBuffer->update(indices, 0, sizeof(indices));
 
-        Mat4 projection;
-        Mat4::createOrthographicOffCenter(0.0f, (float)device->getWidth(), (float)device->getHeight(),
-                                          0.0f, 0.0f, 1000.f, &projection);
-        TestBaseI::modifyProjectionBasedOnDevice(projection);
-
         // dynamic uniform buffer
         uboStride = TestBaseI::getAlignedUBOStride(device, sizeof(Mat4) * 2);
         models.resize(uboStride * TOTAL_BLEND / sizeof(float), 0);
@@ -216,7 +211,6 @@ struct Quad : public cc::Object {
             uboStride,
         });
         for (uint i = 0; i < TOTAL_BLEND; i++) {
-            memcpy(models.data() + (uboStride * i + sizeof(Mat4)) / sizeof(float), projection.m, sizeof(projection));
             dynamicOffsets[i] = i * uboStride;
         }
     }
@@ -396,7 +390,7 @@ struct BigTriangle : public cc::Object {
                 layout(location = 0) out vec2 uv;
                 void main() {
                     uv = a_texCoord;
-                    gl_Position = vec4(a_position, 0.1, 1);
+                    gl_Position = vec4(a_position, 0.9, 1);
                 }
             )",
             R"(
@@ -420,7 +414,7 @@ struct BigTriangle : public cc::Object {
                 out vec2 uv;
                 void main() {
                     uv = a_texCoord;
-                    gl_Position = vec4(a_position, 0.1, 1);
+                    gl_Position = vec4(a_position, 0.9, 1);
                 }
             )",
             R"(
@@ -445,7 +439,7 @@ struct BigTriangle : public cc::Object {
                 varying vec2 uv;
                 void main() {
                     uv = a_texCoord;
-                    gl_Position = vec4(a_position, 0.1, 1);
+                    gl_Position = vec4(a_position, 0.9, 1);
                 }
             )",
             R"(
@@ -453,7 +447,7 @@ struct BigTriangle : public cc::Object {
                 varying vec2 uv;
                 uniform sampler2D u_texture;
                 uniform float u_time;
-            
+
                 void main() {
                     vec2 offset = vec2(u_time * -0.01);
                     gl_FragColor = texture2D(u_texture, 20.0 * (uv + offset));
@@ -461,7 +455,7 @@ struct BigTriangle : public cc::Object {
             )",
         };
 
-        ShaderSource &source = TestBaseI::getAppropriateShaderSource(device, sources);
+        ShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
 
         gfx::ShaderStageList shaderStageList;
         gfx::ShaderStage vertexShaderStage;
@@ -586,11 +580,16 @@ void createModelTransform(Mat4 &model, const Vec3 &t, const Vec3 &s) {
 
 BigTriangle *bigTriangle = nullptr;
 Quad *quad = nullptr;
+gfx::Rect renderArea;
+gfx::SurfaceTransform orientation = gfx::SurfaceTransform::IDENTITY;
+gfx::Color clearColor{0, 0, 0, 1};
 } // namespace
 
 void BlendTest::destroy() {
     CC_SAFE_DESTROY(bigTriangle);
     CC_SAFE_DESTROY(quad);
+    renderArea.width = renderArea.height = 1u;
+    orientation = gfx::SurfaceTransform::IDENTITY;
 }
 
 bool BlendTest::initialize() {
@@ -603,29 +602,30 @@ void BlendTest::tick(float dt) {
 
     _dt += dt;
 
-    gfx::Rect render_area = {0, 0, _device->getWidth(), _device->getHeight()};
-    gfx::Color clear_color = {0.0f, 0, 0, 1.0f};
+    gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize();
+    bool matricesDirty = renderArea.width != orientedSize.width || renderArea.height != orientedSize.height || _device->getSurfaceTransform() != orientation;
 
-    float size = std::min(render_area.width, render_area.height) * 0.15f;
-    float halfSize = size * 0.5f;
-    float offsetX = 5.f + halfSize;
-    float offsetY = 50.f + halfSize;
-    Mat4 model;
+    if (matricesDirty) { // prepare the data before acquire
+        Mat4 model;
+        Mat4 projection;
+        TestBaseI::createOrthographic(0.f, (float)orientedSize.width, (float)orientedSize.height, 0.f, -1.0f, 1.f, &projection);
 
-    createModelTransform(model, Vec3(offsetX, offsetY, 0), Vec3(size, size, 1));
-    memcpy(quad->models.data() + NO_BLEND * quad->uboStride / sizeof(float), model.m, sizeof(model));
-    offsetY += 5.f + size;
-    createModelTransform(model, Vec3(offsetX, offsetY, 0), Vec3(size, size, 1));
-    memcpy(quad->models.data() + NORMAL_BLEND * quad->uboStride / sizeof(float), model.m, sizeof(model));
-    offsetY += 5.f + size;
-    createModelTransform(model, Vec3(offsetX, offsetY, 0), Vec3(size, size, 1));
-    memcpy(quad->models.data() + ADDITIVE_BLEND * quad->uboStride / sizeof(float), model.m, sizeof(model));
-    offsetY += 5.f + size;
-    createModelTransform(model, Vec3(offsetX, offsetY, 0), Vec3(size, size, 1));
-    memcpy(quad->models.data() + SUBSTRACT_BLEND * quad->uboStride / sizeof(float), model.m, sizeof(model));
-    offsetY += 5.f + size;
-    createModelTransform(model, Vec3(offsetX, offsetY, 0), Vec3(size, size, 1));
-    memcpy(quad->models.data() + MULTIPLY_BLEND * quad->uboStride / sizeof(float), model.m, sizeof(model));
+        float size = std::min(orientedSize.width, orientedSize.height) * 0.15f;
+        float halfSize = size * 0.5f;
+        float offsetX = 5.f + halfSize;
+        float offsetY = 50.f + halfSize;
+
+        for (uint i = 0; i < TOTAL_BLEND; i++) {
+            createModelTransform(model, Vec3(offsetX, offsetY, 0), Vec3(size, size, 1));
+            memcpy(quad->models.data() + (quad->uboStride * i) / sizeof(float), model.m, sizeof(model));
+            memcpy(quad->models.data() + (quad->uboStride * i + sizeof(Mat4)) / sizeof(float), projection.m, sizeof(projection));
+            offsetY += 5.f + size;
+        }
+        // render area is not oriented
+        renderArea.width = _device->getWidth();
+        renderArea.height = _device->getHeight();
+        orientation = _device->getSurfaceTransform();
+    }
 
     _device->acquire();
 
@@ -633,9 +633,11 @@ void BlendTest::tick(float dt) {
     commandBuffer->begin();
 
     commandBuffer->updateBuffer(bigTriangle->timeBuffer, &_dt, sizeof(_dt));
-    commandBuffer->updateBuffer(quad->uniformBuffer, quad->models.data(), quad->models.size() * sizeof(float));
 
-    commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, render_area, &clear_color, 1.0f, 0);
+    if (matricesDirty)
+        commandBuffer->updateBuffer(quad->uniformBuffer, quad->models.data(), quad->models.size() * sizeof(float));
+
+    commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
 
     // draw background
     commandBuffer->bindInputAssembler(bigTriangle->inputAssembler);

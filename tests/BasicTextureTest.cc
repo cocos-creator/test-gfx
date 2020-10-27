@@ -37,7 +37,7 @@ void BasicTexture::createShader() {
             {
                 mat4 u_mvpMatrix;
             };
-   
+
             void main()
             {
                 gl_Position = u_mvpMatrix * vec4(a_position, 0, 1);
@@ -64,7 +64,7 @@ void BasicTexture::createShader() {
             {
                 mat4 u_mvpMatrix;
             };
-   
+
             void main()
             {
                 gl_Position = u_mvpMatrix * vec4(a_position, 0, 1);
@@ -107,7 +107,7 @@ void BasicTexture::createShader() {
         )",
     };
 
-    ShaderSource &source = TestBaseI::getAppropriateShaderSource(_device, sources);
+    ShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
 
     gfx::ShaderStageList shaderStageList;
     gfx::ShaderStage vertexShaderStage;
@@ -176,10 +176,6 @@ void BasicTexture::createPipeline() {
     _pipelineLayout = _device->createPipelineLayout({{_descriptorSetLayout}});
 
     _descriptorSet = _device->createDescriptorSet({_descriptorSetLayout});
-
-    Mat4 mvpMatrix;
-    modifyProjectionBasedOnDevice(mvpMatrix);
-    _uniformBuffer->update(&mvpMatrix, 0, sizeof(mvpMatrix));
 
     _descriptorSet->bindBuffer(0, _uniformBuffer);
     _descriptorSet->bindSampler(1, _sampler);
@@ -263,7 +259,12 @@ void BasicTexture::tick(float dt) {
     gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
     gfx::Color clearColor = {0, 0, 0, 1.0f};
 
+    Mat4 mvpMatrix;
+    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &mvpMatrix);
+
     _device->acquire();
+
+    _uniformBuffer->update(&mvpMatrix, 0, sizeof(mvpMatrix));
 
     auto commandBuffer = _commandBuffers[0];
     commandBuffer->begin();

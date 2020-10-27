@@ -50,11 +50,12 @@ void StencilTest::createShader() {
             layout(location = 1) in vec2 a_texCoord;
             layout(set = 0, binding = 0) uniform World_Matrix {
                 mat4 u_worldMatrix;
+                mat4 u_projMatrix;
             };
             layout(location = 0) out vec2 v_texCoord;
             void main () {
                 v_texCoord = a_texCoord;
-                gl_Position = u_worldMatrix * vec4(a_position, 0, 1);
+                gl_Position = u_projMatrix * u_worldMatrix * vec4(a_position, 0, 1);
             }
         )",
         R"(
@@ -73,11 +74,12 @@ void StencilTest::createShader() {
             in vec2 a_texCoord;
             layout(std140) uniform World_Matrix {
                 mat4 u_worldMatrix;
+                mat4 u_projMatrix;
             };
             out vec2 v_texCoord;
             void main () {
                 v_texCoord = a_texCoord;
-                gl_Position = u_worldMatrix * vec4(a_position, 0, 1);
+                gl_Position = u_projMatrix * u_worldMatrix * vec4(a_position, 0, 1);
             }
         )",
         R"(
@@ -98,9 +100,11 @@ void StencilTest::createShader() {
             varying vec2 v_texCoord;
 
             uniform mat4 u_worldMatrix;
+            uniform mat4 u_projMatrix;
+
             void main () {
                 v_texCoord = a_texCoord;
-                gl_Position = u_worldMatrix * vec4(a_position, 0, 1);
+                gl_Position = u_projMatrix * u_worldMatrix * vec4(a_position, 0, 1);
             }
         )",
         R"(
@@ -113,7 +117,7 @@ void StencilTest::createShader() {
         )",
     };
 
-    ShaderSource &source = TestBaseI::getAppropriateShaderSource(_device, sources);
+    ShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
 
     gfx::ShaderStageList shaderStageList;
     gfx::ShaderStage vertexShaderStage;
@@ -130,7 +134,7 @@ void StencilTest::createShader() {
         {"a_position", gfx::Format::RG32F, false, 0, false, 0},
         {"a_texCoord", gfx::Format::RG32F, false, 0, false, 1},
     };
-    gfx::UniformList worldMatrix = {{"u_worldMatrix", gfx::Type::MAT4, 1}};
+    gfx::UniformList worldMatrix = {{"u_worldMatrix", gfx::Type::MAT4, 1}, {"u_projMatrix", gfx::Type::MAT4, 1}};
     gfx::UniformBlockList uniformBlockList = {{0, 0, "World_Matrix", worldMatrix, 1}};
     gfx::UniformSamplerList sampler = {{0, 1, "u_texture", gfx::Type::SAMPLER2D, 1}};
 
@@ -144,14 +148,12 @@ void StencilTest::createShader() {
 }
 
 void StencilTest::createBuffers() {
-    float ySign = _device->getScreenSpaceSignY();
-
-    float vertexData[] = {-1.0f, -1.0f * ySign, 0.0f, 1.0f,
-                          1.0f, -1.0f * ySign, 1.0f, 1.0f,
-                          1.0f, 1.0f * ySign, 1.0f, 0.0f,
-                          1.0f, 1.0f * ySign, 1.0f, 0.0f,
-                          -1.0f, -1.0f * ySign, 0.0f, 1.0f,
-                          -1.0f, 1.0f * ySign, 0.0f, 0.0f};
+    float vertexData[] = {-1.0f, -1.0f, 0.0f, 1.0f,
+                          1.0f, -1.0f, 1.0f, 1.0f,
+                          1.0f, 1.0f, 1.0f, 0.0f,
+                          1.0f, 1.0f, 1.0f, 0.0f,
+                          -1.0f, -1.0f, 0.0f, 1.0f,
+                          -1.0f, 1.0f, 0.0f, 0.0f};
 
     _vertexBuffer = _device->createBuffer({
         gfx::BufferUsage::VERTEX,
@@ -164,8 +166,7 @@ void StencilTest::createBuffers() {
     gfx::BufferInfo uniformBufferInfo = {
         gfx::BufferUsage::UNIFORM,
         gfx::MemoryUsage::HOST | gfx::MemoryUsage::DEVICE,
-        TestBaseI::getUBOSize(sizeof(Mat4)),
-        0,
+        TestBaseI::getUBOSize(sizeof(Mat4) * 2),
     };
 
     Mat4 transform[BINDING_COUNT];
@@ -375,14 +376,21 @@ void StencilTest::createPipelineState() {
 
 void StencilTest::tick(float dt) {
     _dt += dt;
-    gfx::Rect render_area = {0, 0, _device->getWidth(), _device->getHeight()};
-    gfx::Color clear_color = {1.0f, 0, 0, 1.0f};
+    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
+    gfx::Color clearColor = {1.0f, 0, 0, 1.0f};
+
+    Mat4 proj;
+    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &proj);
 
     _device->acquire();
 
+    for (uint i = 0; i < BINDING_COUNT; i++) {
+        _uniformBuffer[i]->update(&proj, sizeof(Mat4), sizeof(Mat4));
+    }
+
     auto commandBuffer = _commandBuffers[0];
     commandBuffer->begin();
-    commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, render_area, &clear_color, 1.0f, 0);
+    commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
 
     commandBuffer->bindInputAssembler(_inputAssembler);
 

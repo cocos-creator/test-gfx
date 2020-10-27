@@ -30,7 +30,8 @@ class BasicTriangle: public TestBaseI
 
      gfx::Shader* _shader = nullptr;
      gfx::Buffer* _vertexBuffer = nullptr;
-     gfx::Buffer* _uniformBuffer = nullptr;
+     gfx::Buffer *_uniformBuffer = nullptr;
+     gfx::Buffer *_uniformBufferMVP = nullptr;
      gfx::DescriptorSet* _descriptorSet = nullptr;
      gfx::DescriptorSetLayout* _descriptorSetLayout = nullptr;
      gfx::PipelineLayout* _pipelineLayout = nullptr;

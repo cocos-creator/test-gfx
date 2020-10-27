@@ -82,22 +82,22 @@ void ParticleTest::createShader() {
             layout(location = 0) in vec2 a_quad;
             layout(location = 1) in vec3 a_position;
             layout(location = 2) in vec4 a_color;
-    
+
             layout(set = 0, binding = 0) uniform MVP_Matrix {
                 mat4 u_model, u_view, u_projection;
             };
-    
+
             layout(location = 0) out vec4 v_color;
             layout(location = 1) out vec2 v_texcoord;
-    
+
             void main() {
                 // billboard
                 vec4 pos = u_view * u_model * vec4(a_position, 1);
                 pos.xy += a_quad.xy;
                 pos = u_projection * pos;
-        
+
                 v_texcoord = vec2(a_quad * -0.5 + 0.5);
-        
+
                 gl_Position = pos;
                 gl_PointSize = 2.0;
                 v_color = a_color;
@@ -105,10 +105,10 @@ void ParticleTest::createShader() {
         )",
         R"(
             layout(set = 0, binding = 1) uniform sampler2D u_texture;
-    
+
             layout(location = 0) in vec4 v_color;
             layout(location = 1) in vec2 v_texcoord;
-    
+
             layout(location = 0) out vec4 o_color;
             void main () {
                 o_color = v_color * texture(u_texture, v_texcoord);
@@ -121,22 +121,22 @@ void ParticleTest::createShader() {
             in vec2 a_quad;
             in vec3 a_position;
             in vec4 a_color;
-    
+
             layout(std140) uniform MVP_Matrix {
                 mat4 u_model, u_view, u_projection;
             };
-    
+
             out vec4 v_color;
             out vec2 v_texcoord;
-    
+
             void main() {
                 // billboard
                 vec4 pos = u_view * u_model * vec4(a_position, 1);
                 pos.xy += a_quad.xy;
                 pos = u_projection * pos;
-        
+
                 v_texcoord = vec2(a_quad * -0.5 + 0.5);
-        
+
                 gl_Position = pos;
                 gl_PointSize = 2.0;
                 v_color = a_color;
@@ -145,10 +145,10 @@ void ParticleTest::createShader() {
         R"(
             precision mediump float;
             uniform sampler2D u_texture;
-    
+
             in vec4 v_color;
             in vec2 v_texcoord;
-    
+
             out vec4 o_color;
             void main () {
                 o_color = v_color * texture(u_texture, v_texcoord);
@@ -161,20 +161,20 @@ void ParticleTest::createShader() {
             attribute vec2 a_quad;
             attribute vec3 a_position;
             attribute vec4 a_color;
-    
+
             uniform mat4 u_model, u_view, u_projection;
-    
+
             varying vec4 v_color;
             varying vec2 v_texcoord;
-    
+
             void main() {
                 // billboard
                 vec4 pos = u_view * u_model * vec4(a_position, 1);
                 pos.xy += a_quad.xy;
                 pos = u_projection * pos;
-        
+
                 v_texcoord = vec2(a_quad * -0.5 + 0.5);
-        
+
                 gl_Position = pos;
                 gl_PointSize = 2.0;
                 v_color = a_color;
@@ -183,17 +183,17 @@ void ParticleTest::createShader() {
         R"(
             precision mediump float;
             uniform sampler2D u_texture;
-    
+
             varying vec4 v_color;
             varying vec2 v_texcoord;
-    
+
             void main () {
                 gl_FragColor = v_color * texture2D(u_texture, v_texcoord);
             }
         )",
     };
 
-    ShaderSource &source = TestBaseI::getAppropriateShaderSource(_device, sources);
+    ShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
 
     gfx::ShaderStageList shaderStageList;
     gfx::ShaderStage vertexShaderStage;
@@ -269,13 +269,10 @@ void ParticleTest::createVertexBuffer() {
         gfx::MemoryUsage::DEVICE,
         TestBaseI::getUBOSize(3 * sizeof(Mat4)),
     });
-    Mat4 model, view, projection;
+    Mat4 model, view;
     Mat4::createLookAt(Vec3(30.0f, 20.0f, 30.0f), Vec3(0.0f, 2.5f, 0.0f), Vec3(0.0f, 1.0f, 0.f), &view);
-    Mat4::createPerspective(60.0f, 1.0f * _device->getWidth() / _device->getHeight(), 0.01f, 1000.0f, &projection);
-    TestBaseI::modifyProjectionBasedOnDevice(projection);
     _uniformBuffer->update(model.m, 0, sizeof(model));
     _uniformBuffer->update(view.m, sizeof(model), sizeof(view));
-    _uniformBuffer->update(projection.m, sizeof(model) + sizeof(view), sizeof(projection));
 }
 
 void ParticleTest::createInputAssembler() {
@@ -404,6 +401,11 @@ void ParticleTest::tick(float dt) {
             pVbuffer[offset + 8] = 1.0f - p.age / p.life;
         }
     }
+
+    Mat4 projection;
+    gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize();
+    TestBaseI::createPerspective(60.0f, 1.0f * orientedSize.width / orientedSize.height, 0.01f, 1000.0f, &projection);
+    _uniformBuffer->update(projection.m, sizeof(Mat4) * 2, sizeof(projection));
 
     _device->acquire();
 
