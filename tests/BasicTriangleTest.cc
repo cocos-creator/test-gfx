@@ -212,7 +212,6 @@ void BasicTriangle::createPipeline() {
 
 void BasicTriangle::tick(float dt) {
 
-    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
     _time += dt;
     gfx::Color clearColor = {1.0f, 0, 0, 1.0f};
 
@@ -229,6 +228,8 @@ void BasicTriangle::tick(float dt) {
 
     _uniformBuffer->update(&uniformColor, 0, sizeof(uniformColor));
     _uniformBufferMVP->update(MVP.m, 0, sizeof(Mat4));
+
+    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
 
     auto commandBuffer = _commandBuffers[0];
     commandBuffer->begin();

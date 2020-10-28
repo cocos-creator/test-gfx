@@ -363,7 +363,6 @@ void ParticleTest::createTexture() {
 
 void ParticleTest::tick(float dt) {
 
-    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
     gfx::Color clearColor = {0.2f, 0.2f, 0.2f, 1.0f};
 
     // update particles
@@ -410,6 +409,7 @@ void ParticleTest::tick(float dt) {
     _device->acquire();
 
     _vertexBuffer->update(_vbufferArray, 0, sizeof(_vbufferArray));
+    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
 
     auto commandBuffer = _commandBuffers[0];
     commandBuffer->begin();

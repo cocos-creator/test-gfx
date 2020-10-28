@@ -242,12 +242,12 @@ void BunnyTest::tick(float dt) {
     TestBaseI::createPerspective(60.0f, 1.0f * orientedSize.width / orientedSize.height, 0.01f, 1000.0f, &projection);
     std::copy(projection.m, projection.m + 16, &_rootBuffer[32]);
 
-    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
     gfx::Color clearColor = {0.0f, 0, 0, 1.0f};
 
     _device->acquire();
     
     _rootUBO->update(_rootBuffer.data(), 0, _rootBuffer.size() * sizeof(float));
+    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
 
     auto commandBuffer = _commandBuffers[0];
     commandBuffer->begin();

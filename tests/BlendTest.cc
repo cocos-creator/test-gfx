@@ -602,10 +602,12 @@ void BlendTest::tick(float dt) {
 
     _dt += dt;
 
+    _device->acquire();
+
     gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize();
     bool matricesDirty = renderArea.width != orientedSize.width || renderArea.height != orientedSize.height || _device->getSurfaceTransform() != orientation;
 
-    if (matricesDirty) { // prepare the data before acquire
+    if (matricesDirty) {
         Mat4 model;
         Mat4 projection;
         TestBaseI::createOrthographic(0.f, (float)orientedSize.width, (float)orientedSize.height, 0.f, -1.0f, 1.f, &projection);
@@ -626,8 +628,6 @@ void BlendTest::tick(float dt) {
         renderArea.height = _device->getHeight();
         orientation = _device->getSurfaceTransform();
     }
-
-    _device->acquire();
 
     auto commandBuffer = _commandBuffers[0];
     commandBuffer->begin();

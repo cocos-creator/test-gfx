@@ -504,8 +504,7 @@ void DepthTexture::tick(float dt) {
     gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize();
     TestBaseI::createPerspective(45.f, 1.0f * orientedSize.width / orientedSize.height, 0.1f, 100.f, &_projection, true);
 
-    gfx::Rect render_area = {0, 0, _device->getWidth(), _device->getHeight()};
-    gfx::Color clear_color = {1.0, 0, 0, 1.0f};
+    gfx::Color clearColor = {1.0, 0, 0, 1.0f};
 
     _device->acquire();
 
@@ -519,12 +518,13 @@ void DepthTexture::tick(float dt) {
         bunny->mvpUniformBuffer[i]->update(_view.m, sizeof(_model), sizeof(_view));
         bunny->mvpUniformBuffer[i]->update(_projection.m, sizeof(_model) + sizeof(_view), sizeof(_projection));
     }
+    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
 
     auto commandBuffer = _commandBuffers[0];
     commandBuffer->begin();
 
     // render bunny
-    commandBuffer->beginRenderPass(_bunnyFBO->renderPass, _bunnyFBO->framebuffer, render_area, nullptr, 1.0f, 0);
+    commandBuffer->beginRenderPass(_bunnyFBO->renderPass, _bunnyFBO->framebuffer, renderArea, nullptr, 1.0f, 0);
     commandBuffer->bindPipelineState(bunny->pipelineState);
     commandBuffer->bindInputAssembler(bunny->inputAssembler);
     for (uint i = 0; i < Bunny::BUNNY_NUM; i++) {
@@ -534,7 +534,7 @@ void DepthTexture::tick(float dt) {
     commandBuffer->endRenderPass();
 
     // render bg
-    commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, render_area, &clear_color, 1.0f, 0);
+    commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
     commandBuffer->bindInputAssembler(bg->inputAssembler);
     commandBuffer->bindPipelineState(bg->pipelineState);
     commandBuffer->bindDescriptorSet(0, bg->descriptorSet);

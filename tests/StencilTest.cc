@@ -376,7 +376,6 @@ void StencilTest::createPipelineState() {
 
 void StencilTest::tick(float dt) {
     _dt += dt;
-    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
     gfx::Color clearColor = {1.0f, 0, 0, 1.0f};
 
     Mat4 proj;
@@ -387,6 +386,8 @@ void StencilTest::tick(float dt) {
     for (uint i = 0; i < BINDING_COUNT; i++) {
         _uniformBuffer[i]->update(&proj, sizeof(Mat4), sizeof(Mat4));
     }
+
+    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
 
     auto commandBuffer = _commandBuffers[0];
     commandBuffer->begin();

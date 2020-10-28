@@ -256,7 +256,6 @@ void BasicTexture::createTexture() {
 
 void BasicTexture::tick(float dt) {
 
-    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
     gfx::Color clearColor = {0, 0, 0, 1.0f};
 
     Mat4 mvpMatrix;
@@ -265,6 +264,7 @@ void BasicTexture::tick(float dt) {
     _device->acquire();
 
     _uniformBuffer->update(&mvpMatrix, 0, sizeof(mvpMatrix));
+    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
 
     auto commandBuffer = _commandBuffers[0];
     commandBuffer->begin();
