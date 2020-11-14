@@ -51,6 +51,7 @@ endif()
 
 set(CC_BASE_HEADERS
     ${COCOS_SRC_PATH}/base/base64.h
+    ${COCOS_SRC_PATH}/base/astc.h
     ${COCOS_SRC_PATH}/base/AutoreleasePool.h
     ${COCOS_SRC_PATH}/base/CachedArray.h
     ${COCOS_SRC_PATH}/base/Config.h
@@ -77,6 +78,7 @@ set(CC_BASE_HEADERS
 
 set(CC_BASE_SOURCES
     ${COCOS_SRC_PATH}/base/base64.cpp
+    ${COCOS_SRC_PATH}/base/astc.cpp
     ${COCOS_SRC_PATH}/base/AutoreleasePool.cpp
     ${COCOS_SRC_PATH}/base/Data.cpp
     ${COCOS_SRC_PATH}/base/Log.cpp

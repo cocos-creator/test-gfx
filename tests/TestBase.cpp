@@ -145,7 +145,7 @@ void TestBaseI::createOrthographic(float left, float right, float bottom, float 
 
 void TestBaseI::createPerspective(float fov, float aspect, float zNear, float ZFar, Mat4 *dst, bool isOffscreen) {
 #ifdef DEFAULT_MATRIX_MATH
-    Mat4::createPerspective(fov, aspect, zNear, ZFar, dst);
+    Mat4::createPerspective(MATH_DEG_TO_RAD(fov), aspect, zNear, ZFar, dst);
     TestBaseI::modifyProjectionBasedOnDevice(*dst, isOffscreen);
 #else
     float minZ = _device->getClipSpaceMinZ();
