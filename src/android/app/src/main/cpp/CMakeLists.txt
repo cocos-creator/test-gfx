@@ -34,6 +34,7 @@ set(CMAKE_SHARED_LINKER_FLAGS
 
 set(INCLUDE_FILES
         ${GFX_EXTERNAL_PATH}/khronos
+        ${GFX_EXTERNAL_PATH}/boost
         ${COCOS_SRC_PATH}/renderer/core
         ${COCOS_SRC_PATH}/renderer/gfx-gles2
         ${COCOS_SRC_PATH}/renderer/gfx-gles3
@@ -50,7 +51,7 @@ set(ALL_FILES
         ${GFX_TESTCASE_HEADER}
         ${GFX_TESTCASE_SOURCE}
         ${CC_PLATFORM_SOURCES}
-        ${CC_BASE_HEADERS} 
+        ${CC_BASE_HEADERS}
         ${CC_BASE_SOURCES}
         ${CC_MATH_HEADERS}
         ${CC_MATH_SOURCES}
@@ -83,7 +84,7 @@ add_library( # Sets the name of the library.
 
 target_include_directories(${APP_NAME} PRIVATE
     ${ANDROID_NDK}/sources/android/native_app_glue
-    
+
 )
 target_include_directories(${APP_NAME} PUBLIC
     ${COCOS_SRC_PATH}/platform
@@ -107,7 +108,7 @@ target_link_libraries(${APP_NAME}
 )
 
 # setup default flags
-target_compile_definitions(${APP_NAME} PUBLIC 
+target_compile_definitions(${APP_NAME} PUBLIC
     $<$<NOT:$<BOOL:${USE_VIDEO}>>:USE_VIDEO=0>
     $<$<NOT:$<BOOL:${USE_WEB_VIEW}>>:USE_WEB_VIEW=0>
     $<$<NOT:$<BOOL:${USE_AUDIO}>>:USE_AUDIO=0>

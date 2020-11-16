@@ -48,6 +48,7 @@ namespace
         if (first)
         {
             g_tests = {
+                    Multithread::create,
                     ClearScreen::create,
                     BasicTriangle::create,
                     BasicTexture::create,
@@ -56,7 +57,6 @@ namespace
                     BlendTest::create,
                     ParticleTest::create,
                     BunnyTest::create,
-                    Multithread::create,
             };
             g_test = g_tests[g_nextTestIndex](g_windowInfo);
             if (g_test == nullptr)

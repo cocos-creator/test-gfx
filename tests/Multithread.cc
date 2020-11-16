@@ -2,7 +2,8 @@
 
 namespace cc {
 
-#define MODELS_PER_LINE 300
+#define TASK_COUNT 11
+#define MODELS_PER_LINE 200
 
 void Multithread::destroy() {
     CC_SAFE_DESTROY(_vertexBuffer);
@@ -15,6 +16,8 @@ void Multithread::destroy() {
     CC_SAFE_DESTROY(_descriptorSetLayout);
     CC_SAFE_DESTROY(_pipelineLayout);
     CC_SAFE_DESTROY(_pipelineState);
+
+    _tp.Stop();
 }
 
 bool Multithread::initialize() {
@@ -22,6 +25,8 @@ bool Multithread::initialize() {
     createVertexBuffer();
     createInputAssembler();
     createPipeline();
+
+    _tp.Start();
 
     return true;
 }
@@ -204,7 +209,7 @@ void Multithread::tick(float dt) {
     _timeAccumulator = _timeAccumulator * 0.95f + dt * 0.05f;
     _frameAccumulator++;
     if (_frameAccumulator % 6 == 0) {
-        CC_LOG_INFO("CPU avg: %.2f (~%d FPS)", _timeAccumulator * 1000.f, uint(1.f / _timeAccumulator));
+        CC_LOG_INFO("CPU avg: %.2fms (~%d FPS)", _timeAccumulator * 1000.f, uint(1.f / _timeAccumulator + .5f));
     }
 
     gfx::Color clearColor = {.2f, .2f, .2f, 1.f};
@@ -225,12 +230,26 @@ void Multithread::tick(float dt) {
     commandBuffer->bindInputAssembler(_inputAssembler);
     commandBuffer->bindPipelineState(_pipelineState);
 
-    uint dynamicOffset = 0u;
-    for (uint i = 0; i < MODELS_PER_LINE * MODELS_PER_LINE; i++) {
-        dynamicOffset = i * _worldBufferStride;
-        commandBuffer->bindDescriptorSet(0, _descriptorSet, 1, &dynamicOffset);
-        commandBuffer->draw(_inputAssembler);
+    uint drawCountPerThread = MODELS_PER_LINE * MODELS_PER_LINE / TASK_COUNT;
+
+    std::future<void> res[TASK_COUNT];
+    for (uint i = 0; i < TASK_COUNT; ++i) {
+        res[i] = _tp.DispatchTask([i, drawCountPerThread, this, &commandBuffer](){
+            CC_LOG_INFO("%d", i);
+//            for (uint t = 0u, dynamicOffset = i * drawCountPerThread * _worldBufferStride;
+//                 t < drawCountPerThread;
+//                 ++t, dynamicOffset += _worldBufferStride)
+//            {
+//                commandBuffer->bindDescriptorSet(0, _descriptorSet, 1, &dynamicOffset);
+//                commandBuffer->draw(_inputAssembler);
+//            }
+        });
     }
+
+    for (uint i = 0; i < TASK_COUNT; ++i) {
+        res[i].wait();
+    }
+
     commandBuffer->endRenderPass();
     commandBuffer->end();
 
