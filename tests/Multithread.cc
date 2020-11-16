@@ -18,7 +18,7 @@ void Multithread::destroy() {
     CC_SAFE_DESTROY(_pipelineLayout);
     CC_SAFE_DESTROY(_pipelineState);
 
-    _tp.Stop();
+//    _tp.Stop();
 }
 
 bool Multithread::initialize() {
@@ -27,7 +27,7 @@ bool Multithread::initialize() {
     createInputAssembler();
     createPipeline();
 
-    _tp.Start();
+//    _tp.Start();
 
     return true;
 }

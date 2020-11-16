@@ -66,16 +66,16 @@ endif()
 
 if(MACOSX)
   add_definitions("-DUSE_METAL")
-  file(COPY ${COCOS_ROOT_PATH}/src/mac/CCView.h DESTINATION ${COCOS_SRC_PATH}/platform/mac)
-  file(COPY ${COCOS_ROOT_PATH}/src/mac/CCView.mm DESTINATION ${COCOS_SRC_PATH}/platform/mac)
+  file(COPY ${COCOS_ROOT_PATH}/src/mac/View.h DESTINATION ${COCOS_SRC_PATH}/platform/mac)
+  file(COPY ${COCOS_ROOT_PATH}/src/mac/View.mm DESTINATION ${COCOS_SRC_PATH}/platform/mac)
   list(APPEND ALL_FILES
-    ${COCOS_SRC_PATH}/platform/mac/CCView.h
-    ${COCOS_SRC_PATH}/platform/mac//CCView.mm
+    ${COCOS_SRC_PATH}/platform/mac/View.h
+    ${COCOS_SRC_PATH}/platform/mac/View.mm
     ${COCOS_SRC_PATH}/platform/mac/KeyCodeHelper.h
     ${COCOS_SRC_PATH}/platform/mac/KeyCodeHelper.cpp
   )
-  list(REMOVE_ITEM ALL_FILES ${COCOS_ROOT_PATH}/src/mac/CCView.h)
-  list(REMOVE_ITEM ALL_FILES ${COCOS_ROOT_PATH}/src/mac/CCView.mm)
+  list(REMOVE_ITEM ALL_FILES ${COCOS_ROOT_PATH}/src/mac/View.h)
+  list(REMOVE_ITEM ALL_FILES ${COCOS_ROOT_PATH}/src/mac/View.mm)
 endif()
 
 add_executable(${APP_NAME} MACOSX_BUNDLE ${ALL_FILES})
