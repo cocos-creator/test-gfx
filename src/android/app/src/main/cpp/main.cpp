@@ -9,6 +9,7 @@
 #include "tests/BlendTest.h"
 #include "tests/ParticleTest.h"
 #include "tests/BunnyTest.h"
+#include "tests/Multithread.h"
 
 #include <android/log.h>
 #include <time.h>
@@ -55,6 +56,7 @@ namespace
                     BlendTest::create,
                     ParticleTest::create,
                     BunnyTest::create,
+                    Multithread::create,
             };
             g_test = g_tests[g_nextTestIndex](g_windowInfo);
             if (g_test == nullptr)

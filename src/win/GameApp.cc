@@ -9,6 +9,7 @@
 #include "tests/DepthTest.h"
 #include "tests/ParticleTest.h"
 #include "tests/StencilTest.h"
+#include "tests/Multithread.h"
 
 namespace cc {
 
@@ -116,6 +117,7 @@ bool GameApp::initialize() {
             BlendTest::create,
             ParticleTest::create,
             BunnyTest::create,
+            Multithread::create,
         };
         _test = _tests[_nextIndex](_windowInfo);
         if (_test == nullptr)
