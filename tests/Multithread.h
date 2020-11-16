@@ -24,8 +24,8 @@ class Multithread: public TestBaseI
 
      ThreadPool _tp;
 
-     gfx::Shader* _shader = nullptr;
-     gfx::Buffer* _vertexBuffer = nullptr;
+     gfx::Shader *_shader = nullptr;
+     gfx::Buffer *_vertexBuffer = nullptr;
      gfx::Buffer *_uniformBufferWorld, *_uniformBufferWorldView;
      gfx::Buffer *_uniformBufferVP = nullptr;
      gfx::DescriptorSet* _descriptorSet = nullptr;

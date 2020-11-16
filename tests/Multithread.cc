@@ -2,8 +2,9 @@
 
 namespace cc {
 
-#define TASK_COUNT 11
-#define MODELS_PER_LINE 200
+#define MODELS_PER_LINE 100
+
+uint8_t const taskCount = std::thread::hardware_concurrency() - 1;
 
 void Multithread::destroy() {
     CC_SAFE_DESTROY(_vertexBuffer);
@@ -230,25 +231,32 @@ void Multithread::tick(float dt) {
     commandBuffer->bindInputAssembler(_inputAssembler);
     commandBuffer->bindPipelineState(_pipelineState);
 
-    uint drawCountPerThread = MODELS_PER_LINE * MODELS_PER_LINE / TASK_COUNT;
+    /* *
+    uint drawCountPerThread = MODELS_PER_LINE * MODELS_PER_LINE / taskCount;
 
-    std::future<void> res[TASK_COUNT];
-    for (uint i = 0; i < TASK_COUNT; ++i) {
+    std::future<void> res[taskCount];
+    for (uint i = 0; i < taskCount; ++i) {
         res[i] = _tp.DispatchTask([i, drawCountPerThread, this, &commandBuffer](){
-            CC_LOG_INFO("%d", i);
-//            for (uint t = 0u, dynamicOffset = i * drawCountPerThread * _worldBufferStride;
-//                 t < drawCountPerThread;
-//                 ++t, dynamicOffset += _worldBufferStride)
-//            {
-//                commandBuffer->bindDescriptorSet(0, _descriptorSet, 1, &dynamicOffset);
-//                commandBuffer->draw(_inputAssembler);
-//            }
+            for (uint t = 0u, dynamicOffset = i * drawCountPerThread * _worldBufferStride;
+                 t < drawCountPerThread;
+                 ++t, dynamicOffset += _worldBufferStride)
+            {
+                commandBuffer->bindDescriptorSet(0, _descriptorSet, 1, &dynamicOffset);
+                commandBuffer->draw(_inputAssembler);
+            }
         });
     }
 
-    for (uint i = 0; i < TASK_COUNT; ++i) {
+    for (uint i = 0; i < taskCount; ++i) {
         res[i].wait();
     }
+    /* */
+    for (uint t = 0u, dynamicOffset = 0u; t < MODELS_PER_LINE * MODELS_PER_LINE; ++t, dynamicOffset += _worldBufferStride)
+    {
+        commandBuffer->bindDescriptorSet(0, _descriptorSet, 1, &dynamicOffset);
+        commandBuffer->draw(_inputAssembler);
+    }
+    /* */
 
     commandBuffer->endRenderPass();
     commandBuffer->end();
