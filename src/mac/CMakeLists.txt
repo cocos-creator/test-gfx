@@ -71,8 +71,8 @@ if(MACOSX)
   list(APPEND ALL_FILES
     ${COCOS_SRC_PATH}/platform/mac/CCView.h
     ${COCOS_SRC_PATH}/platform/mac//CCView.mm
-    ${COCOS_SRC_PATH}/platform/mac/CCKeyCodeHelper.h
-    ${COCOS_SRC_PATH}/platform/mac/CCKeyCodeHelper.cpp
+    ${COCOS_SRC_PATH}/platform/mac/KeyCodeHelper.h
+    ${COCOS_SRC_PATH}/platform/mac/KeyCodeHelper.cpp
   )
   list(REMOVE_ITEM ALL_FILES ${COCOS_ROOT_PATH}/src/mac/CCView.h)
   list(REMOVE_ITEM ALL_FILES ${COCOS_ROOT_PATH}/src/mac/CCView.mm)

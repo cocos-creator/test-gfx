@@ -33,15 +33,15 @@
 #include "tests/BlendTest.h"
 #import <AppKit/NSTouch.h>
 #import <AppKit/NSEvent.h>
-#import "CCKeyCodeHelper.h"
+#import "KeyCodeHelper.h"
 
 namespace
 {
     int g_nextTextIndex = 0;
-    using createFunc = cocos2d::TestBaseI * (*)(const cocos2d::WindowInfo& info);
+    using createFunc = cc::TestBaseI * (*)(const cc::WindowInfo& info);
     std::vector<createFunc> g_tests;
-    cocos2d::TestBaseI* g_test    = nullptr;
-    cocos2d::WindowInfo g_windowInfo;
+    cc::TestBaseI* g_test    = nullptr;
+    cc::WindowInfo g_windowInfo;
 }
 
 @implementation View {
@@ -86,7 +86,7 @@ namespace
     static bool first = true;
     if (first)
     {
-        using namespace cocos2d;
+        using namespace cc;
         g_tests = {
             ClearScreen::create,
             BasicTriangle::create,
