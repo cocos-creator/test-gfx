@@ -32,7 +32,7 @@ TestBaseI::TestBaseI(const WindowInfo &info) {
 #elif defined(USE_METAL)
         _device = CC_NEW(gfx::CCMTLDevice);
 #else
-        _device = CC_NEW(gfx::CCVKDevice);
+        _device = CC_NEW(gfx::DeviceProxy(CC_NEW(gfx::CCVKDevice)));
 #endif
 
         gfx::DeviceInfo dev_info;
