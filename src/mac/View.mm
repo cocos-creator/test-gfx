@@ -22,6 +22,7 @@
  THE SOFTWARE.
  ****************************************************************************/
 #import "CCView.h"
+#include "tests/Multithread.h"
 #include "tests/ClearScreenTest.h"
 #include "tests/BasicTriangleTest.h"
 #include "tests/BasicTextureTest.h"
@@ -31,6 +32,13 @@
 #include "tests/TestBase.h"
 #include "tests/BunnyTest.h"
 #include "tests/BlendTest.h"
+
+#if CC_PLATFORM == CC_PLATFORM_MAC_OSX
+    #import <AppKit/AppKit.h>
+#endif
+#if CC_PLATFORM == CC_PLATFORM_MAC_IOS
+    #import <UIKit/UIKit.h>
+#endif
 #import <AppKit/NSTouch.h>
 #import <AppKit/NSEvent.h>
 #import "KeyCodeHelper.h"
@@ -57,12 +65,19 @@ namespace
         self.mtlCommandQueue = [self.device newCommandQueue];
         self.delegate = self;
 #endif
+        int pixelRatio = 1;
+#if CC_PLATFORM == CC_PLATFORM_MAC_OSX
+        pixelRatio = [[NSScreen mainScreen] backingScaleFactor];
+#else
+        pixelRatio = [[UIScreen mainScreen] scale];
+#endif //CC_PLATFORM == CC_PLATFORM_MAC_OSX
+
         g_windowInfo.windowHandle = (intptr_t)self;
 
         g_windowInfo.screen.x = frameRect.origin.x;
         g_windowInfo.screen.y = frameRect.origin.y;
-        g_windowInfo.screen.width = frameRect.size.width;
-        g_windowInfo.screen.height = frameRect.size.height;
+        g_windowInfo.screen.width = frameRect.size.width * pixelRatio;
+        g_windowInfo.screen.height = frameRect.size.height * pixelRatio;
 
         g_windowInfo.physicalHeight = g_windowInfo.screen.height;
         g_windowInfo.physicalWidth = g_windowInfo.screen.width;
@@ -88,6 +103,7 @@ namespace
     {
         using namespace cc;
         g_tests = {
+            Multithread::create,
             ClearScreen::create,
             BasicTriangle::create,
             BasicTexture::create,
