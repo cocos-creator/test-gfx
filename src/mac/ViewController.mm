@@ -7,7 +7,7 @@
 //
 
 #import "ViewController.h"
-#import "CCView.h"
+#import "View.h"
 
 @implementation ViewController
 {
