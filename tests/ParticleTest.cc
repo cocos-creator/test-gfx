@@ -79,6 +79,7 @@ void ParticleTest::createShader() {
     ShaderSources sources;
     sources.glsl4 = {
         R"(
+            precision highp float;
             layout(location = 0) in vec2 a_quad;
             layout(location = 1) in vec3 a_position;
             layout(location = 2) in vec4 a_color;
@@ -104,6 +105,7 @@ void ParticleTest::createShader() {
             }
         )",
         R"(
+            precision highp float;
             layout(set = 0, binding = 1) uniform sampler2D u_texture;
 
             layout(location = 0) in vec4 v_color;

@@ -2,7 +2,7 @@
 
 namespace cc {
 
-#define MODELS_PER_LINE 100
+#define MODELS_PER_LINE 300
 
 uint8_t const taskCount = std::thread::hardware_concurrency() - 1;
 
@@ -37,6 +37,7 @@ void Multithread::createShader() {
     ShaderSources sources;
     sources.glsl4 = {
         R"(
+            precision highp float;
             layout(location = 0) in vec2 a_position;
             layout(set = 0, binding = 0) uniform ViewProj { mat4 u_viewProj; };
             layout(set = 0, binding = 1) uniform World { vec4 u_world; };
@@ -46,6 +47,7 @@ void Multithread::createShader() {
             }
         )",
         R"(
+            precision highp float;
             layout(location = 0) out vec4 o_color;
 
             void main() {

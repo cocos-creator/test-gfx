@@ -30,6 +30,7 @@ void BasicTriangle::createShader() {
     ShaderSources sources;
     sources.glsl4 = {
         R"(
+            precision highp float;
             layout(location = 0) in vec2 a_position;
             layout(set = 0, binding = 1) uniform MVP { mat4 u_MVP; };
 
@@ -38,6 +39,7 @@ void BasicTriangle::createShader() {
             }
         )",
         R"(
+            precision highp float;
             layout(set = 0, binding = 0) uniform Color {
                 vec4 u_color;
             };

@@ -18,6 +18,7 @@ struct BigTriangle : public cc::Object {
         ShaderSources sources;
         sources.glsl4 = {
             R"(
+                precision highp float;
                 layout(location = 0) in vec2 a_position;
                 layout(location = 1) in vec2 a_texCoord;
 
@@ -29,6 +30,7 @@ struct BigTriangle : public cc::Object {
                 }
             )",
             R"(
+                precision highp float;
                 layout(location = 0) in vec2 v_texCoord;
                 layout(set = 0, binding = 0) uniform Near_Far_Uniform
                 {

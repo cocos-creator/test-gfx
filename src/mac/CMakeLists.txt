@@ -38,7 +38,6 @@ file(GLOB_RECURSE SOURCE_MM_FILES *.m *.mm)
 list(APPEND APP_UI_RES
     ${CMAKE_CURRENT_LIST_DIR}/Base.lproj/Main.storyboard
     ${CMAKE_CURRENT_LIST_DIR}/Assets.xcassets/Contents.json
-    ${CMAKE_CURRENT_LIST_DIR}/Assets.xcassets/AppIcon.appiconset/Contents.json
 )
 
 set(ALL_FILES

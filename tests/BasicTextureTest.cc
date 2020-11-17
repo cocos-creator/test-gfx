@@ -31,6 +31,7 @@ void BasicTexture::createShader() {
     ShaderSources sources;
     sources.glsl4 = {
         R"(
+            precision highp float;
             layout(location = 0) in vec2 a_position;
             layout(location = 0) out vec2 texcoord;
             layout(set = 0, binding = 0) uniform MVP_Matrix
@@ -46,6 +47,7 @@ void BasicTexture::createShader() {
             }
         )",
         R"(
+            precision highp float;
             layout(location = 0) in vec2 texcoord;
             layout(binding = 1) uniform sampler2D u_texture[2];
             layout(location = 0) out vec4 o_color;
@@ -58,6 +60,7 @@ void BasicTexture::createShader() {
 
     sources.glsl3 = {
         R"(
+            precision highp float;
             in vec2 a_position;
             out vec2 texcoord;
             layout(std140) uniform MVP_Matrix
@@ -86,6 +89,7 @@ void BasicTexture::createShader() {
 
     sources.glsl1 = {
         R"(
+            precision highp float;
             attribute vec2 a_position;
             uniform mat4 u_mvpMatrix;
             varying vec2 texcoord;
