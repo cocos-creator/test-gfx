@@ -5,6 +5,9 @@ endmacro (set_xcode_property)
 
 message(STATUS "App: ${APP_NAME}...")
 
+option(USE_METAL "USE METAL" ON)
+set(USE_METAL OFF)
+
 # ---------------------------------------------------------------------
 # set include files
 
@@ -12,11 +15,14 @@ set(INCLUDE_FILES
   ${GFX_EXTERNAL_PATH}/khronos
   ${GFX_EXTERNAL_PATH}/boost
   ${COCOS_SRC_PATH}/renderer/core
-#  ${COCOS_SRC_PATH}/renderer/gfx-gles2
-#  ${COCOS_SRC_PATH}/renderer/gfx-gles3
-  ${COCOS_SRC_PATH}/renderer/gfx-metal
   ./GFXTest
 )
+
+if (USE_METAL)
+    set(INCLUDE_FILES ${INCLUDE_FILES} ${COCOS_SRC_PATH}/renderer/gfx-metal)
+else ()
+    set(INCLUDE_FILES ${INCLUDE_FILES} ${COCOS_SRC_PATH}/renderer/gfx-gles3)
+endif()
 
 include_directories( ${INCLUDE_FILES} )
 
@@ -46,7 +52,11 @@ set(ALL_FILES
     ${COCOS_SRC_PATH}/cocos2d.cpp
     )
 
-add_definitions("-DUSE_METAL")
+if (USE_METAL)
+    add_definitions("-DUSE_METAL")
+else ()
+    add_definitions("-DUSE_GLES3")
+endif()
 
 if(COCOS_UNICODE)
 	add_definitions("-DUNICODE -D_UNICODE")
@@ -59,24 +69,27 @@ set_xcode_property(${APP_NAME} INFOPLIST_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Info.p
 
 # Locate system libraries on iOS
 find_library(UIKIT_LIBRARY UIKit)
-# find_library(OPENGLES_LIBRARY OpenGLES)
-find_library(METAL_LIBRARY Metal)
-find_library(METALKIT_LIBRARY MetalKit)
 find_library(QUARTZCORE_LIBRARY QuartzCore)
 list(APPEND PLATFORM_SPECIFIC_LIBS
     ${UIKIT_LIBRARY}
-#     ${OPENGLES_LIBRARY}
-    ${METAL_LIBRARY}
-    ${METALKIT_LIBRARY}
     ${QUARTZCORE_LIBRARY}
 )
+
+if (USE_METAL)
+    find_library(METAL_LIBRARY Metal)
+    find_library(METALKIT_LIBRARY MetalKit)
+    list(APPEND PLATFORM_SPECIFIC_LIBS ${METAL_LIBRARY} ${METALKIT_LIBRARY})
+    set(GRAPHIC_LIBS GFXMetal)
+else ()
+    find_library(OPENGLES_LIBRARY OpenGLES)
+    list(APPEND PLATFORM_SPECIFIC_LIBS ${OPENGLES_LIBRARY})
+    set(GRAPHIC_LIBS GFXGLES3)
+endif()
 
 target_link_libraries(${APP_NAME}
     ${PLATFORM_SPECIFIC_LIBS}
     Core
-    # GFXGLES3
-    # GFXGLES2
-    GFXMetal
+    ${GRAPHIC_LIBS}
     ${CC_EXTERNAL_LIBS}
     z
 )
