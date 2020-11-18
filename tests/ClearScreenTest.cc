@@ -9,7 +9,8 @@ bool ClearScreen::initialize() {
     return true;
 }
 
-void ClearScreen::tick(float dt) {
+void ClearScreen::tick() {
+    beforeTick();
 
     _time += dt;
     gfx::Color clearColor;
@@ -30,6 +31,8 @@ void ClearScreen::tick(float dt) {
 
     _device->getQueue()->submit(_commandBuffers);
     _device->present();
+    
+    TestBaseI::tick();
 }
 
 } // namespace cc

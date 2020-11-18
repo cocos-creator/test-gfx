@@ -99,7 +99,7 @@ namespace
 }
 
 - (BOOL) renderScene {
-    g_test->tick(1.0 / 60);
+    g_test->tick();
     return true;
 }
 

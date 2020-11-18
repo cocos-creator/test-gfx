@@ -2,7 +2,7 @@
 
 namespace cc {
 
-#define MODELS_PER_LINE 300
+#define MODELS_PER_LINE 100
 
 uint8_t const taskCount = std::thread::hardware_concurrency() - 1;
 
@@ -207,7 +207,9 @@ void Multithread::createPipeline() {
     _pipelineState = _device->createPipelineState(pipelineInfo);
 }
 
-void Multithread::tick(float dt) {
+void Multithread::tick()
+{
+    beforeTick();
 
     _timeAccumulator = _timeAccumulator * 0.95f + dt * 0.05f;
     _frameAccumulator++;
@@ -265,6 +267,8 @@ void Multithread::tick(float dt) {
 
     _device->getQueue()->submit(_commandBuffers);
     _device->present();
+    
+    TestBaseI::tick();
 }
 
 } // namespace cc

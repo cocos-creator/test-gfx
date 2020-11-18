@@ -96,7 +96,7 @@ void GameApp::Run() {
             float deltaTime = (currTimeStamp - prevTimeStamp) * secsPerCnt;
 
             FrameMove(deltaTime);
-            _test->tick(deltaTime);
+            _test->tick();
 
             // Prepare for next iteration: The current time stamp becomes
             // the previous time stamp for the next iteration.

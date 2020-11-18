@@ -498,7 +498,8 @@ void DepthTexture::resize(uint width, uint height) {
     _bunnyFBO->framebuffer->initialize(fboInfo);
 }
 
-void DepthTexture::tick(float dt) {
+void DepthTexture::tick() {
+    beforeTick();
     _dt += dt;
 
     _eye.set(30.f * std::cos(_dt), 20.f, 30.f * std::sin(_dt));
@@ -549,6 +550,8 @@ void DepthTexture::tick(float dt) {
 
     _device->getQueue()->submit(_commandBuffers);
     _device->present();
+    
+    TestBaseI::tick();
 }
 
 } // namespace cc

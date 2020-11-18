@@ -365,7 +365,8 @@ void ParticleTest::createTexture() {
     _sampler = _device->createSampler(samplerInfo);
 }
 
-void ParticleTest::tick(float dt) {
+void ParticleTest::tick() {
+    beforeTick();
 
     gfx::Color clearColor = {0.2f, 0.2f, 0.2f, 1.0f};
 
@@ -427,6 +428,8 @@ void ParticleTest::tick(float dt) {
 
     _device->getQueue()->submit(_commandBuffers);
     _device->present();
+    
+    TestBaseI::tick();
 }
 
 } // namespace cc

@@ -18,7 +18,7 @@ class BasicTriangle: public TestBaseI
     ~BasicTriangle() = default;
 
  public:
-     virtual void tick(float dt) override;
+     virtual void tick() override;
      virtual bool initialize() override;
      virtual void destroy() override;
 

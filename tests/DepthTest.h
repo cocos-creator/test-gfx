@@ -14,7 +14,7 @@ public:
 public:
      virtual bool initialize() override;
      virtual void destroy() override;
-     virtual void tick(float dt) override;
+     virtual void tick() override;
      virtual void resize(uint width, uint height) override;
 
 private:

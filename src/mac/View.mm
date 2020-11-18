@@ -89,7 +89,7 @@ namespace
 
 #ifdef USE_METAL
 - (void)drawInMTKView:(MTKView *)view {
-    g_test->tick(1.0f / 60);
+    g_test->tick();
     [self.currentDrawable present];
 }
 

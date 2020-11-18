@@ -23,7 +23,13 @@ gfx::Framebuffer *TestBaseI::_fbo = nullptr;
 gfx::RenderPass *TestBaseI::_renderPass = nullptr;
 std::vector<gfx::CommandBuffer *> TestBaseI::_commandBuffers;
 
-TestBaseI::TestBaseI(const WindowInfo &info) {
+std::chrono::steady_clock::time_point TestBaseI::prevTime;
+std::chrono::steady_clock::time_point TestBaseI::now;
+float TestBaseI::dt = 0.f;
+long TestBaseI::dtNS = NANOSECONDS_60FPS;
+
+TestBaseI::TestBaseI(const WindowInfo &info)
+{
     if (_device == nullptr) {
 #if defined(USE_GLES2)
         _device = CC_NEW(gfx::GLES2Device);

@@ -170,7 +170,7 @@ void android_main(struct android_app* state) {
 
         if (savedState.animating)
         {
-            g_test->tick(time - lastTime);
+            g_test->tick();
             lastTime = time;
         }
     }

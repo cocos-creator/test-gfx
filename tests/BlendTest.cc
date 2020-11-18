@@ -605,7 +605,8 @@ bool BlendTest::initialize() {
     return true;
 }
 
-void BlendTest::tick(float dt) {
+void BlendTest::tick() {
+    beforeTick();
 
     _dt += dt;
 
@@ -684,6 +685,8 @@ void BlendTest::tick(float dt) {
 
     _device->getQueue()->submit(_commandBuffers);
     _device->present();
+    
+    TestBaseI::tick();
 }
 
 } // namespace cc

@@ -111,7 +111,7 @@ namespace
 }
 
 -(void)loop:(id)sender {
-    g_test->tick(1.0f / 60);
+    g_test->tick();
 }
 
 - (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event

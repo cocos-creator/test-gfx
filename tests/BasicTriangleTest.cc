@@ -213,7 +213,8 @@ void BasicTriangle::createPipeline() {
     _pipelineState = _device->createPipelineState(pipelineInfo);
 }
 
-void BasicTriangle::tick(float dt) {
+void BasicTriangle::tick() {
+    beforeTick();
 
     _time += dt;
     gfx::Color clearColor = {1.0f, 0, 0, 1.0f};
@@ -246,6 +247,8 @@ void BasicTriangle::tick(float dt) {
 
     _device->getQueue()->submit(_commandBuffers);
     _device->present();
+    
+    TestBaseI::tick();
 }
 
 } // namespace cc

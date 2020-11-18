@@ -382,7 +382,8 @@ void StencilTest::createPipelineState() {
     _pipelineState[(uint8_t)PipelineType::FRONT_BACK_STENCIL] = _device->createPipelineState(pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]);
 }
 
-void StencilTest::tick(float dt) {
+void StencilTest::tick() {
+    beforeTick();
     _dt += dt;
     gfx::Color clearColor = {1.0f, 0, 0, 1.0f};
 
@@ -456,6 +457,8 @@ void StencilTest::tick(float dt) {
 
     _device->getQueue()->submit(_commandBuffers);
     _device->present();
+    
+    TestBaseI::tick();
 }
 
 } // namespace cc

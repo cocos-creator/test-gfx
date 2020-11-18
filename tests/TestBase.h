@@ -2,8 +2,10 @@
 #include "Core.h"
 #include "cocos2d.h"
 
-namespace cc {
+#define NANOSECONDS_PER_SECOND 1000000000
+#define NANOSECONDS_60FPS 16666667L
 
+namespace cc {
     typedef struct WindowInfo {
         intptr_t windowHandle;
         gfx::Rect screen;
@@ -51,8 +53,15 @@ namespace cc {
 
         virtual bool initialize() { return true; }
         virtual void destroy() {}
-        virtual void tick(float dt) = 0;
+        virtual void tick()
+        {
+            now = std::chrono::steady_clock::now();
+            dtNS = dtNS * 0.1 + 0.9 * std::chrono::duration_cast<std::chrono::nanoseconds>(now - prevTime).count();
+            dt = (float)dtNS / NANOSECONDS_PER_SECOND;
+        };
         virtual void resize(uint width, uint height) { _device->resize(width, height); }
+        
+        void beforeTick() { prevTime = std::chrono::steady_clock::now(); }
 
         static gfx::Device *getDevice() { return _device; }
         static void destroyGlobal();
@@ -68,6 +77,11 @@ namespace cc {
         static ShaderSource &getAppropriateShaderSource(ShaderSources &sources);
         static uint getAlignedUBOStride(gfx::Device *device, uint stride);
 
+        // FPS calculation
+        static std::chrono::steady_clock::time_point prevTime;
+        static std::chrono::steady_clock::time_point now;
+        static float dt;
+        static long dtNS;
     protected:
         static gfx::Device *_device;
         static gfx::Framebuffer* _fbo;
