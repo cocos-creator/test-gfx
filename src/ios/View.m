@@ -5,11 +5,38 @@
 //  Created by minggo on 2019/12/4.
 //
 #import "View.h"
+#import "AppDelegate.h"
 
 @implementation View
 
-+ (Class) layerClass {
+#ifndef USE_METAL
++ (Class)layerClass {
     return [CAEAGLLayer class];
 }
+#endif
+
+- (id)initWithFrame:(CGRect)frame {
+#ifdef USE_METAL
+    if (self = [super initWithFrame:frame device:MTLCreateSystemDefaultDevice()]) {
+        self.framebufferOnly = YES;
+        self.delegate = self;
+    }
+#else
+    self = [super initWithFrame:frame];
+#endif
+
+    return self;
+}
+
+#ifdef USE_METAL
+- (void)drawInMTKView:(nonnull MTKView *)view {
+    AppDelegate *delegate = (AppDelegate *)[[UIApplication sharedApplication] delegate];
+    [delegate loop:view];
+}
+
+- (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size {
+    //TODO
+}
+#endif
 
 @end

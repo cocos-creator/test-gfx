@@ -12,8 +12,9 @@ set(INCLUDE_FILES
   ${GFX_EXTERNAL_PATH}/khronos
   ${GFX_EXTERNAL_PATH}/boost
   ${COCOS_SRC_PATH}/renderer/core
-#   ${COCOS_SRC_PATH}/renderer/gfx-gles2
-  ${COCOS_SRC_PATH}/renderer/gfx-gles3
+#  ${COCOS_SRC_PATH}/renderer/gfx-gles2
+#  ${COCOS_SRC_PATH}/renderer/gfx-gles3
+  ${COCOS_SRC_PATH}/renderer/gfx-metal
   ./GFXTest
 )
 
@@ -45,6 +46,8 @@ set(ALL_FILES
     ${COCOS_SRC_PATH}/cocos2d.cpp
     )
 
+add_definitions("-DUSE_METAL")
+
 if(COCOS_UNICODE)
 	add_definitions("-DUNICODE -D_UNICODE")
 endif()
@@ -56,19 +59,24 @@ set_xcode_property(${APP_NAME} INFOPLIST_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Info.p
 
 # Locate system libraries on iOS
 find_library(UIKIT_LIBRARY UIKit)
-find_library(OPENGLES_LIBRARY OpenGLES)
+# find_library(OPENGLES_LIBRARY OpenGLES)
+find_library(METAL_LIBRARY Metal)
+find_library(METALKIT_LIBRARY MetalKit)
 find_library(QUARTZCORE_LIBRARY QuartzCore)
 list(APPEND PLATFORM_SPECIFIC_LIBS
-     ${UIKIT_LIBRARY}
-     ${OPENGLES_LIBRARY}
-     ${QUARTZCORE_LIBRARY}
+    ${UIKIT_LIBRARY}
+#     ${OPENGLES_LIBRARY}
+    ${METAL_LIBRARY}
+    ${METALKIT_LIBRARY}
+    ${QUARTZCORE_LIBRARY}
 )
 
 target_link_libraries(${APP_NAME}
     ${PLATFORM_SPECIFIC_LIBS}
     Core
-    GFXGLES3
+    # GFXGLES3
     # GFXGLES2
+    GFXMetal
     ${CC_EXTERNAL_LIBS}
     z
 )
@@ -105,6 +113,7 @@ target_compile_definitions(${APP_NAME} PUBLIC
     $<$<NOT:$<BOOL:${USE_SPINE}>>:USE_SPINE=0>
     $<$<NOT:$<BOOL:${USE_DRAGONBONES}>>:USE_DRAGONBONES=0>
     $<$<NOT:$<BOOL:${USE_TIFF}>>:CC_USE_TIFF=0>
+    $<$<NOT:$<BOOL:${USE_JPEG}>>:CC_USE_JPEG=0>
     $<$<BOOL:${USE_GFX_RENDERER}>:USE_GFX_RENDERER=1>
     $<$<NOT:$<BOOL:${USE_V8_DEBUGGER}>>:USE_V8_DEBUGGER=0>
 )

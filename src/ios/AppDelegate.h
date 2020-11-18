@@ -11,6 +11,7 @@
 
 @interface AppDelegate : UIResponder <UIApplicationDelegate>
 
+-(void)loop:(id)sender;
 
 @end
 

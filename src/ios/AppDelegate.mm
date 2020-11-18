@@ -9,6 +9,7 @@
 #import "AppDelegate.h"
 #import "ViewController.h"
 #import "View.h"
+#include "tests/Multithread.h"
 #include "tests/ClearScreenTest.h"
 #include "tests/BasicTriangleTest.h"
 #include "tests/BasicTextureTest.h"
@@ -18,7 +19,7 @@
 #include "tests/ParticleTest.h"
 #include "tests/BunnyTest.h"
 
-using namespace cocos2d;
+using namespace cc;
 
 namespace
 {
@@ -40,15 +41,19 @@ namespace
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
     
-    self.window = [[UIWindow alloc] initWithFrame: [[UIScreen mainScreen] bounds]];
+    CGRect rect = [[UIScreen mainScreen] bounds];
+    self.window = [[UIWindow alloc] initWithFrame: rect];
     ViewController* viewController = [[ViewController alloc] init];
     
-    UIView* view = [[View alloc] initWithFrame: [[UIScreen mainScreen] bounds]];
+    UIView* view = [[View alloc] initWithFrame: rect];
     viewController.view = view;
     
     [self initWindowInfo: view];
     [self initTests];
+
+#ifndef USE_METAL
     [self run];
+#endif
     
     [self.window setRootViewController:viewController];
     [self.window makeKeyAndVisible];
@@ -82,6 +87,7 @@ namespace
     if (first)
     {
         g_tests = {
+            Multithread::create,
             ClearScreen::create,
             BasicTriangle::create,
             BasicTexture::create,

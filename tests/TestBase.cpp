@@ -1,8 +1,8 @@
 #include "TestBase.h"
 
-//#define USE_METAL
-//#define USE_GLES3
-//#define USE_GLES2
+// #define USE_METAL
+// #define USE_GLES3
+// #define USE_GLES2
 
 #if defined(USE_GLES2)
     #include "gfx-gles2/GFXGLES2.h"
