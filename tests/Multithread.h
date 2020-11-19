@@ -35,9 +35,6 @@ class Multithread: public TestBaseI
      gfx::InputAssembler* _inputAssembler = nullptr;
 
      uint _worldBufferStride = 0u;
-
-     uint _frameAccumulator = 0u;
-     float _timeAccumulator = 0.f;
 };
 
 } // namespace cc

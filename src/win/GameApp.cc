@@ -109,6 +109,7 @@ bool GameApp::initialize() {
     static bool first = true;
     if (first) {
         _tests = {
+            Multithread::create,
             ClearScreen::create,
             BasicTriangle::create,
             BasicTexture::create,
@@ -117,7 +118,6 @@ bool GameApp::initialize() {
             BlendTest::create,
             ParticleTest::create,
             BunnyTest::create,
-            Multithread::create,
         };
         _test = _tests[_nextIndex](_windowInfo);
         if (_test == nullptr)

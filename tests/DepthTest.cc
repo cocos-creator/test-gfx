@@ -499,8 +499,8 @@ void DepthTexture::resize(uint width, uint height) {
 }
 
 void DepthTexture::tick() {
-    beforeTick();
-    _dt += dt;
+    lookupTime();
+    _dt += hostThread.dt;
 
     _eye.set(30.f * std::cos(_dt), 20.f, 30.f * std::sin(_dt));
     _center.set(0, 2.5f, 0);
@@ -550,8 +550,6 @@ void DepthTexture::tick() {
 
     _device->getQueue()->submit(_commandBuffers);
     _device->present();
-    
-    TestBaseI::tick();
 }
 
 } // namespace cc

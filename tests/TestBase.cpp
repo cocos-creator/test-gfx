@@ -23,10 +23,8 @@ gfx::Framebuffer *TestBaseI::_fbo = nullptr;
 gfx::RenderPass *TestBaseI::_renderPass = nullptr;
 std::vector<gfx::CommandBuffer *> TestBaseI::_commandBuffers;
 
-std::chrono::steady_clock::time_point TestBaseI::prevTime;
-std::chrono::steady_clock::time_point TestBaseI::now;
-float TestBaseI::dt = 0.f;
-long TestBaseI::dtNS = NANOSECONDS_60FPS;
+FrameRate TestBaseI::hostThread;
+FrameRate TestBaseI::deviceThread;
 
 TestBaseI::TestBaseI(const WindowInfo &info)
 {

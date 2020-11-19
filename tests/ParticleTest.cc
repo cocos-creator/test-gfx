@@ -366,15 +366,15 @@ void ParticleTest::createTexture() {
 }
 
 void ParticleTest::tick() {
-    beforeTick();
+    lookupTime();
 
     gfx::Color clearColor = {0.2f, 0.2f, 0.2f, 1.0f};
 
     // update particles
     for (size_t i = 0; i < PARTICLE_COUNT; ++i) {
         ParticleData &p = _particles[i];
-        p.position = std::move(vec3ScaleAndAdd(p.position, p.velocity, dt));
-        p.age += dt;
+        p.position = std::move(vec3ScaleAndAdd(p.position, p.velocity, hostThread.dt));
+        p.age += hostThread.dt;
 
         if (p.age >= p.life) {
             p.age = 0;
@@ -428,8 +428,6 @@ void ParticleTest::tick() {
 
     _device->getQueue()->submit(_commandBuffers);
     _device->present();
-    
-    TestBaseI::tick();
 }
 
 } // namespace cc

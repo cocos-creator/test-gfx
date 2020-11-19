@@ -606,9 +606,9 @@ bool BlendTest::initialize() {
 }
 
 void BlendTest::tick() {
-    beforeTick();
+    lookupTime();
 
-    _dt += dt;
+    _dt += hostThread.dt;
 
     _device->acquire();
 
@@ -685,8 +685,6 @@ void BlendTest::tick() {
 
     _device->getQueue()->submit(_commandBuffers);
     _device->present();
-    
-    TestBaseI::tick();
 }
 
 } // namespace cc

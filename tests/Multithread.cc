@@ -2,7 +2,7 @@
 
 namespace cc {
 
-#define MODELS_PER_LINE 100
+#define MODELS_PER_LINE 50
 
 uint8_t const taskCount = std::thread::hardware_concurrency() - 1;
 
@@ -207,15 +207,32 @@ void Multithread::createPipeline() {
     _pipelineState = _device->createPipelineState(pipelineInfo);
 }
 
+using gfx::Command;
+
 void Multithread::tick()
 {
-    beforeTick();
+    lookupTime();
 
-    _timeAccumulator = _timeAccumulator * 0.95f + dt * 0.05f;
-    _frameAccumulator++;
-    if (_frameAccumulator % 6 == 0) {
-        CC_LOG_INFO("CPU avg: %.2fms (~%d FPS)", _timeAccumulator * 1000.f, uint(1.f / _timeAccumulator + .5f));
-    }
+    // simulate heavy logic operation
+    std::this_thread::sleep_for(std::chrono::milliseconds(15));
+
+    hostThread.timeAcc = hostThread.timeAcc * 0.95f + hostThread.dt * 0.05f;
+    hostThread.frameAcc++;
+    //if (hostThread.frameAcc % 6 == 0) {
+    //    CC_LOG_INFO("Host thread avg: %.2fms (~%d FPS)", hostThread.timeAcc * 1000.f, uint(1.f / hostThread.timeAcc + .5f));
+    //}
+
+    ENCODE_COMMAND_0(
+        ((gfx::DeviceProxy *)_device)->getDeviceThread()->GetMainCommandEncoder(),
+        DeviceStatistics,
+        {
+            lookupTime(deviceThread);
+            deviceThread.timeAcc = deviceThread.dt;
+            deviceThread.frameAcc++;
+            if (deviceThread.frameAcc % 6 == 0) {
+                CC_LOG_INFO("Device thread avg: %.2fms (~%d FPS)", deviceThread.timeAcc * 1000.f, uint(1.f / deviceThread.timeAcc + .5f));
+            }
+        });
 
     gfx::Color clearColor = {.2f, .2f, .2f, 1.f};
 
@@ -267,8 +284,6 @@ void Multithread::tick()
 
     _device->getQueue()->submit(_commandBuffers);
     _device->present();
-    
-    TestBaseI::tick();
 }
 
 } // namespace cc

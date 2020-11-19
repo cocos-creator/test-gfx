@@ -383,8 +383,8 @@ void StencilTest::createPipelineState() {
 }
 
 void StencilTest::tick() {
-    beforeTick();
-    _dt += dt;
+    lookupTime();
+    _dt += hostThread.dt;
     gfx::Color clearColor = {1.0f, 0, 0, 1.0f};
 
     Mat4 proj;
@@ -457,8 +457,6 @@ void StencilTest::tick() {
 
     _device->getQueue()->submit(_commandBuffers);
     _device->present();
-    
-    TestBaseI::tick();
 }
 
 } // namespace cc

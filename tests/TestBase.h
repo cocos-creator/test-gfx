@@ -3,7 +3,7 @@
 #include "cocos2d.h"
 
 #define NANOSECONDS_PER_SECOND 1000000000
-#define NANOSECONDS_60FPS 16666667L
+#define NANOSECONDS_60FPS      16666667L
 
 namespace cc {
     typedef struct WindowInfo {
@@ -37,6 +37,15 @@ namespace cc {
         ShaderSource glsl1;
     };
 
+    struct FrameRate {
+        std::chrono::steady_clock::time_point prevTime;
+        std::chrono::steady_clock::time_point curTime;
+        float dt{0};
+
+        uint frameAcc = 0u;
+        float timeAcc = 0.f;
+    };
+
 #define DEFINE_CREATE_METHOD(className)                \
     static TestBaseI *create(const WindowInfo &info) { \
         TestBaseI *test = CC_NEW(className(info));     \
@@ -52,17 +61,15 @@ namespace cc {
         virtual ~TestBaseI() = default;
 
         virtual bool initialize() { return true; }
+        virtual void tick() {}
         virtual void destroy() {}
-        virtual void tick()
-        {
-            now = std::chrono::steady_clock::now();
-            dtNS = dtNS * 0.1 + 0.9 * std::chrono::duration_cast<std::chrono::nanoseconds>(now - prevTime).count();
-            dt = (float)dtNS / NANOSECONDS_PER_SECOND;
-        };
         virtual void resize(uint width, uint height) { _device->resize(width, height); }
-        
-        void beforeTick() { prevTime = std::chrono::steady_clock::now(); }
 
+        static void lookupTime(FrameRate &statistics = hostThread) {
+            statistics.curTime = std::chrono::steady_clock::now();
+            statistics.dt = float(std::chrono::duration_cast<std::chrono::nanoseconds>(statistics.curTime - statistics.prevTime).count()) / NANOSECONDS_PER_SECOND;
+            statistics.prevTime = statistics.curTime;
+        }
         static gfx::Device *getDevice() { return _device; }
         static void destroyGlobal();
 
@@ -78,10 +85,8 @@ namespace cc {
         static uint getAlignedUBOStride(gfx::Device *device, uint stride);
 
         // FPS calculation
-        static std::chrono::steady_clock::time_point prevTime;
-        static std::chrono::steady_clock::time_point now;
-        static float dt;
-        static long dtNS;
+        static FrameRate hostThread;
+        static FrameRate deviceThread;
     protected:
         static gfx::Device *_device;
         static gfx::Framebuffer* _fbo;

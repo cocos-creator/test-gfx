@@ -214,9 +214,9 @@ void BasicTriangle::createPipeline() {
 }
 
 void BasicTriangle::tick() {
-    beforeTick();
+    lookupTime();
 
-    _time += dt;
+    _time += hostThread.dt;
     gfx::Color clearColor = {1.0f, 0, 0, 1.0f};
 
     gfx::Color uniformColor;
@@ -247,8 +247,6 @@ void BasicTriangle::tick() {
 
     _device->getQueue()->submit(_commandBuffers);
     _device->present();
-    
-    TestBaseI::tick();
 }
 
 } // namespace cc

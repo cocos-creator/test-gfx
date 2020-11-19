@@ -260,7 +260,7 @@ void BasicTexture::createTexture() {
 }
 
 void BasicTexture::tick() {
-    beforeTick();
+    lookupTime();
     gfx::Color clearColor = {0, 0, 0, 1.0f};
 
     Mat4 mvpMatrix;
@@ -283,8 +283,6 @@ void BasicTexture::tick() {
 
     _device->getQueue()->submit(_commandBuffers);
     _device->present();
-    
-    TestBaseI::tick();
 }
 
 } // namespace cc

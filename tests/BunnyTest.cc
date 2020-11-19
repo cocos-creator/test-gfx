@@ -232,8 +232,8 @@ void BunnyTest::createPipelineState() {
 }
 
 void BunnyTest::tick() {
-    beforeTick();
-    _dt += dt;
+    lookupTime();
+    _dt += hostThread.dt;
 
     Mat4::createLookAt(Vec3(30.0f * std::cos(_dt), 20.0f, 30.0f * std::sin(_dt)),
                        Vec3(0.0f, 2.5f, 0.0f), Vec3(0.0f, 1.0f, 0.f), &_view);
@@ -265,8 +265,6 @@ void BunnyTest::tick() {
 
     _device->getQueue()->submit(_commandBuffers);
     _device->present();
-    
-    TestBaseI::tick();
 }
 
 } // namespace cc
