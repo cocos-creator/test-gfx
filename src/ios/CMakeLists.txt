@@ -14,6 +14,7 @@ set(USE_METAL OFF)
 set(INCLUDE_FILES
   ${GFX_EXTERNAL_PATH}/khronos
   ${GFX_EXTERNAL_PATH}/boost
+  ${GFX_EXTERNAL_PATH}/concurrentqueue
   ${COCOS_SRC_PATH}/renderer/core
   ./GFXTest
 )

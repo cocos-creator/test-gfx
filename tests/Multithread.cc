@@ -2,7 +2,7 @@
 
 namespace cc {
 
-#define MODELS_PER_LINE 50
+#define MODELS_PER_LINE 100
 
 uint8_t const taskCount = std::thread::hardware_concurrency() - 1;
 
@@ -214,13 +214,13 @@ void Multithread::tick()
     lookupTime();
 
     // simulate heavy logic operation
-    std::this_thread::sleep_for(std::chrono::milliseconds(15));
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
     hostThread.timeAcc = hostThread.timeAcc * 0.95f + hostThread.dt * 0.05f;
     hostThread.frameAcc++;
-    //if (hostThread.frameAcc % 6 == 0) {
-    //    CC_LOG_INFO("Host thread avg: %.2fms (~%d FPS)", hostThread.timeAcc * 1000.f, uint(1.f / hostThread.timeAcc + .5f));
-    //}
+    if (hostThread.frameAcc % 6 == 0) {
+        CC_LOG_INFO("Host thread avg: %.2fms (~%d FPS)", hostThread.timeAcc * 1000.f, uint(1.f / hostThread.timeAcc + .5f));
+    }
 
     ENCODE_COMMAND_0(
         ((gfx::DeviceProxy *)_device)->getDeviceThread()->GetMainCommandEncoder(),
