@@ -78,6 +78,8 @@ TestBaseI::TestBaseI(const WindowInfo &info)
     if (!_commandBuffers.size()) {
         _commandBuffers.push_back(_device->getCommandBuffer());
     }
+    
+    hostThread.prevTime = std::chrono::steady_clock::now();
 }
 
 void TestBaseI::destroyGlobal() {
