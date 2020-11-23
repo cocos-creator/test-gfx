@@ -3,6 +3,7 @@
 namespace cc {
 
 #define MODELS_PER_LINE 100
+#define MAIN_THREAD_SLEEP 33
 
 uint8_t const taskCount = std::thread::hardware_concurrency() - 1;
 
@@ -215,24 +216,23 @@ void Multithread::tick()
     lookupTime();
 
     // simulate heavy logic operation
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
+    std::this_thread::sleep_for(std::chrono::milliseconds(MAIN_THREAD_SLEEP));
+    
+    gfx::CommandEncoder *encoder = ((gfx::DeviceProxy *)_device)->getDeviceThread()->GetMainCommandEncoder();
     hostThread.timeAcc = hostThread.timeAcc * 0.95f + hostThread.dt * 0.05f;
     hostThread.frameAcc++;
-    if (hostThread.frameAcc % 6 == 0) {
-        CC_LOG_INFO("Host thread avg: %.2fms (~%d FPS)", hostThread.timeAcc * 1000.f, uint(1.f / hostThread.timeAcc + .5f));
-    }
 
     ENCODE_COMMAND_0(
-        ((gfx::DeviceProxy *)_device)->getDeviceThread()->GetMainCommandEncoder(),
+        encoder,
         DeviceStatistics,
         {
+            gfx::CommandEncoder *encoder = ((gfx::DeviceProxy *)_device)->getDeviceThread()->GetMainCommandEncoder();
             lookupTime(deviceThread);
             deviceThread.timeAcc = deviceThread.dt;
             deviceThread.frameAcc++;
-            if (deviceThread.frameAcc % 6 == 0) {
-                CC_LOG_INFO("Device thread avg: %.2fms (~%d FPS)", deviceThread.timeAcc * 1000.f, uint(1.f / deviceThread.timeAcc + .5f));
-            }
+//            if (deviceThread.frameAcc % 6 == 0) {
+                CC_LOG_INFO("Device thread avg: %.2fms (~%d FPS) | New: %d", deviceThread.timeAcc * 1000.f, uint(1.f / deviceThread.timeAcc + .5f), encoder->GetNewCommandCount());
+//            }
         });
 
     gfx::Color clearColor = {.2f, .2f, .2f, 1.f};
@@ -284,6 +284,13 @@ void Multithread::tick()
     commandBuffer->end();
 
     _device->getQueue()->submit(_commandBuffers);
+    
+//    if (hostThread.frameAcc % 6 == 0) {
+        CC_LOG_INFO("Host thread avg: %.2fms (~%d FPS) | Pending: %d | Written: %d"
+                    , hostThread.timeAcc * 1000.f, uint(1.f / hostThread.timeAcc + .5f)
+                    , encoder->GetPendingCommandCount()
+                    , encoder->GetWrittenCommandCount());
+//    }
     _device->present();
 }
 
