@@ -200,6 +200,7 @@ void Multithread::createPipeline() {
     pipelineInfo.primitive = gfx::PrimitiveMode::TRIANGLE_STRIP;
     pipelineInfo.shader = _shader;
     pipelineInfo.blendState.targets.push_back(new gfx::BlendTarget());
+    pipelineInfo.rasterizerState.cullMode = gfx::CullMode::NONE;
     pipelineInfo.inputState = {_inputAssembler->getAttributes()};
     pipelineInfo.renderPass = _fbo->getRenderPass();
     pipelineInfo.pipelineLayout = _pipelineLayout;
