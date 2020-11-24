@@ -80,6 +80,7 @@ TestBaseI::TestBaseI(const WindowInfo &info)
     }
     
     hostThread.prevTime = std::chrono::steady_clock::now();
+    deviceThread.prevTime = std::chrono::steady_clock::now();
 }
 
 void TestBaseI::destroyGlobal() {
