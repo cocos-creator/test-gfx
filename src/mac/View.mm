@@ -90,7 +90,6 @@ namespace
 #ifdef USE_METAL
 - (void)drawInMTKView:(MTKView *)view {
     g_test->tick();
-    [self.currentDrawable present];
 }
 
 - (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size {
