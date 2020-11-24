@@ -1,5 +1,7 @@
 #include "TestBase.h"
 
+//#undef USE_METAL
+
 //#define USE_METAL
 //#define USE_GLES3
 //#define USE_GLES2

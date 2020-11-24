@@ -97,6 +97,7 @@ target_link_libraries(${APP_NAME}
     ${PLATFORM_SPECIFIC_LIBS}
     Core
     GFXMetal
+    GFXVulkan
     ${CC_EXTERNAL_LIBS}
     z
 )

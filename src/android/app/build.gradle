@@ -1,6 +1,14 @@
 apply plugin: 'com.android.application'
 
 android {
+    signingConfigs {
+        release {
+            storeFile file('/Users/yunhsiao/workspace/android.keystore')
+            storePassword 'hyf123456'
+            keyAlias 'android.keystore'
+            keyPassword 'hyf123456'
+        }
+    }
     compileSdkVersion 30
 
     defaultConfig {
@@ -25,6 +33,7 @@ android {
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'),
                     'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
 
         debug {
