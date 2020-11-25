@@ -231,7 +231,7 @@ void Multithread::tick()
         DeviceStatistics,
         {
             lookupTime(deviceThread);
-            deviceThread.timeAcc = deviceThread.dt;
+            deviceThread.timeAcc = deviceThread.timeAcc * 0.95f + deviceThread.dt * 0.05f;
             deviceThread.frameAcc++;
             if (deviceThread.frameAcc % 6 == 0) {
                 CC_LOG_INFO("Device thread avg: %.2fms (~%d FPS)", deviceThread.timeAcc * 1000.f, uint(1.f / deviceThread.timeAcc + .5f));
