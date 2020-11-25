@@ -14,7 +14,7 @@ set(INCLUDE_FILES
   ${GFX_EXTERNAL_PATH}/concurrentqueue
   ${COCOS_SRC_PATH}/renderer/core
   ${COCOS_SRC_PATH}/renderer/gfx-metal
-  ${COCOS_SRC_PATH}/renderer/gfx-gles2
+  ${COCOS_SRC_PATH}/renderer/gfx-gles3
   ./GFXTest
 )
 
@@ -32,7 +32,6 @@ set(APP_UI_RES
     ${CMAKE_CURRENT_LIST_DIR}/../Resources/uv_checker_02.jpg
     ${CMAKE_CURRENT_LIST_DIR}/../Resources/stencil.jpg
     ${CMAKE_CURRENT_LIST_DIR}/Assets.xcassets/Contents.json
-    ${CMAKE_CURRENT_LIST_DIR}/Assets.xcassets/AppIcon.appiconset/Contents.json
 )
 
 set(ALL_FILES
@@ -57,7 +56,7 @@ set(ALL_FILES
 if(COCOS_UNICODE)
 	add_definitions("-DUNICODE -D_UNICODE")
 endif()
-add_definitions("-DUSE_GLES2")
+add_definitions("-DUSE_GLES3")
 
 add_executable(${APP_NAME} MACOSX_BUNDLE ${ALL_FILES})
 
@@ -68,14 +67,14 @@ set_target_properties(${APP_NAME} PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_C
 find_library(APPKIT_LIBRARY AppKit)
 list(APPEND PLATFORM_SPECIFIC_LIBS
      ${APPKIT_LIBRARY}
-     ${COCOS_EXTERNAL_PATH}/pvrsdk/lib/OSX_x86/libEGL.dylib
-     ${COCOS_EXTERNAL_PATH}/pvrsdk/lib/OSX_x86/libGLESv2.dylib
+     ${GFX_EXTERNAL_PATH}/pvrsdk/lib/OSX_x86/libEGL.dylib
+     ${GFX_EXTERNAL_PATH}/pvrsdk/lib/OSX_x86/libGLESv2.dylib
 )
 
 target_link_libraries(${APP_NAME}
     ${PLATFORM_SPECIFIC_LIBS}
     Core
-    GFXGLES2
+    GFXGLES3
     ${CC_EXTERNAL_LIBS}
     z
 )
