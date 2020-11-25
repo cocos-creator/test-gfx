@@ -9,8 +9,14 @@
 
 @implementation View
 
-#ifndef USE_METAL
-+ (Class)layerClass {
+#ifdef USE_METAL
++ (Class)layerClass
+{
+    return [CAMetalLayer class];
+}
+#else
++ (Class)layerClass
+{
     return [CAEAGLLayer class];
 }
 #endif
