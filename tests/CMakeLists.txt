@@ -9,7 +9,7 @@ set(GFX_TESTCASE_HEADER
     ${COCOS_ROOT_PATH}/tests/BlendTest.h
     ${COCOS_ROOT_PATH}/tests/ParticleTest.h
     ${COCOS_ROOT_PATH}/tests/BunnyTest.h
-    ${COCOS_ROOT_PATH}/tests/Multithread.h
+    ${COCOS_ROOT_PATH}/tests/StressTest.h
 )
 
 set(GFX_TESTCASE_SOURCE
@@ -22,5 +22,5 @@ set(GFX_TESTCASE_SOURCE
     ${COCOS_ROOT_PATH}/tests/BlendTest.cc
     ${COCOS_ROOT_PATH}/tests/ParticleTest.cc
     ${COCOS_ROOT_PATH}/tests/BunnyTest.cc
-    ${COCOS_ROOT_PATH}/tests/Multithread.cc
+    ${COCOS_ROOT_PATH}/tests/StressTest.cc
 )

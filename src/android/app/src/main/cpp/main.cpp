@@ -9,7 +9,7 @@
 #include "tests/BlendTest.h"
 #include "tests/ParticleTest.h"
 #include "tests/BunnyTest.h"
-#include "tests/Multithread.h"
+#include "tests/StressTest.h"
 
 #include <android/log.h>
 #include <time.h>
@@ -48,7 +48,7 @@ namespace
         if (first)
         {
             g_tests = {
-                    Multithread::create,
+                    StressTest::create,
                     ClearScreen::create,
                     BasicTriangle::create,
                     BasicTexture::create,

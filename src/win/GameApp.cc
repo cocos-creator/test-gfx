@@ -9,7 +9,7 @@
 #include "tests/DepthTest.h"
 #include "tests/ParticleTest.h"
 #include "tests/StencilTest.h"
-#include "tests/Multithread.h"
+#include "tests/StressTest.h"
 
 namespace cc {
 
@@ -109,7 +109,7 @@ bool GameApp::initialize() {
     static bool first = true;
     if (first) {
         _tests = {
-            Multithread::create,
+            StressTest::create,
             ClearScreen::create,
             BasicTriangle::create,
             BasicTexture::create,

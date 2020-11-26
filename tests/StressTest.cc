@@ -1,4 +1,4 @@
-#include "Multithread.h"
+#include "StressTest.h"
 
 namespace cc {
 
@@ -7,7 +7,7 @@ namespace cc {
 
 uint8_t const taskCount = std::thread::hardware_concurrency() - 1;
 
-void Multithread::destroy() {
+void StressTest::destroy() {
     CC_SAFE_DESTROY(_vertexBuffer);
     CC_SAFE_DESTROY(_inputAssembler);
     CC_SAFE_DESTROY(_descriptorSet);
@@ -22,7 +22,7 @@ void Multithread::destroy() {
 //    _tp.Stop();
 }
 
-bool Multithread::initialize() {
+bool StressTest::initialize() {
     createShader();
     createVertexBuffer();
     createInputAssembler();
@@ -33,7 +33,7 @@ bool Multithread::initialize() {
     return true;
 }
 
-void Multithread::createShader() {
+void StressTest::createShader() {
 
     ShaderSources sources;
     sources.glsl4 = {
@@ -115,14 +115,14 @@ void Multithread::createShader() {
     gfx::AttributeList attributeList = {{"a_position", gfx::Format::RG32F, false, 0, false, 0}};
 
     gfx::ShaderInfo shaderInfo;
-    shaderInfo.name = "Multithread";
+    shaderInfo.name = "StressTest";
     shaderInfo.stages = std::move(shaderStageList);
     shaderInfo.attributes = std::move(attributeList);
     shaderInfo.blocks = std::move(uniformBlockList);
     _shader = _device->createShader(shaderInfo);
 }
 
-void Multithread::createVertexBuffer() {
+void StressTest::createVertexBuffer() {
     float vertexData[] = {-1.f, -.995f,
                           -1.f, -1.f,
                           -.995f, -.995f,
@@ -176,7 +176,7 @@ void Multithread::createVertexBuffer() {
     _uniformBufferVP->update(VP.m, 0, sizeof(Mat4));
 }
 
-void Multithread::createInputAssembler() {
+void StressTest::createInputAssembler() {
     gfx::Attribute position = {"a_position", gfx::Format::RG32F, false, 0, false};
     gfx::InputAssemblerInfo inputAssemblerInfo;
     inputAssemblerInfo.attributes.emplace_back(std::move(position));
@@ -184,7 +184,7 @@ void Multithread::createInputAssembler() {
     _inputAssembler = _device->createInputAssembler(inputAssemblerInfo);
 }
 
-void Multithread::createPipeline() {
+void StressTest::createPipeline() {
     gfx::DescriptorSetLayoutInfo dslInfo;
     dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX});
     dslInfo.bindings.push_back({1, gfx::DescriptorType::DYNAMIC_UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX});
@@ -211,14 +211,14 @@ void Multithread::createPipeline() {
 
 using gfx::Command;
 
-void Multithread::tick()
+void StressTest::tick()
 {
     lookupTime();
 
     // simulate heavy logic operation
     std::this_thread::sleep_for(std::chrono::milliseconds(MAIN_THREAD_SLEEP));
 
-    gfx::CommandEncoder *encoder = ((gfx::DeviceProxy *)_device)->getDeviceThread()->GetMainCommandEncoder();
+    gfx::CommandEncoder *encoder = ((gfx::DeviceProxy *)_device)->getMainEncoder();
     hostThread.timeAcc = hostThread.timeAcc * 0.95f + hostThread.dt * 0.05f;
     hostThread.frameAcc++;
 

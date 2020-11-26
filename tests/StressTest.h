@@ -4,12 +4,12 @@
 
 namespace cc {
 
-class Multithread: public TestBaseI
+class StressTest: public TestBaseI
 {
  public:
-    DEFINE_CREATE_METHOD(Multithread)
-    Multithread(const WindowInfo& info) : TestBaseI(info) {};
-    ~Multithread() = default;
+    DEFINE_CREATE_METHOD(StressTest)
+    StressTest(const WindowInfo& info) : TestBaseI(info) {};
+    ~StressTest() = default;
 
  public:
      virtual void tick() override;

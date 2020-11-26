@@ -22,7 +22,7 @@
  THE SOFTWARE.
  ****************************************************************************/
 #import "View.h"
-#include "tests/Multithread.h"
+#include "tests/StressTest.h"
 #include "tests/ClearScreenTest.h"
 #include "tests/BasicTriangleTest.h"
 #include "tests/BasicTextureTest.h"
@@ -102,7 +102,7 @@ namespace
     {
         using namespace cc;
         g_tests = {
-            Multithread::create,
+            StressTest::create,
             ClearScreen::create,
             BasicTriangle::create,
             BasicTexture::create,

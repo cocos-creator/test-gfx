@@ -9,7 +9,7 @@
 #import "AppDelegate.h"
 #import "ViewController.h"
 #import "View.h"
-#include "tests/Multithread.h"
+#include "tests/StressTest.h"
 #include "tests/ClearScreenTest.h"
 #include "tests/BasicTriangleTest.h"
 #include "tests/BasicTextureTest.h"
@@ -40,44 +40,44 @@ namespace
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
-    
+
     CGRect rect = [[UIScreen mainScreen] bounds];
     self.window = [[UIWindow alloc] initWithFrame: rect];
     ViewController* viewController = [[ViewController alloc] init];
-    
+
     UIView* view = [[View alloc] initWithFrame: rect];
     viewController.view = view;
-    
+
     [self initWindowInfo: view];
     [self initTests];
 
 #ifndef USE_METAL
     [self run];
 #endif
-    
+
     [self.window setRootViewController:viewController];
     [self.window makeKeyAndVisible];
-    
+
     return YES;
 }
 
 - (void)initWindowInfo:(UIView*)view {
     g_windowInfo.windowHandle = (intptr_t)(view);
-    
+
     CGRect rect = [[UIScreen mainScreen] bounds];
-    
+
     float scale = 1.0f;
     if ( [view respondsToSelector:@selector(setContentScaleFactor:)] )
     {
         scale = [[UIScreen mainScreen] scale];
         view.contentScaleFactor = scale;
     }
-    
+
     g_windowInfo.screen.x = rect.origin.x * scale;
     g_windowInfo.screen.y = rect.origin.y * scale;
     g_windowInfo.screen.width = rect.size.width * scale;
     g_windowInfo.screen.height = rect.size.height * scale;
-    
+
     g_windowInfo.physicalHeight = g_windowInfo.screen.height;
     g_windowInfo.physicalWidth = g_windowInfo.screen.width;
 }
@@ -87,7 +87,7 @@ namespace
     if (first)
     {
         g_tests = {
-            Multithread::create,
+            StressTest::create,
             ClearScreen::create,
             BasicTriangle::create,
             BasicTexture::create,
