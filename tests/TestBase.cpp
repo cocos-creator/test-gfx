@@ -91,10 +91,10 @@ void TestBaseI::destroyGlobal() {
     CC_SAFE_DESTROY(_device);
 }
 
-void TestBaseI::toggleImmediateMode() {
-    static bool immediateMode = false;
-    immediateMode = !immediateMode;
-    ((gfx::DeviceProxy *)_device)->getMainEncoder()->SetImmediateMode(immediateMode);
+void TestBaseI::toggleMultithread() {
+    static bool multithreaded = true;
+    multithreaded = !multithreaded;
+    ((gfx::DeviceProxy *)_device)->setMultithreaded(multithreaded);
 }
 
 unsigned char *TestBaseI::RGB2RGBA(Image *img) {

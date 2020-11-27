@@ -120,9 +120,10 @@ namespace
                     break;
                 case AMOTION_EVENT_ACTION_UP:
                 case AMOTION_EVENT_ACTION_POINTER_UP:
-                    g_nextTestIndex = (++g_nextTestIndex) % g_tests.size();
-                    CC_SAFE_DESTROY(g_test);
-                    g_test = g_tests[g_nextTestIndex](g_windowInfo);
+//                    g_nextTestIndex = (++g_nextTestIndex) % g_tests.size();
+//                    CC_SAFE_DESTROY(g_test);
+//                    g_test = g_tests[g_nextTestIndex](g_windowInfo);
+                    g_test->toggleMultithread();
                     return 1;
                     break;
             }
