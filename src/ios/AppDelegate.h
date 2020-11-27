@@ -12,6 +12,7 @@
 @interface AppDelegate : UIResponder <UIApplicationDelegate>
 
 -(void)loop:(id)sender;
+-(void)initWindowInfo:(UIView*)view size:(CGSize)size;
 
 @end
 

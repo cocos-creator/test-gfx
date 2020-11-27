@@ -42,6 +42,8 @@
 
 - (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size {
     //TODO
+    AppDelegate *delegate = (AppDelegate *)[[UIApplication sharedApplication] delegate];
+    [delegate initWindowInfo:view size:size];
 }
 #endif
 

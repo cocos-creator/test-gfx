@@ -48,7 +48,7 @@ namespace
     UIView* view = [[View alloc] initWithFrame: rect];
     viewController.view = view;
 
-    [self initWindowInfo: view];
+    [self initWindowInfo: view size:rect.size];
     [self initTests];
 
 #ifndef USE_METAL
@@ -61,10 +61,8 @@ namespace
     return YES;
 }
 
-- (void)initWindowInfo:(UIView*)view {
+- (void)initWindowInfo:(UIView*)view size:(CGSize)size {
     g_windowInfo.windowHandle = (intptr_t)(view);
-
-    CGRect rect = [[UIScreen mainScreen] bounds];
 
     float scale = 1.0f;
     if ( [view respondsToSelector:@selector(setContentScaleFactor:)] )
@@ -73,10 +71,10 @@ namespace
         view.contentScaleFactor = scale;
     }
 
-    g_windowInfo.screen.x = rect.origin.x * scale;
-    g_windowInfo.screen.y = rect.origin.y * scale;
-    g_windowInfo.screen.width = rect.size.width * scale;
-    g_windowInfo.screen.height = rect.size.height * scale;
+    g_windowInfo.screen.x = 0;
+    g_windowInfo.screen.y = 0;
+    g_windowInfo.screen.width = size.width * scale;
+    g_windowInfo.screen.height = size.height * scale;
 
     g_windowInfo.physicalHeight = g_windowInfo.screen.height;
     g_windowInfo.physicalWidth = g_windowInfo.screen.width;
