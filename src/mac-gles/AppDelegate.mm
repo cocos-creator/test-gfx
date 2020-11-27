@@ -7,6 +7,7 @@
 //
 
 #import "AppDelegate.h"
+#include "tests/StressTest.h"
 #include "tests/ClearScreenTest.h"
 #include "tests/BasicTriangleTest.h"
 #include "tests/BasicTextureTest.h"
@@ -16,7 +17,7 @@
 #include "tests/TestBase.h"
 #include "tests/BunnyTest.h"
 
-using namespace cocos2d;
+using namespace cc;
 
 namespace
 {
@@ -83,6 +84,7 @@ namespace
     if (first)
     {
         g_tests = {
+            StressTest::create,
             ClearScreen::create,
             BasicTriangle::create,
             BasicTexture::create,
