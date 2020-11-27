@@ -5,6 +5,9 @@ endmacro (set_xcode_property)
 
 message(STATUS "App: ${APP_NAME}...")
 
+option(USE_METAL "USE METAL" ON)
+set(USE_METAL OFF)
+
 # ---------------------------------------------------------------------
 # set include files
 
@@ -65,7 +68,6 @@ if(COCOS_UNICODE)
 endif()
 
 if(MACOSX)
-  add_definitions("-DUSE_METAL")
   file(COPY ${COCOS_ROOT_PATH}/src/mac/View.h DESTINATION ${COCOS_SRC_PATH}/platform/mac)
   file(COPY ${COCOS_ROOT_PATH}/src/mac/View.mm DESTINATION ${COCOS_SRC_PATH}/platform/mac)
   list(APPEND ALL_FILES
@@ -93,11 +95,17 @@ list(APPEND PLATFORM_SPECIFIC_LIBS
      ${METALKIT_LIBRARY}
 )
 
+if (USE_METAL)
+    add_definitions("-DUSE_METAL")
+    set(GFX_LIB GFXMetal)
+else ()
+    set(GFX_LIB GFXVulkan)
+endif()
+
 target_link_libraries(${APP_NAME}
     ${PLATFORM_SPECIFIC_LIBS}
     Core
-    GFXMetal
-    GFXVulkan
+    ${GFX_LIB}
     ${CC_EXTERNAL_LIBS}
     z
 )
