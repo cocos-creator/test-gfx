@@ -3,7 +3,7 @@
 //#undef USE_METAL
 
 //#define USE_METAL
-//#define USE_GLES3
+#define USE_GLES3
 //#define USE_GLES2
 
 #if defined(USE_GLES2)
@@ -89,6 +89,12 @@ void TestBaseI::destroyGlobal() {
     CC_SAFE_DESTROY(_fbo);
     CC_SAFE_DESTROY(_renderPass);
     CC_SAFE_DESTROY(_device);
+}
+
+void TestBaseI::toggleImmediateMode() {
+    static bool immediateMode = false;
+    immediateMode = !immediateMode;
+    ((gfx::DeviceProxy *)_device)->getMainEncoder()->SetImmediateMode(immediateMode);
 }
 
 unsigned char *TestBaseI::RGB2RGBA(Image *img) {

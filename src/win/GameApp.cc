@@ -144,6 +144,9 @@ void GameApp::resize(uint width, uint height) {
 }
 
 void GameApp::OnKeyDown(WPARAM keyCode) {
+    if (keyCode == VK_SPACE) {
+        _test->toggleImmediateMode();
+    }
 }
 
 void GameApp::OnMouseLDown(WORD x, WORD y) {

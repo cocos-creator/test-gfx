@@ -73,6 +73,7 @@ namespace cc {
         static gfx::Device *getDevice() { return _device; }
         static void destroyGlobal();
 
+        static void toggleImmediateMode();
         static unsigned char *RGB2RGBA(Image *img);
         static void modifyProjectionBasedOnDevice(Mat4 &projection, bool isOffscreen = false);
         static void createOrthographic(float left, float right, float bottom, float top, float near, float ZFar, Mat4 *dst, bool isOffscreen = false);
