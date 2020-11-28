@@ -14,9 +14,6 @@
     #define DeviceCtor gfx::GLES3Device
 #elif defined(USE_METAL)
     #include "gfx-metal/GFXMTL.h"
-    #ifdef DeviceCtor
-    #undef DeviceCtor
-    #endif
     #define DeviceCtor gfx::CCMTLDevice
 #else
     #include "gfx-vulkan/GFXVulkan.h"

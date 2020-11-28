@@ -114,9 +114,13 @@ namespace
 
 - (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
 {
+    /* *
     g_nextTextIndex = (++g_nextTextIndex) % g_tests.size();
     CC_SAFE_DESTROY(g_test);
     g_test = g_tests[g_nextTextIndex](g_windowInfo);
+    /* */
+    TestBaseI::toggleMultithread();
+    /* */
 }
 
 

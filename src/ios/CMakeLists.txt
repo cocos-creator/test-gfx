@@ -20,9 +20,6 @@ option(USE_VULKAN "USE METAL" OFF)
 # use_gles()
 # use_molten_vk()
 
-set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED "NO")
-set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "")
-
 # ---------------------------------------------------------------------
 # set include files
 
