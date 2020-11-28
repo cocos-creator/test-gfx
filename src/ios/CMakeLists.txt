@@ -3,15 +3,25 @@ macro (set_xcode_property TARGET XCODE_PROPERTY XCODE_VALUE)
                  ${XCODE_VALUE})
 endmacro (set_xcode_property)
 
+macro (use_gles)
+    set(USE_METAL OFF)
+endmacro (use_gles)
+
+macro (use_molten_vk)
+    set(USE_METAL OFF)
+    set(USE_VULKAN ON)
+endmacro (use_molten_vk)
+
 message(STATUS "App: ${APP_NAME}...")
 
 option(USE_METAL "USE METAL" ON)
 option(USE_VULKAN "USE METAL" OFF)
 
-# set(USE_METAL OFF)
+# use_gles()
+# use_molten_vk()
 
-set(USE_METAL OFF)
-set(USE_VULKAN ON)
+set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED "NO")
+set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "")
 
 # ---------------------------------------------------------------------
 # set include files
@@ -23,14 +33,6 @@ set(INCLUDE_FILES
   ${COCOS_SRC_PATH}/renderer/core
   ./GFXTest
 )
-
-# if (USE_VULKAN)
-#     set(INCLUDE_FILES ${INCLUDE_FILES} ${COCOS_SRC_PATH}/renderer/gfx-vulkan)
-# elseif (USE_METAL)
-#     set(INCLUDE_FILES ${INCLUDE_FILES} ${COCOS_SRC_PATH}/renderer/gfx-metal)
-# else ()
-#     set(INCLUDE_FILES ${INCLUDE_FILES} ${COCOS_SRC_PATH}/renderer/gfx-gles3)
-# endif()
 
 include_directories( ${INCLUDE_FILES} )
 
@@ -65,6 +67,7 @@ if (USE_VULKAN)
     # MoltenVK need MTKView too
     add_definitions("-DUSE_METAL")
     set(LIB_MOLTEN_VK "${GFX_EXTERNAL_PATH}/libMoltenVK.dylib")
+    list(APPEND ALL_FILES ${LIB_MOLTEN_VK})
 elseif (USE_METAL)
     add_definitions("-DUSE_METAL")
 else ()
@@ -75,7 +78,7 @@ if(COCOS_UNICODE)
 	add_definitions("-DUNICODE -D_UNICODE")
 endif()
 
-add_executable(${APP_NAME} ${ALL_FILES} ${LIB_MOLTEN_VK})
+add_executable(${APP_NAME} ${ALL_FILES})
 
 set_target_properties(${APP_NAME} PROPERTIES RESOURCE "${APP_UI_RES}")
 set_xcode_property(${APP_NAME} INFOPLIST_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist)
