@@ -1,5 +1,7 @@
 #include "TestBase.h"
 
+//#undef USE_METAL
+
 //#define USE_METAL
 //#define USE_GLES3
 //#define USE_GLES2
@@ -78,7 +80,7 @@ TestBaseI::TestBaseI(const WindowInfo &info)
     if (!_commandBuffers.size()) {
         _commandBuffers.push_back(_device->getCommandBuffer());
     }
-    
+
     hostThread.prevTime = std::chrono::steady_clock::now();
     deviceThread.prevTime = std::chrono::steady_clock::now();
 }
