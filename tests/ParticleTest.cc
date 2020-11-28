@@ -310,15 +310,15 @@ void ParticleTest::createPipeline() {
     pipelineInfo.shader = _shader;
     pipelineInfo.inputState = {_inputAssembler->getAttributes()};
     pipelineInfo.renderPass = _fbo->getRenderPass();
-    gfx::BlendTarget *target = new gfx::BlendTarget();
+    gfx::BlendTarget target;
+    target.blend = true;
+    target.blendEq = gfx::BlendOp::ADD;
+    target.blendAlphaEq = gfx::BlendOp::ADD;
+    target.blendSrc = gfx::BlendFactor::SRC_ALPHA;
+    target.blendDst = gfx::BlendFactor::ONE_MINUS_SRC_ALPHA;
+    target.blendSrcAlpha = gfx::BlendFactor::ONE;
+    target.blendDstAlpha = gfx::BlendFactor::ONE;
     pipelineInfo.blendState.targets.push_back(target);
-    pipelineInfo.blendState.targets[0]->blend = true;
-    pipelineInfo.blendState.targets[0]->blendEq = gfx::BlendOp::ADD;
-    pipelineInfo.blendState.targets[0]->blendAlphaEq = gfx::BlendOp::ADD;
-    pipelineInfo.blendState.targets[0]->blendSrc = gfx::BlendFactor::SRC_ALPHA;
-    pipelineInfo.blendState.targets[0]->blendDst = gfx::BlendFactor::ONE_MINUS_SRC_ALPHA;
-    pipelineInfo.blendState.targets[0]->blendSrcAlpha = gfx::BlendFactor::ONE;
-    pipelineInfo.blendState.targets[0]->blendDstAlpha = gfx::BlendFactor::ONE;
     pipelineInfo.pipelineLayout = _pipelineLayout;
 
     _pipelineState = _device->createPipelineState(pipelineInfo);

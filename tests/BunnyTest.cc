@@ -223,7 +223,8 @@ void BunnyTest::createPipelineState() {
     pipelineStateInfo.shader = _shader;
     pipelineStateInfo.inputState = {_inputAssembler->getAttributes()};
     pipelineStateInfo.renderPass = _fbo->getRenderPass();
-    pipelineStateInfo.blendState.targets.push_back(new gfx::BlendTarget());
+    gfx::BlendTarget blendTarget;
+    pipelineStateInfo.blendState.targets.push_back(blendTarget);
     pipelineStateInfo.depthStencilState.depthTest = true;
     pipelineStateInfo.depthStencilState.depthWrite = true;
     pipelineStateInfo.depthStencilState.depthFunc = gfx::ComparisonFunc::LESS;

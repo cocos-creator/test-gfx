@@ -205,7 +205,8 @@ void BasicTriangle::createPipeline() {
     gfx::PipelineStateInfo pipelineInfo;
     pipelineInfo.primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
     pipelineInfo.shader = _shader;
-    pipelineInfo.blendState.targets.push_back(new gfx::BlendTarget());
+    gfx::BlendTarget blendTarget;
+    pipelineInfo.blendState.targets.push_back(blendTarget);
     pipelineInfo.inputState = {_inputAssembler->getAttributes()};
     pipelineInfo.renderPass = _fbo->getRenderPass();
     pipelineInfo.pipelineLayout = _pipelineLayout;

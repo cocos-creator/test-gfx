@@ -200,7 +200,8 @@ struct BigTriangle : public cc::Object {
         gfx::PipelineStateInfo pipelineInfo;
         pipelineInfo.primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
         pipelineInfo.shader = shader;
-        pipelineInfo.blendState.targets.push_back(new gfx::BlendTarget());
+        gfx::BlendTarget blendTarget;
+        pipelineInfo.blendState.targets.push_back(blendTarget);
         pipelineInfo.inputState.attributes = inputAssembler->getAttributes();
         pipelineInfo.renderPass = fbo->getRenderPass();
         pipelineInfo.depthStencilState.depthTest = false;
@@ -396,7 +397,8 @@ struct Bunny : public cc::Object {
         pipelineInfo.primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
         pipelineInfo.shader = shader;
         pipelineInfo.inputState = {inputAssembler->getAttributes()};
-        pipelineInfo.blendState.targets.push_back(new gfx::BlendTarget());
+        gfx::BlendTarget blendTarget;
+        pipelineInfo.blendState.targets.push_back(blendTarget);
         pipelineInfo.renderPass = _fbo->getRenderPass();
         pipelineInfo.depthStencilState.depthTest = true;
         pipelineInfo.depthStencilState.depthWrite = true;
