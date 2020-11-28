@@ -1,4 +1,4 @@
-set(TARGET_NAME GFXTestWin)
+set(TARGET_NAME ${APP_NAME})
 
 message(STATUS "Target: ${TARGET_NAME}...")
 
@@ -97,7 +97,3 @@ source_group(TREE ${COCOS_SRC_PATH}/math PREFIX "Source Files/math" FILES ${CC_M
 source_group(TREE ${COCOS_EXTERNAL_PATH}/sources PREFIX "Header Files/external" FILES ${CC_EXTERNAL_SROUCES})
 
 message(STATUS "${TARGET_NAME} configuration completed.")
-
-target_compile_definitions(${TARGET_NAME} PUBLIC
-    $<$<CONFIG:Debug>:COCOS2D_DEBUG=1>
-)

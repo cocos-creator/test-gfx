@@ -153,3 +153,7 @@ elseif(APPLE)
 
     # add_subdirectory(mac-gles)
 endif()
+
+target_compile_definitions(${APP_NAME} PUBLIC
+    $<$<CONFIG:Debug>:CC_DEBUG=1>
+)
