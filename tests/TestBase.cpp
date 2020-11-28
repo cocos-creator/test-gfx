@@ -1,19 +1,26 @@
 #include "TestBase.h"
 
-//#undef USE_METAL
-
-//#define USE_METAL
 //#define USE_GLES3
 //#define USE_GLES2
 
-#if defined(USE_GLES2)
+#if defined(USE_VULKAN)
+    #include "gfx-vulkan/GFXVulkan.h"
+    #define DeviceCtor gfx::CCVKDevice
+#elif defined(USE_GLES2)
     #include "gfx-gles2/GFXGLES2.h"
+    #define DeviceCtor gfx::GLES2Device
 #elif defined(USE_GLES3)
     #include "gfx-gles3/GFXGLES3.h"
+    #define DeviceCtor gfx::GLES3Device
 #elif defined(USE_METAL)
     #include "gfx-metal/GFXMTL.h"
+    #ifdef DeviceCtor
+    #undef DeviceCtor
+    #endif
+    #define DeviceCtor gfx::CCMTLDevice
 #else
     #include "gfx-vulkan/GFXVulkan.h"
+    #define DeviceCtor gfx::CCVKDevice
 #endif
 
 #define DEFAULT_MATRIX_MATH
@@ -31,15 +38,7 @@ FrameRate TestBaseI::deviceThread;
 TestBaseI::TestBaseI(const WindowInfo &info)
 {
     if (_device == nullptr) {
-#if defined(USE_GLES2)
-        _device = CC_NEW(gfx::DeviceProxy(CC_NEW(gfx::GLES2Device), nullptr));
-#elif defined(USE_GLES3)
-        _device = CC_NEW(gfx::DeviceProxy(CC_NEW(gfx::GLES3Device), nullptr));
-#elif defined(USE_METAL)
-        _device = CC_NEW(gfx::DeviceProxy(CC_NEW(gfx::CCMTLDevice), nullptr));
-#else
-        _device = CC_NEW(gfx::DeviceProxy(CC_NEW(gfx::CCVKDevice), nullptr));
-#endif
+        _device = CC_NEW(gfx::DeviceProxy(CC_NEW(DeviceCtor), nullptr));
 
         gfx::DeviceInfo dev_info;
         dev_info.windowHandle = info.windowHandle;

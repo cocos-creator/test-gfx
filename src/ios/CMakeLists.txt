@@ -6,7 +6,12 @@ endmacro (set_xcode_property)
 message(STATUS "App: ${APP_NAME}...")
 
 option(USE_METAL "USE METAL" ON)
+option(USE_VULKAN "USE METAL" OFF)
+
 # set(USE_METAL OFF)
+
+set(USE_METAL OFF)
+set(USE_VULKAN ON)
 
 # ---------------------------------------------------------------------
 # set include files
@@ -19,11 +24,13 @@ set(INCLUDE_FILES
   ./GFXTest
 )
 
-if (USE_METAL)
-    set(INCLUDE_FILES ${INCLUDE_FILES} ${COCOS_SRC_PATH}/renderer/gfx-metal)
-else ()
-    set(INCLUDE_FILES ${INCLUDE_FILES} ${COCOS_SRC_PATH}/renderer/gfx-gles3)
-endif()
+# if (USE_VULKAN)
+#     set(INCLUDE_FILES ${INCLUDE_FILES} ${COCOS_SRC_PATH}/renderer/gfx-vulkan)
+# elseif (USE_METAL)
+#     set(INCLUDE_FILES ${INCLUDE_FILES} ${COCOS_SRC_PATH}/renderer/gfx-metal)
+# else ()
+#     set(INCLUDE_FILES ${INCLUDE_FILES} ${COCOS_SRC_PATH}/renderer/gfx-gles3)
+# endif()
 
 include_directories( ${INCLUDE_FILES} )
 
@@ -53,7 +60,12 @@ set(ALL_FILES
     ${COCOS_SRC_PATH}/cocos2d.cpp
     )
 
-if (USE_METAL)
+if (USE_VULKAN)
+    add_definitions("-DUSE_VULKAN")
+    # MoltenVK need MTKView too
+    add_definitions("-DUSE_METAL")
+    set(LIB_MOLTEN_VK "${GFX_EXTERNAL_PATH}/libMoltenVK.dylib")
+elseif (USE_METAL)
     add_definitions("-DUSE_METAL")
 else ()
     add_definitions("-DUSE_GLES3")
@@ -63,7 +75,7 @@ if(COCOS_UNICODE)
 	add_definitions("-DUNICODE -D_UNICODE")
 endif()
 
-add_executable(${APP_NAME} ${ALL_FILES})
+add_executable(${APP_NAME} ${ALL_FILES} ${LIB_MOLTEN_VK})
 
 set_target_properties(${APP_NAME} PROPERTIES RESOURCE "${APP_UI_RES}")
 set_xcode_property(${APP_NAME} INFOPLIST_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist)
@@ -76,7 +88,16 @@ list(APPEND PLATFORM_SPECIFIC_LIBS
     ${QUARTZCORE_LIBRARY}
 )
 
-if (USE_METAL)
+if (USE_VULKAN)
+    find_library(METAL_LIBRARY Metal)
+    find_library(METALKIT_LIBRARY MetalKit)
+    list(APPEND PLATFORM_SPECIFIC_LIBS ${METAL_LIBRARY} ${METALKIT_LIBRARY})
+    set(GRAPHIC_LIBS GFXVulkan)
+    set_source_files_properties(${LIB_MOLTEN_VK} PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
+    set_source_files_properties(${LIB_MOLTEN_VK} PROPERTIES XCODE_FILE_ATTRIBUTES "CodeSignOnCopy")
+    set_target_properties(${APP_NAME} PROPERTIES FRAMEWORK true)
+    set_xcode_property(${APP_NAME} LD_RUNPATH_SEARCH_PATHS @executable_path/Frameworks)
+elseif (USE_METAL)
     find_library(METAL_LIBRARY Metal)
     find_library(METALKIT_LIBRARY MetalKit)
     list(APPEND PLATFORM_SPECIFIC_LIBS ${METAL_LIBRARY} ${METALKIT_LIBRARY})
