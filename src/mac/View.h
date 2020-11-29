@@ -21,8 +21,6 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  THE SOFTWARE.
  ****************************************************************************/
-#import <AppKit/NSView.h>
-
 #import <MetalKit/MetalKit.h>
 
 @interface View : MTKView <MTKViewDelegate>

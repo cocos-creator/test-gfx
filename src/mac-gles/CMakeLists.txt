@@ -94,7 +94,7 @@ if(MACOSX)
     )
 endif()
 
-  set(PVRSDK_LIB_DIR ${GFX_EXTERNAL_PATH}/pvrsdk/lib/OSX_x86)
+set(PVRSDK_LIB_DIR ${GFX_EXTERNAL_PATH}/pvrsdk/lib/OSX_x86)
 
 # Gather list of all .dll files
 file(GLOB PVRDLLS ${PVRSDK_LIB_DIR}/*.dylib)

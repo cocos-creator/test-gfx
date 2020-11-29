@@ -93,7 +93,7 @@ namespace
             StencilTest::create,
             BlendTest::create,
             ParticleTest::create,
-            BunnyTest::create
+            BunnyTest::create,
         };
         g_test = g_tests[g_nextTextIndex](g_windowInfo);
         if (g_test == nullptr)

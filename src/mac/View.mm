@@ -101,11 +101,11 @@ namespace
             ClearScreen::create,
             BasicTriangle::create,
             BasicTexture::create,
-            StencilTest::create,
-            ParticleTest::create,
             DepthTexture::create,
-            BunnyTest::create,
+            StencilTest::create,
             BlendTest::create,
+            ParticleTest::create,
+            BunnyTest::create,
         };
         g_test = g_tests[g_nextTextIndex](g_windowInfo);
         if (g_test == nullptr)
@@ -114,7 +114,23 @@ namespace
     }
 }
 
-- (void)keyDown:(NSEvent *)event {
+- (void)keyUp:(NSEvent *)event {
+    if (event.keyCode == 49) { // space
+        cc::TestBaseI::toggleMultithread();
+    }
+}
+
+- (void)mouseUp:(NSEvent *)event {
+    /* */
+    cc::TestBaseI::toggleMultithread();
+    /* *
+    g_nextTextIndex = (--g_nextTextIndex) % g_tests.size();
+    CC_SAFE_DESTROY(g_test);
+    g_test = g_tests[g_nextTextIndex](g_windowInfo);
+    /* */
+}
+
+- (void)rightMouseUp:(NSEvent *)event {
     g_nextTextIndex = (++g_nextTextIndex) % g_tests.size();
     CC_SAFE_DESTROY(g_test);
     g_test = g_tests[g_nextTextIndex](g_windowInfo);

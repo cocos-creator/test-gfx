@@ -6,7 +6,9 @@ endmacro (set_xcode_property)
 message(STATUS "App: ${APP_NAME}...")
 
 option(USE_METAL "USE METAL" ON)
-set(USE_METAL OFF)
+
+# toggle Metal/MoltenVK
+# set(USE_METAL OFF)
 
 # ---------------------------------------------------------------------
 # set include files
