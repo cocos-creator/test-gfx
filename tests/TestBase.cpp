@@ -118,12 +118,14 @@ void TestBaseI::modifyProjectionBasedOnDevice(Mat4 &projection, bool isOffscreen
     projection = rot * scale * trans * projection;
 }
 
+#ifndef DEFAULT_MATRIX_MATH
 constexpr float preTransforms[4][4] = {
     {1, 0, 0, 1},   // GFXSurfaceTransform.IDENTITY
     {0, 1, -1, 0},  // GFXSurfaceTransform.ROTATE_90
     {-1, 0, 0, -1}, // GFXSurfaceTransform.ROTATE_180
     {0, -1, 1, 0},  // GFXSurfaceTransform.ROTATE_270
 };
+#endif
 
 void TestBaseI::createOrthographic(float left, float right, float bottom, float top, float ZNear, float ZFar, Mat4 *dst, bool isOffscreen) {
 #ifdef DEFAULT_MATRIX_MATH

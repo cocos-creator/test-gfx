@@ -105,7 +105,7 @@ elseif (USE_METAL)
 else ()
     find_library(OPENGLES_LIBRARY OpenGLES)
     list(APPEND PLATFORM_SPECIFIC_LIBS ${OPENGLES_LIBRARY})
-    set(GRAPHIC_LIBS GFXGLES3)
+    set(GRAPHIC_LIBS GFXGLES2 GFXGLES3)
 endif()
 
 target_link_libraries(${APP_NAME}
