@@ -67,19 +67,6 @@ if(COCOS_UNICODE)
 	add_definitions("-DUNICODE -D_UNICODE")
 endif()
 
-if(MACOSX)
-  file(COPY ${COCOS_ROOT_PATH}/src/mac/View.h DESTINATION ${COCOS_SRC_PATH}/platform/mac)
-  file(COPY ${COCOS_ROOT_PATH}/src/mac/View.mm DESTINATION ${COCOS_SRC_PATH}/platform/mac)
-  list(APPEND ALL_FILES
-    ${COCOS_SRC_PATH}/platform/mac/View.h
-    ${COCOS_SRC_PATH}/platform/mac/View.mm
-    ${COCOS_SRC_PATH}/platform/mac/KeyCodeHelper.h
-    ${COCOS_SRC_PATH}/platform/mac/KeyCodeHelper.cpp
-  )
-  list(REMOVE_ITEM ALL_FILES ${COCOS_ROOT_PATH}/src/mac/View.h)
-  list(REMOVE_ITEM ALL_FILES ${COCOS_ROOT_PATH}/src/mac/View.mm)
-endif()
-
 add_executable(${APP_NAME} MACOSX_BUNDLE ${ALL_FILES})
 
 set_target_properties(${APP_NAME} PROPERTIES RESOURCE "${APP_UI_RES}")

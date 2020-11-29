@@ -41,7 +41,6 @@
 #endif
 #import <AppKit/NSTouch.h>
 #import <AppKit/NSEvent.h>
-#import "KeyCodeHelper.h"
 
 namespace
 {

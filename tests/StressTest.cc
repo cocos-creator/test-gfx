@@ -2,7 +2,7 @@
 
 namespace cc {
 
-#define MODELS_PER_LINE 200
+#define MODELS_PER_LINE 300
 #define MAIN_THREAD_SLEEP 10
 
 uint8_t const taskCount = std::thread::hardware_concurrency() - 1;
