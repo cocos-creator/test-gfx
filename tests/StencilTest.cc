@@ -273,8 +273,6 @@ void StencilTest::createPipelineState() {
     pipelineInfo[(uint8_t)PipelineType::STENCIL].shader = _shader;
     pipelineInfo[(uint8_t)PipelineType::STENCIL].inputState = {_inputAssembler->getAttributes()};
     pipelineInfo[(uint8_t)PipelineType::STENCIL].renderPass = _fbo->getRenderPass();
-    gfx::BlendTarget stencilBlendTarget;
-    pipelineInfo[(uint8_t)PipelineType::STENCIL].blendState.targets.push_back(stencilBlendTarget);
     pipelineInfo[(uint8_t)PipelineType::STENCIL].depthStencilState.depthTest = false;
     pipelineInfo[(uint8_t)PipelineType::STENCIL].depthStencilState.stencilTestFront = false;
     pipelineInfo[(uint8_t)PipelineType::STENCIL].depthStencilState.stencilTestBack = false;
@@ -287,8 +285,6 @@ void StencilTest::createPipelineState() {
     pipelineInfo[(uint8_t)PipelineType::IMAGE].shader = _shader;
     pipelineInfo[(uint8_t)PipelineType::IMAGE].inputState = {_inputAssembler->getAttributes()};
     pipelineInfo[(uint8_t)PipelineType::IMAGE].renderPass = _fbo->getRenderPass();
-    gfx::BlendTarget imageBlendTarget;
-    pipelineInfo[(uint8_t)PipelineType::IMAGE].blendState.targets.push_back(imageBlendTarget);
     pipelineInfo[(uint8_t)PipelineType::IMAGE].depthStencilState.depthTest = false;
     pipelineInfo[(uint8_t)PipelineType::IMAGE].depthStencilState.stencilTestFront = false;
     pipelineInfo[(uint8_t)PipelineType::IMAGE].depthStencilState.stencilTestBack = false;
@@ -299,8 +295,6 @@ void StencilTest::createPipelineState() {
 
     pipelineInfo[(uint8_t)PipelineType::CANVAS].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
     pipelineInfo[(uint8_t)PipelineType::CANVAS].shader = _shader;
-    gfx::BlendTarget canvasBlendTarget;
-    pipelineInfo[(uint8_t)PipelineType::CANVAS].blendState.targets.push_back(canvasBlendTarget);
     pipelineInfo[(uint8_t)PipelineType::CANVAS].inputState = {_inputAssembler->getAttributes()};
     pipelineInfo[(uint8_t)PipelineType::CANVAS].renderPass = _fbo->getRenderPass();
     gfx::DepthStencilState &dss2 = pipelineInfo[(uint8_t)PipelineType::CANVAS].depthStencilState;
@@ -321,8 +315,6 @@ void StencilTest::createPipelineState() {
 
     pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
     pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].shader = _shader;
-    gfx::BlendTarget frontBlendTarget;
-    pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].blendState.targets.push_back(frontBlendTarget);
     pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].inputState = {_inputAssembler->getAttributes()};
     pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].renderPass = _fbo->getRenderPass();
     gfx::DepthStencilState &dss3 = pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].depthStencilState;
@@ -344,8 +336,6 @@ void StencilTest::createPipelineState() {
 
     pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
     pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].shader = _shader;
-    gfx::BlendTarget backBlendTarget;
-    pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].blendState.targets.push_back(backBlendTarget);
     pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].inputState = {_inputAssembler->getAttributes()};
     pipelineInfo[(uint8_t)PipelineType::BACK_STENCIL].renderPass = _fbo->getRenderPass();
     gfx::DepthStencilState &dss4 = pipelineInfo[(uint8_t)PipelineType::FRONT_STENCIL].depthStencilState;
@@ -367,8 +357,6 @@ void StencilTest::createPipelineState() {
 
     pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
     pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].shader = _shader;
-    gfx::BlendTarget frontBackBlendTarget;
-    pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].blendState.targets.push_back(frontBackBlendTarget);
     pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].inputState = {_inputAssembler->getAttributes()};
     pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].renderPass = _fbo->getRenderPass();
     gfx::DepthStencilState &dss5 = pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].depthStencilState;

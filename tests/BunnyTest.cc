@@ -223,8 +223,6 @@ void BunnyTest::createPipelineState() {
     pipelineStateInfo.shader = _shader;
     pipelineStateInfo.inputState = {_inputAssembler->getAttributes()};
     pipelineStateInfo.renderPass = _fbo->getRenderPass();
-    gfx::BlendTarget blendTarget;
-    pipelineStateInfo.blendState.targets.push_back(blendTarget);
     pipelineStateInfo.depthStencilState.depthTest = true;
     pipelineStateInfo.depthStencilState.depthWrite = true;
     pipelineStateInfo.depthStencilState.depthFunc = gfx::ComparisonFunc::LESS;
@@ -248,7 +246,7 @@ void BunnyTest::tick() {
     gfx::Color clearColor = {0.0f, 0, 0, 1.0f};
 
     _device->acquire();
-    
+
     _rootUBO->update(_rootBuffer.data(), 0, _rootBuffer.size() * sizeof(float));
     gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
 

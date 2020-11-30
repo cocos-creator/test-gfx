@@ -17,7 +17,7 @@ message(STATUS "App: ${APP_NAME}...")
 option(USE_METAL "USE METAL" ON)
 option(USE_VULKAN "USE METAL" OFF)
 
-# use_gles()
+use_gles()
 # use_molten_vk()
 
 # ---------------------------------------------------------------------

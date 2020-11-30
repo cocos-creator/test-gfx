@@ -3,7 +3,7 @@
 namespace cc {
 
 #define MODELS_PER_LINE 300
-#define MAIN_THREAD_SLEEP 10
+#define MAIN_THREAD_SLEEP 15
 
 uint8_t const taskCount = std::thread::hardware_concurrency() - 1;
 
@@ -23,6 +23,7 @@ void StressTest::destroy() {
 }
 
 bool StressTest::initialize() {
+
     createShader();
     createVertexBuffer();
     createInputAssembler();
@@ -38,9 +39,9 @@ void StressTest::createShader() {
     ShaderSources sources;
     sources.glsl4 = {
         R"(
-            precision highp float;
+            precision mediump float;
             layout(location = 0) in vec2 a_position;
-            layout(set = 0, binding = 0) uniform ViewProj { mat4 u_viewProj; };
+            layout(set = 0, binding = 0) uniform ViewProj { mat4 u_viewProj; vec4 u_color; };
             layout(set = 0, binding = 1) uniform World { vec4 u_world; };
 
             void main() {
@@ -48,19 +49,21 @@ void StressTest::createShader() {
             }
         )",
         R"(
-            precision highp float;
+            precision mediump float;
+            layout(set = 0, binding = 0) uniform ViewProj { mat4 u_viewProj; vec4 u_color; };
             layout(location = 0) out vec4 o_color;
 
             void main() {
-                o_color = vec4(1);
+                o_color = u_color;
             }
         )",
     };
 
     sources.glsl3 = {
         R"(
+            precision mediump float;
             in vec2 a_position;
-            layout(std140) uniform ViewProj { mat4 u_viewProj; };
+            layout(std140) uniform ViewProj { mat4 u_viewProj; vec4 u_color; };
             layout(std140) uniform World { vec4 u_world; };
 
             void main() {
@@ -69,16 +72,18 @@ void StressTest::createShader() {
         )",
         R"(
             precision mediump float;
+            layout(std140) uniform ViewProj { mat4 u_viewProj; vec4 u_color; };
 
             out vec4 o_color;
             void main() {
-                o_color = vec4(1.0);
+                o_color = u_color;
             }
         )",
     };
 
     sources.glsl1 = {
         R"(
+            precision mediump float;
             attribute vec2 a_position;
             uniform mat4 u_viewProj;
             uniform vec4 u_world;
@@ -89,8 +94,10 @@ void StressTest::createShader() {
         )",
         R"(
             precision mediump float;
+            uniform vec4 u_color;
+
             void main() {
-                gl_FragColor = vec4(1.0);
+                gl_FragColor = u_color;
             }
         )",
     };
@@ -109,7 +116,10 @@ void StressTest::createShader() {
     shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
     gfx::UniformBlockList uniformBlockList = {
-        {0, 0, "ViewProj", {{"u_viewProj", gfx::Type::MAT4, 1}}, 1},
+        {0, 0, "ViewProj", {
+            {"u_viewProj", gfx::Type::MAT4, 1},
+            {"u_color", gfx::Type::FLOAT4, 1},
+        }, 1},
         {0, 1, "World", {{"u_world", gfx::Type::FLOAT4, 1}}, 1},
     };
     gfx::AttributeList attributeList = {{"a_position", gfx::Format::RG32F, false, 0, false, 0}};
@@ -167,7 +177,7 @@ void StressTest::createVertexBuffer() {
     gfx::BufferInfo uniformBufferVPInfo = {
         gfx::BufferUsage::UNIFORM,
         gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
-        TestBaseI::getUBOSize(sizeof(Mat4)),
+        TestBaseI::getUBOSize(sizeof(Mat4) + sizeof(Vec4)),
     };
     _uniformBufferVP = _device->createBuffer(uniformBufferVPInfo);
 
@@ -186,7 +196,8 @@ void StressTest::createInputAssembler() {
 
 void StressTest::createPipeline() {
     gfx::DescriptorSetLayoutInfo dslInfo;
-    dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX});
+    dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1,
+        gfx::ShaderStageFlagBit::VERTEX | gfx::ShaderStageFlagBit::FRAGMENT});
     dslInfo.bindings.push_back({1, gfx::DescriptorType::DYNAMIC_UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX});
     _descriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
 
@@ -200,14 +211,29 @@ void StressTest::createPipeline() {
     gfx::PipelineStateInfo pipelineInfo;
     pipelineInfo.primitive = gfx::PrimitiveMode::TRIANGLE_STRIP;
     pipelineInfo.shader = _shader;
-    gfx::BlendTarget blendTarget;
-    pipelineInfo.blendState.targets.push_back(blendTarget);
     pipelineInfo.rasterizerState.cullMode = gfx::CullMode::NONE;
     pipelineInfo.inputState = {_inputAssembler->getAttributes()};
     pipelineInfo.renderPass = _fbo->getRenderPass();
     pipelineInfo.pipelineLayout = _pipelineLayout;
 
     _pipelineState = _device->createPipelineState(pipelineInfo);
+}
+
+void HSV2RGB(const float h, const float s, const float v, float &r, float &g, float &b) {
+    int   hi = (int)(h / 60.0f) % 6;
+    float f  = (h / 60.0f) - hi;
+    float p  = v * (1.0f - s);
+    float q  = v * (1.0f - s * f);
+    float t  = v * (1.0f - s * (1.0f - f));
+
+    switch(hi) {
+        case 0: r = v, g = t, b = p; break;
+        case 1: r = q, g = v, b = p; break;
+        case 2: r = p, g = v, b = t; break;
+        case 3: r = p, g = q, b = v; break;
+        case 4: r = t, g = p, b = v; break;
+        case 5: r = v, g = p, b = q; break;
+    }
 }
 
 using gfx::Command;
@@ -242,6 +268,10 @@ void StressTest::tick()
     gfx::Color clearColor = {.2f, .2f, .2f, 1.f};
 
     _device->acquire();
+
+    Vec4 color{0.f, 0.f, 0.f, 1.f};
+    HSV2RGB((hostThread.frameAcc * 20) % 360, .5f, 1.f, color.x, color.y, color.z);
+    _uniformBufferVP->update(&color, sizeof(Mat4), sizeof(Vec4));
 
     /* un-toggle this to support dynamic screen rotation *
     Mat4 VP;
@@ -283,7 +313,6 @@ void StressTest::tick()
         commandBuffer->draw(_inputAssembler);
     }
     /* */
-
     commandBuffer->endRenderPass();
     commandBuffer->end();
 
