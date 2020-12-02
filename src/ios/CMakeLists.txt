@@ -79,6 +79,7 @@ add_executable(${APP_NAME} ${ALL_FILES})
 
 set_target_properties(${APP_NAME} PROPERTIES RESOURCE "${APP_UI_RES}")
 set_xcode_property(${APP_NAME} INFOPLIST_FILE ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist)
+set_xcode_property(${APP_NAME} PRODUCT_BUNDLE_IDENTIFIER "com.cocos.device-test")
 
 # Locate system libraries on iOS
 find_library(UIKIT_LIBRARY UIKit)
