@@ -2,17 +2,33 @@
 
 namespace cc {
 
-#define MODELS_PER_LINE 300
+#define MODELS_PER_LINE 200
 #define MAIN_THREAD_SLEEP 15
+
+#define USE_DYNAMIC_UNIFORM_BUFFER 1
 
 uint8_t const taskCount = std::thread::hardware_concurrency() - 1;
 
 void StressTest::destroy() {
     CC_SAFE_DESTROY(_vertexBuffer);
     CC_SAFE_DESTROY(_inputAssembler);
-    CC_SAFE_DESTROY(_descriptorSet);
-    CC_SAFE_DESTROY(_uniformBufferWorldView);
-    CC_SAFE_DESTROY(_uniformBufferWorld);
+
+#if USE_DYNAMIC_UNIFORM_BUFFER
+    CC_SAFE_DESTROY(_uniDescriptorSet);
+    CC_SAFE_DESTROY(_uniWorldBufferView);
+    CC_SAFE_DESTROY(_uniWorldBuffer);
+#else
+    for (uint i = 0u; i < _descriptorSets.size(); i++) {
+        CC_SAFE_DESTROY(_descriptorSets[i]);
+    }
+    _descriptorSets.clear();
+
+    for (uint i = 0u; i < _worldBuffers.size(); i++) {
+        CC_SAFE_DESTROY(_worldBuffers[i]);
+    }
+    _worldBuffers.clear();
+#endif
+
     CC_SAFE_DESTROY(_uniformBufferVP);
     CC_SAFE_DESTROY(_shader);
     CC_SAFE_DESTROY(_descriptorSetLayout);
@@ -148,6 +164,7 @@ void StressTest::createVertexBuffer() {
     _vertexBuffer = _device->createBuffer(vertexBufferInfo);
     _vertexBuffer->update(vertexData, 0, sizeof(vertexData));
 
+#if USE_DYNAMIC_UNIFORM_BUFFER
     _worldBufferStride = TestBaseI::getAlignedUBOStride(_device, sizeof(Vec4));
     gfx::BufferInfo uniformBufferWInfo = {
         gfx::BufferUsage::UNIFORM,
@@ -155,7 +172,7 @@ void StressTest::createVertexBuffer() {
         TestBaseI::getUBOSize(_worldBufferStride * MODELS_PER_LINE * MODELS_PER_LINE),
         _worldBufferStride,
     };
-    _uniformBufferWorld = _device->createBuffer(uniformBufferWInfo);
+    _uniWorldBuffer = _device->createBuffer(uniformBufferWInfo);
 
     uint stride = _worldBufferStride / sizeof(float);
     vector<float> buffer(stride * MODELS_PER_LINE * MODELS_PER_LINE);
@@ -165,14 +182,35 @@ void StressTest::createVertexBuffer() {
             buffer[idx * stride + 1] = 2.f * i / MODELS_PER_LINE;
         }
     }
-    _uniformBufferWorld->update(buffer.data(), 0, buffer.size() * sizeof(float));
+    _uniWorldBuffer->update(buffer.data(), 0, buffer.size() * sizeof(float));
 
     gfx::BufferViewInfo worldBufferViewInfo = {
-        _uniformBufferWorld,
+        _uniWorldBuffer,
         0,
         sizeof(Vec4),
     };
-    _uniformBufferWorldView = _device->createBuffer(worldBufferViewInfo);
+    _uniWorldBufferView = _device->createBuffer(worldBufferViewInfo);
+#else
+    uint size = TestBaseI::getUBOSize(sizeof(Vec4));
+    gfx::BufferInfo uniformBufferWInfo = {
+        gfx::BufferUsage::UNIFORM,
+        gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
+        size, size
+    };
+
+    _worldBuffers.resize(MODELS_PER_LINE * MODELS_PER_LINE);
+    vector<float> buffer(size / sizeof(float));
+    for (uint i = 0u, idx = 0u; i < MODELS_PER_LINE; i++) {
+        for (uint j = 0u; j < MODELS_PER_LINE; j++, idx++) {
+            _worldBuffers[idx] = _device->createBuffer(uniformBufferWInfo);
+
+            buffer[0] = 2.f * j / MODELS_PER_LINE;
+            buffer[1] = 2.f * i / MODELS_PER_LINE;
+
+            _worldBuffers[idx]->update(buffer.data(), 0, size);
+        }
+    }
+#endif
 
     gfx::BufferInfo uniformBufferVPInfo = {
         gfx::BufferUsage::UNIFORM,
@@ -198,15 +236,27 @@ void StressTest::createPipeline() {
     gfx::DescriptorSetLayoutInfo dslInfo;
     dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1,
         gfx::ShaderStageFlagBit::VERTEX | gfx::ShaderStageFlagBit::FRAGMENT});
-    dslInfo.bindings.push_back({1, gfx::DescriptorType::DYNAMIC_UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX});
+    dslInfo.bindings.push_back({1, USE_DYNAMIC_UNIFORM_BUFFER ?
+        gfx::DescriptorType::DYNAMIC_UNIFORM_BUFFER : gfx::DescriptorType::UNIFORM_BUFFER,
+        1, gfx::ShaderStageFlagBit::VERTEX});
     _descriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
 
     _pipelineLayout = _device->createPipelineLayout({{_descriptorSetLayout}});
 
-    _descriptorSet = _device->createDescriptorSet({_descriptorSetLayout});
-    _descriptorSet->bindBuffer(0, _uniformBufferVP);
-    _descriptorSet->bindBuffer(1, _uniformBufferWorldView);
-    _descriptorSet->update();
+#if USE_DYNAMIC_UNIFORM_BUFFER
+    _uniDescriptorSet = _device->createDescriptorSet({_descriptorSetLayout});
+    _uniDescriptorSet->bindBuffer(0, _uniformBufferVP);
+    _uniDescriptorSet->bindBuffer(1, _uniWorldBufferView);
+    _uniDescriptorSet->update();
+#else
+    _descriptorSets.resize(_worldBuffers.size());
+    for (uint i = 0u; i < _worldBuffers.size(); ++i) {
+        _descriptorSets[i] = _device->createDescriptorSet({_descriptorSetLayout});
+        _descriptorSets[i]->bindBuffer(0, _uniformBufferVP);
+        _descriptorSets[i]->bindBuffer(1, _worldBuffers[i]);
+        _descriptorSets[i]->update();
+    }
+#endif
 
     gfx::PipelineStateInfo pipelineInfo;
     pipelineInfo.primitive = gfx::PrimitiveMode::TRIANGLE_STRIP;
@@ -307,11 +357,20 @@ void StressTest::tick()
         res[i].wait();
     }
     /* */
+
+#if USE_DYNAMIC_UNIFORM_BUFFER
     for (uint t = 0u, dynamicOffset = 0u; t < MODELS_PER_LINE * MODELS_PER_LINE; ++t, dynamicOffset += _worldBufferStride)
     {
-        commandBuffer->bindDescriptorSet(0, _descriptorSet, 1, &dynamicOffset);
+        commandBuffer->bindDescriptorSet(0, _uniDescriptorSet, 1, &dynamicOffset);
         commandBuffer->draw(_inputAssembler);
     }
+#else
+    for (uint t = 0u; t < MODELS_PER_LINE * MODELS_PER_LINE; ++t)
+    {
+        commandBuffer->bindDescriptorSet(0, _descriptorSets[t]);
+        commandBuffer->draw(_inputAssembler);
+    }
+#endif
     /* */
     commandBuffer->endRenderPass();
     commandBuffer->end();

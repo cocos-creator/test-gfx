@@ -26,9 +26,14 @@ class StressTest: public TestBaseI
 
     gfx::Shader *_shader = nullptr;
     gfx::Buffer *_vertexBuffer = nullptr;
-    gfx::Buffer *_uniformBufferWorld, *_uniformBufferWorldView;
     gfx::Buffer *_uniformBufferVP = nullptr;
-    gfx::DescriptorSet* _descriptorSet = nullptr;
+
+    gfx::Buffer *_uniWorldBuffer = nullptr, *_uniWorldBufferView = nullptr;
+    gfx::DescriptorSet* _uniDescriptorSet = nullptr;
+
+    vector<gfx::Buffer *> _worldBuffers;
+    vector<gfx::DescriptorSet *> _descriptorSets;
+
     gfx::DescriptorSetLayout* _descriptorSetLayout = nullptr;
     gfx::PipelineLayout* _pipelineLayout = nullptr;
     gfx::PipelineState* _pipelineState = nullptr;
