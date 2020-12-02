@@ -22,16 +22,7 @@
  THE SOFTWARE.
  ****************************************************************************/
 #import "View.h"
-#include "tests/StressTest.h"
-#include "tests/ClearScreenTest.h"
-#include "tests/BasicTriangleTest.h"
-#include "tests/BasicTextureTest.h"
-#include "tests/StencilTest.h"
-#include "tests/ParticleTest.h"
-#include "tests/DepthTest.h"
 #include "tests/TestBase.h"
-#include "tests/BunnyTest.h"
-#include "tests/BlendTest.h"
 
 #if CC_PLATFORM == CC_PLATFORM_MAC_OSX
     #import <AppKit/AppKit.h>
@@ -44,10 +35,6 @@
 
 namespace
 {
-    int g_nextTextIndex = 0;
-    using createFunc = cc::TestBaseI * (*)(const cc::WindowInfo& info);
-    std::vector<createFunc> g_tests;
-    cc::TestBaseI* g_test    = nullptr;
     cc::WindowInfo g_windowInfo;
 }
 
@@ -79,39 +66,16 @@ namespace
         g_windowInfo.physicalHeight = g_windowInfo.screen.height;
         g_windowInfo.physicalWidth = g_windowInfo.screen.width;
 
-        [self initTests];
+        cc::TestBaseI::nextTest(g_windowInfo);
     }
     return self;
 }
 
 - (void)drawInMTKView:(MTKView *)view {
-    g_test->tick();
+    cc::TestBaseI::onTick();
 }
 
 - (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size {
-}
-
-- (void)initTests {
-    static bool first = true;
-    if (first)
-    {
-        using namespace cc;
-        g_tests = {
-            StressTest::create,
-            ClearScreen::create,
-            BasicTriangle::create,
-            BasicTexture::create,
-            DepthTexture::create,
-            StencilTest::create,
-            BlendTest::create,
-            ParticleTest::create,
-            BunnyTest::create,
-        };
-        g_test = g_tests[g_nextTextIndex](g_windowInfo);
-        if (g_test == nullptr)
-            return;
-        first = false;
-    }
 }
 
 - (void)keyUp:(NSEvent *)event {
@@ -121,19 +85,11 @@ namespace
 }
 
 - (void)mouseUp:(NSEvent *)event {
-    /* */
-    cc::TestBaseI::toggleMultithread();
-    /* *
-    g_nextTextIndex = (--g_nextTextIndex) % g_tests.size();
-    CC_SAFE_DESTROY(g_test);
-    g_test = g_tests[g_nextTextIndex](g_windowInfo);
-    /* */
+    cc::TestBaseI::onTouchEnd(g_windowInfo);
 }
 
 - (void)rightMouseUp:(NSEvent *)event {
-    g_nextTextIndex = (++g_nextTextIndex) % g_tests.size();
-    CC_SAFE_DESTROY(g_test);
-    g_test = g_tests[g_nextTextIndex](g_windowInfo);
+    cc::TestBaseI::onTouchEnd(g_windowInfo);
 }
 
 - (BOOL)acceptsFirstResponder

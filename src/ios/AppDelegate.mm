@@ -9,24 +9,12 @@
 #import "AppDelegate.h"
 #import "ViewController.h"
 #import "View.h"
-#include "tests/StressTest.h"
-#include "tests/ClearScreenTest.h"
-#include "tests/BasicTriangleTest.h"
-#include "tests/BasicTextureTest.h"
-#include "tests/DepthTest.h"
-#include "tests/StencilTest.h"
-#include "tests/BlendTest.h"
-#include "tests/ParticleTest.h"
-#include "tests/BunnyTest.h"
+#include "tests/TestBase.h"
 
 using namespace cc;
 
 namespace
 {
-    int g_nextTextIndex = 0;
-    using createFunc = TestBaseI * (*)(const WindowInfo& info);
-    std::vector<createFunc> g_tests;
-    TestBaseI* g_test    = nullptr;
     WindowInfo g_windowInfo;
 }
 
@@ -49,7 +37,7 @@ namespace
     viewController.view = view;
 
     [self initWindowInfo: view size:rect.size];
-    [self initTests];
+    TestBaseI::nextTest(g_windowInfo);
 
 #ifndef USE_METAL
     [self run];
@@ -80,28 +68,6 @@ namespace
     g_windowInfo.physicalWidth = g_windowInfo.screen.width;
 }
 
-- (void)initTests {
-    static bool first = true;
-    if (first)
-    {
-        g_tests = {
-            StressTest::create,
-            ClearScreen::create,
-            BasicTriangle::create,
-            BasicTexture::create,
-            DepthTexture::create,
-            StencilTest::create,
-            BlendTest::create,
-            ParticleTest::create,
-            BunnyTest::create,
-        };
-        g_test = g_tests[g_nextTextIndex](g_windowInfo);
-        if (g_test == nullptr)
-            return;
-        first = false;
-    }
-}
-
 - (void)run {
     CADisplayLink* displayLink = [NSClassFromString(@"CADisplayLink") displayLinkWithTarget:self selector:@selector(loop:)];
     displayLink.preferredFramesPerSecond = 60;
@@ -109,18 +75,12 @@ namespace
 }
 
 -(void)loop:(id)sender {
-    g_test->tick();
+    TestBaseI::onTick();
 }
 
 - (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
 {
-    /* *
-    g_nextTextIndex = (++g_nextTextIndex) % g_tests.size();
-    CC_SAFE_DESTROY(g_test);
-    g_test = g_tests[g_nextTextIndex](g_windowInfo);
-    /* */
-    TestBaseI::toggleMultithread();
-    /* */
+    TestBaseI::onTouchEnd(g_windowInfo);
 }
 
 

@@ -1,5 +1,15 @@
 #include "TestBase.h"
 
+#include "tests/ClearScreenTest.h"
+#include "tests/BasicTriangleTest.h"
+#include "tests/BasicTextureTest.h"
+#include "tests/DepthTest.h"
+#include "tests/StencilTest.h"
+#include "tests/BlendTest.h"
+#include "tests/ParticleTest.h"
+#include "tests/BunnyTest.h"
+#include "tests/StressTest.h"
+
 //#define USE_GLES3
 //#define USE_GLES2
 
@@ -24,8 +34,23 @@
 
 namespace cc {
 
-gfx::Device *TestBaseI::_device = nullptr;
-gfx::Framebuffer *TestBaseI::_fbo = nullptr;
+int TestBaseI::g_nextTestIndex          = 0;
+TestBaseI* TestBaseI::g_test            = nullptr;
+std::vector<TestBaseI::createFunc> TestBaseI::g_tests =
+{
+    StressTest::create,
+    ClearScreen::create,
+    BasicTriangle::create,
+    BasicTexture::create,
+    DepthTexture::create,
+    StencilTest::create,
+    BlendTest::create,
+    ParticleTest::create,
+    BunnyTest::create,
+};
+
+gfx::Device *TestBaseI::_device         = nullptr;
+gfx::Framebuffer *TestBaseI::_fbo       = nullptr;
 gfx::RenderPass *TestBaseI::_renderPass = nullptr;
 std::vector<gfx::CommandBuffer *> TestBaseI::_commandBuffers;
 
@@ -81,16 +106,41 @@ TestBaseI::TestBaseI(const WindowInfo &info)
     deviceThread.prevTime = std::chrono::steady_clock::now();
 }
 
-void TestBaseI::destroyGlobal() {
+void TestBaseI::destroyGlobal()
+{
+    CC_SAFE_DESTROY(g_test);
     CC_SAFE_DESTROY(_fbo);
     CC_SAFE_DESTROY(_renderPass);
     CC_SAFE_DESTROY(_device);
 }
 
-void TestBaseI::toggleMultithread() {
+void TestBaseI::nextTest(const WindowInfo& windowInfo)
+{
+    g_nextTestIndex = g_nextTestIndex % g_tests.size();
+    CC_SAFE_DESTROY(g_test);
+    g_test = g_tests[g_nextTestIndex](windowInfo);
+    g_nextTestIndex++;
+}
+
+void TestBaseI::toggleMultithread()
+{
     static bool multithreaded = true;
     multithreaded = !multithreaded;
     ((gfx::DeviceProxy *)_device)->setMultithreaded(multithreaded);
+}
+
+void TestBaseI::onTouchEnd(const WindowInfo& windowInfo)
+{
+    nextTest(windowInfo);
+    // toggleMultithread();
+}
+
+void TestBaseI::onTick()
+{
+    if (g_test)
+    {
+        g_test->tick();
+    }
 }
 
 unsigned char *TestBaseI::RGB2RGBA(Image *img) {

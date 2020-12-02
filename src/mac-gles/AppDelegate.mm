@@ -7,25 +7,12 @@
 //
 
 #import "AppDelegate.h"
-#include "tests/StressTest.h"
-#include "tests/ClearScreenTest.h"
-#include "tests/BasicTriangleTest.h"
-#include "tests/BasicTextureTest.h"
-#include "tests/StencilTest.h"
-#include "tests/ParticleTest.h"
-#include "tests/DepthTest.h"
 #include "tests/TestBase.h"
-#include "tests/BunnyTest.h"
-#include "tests/BlendTest.h"
 
 using namespace cc;
 
 namespace
 {
-    int g_nextTextIndex = 0;
-    using createFunc = TestBaseI * (*)(const WindowInfo& info);
-    std::vector<createFunc> g_tests;
-    TestBaseI* g_test    = nullptr;
     WindowInfo g_windowInfo;
 }
 
@@ -74,7 +61,7 @@ namespace
     g_windowInfo.physicalHeight = g_windowInfo.screen.height;
     g_windowInfo.physicalWidth = g_windowInfo.screen.width;
 
-    [self initTests];
+    cc::TestBaseI::nextTest(g_windowInfo);
 
     _timer = [NSTimer scheduledTimerWithTimeInterval:(1.0 / 60)
                       target:self
@@ -87,30 +74,8 @@ namespace
     // Insert code here to tear down your application
 }
 
-- (void)initTests {
-    static bool first = true;
-    if (first)
-    {
-        g_tests = {
-            StressTest::create,
-            ClearScreen::create,
-            BasicTriangle::create,
-            BasicTexture::create,
-            DepthTexture::create,
-            StencilTest::create,
-            BlendTest::create,
-            ParticleTest::create,
-            BunnyTest::create,
-        };
-        g_test = g_tests[g_nextTextIndex](g_windowInfo);
-        if (g_test == nullptr)
-            return;
-        first = false;
-    }
-}
-
 - (BOOL) renderScene {
-    g_test->tick();
+    cc::TestBaseI::onTick();
     return true;
 }
 
@@ -121,19 +86,11 @@ namespace
 }
 
 - (void)mouseUp:(NSEvent *)event {
-    /* */
-    cc::TestBaseI::toggleMultithread();
-    /* *
-    g_nextTextIndex = (--g_nextTextIndex) % g_tests.size();
-    CC_SAFE_DESTROY(g_test);
-    g_test = g_tests[g_nextTextIndex](g_windowInfo);
-    /* */
+    cc::TestBaseI::onTouchEnd(g_windowInfo);
 }
 
 - (void)rightMouseUp:(NSEvent *)event {
-    g_nextTextIndex = (++g_nextTextIndex) % g_tests.size();
-    CC_SAFE_DESTROY(g_test);
-    g_test = g_tests[g_nextTextIndex](g_windowInfo);
+    cc::TestBaseI::onTouchEnd(g_windowInfo);
 }
 
 - (BOOL)acceptsFirstResponder {

@@ -59,6 +59,8 @@ namespace cc {
     public:
         TestBaseI(const WindowInfo &info);
         virtual ~TestBaseI() = default;
+        
+        using createFunc = TestBaseI * (*)(const WindowInfo& info);
 
         virtual bool initialize() { return true; }
         virtual void tick() {}
@@ -73,7 +75,10 @@ namespace cc {
         static gfx::Device *getDevice() { return _device; }
         static void destroyGlobal();
 
+        static void nextTest(const WindowInfo& windowInfo);
         static void toggleMultithread();
+        static void onTouchEnd(const WindowInfo& windowInfo);
+        static void onTick();
         static unsigned char *RGB2RGBA(Image *img);
         static void modifyProjectionBasedOnDevice(Mat4 &projection, bool isOffscreen = false);
         static void createOrthographic(float left, float right, float bottom, float top, float near, float ZFar, Mat4 *dst, bool isOffscreen = false);
@@ -89,6 +94,10 @@ namespace cc {
         static FrameRate hostThread;
         static FrameRate deviceThread;
     protected:
+        static int g_nextTestIndex;
+        static std::vector<createFunc> g_tests;
+        static TestBaseI* g_test;
+        
         static gfx::Device *_device;
         static gfx::Framebuffer* _fbo;
         static std::vector<gfx::CommandBuffer *> _commandBuffers;

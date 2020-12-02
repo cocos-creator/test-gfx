@@ -1,15 +1,7 @@
 #include <jni.h>
 #include <android_native_app_glue.h>
 #include "platform/android/FileUtils-android.h"
-#include "tests/ClearScreenTest.h"
-#include "tests/BasicTriangleTest.h"
-#include "tests/BasicTextureTest.h"
-#include "tests/DepthTest.h"
-#include "tests/StencilTest.h"
-#include "tests/BlendTest.h"
-#include "tests/ParticleTest.h"
-#include "tests/BunnyTest.h"
-#include "tests/StressTest.h"
+#include "tests/TestBase.h"
 
 #include <android/log.h>
 #include <time.h>
@@ -37,39 +29,11 @@ namespace
         int32_t height;
     };
 
-    using createFunc = TestBaseI * (*)(const WindowInfo& info);
-    std::vector<createFunc> g_tests;
-    TestBaseI* g_test    = nullptr;
     WindowInfo g_windowInfo;
-    int g_nextTestIndex = 0;
-    void initTests()
-    {
-        static bool first = true;
-        if (first)
-        {
-            g_tests = {
-                    StressTest::create,
-                    ClearScreen::create,
-                    BasicTriangle::create,
-                    BasicTexture::create,
-                    DepthTexture::create,
-                    StencilTest::create,
-                    BlendTest::create,
-                    ParticleTest::create,
-                    BunnyTest::create,
-            };
-            g_test = g_tests[g_nextTestIndex](g_windowInfo);
-            if (g_test == nullptr)
-                return;
-
-            first = false;
-        }
-    }
 
     void destroyTests()
     {
-        g_test = nullptr;
-        //TODO: delete created test case.
+        TestBaseI::destroyGlobal();
     }
 
     void engineHandleCmd(struct android_app* app, int32_t cmd)
@@ -85,7 +49,7 @@ namespace
                     g_windowInfo.physicalHeight = g_windowInfo.screen.height = ANativeWindow_getHeight(app->window);
                     g_windowInfo.screen.x = g_windowInfo.screen.y = 0;
 
-                    initTests();
+                    TestBaseI::nextTest(g_windowInfo);
                 }
 
                 break;
@@ -120,13 +84,7 @@ namespace
                     break;
                 case AMOTION_EVENT_ACTION_UP:
                 case AMOTION_EVENT_ACTION_POINTER_UP:
-                    /* *
-                    g_nextTestIndex = (++g_nextTestIndex) % g_tests.size();
-                    CC_SAFE_DESTROY(g_test);
-                    g_test = g_tests[g_nextTestIndex](g_windowInfo);
-                    /* */
-                    g_test->toggleMultithread();
-                    /* */
+                    TestBaseI::onTouchEnd(g_windowInfo);
                     return 1;
                     break;
             }
@@ -174,7 +132,7 @@ void android_main(struct android_app* state) {
 
         if (savedState.animating)
         {
-            g_test->tick();
+            TestBaseI::onTick();
             lastTime = time;
         }
     }
