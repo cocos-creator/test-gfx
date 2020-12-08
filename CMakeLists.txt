@@ -6,7 +6,7 @@ project(${APP_NAME})
 
 if(XCODE)
     if(NOT DEFINED CMAKE_XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET)
-        SET (CMAKE_XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET 10.0)
+        SET (CMAKE_XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET 12.0)
     endif()
 endif()
 
@@ -127,7 +127,7 @@ elseif(ANDROID)
 	message(STATUS "Platform: Android")
 	set(COCOS_STATIC TRUE CACHE BOOL "Forcing static build for android" FORCE)
 	#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall" CACHE STRING "" FORCE)
-	#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fno-rtti -std=c++14" CACHE STRING "" FORCE)
+	#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fno-rtti -std=c++17" CACHE STRING "" FORCE)
 elseif(APPLE)
 	if(IOS)
 		set(COCOS_PLATFORM_IOS TRUE)
@@ -145,7 +145,7 @@ elseif(APPLE)
 		message(STATUS "Platform: Mac OSX")
 	endif()
 
-	set(CMAKE_CXX_FLAGS "-std=c++14 -fstrict-aliasing -Wno-expansion-to-defined -Wno-multichar -Wall -Wextra -Wno-unused-parameter -Wno-unknown-pragmas -Wno-ignored-qualifiers -Wno-long-long -Wno-overloaded-virtual -Wno-unused-volatile-lvalue -Wno-deprecated-writable-strings")
+	set(CMAKE_CXX_FLAGS "-std=c++17 -fstrict-aliasing -Wno-expansion-to-defined -Wno-multichar -Wall -Wextra -Wno-unused-parameter -Wno-unknown-pragmas -Wno-ignored-qualifiers -Wno-long-long -Wno-overloaded-virtual -Wno-unused-volatile-lvalue -Wno-deprecated-writable-strings")
 	set(CMAKE_CXX_FLAGS_RELEASE "-O3 -msse3 -DNDEBUG")
 	set(CMAKE_CXX_FLAGS_DEBUG "-O0 -D_DEBUG_ -D_DEBUG -DFIPS_DEBUG=1 -ggdb")
 
@@ -158,7 +158,7 @@ elseif(APPLE)
 	set(CMAKE_EXE_LINKER_FLAGS_RELEASE "")
 
 	# need to set some flags directly as Xcode attributes
-	set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++14")
+	set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD "c++17")
 	set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
 
 	set(CMAKE_XCODE_ATTRIBUTE_ENABLE_BITCODE "NO")
@@ -171,7 +171,7 @@ else()
 	message(STATUS "Platform: Linux")
 endif()
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -220,4 +220,6 @@ foreach(TARGET ${COCOS_EXTERNAL_TARGETS})
 endforeach()
 
 add_subdirectory("${COCOS_SRC_PATH}/renderer" "${PROJECT_BINARY_DIR}/renderer")
+add_subdirectory("${COCOS_SRC_PATH}/base/job-system" "${PROJECT_BINARY_DIR}/base/job-system")
+add_subdirectory("${COCOS_SRC_PATH}/base/threading" "${PROJECT_BINARY_DIR}/base/threading")
 add_subdirectory(src)

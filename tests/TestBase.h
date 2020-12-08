@@ -93,6 +93,7 @@ namespace cc {
         // FPS calculation
         static FrameRate hostThread;
         static FrameRate deviceThread;
+        
     protected:
         static int g_nextTestIndex;
         static std::vector<createFunc> g_tests;

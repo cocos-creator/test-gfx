@@ -17,6 +17,7 @@ set(INCLUDE_FILES
   ${GFX_EXTERNAL_PATH}/khronos
   ${GFX_EXTERNAL_PATH}/boost
   ${GFX_EXTERNAL_PATH}/concurrentqueue
+  ${GFX_EXTERNAL_PATH}/taskflow
   ${COCOS_SRC_PATH}/renderer/core
   ${COCOS_SRC_PATH}/renderer/gfx-metal
   ./GFXTest
@@ -73,6 +74,7 @@ add_executable(${APP_NAME} MACOSX_BUNDLE ${ALL_FILES})
 
 set_target_properties(${APP_NAME} PROPERTIES RESOURCE "${APP_UI_RES}")
 set_target_properties(${APP_NAME} PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_LIST_DIR}/Info.plist")
+set_xcode_property(${APP_NAME} PRODUCT_BUNDLE_IDENTIFIER ${APP_NAME})
 
 # Locate system libraries on macOS
 find_library(APPKIT_LIBRARY AppKit)
@@ -94,6 +96,7 @@ endif()
 target_link_libraries(${APP_NAME}
     ${PLATFORM_SPECIFIC_LIBS}
     Core
+    TFJobSystem
     ${GFX_LIB}
     ${CC_EXTERNAL_LIBS}
     z

@@ -11,6 +11,7 @@ set(INCLUDE_FILES
   ${GFX_EXTERNAL_PATH}/khronos
   ${GFX_EXTERNAL_PATH}/boost
   ${GFX_EXTERNAL_PATH}/concurrentqueue
+  ${GFX_EXTERNAL_PATH}/taskflow
   ${COCOS_SRC_PATH}/renderer/core
   ${COCOS_SRC_PATH}/renderer/gfx-gles2
   ${COCOS_SRC_PATH}/renderer/gfx-gles3
@@ -76,6 +77,7 @@ target_include_directories(${TARGET_NAME} PUBLIC
 
 target_link_libraries(${TARGET_NAME}
   Core
+  TFJobSystem
   GFXGLES2
   GFXGLES3
   GFXVulkan

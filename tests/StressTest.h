@@ -22,8 +22,6 @@ class StressTest: public TestBaseI
     void createPipeline();
     void createInputAssembler();
 
-    //     ThreadPool _tp;
-
     gfx::Shader *_shader = nullptr;
     gfx::Buffer *_vertexBuffer = nullptr;
     gfx::Buffer *_uniformBufferVP = nullptr;

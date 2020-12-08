@@ -2,8 +2,9 @@
 
 namespace cc {
 
-#define MODELS_PER_LINE 200
-#define MAIN_THREAD_SLEEP 15
+constexpr uint MODELS_PER_LINE = 100;
+constexpr uint PASS_COUNT = 4;
+constexpr uint MAIN_THREAD_SLEEP = 15;
 
 #define USE_DYNAMIC_UNIFORM_BUFFER 1
 
@@ -52,7 +53,10 @@ void StressTest::destroy() {
     CC_SAFE_DESTROY(_pipelineLayout);
     CC_SAFE_DESTROY(_pipelineState);
 
-//    _tp.Stop();
+    for (size_t i = 0; i < _commandBuffers.size(); ++i) {
+        CC_SAFE_DESTROY(_commandBuffers[i]);
+    }
+    _commandBuffers.resize(1);
 }
 
 bool StressTest::initialize() {
@@ -62,7 +66,12 @@ bool StressTest::initialize() {
     createInputAssembler();
     createPipeline();
 
-//    _tp.Start();
+    gfx::CommandBufferInfo info;
+    info.type = gfx::CommandBufferType::PRIMARY;
+    info.queue = _device->getQueue();
+    for (uint i = 0u; i < PASS_COUNT - 1; ++i) {
+        _commandBuffers.push_back(_device->createCommandBuffer(info));
+    }
 
     return true;
 }
@@ -286,7 +295,22 @@ void StressTest::createPipeline() {
     _pipelineState = _device->createPipelineState(pipelineInfo);
 }
 
-using gfx::Command;
+void HSV2RGB(const float h, const float s, const float v, float &r, float &g, float &b) {
+    int   hi = (int)(h / 60.0f) % 6;
+    float f  = (h / 60.0f) - hi;
+    float p  = v * (1.0f - s);
+    float q  = v * (1.0f - s * f);
+    float t  = v * (1.0f - s * (1.0f - f));
+
+    switch(hi) {
+        case 0: r = v, g = t, b = p; break;
+        case 1: r = q, g = v, b = p; break;
+        case 2: r = p, g = v, b = t; break;
+        case 3: r = p, g = q, b = v; break;
+        case 4: r = t, g = p, b = v; break;
+        case 5: r = v, g = p, b = q; break;
+    }
+}
 
 void StressTest::tick()
 {
@@ -295,7 +319,7 @@ void StressTest::tick()
     // simulate heavy logic operation
 //    std::this_thread::sleep_for(std::chrono::milliseconds(MAIN_THREAD_SLEEP));
 
-    gfx::CommandEncoder *encoder = ((gfx::DeviceProxy *)_device)->getMainEncoder();
+    CommandEncoder *encoder = ((gfx::DeviceProxy *)_device)->getMainEncoder();
     hostThread.timeAcc = hostThread.timeAcc * 0.95f + hostThread.dt * 0.05f;
     hostThread.frameAcc++;
 
@@ -315,8 +339,6 @@ void StressTest::tick()
             }
         });
 
-    gfx::Color clearColor = {.2f, .2f, .2f, 1.f};
-
     _device->acquire();
 
     Vec4 color{0.f, 0.f, 0.f, 1.f};
@@ -329,51 +351,51 @@ void StressTest::tick()
     _uniformBufferVP->update(VP.m, 0, sizeof(Mat4));
     /* */
 
-    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
+    const gfx::Color clearColors[] = {
+        { .2f, .2f, .2f, 1.f },
+        { 1.f, 0.f, 0.f, 1.f },
+        { 0.f, 1.f, 0.f, 1.f },
+        { 0.f, 0.f, 1.f, 1.f },
+        { 1.f, 1.f, 0.f, 1.f },
+        { 1.f, 0.f, 1.f, 1.f },
+        { 0.f, 1.f, 1.f, 1.f },
+    };
 
-    auto commandBuffer = _commandBuffers[0];
-    commandBuffer->begin();
-    commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
-    commandBuffer->bindInputAssembler(_inputAssembler);
-    commandBuffer->bindPipelineState(_pipelineState);
+    auto recordRenderPass = [&clearColors, this](uint passIndex) {
 
-    /* *
-    uint drawCountPerThread = MODELS_PER_LINE * MODELS_PER_LINE / taskCount;
+        gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
+        gfx::CommandBuffer *commandBuffer = _commandBuffers[passIndex];
 
-    std::future<void> res[taskCount];
-    for (uint i = 0; i < taskCount; ++i) {
-        res[i] = _tp.DispatchTask([i, drawCountPerThread, this, &commandBuffer](){
-            for (uint t = 0u, dynamicOffset = i * drawCountPerThread * _worldBufferStride;
-                 t < drawCountPerThread;
-                 ++t, dynamicOffset += _worldBufferStride)
-            {
-                commandBuffer->bindDescriptorSet(0, _descriptorSet, 1, &dynamicOffset);
-                commandBuffer->draw(_inputAssembler);
-            }
-        });
-    }
+        commandBuffer->begin();
+        commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColors[passIndex], 1.0f, 0);
+        commandBuffer->bindInputAssembler(_inputAssembler);
+        commandBuffer->bindPipelineState(_pipelineState);
 
-    for (uint i = 0; i < taskCount; ++i) {
-        res[i].wait();
-    }
-    /* */
-
+        for (uint t = 0; t < MODELS_PER_LINE * MODELS_PER_LINE; ++t) {
 #if USE_DYNAMIC_UNIFORM_BUFFER
-    for (uint t = 0u, dynamicOffset = 0u; t < MODELS_PER_LINE * MODELS_PER_LINE; ++t, dynamicOffset += _worldBufferStride)
-    {
-        commandBuffer->bindDescriptorSet(0, _uniDescriptorSet, 1, &dynamicOffset);
-        commandBuffer->draw(_inputAssembler);
-    }
+            uint dynamicOffset = _worldBufferStride * t;
+            commandBuffer->bindDescriptorSet(0, _uniDescriptorSet, 1, &dynamicOffset);
 #else
-    for (uint t = 0u; t < MODELS_PER_LINE * MODELS_PER_LINE; ++t)
-    {
-        commandBuffer->bindDescriptorSet(0, _descriptorSets[t]);
-        commandBuffer->draw(_inputAssembler);
-    }
+            commandBuffer->bindDescriptorSet(0, _descriptorSets[t]);
 #endif
+            commandBuffer->draw(_inputAssembler);
+        }
+
+        commandBuffer->endRenderPass();
+        commandBuffer->end();
+    };
+
     /* */
-    commandBuffer->endRenderPass();
-    commandBuffer->end();
+    JobGraph g;
+    Job j = g.createForEachIndexJob(1u, PASS_COUNT, 1u, recordRenderPass);
+    JobSystem::getInstance().run(g);
+    recordRenderPass(0);
+    JobSystem::getInstance().waitForAll();
+    /* *
+    for (uint t = 0u; t < PASS_COUNT; ++t) {
+        recordRenderPass(t);
+    }
+    /* */
 
     _device->getQueue()->submit(_commandBuffers);
 

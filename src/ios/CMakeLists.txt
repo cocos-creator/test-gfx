@@ -17,8 +17,8 @@ message(STATUS "App: ${APP_NAME}...")
 option(USE_METAL "USE METAL" ON)
 option(USE_VULKAN "USE METAL" OFF)
 
-use_gles()
-# use_molten_vk()
+# use_gles()
+use_molten_vk()
 
 # ---------------------------------------------------------------------
 # set include files
@@ -27,6 +27,7 @@ set(INCLUDE_FILES
   ${GFX_EXTERNAL_PATH}/khronos
   ${GFX_EXTERNAL_PATH}/boost
   ${GFX_EXTERNAL_PATH}/concurrentqueue
+  ${GFX_EXTERNAL_PATH}/taskflow
   ${COCOS_SRC_PATH}/renderer/core
   ./GFXTest
 )
@@ -112,6 +113,8 @@ endif()
 target_link_libraries(${APP_NAME}
     ${PLATFORM_SPECIFIC_LIBS}
     Core
+    TFJobSystem
+    Threading
     ${GRAPHIC_LIBS}
     ${CC_EXTERNAL_LIBS}
     z
