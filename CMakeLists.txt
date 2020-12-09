@@ -219,7 +219,7 @@ foreach(TARGET ${COCOS_EXTERNAL_TARGETS})
 	add_subdirectory(${GFX_EXTERNAL_PATH}/${TARGET})
 endforeach()
 
-add_subdirectory("${COCOS_SRC_PATH}/renderer" "${PROJECT_BINARY_DIR}/renderer")
 add_subdirectory("${COCOS_SRC_PATH}/base/job-system" "${PROJECT_BINARY_DIR}/base/job-system")
 add_subdirectory("${COCOS_SRC_PATH}/base/threading" "${PROJECT_BINARY_DIR}/base/threading")
+add_subdirectory("${COCOS_SRC_PATH}/renderer" "${PROJECT_BINARY_DIR}/renderer")
 add_subdirectory(src)
