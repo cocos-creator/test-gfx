@@ -78,6 +78,7 @@ target_include_directories(${TARGET_NAME} PUBLIC
 target_link_libraries(${TARGET_NAME}
   Core
   TFJobSystem
+  Threading
   GFXGLES2
   GFXGLES3
   GFXVulkan

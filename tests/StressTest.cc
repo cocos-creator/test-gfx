@@ -53,7 +53,8 @@ void StressTest::destroy() {
     CC_SAFE_DESTROY(_pipelineLayout);
     CC_SAFE_DESTROY(_pipelineState);
 
-    for (size_t i = 0; i < _commandBuffers.size(); ++i) {
+    ((gfx::DeviceProxy *)_device)->getMainEncoder()->KickAndWait();
+    for (size_t i = 1; i < _commandBuffers.size(); ++i) {
         CC_SAFE_DESTROY(_commandBuffers[i]);
     }
     _commandBuffers.resize(1);
