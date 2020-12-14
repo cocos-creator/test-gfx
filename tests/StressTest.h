@@ -22,6 +22,8 @@ class StressTest: public TestBaseI
     void createPipeline();
     void createInputAssembler();
 
+    void recordRenderPass(uint index);
+
     gfx::Shader *_shader = nullptr;
     gfx::Buffer *_vertexBuffer = nullptr;
     gfx::Buffer *_uniformBufferVP = nullptr;
@@ -38,6 +40,7 @@ class StressTest: public TestBaseI
     gfx::InputAssembler* _inputAssembler = nullptr;
 
     uint _worldBufferStride = 0u;
+    JobGraph _jobGraph;
 };
 
 } // namespace cc

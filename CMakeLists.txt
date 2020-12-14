@@ -153,7 +153,7 @@ elseif(APPLE)
 	set(CMAKE_C_FLAGS_RELEASE "-O3 -msse3 -DNDEBUG")
 	set(CMAKE_C_FLAGS_DEBUG "-O0 -D_DEBUG_ -D_DEBUG -DFIPS_DEBUG=1 -g")
 
-	set(CMAKE_EXE_LINKER_FLAGS "-ObjC -dead_strip")
+	set(CMAKE_EXE_LINKER_FLAGS "-ObjC -dead_strip -lpthread")
 	set(CMAKE_EXE_LINKER_FLAGS_DEBUG "")
 	set(CMAKE_EXE_LINKER_FLAGS_RELEASE "")
 

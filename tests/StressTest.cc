@@ -2,8 +2,8 @@
 
 namespace cc {
 
-constexpr uint MODELS_PER_LINE = 100;
-constexpr uint PASS_COUNT = 7;
+constexpr uint MODELS_PER_LINE = 200;
+constexpr uint PASS_COUNT = 1;
 constexpr uint MAIN_THREAD_SLEEP = 15;
 
 #define USE_DYNAMIC_UNIFORM_BUFFER 1
@@ -73,6 +73,9 @@ bool StressTest::initialize() {
     for (uint i = 0u; i < PASS_COUNT - 1; ++i) {
         _commandBuffers.push_back(_device->createCommandBuffer(info));
     }
+    _jobGraph.createForEachIndexJob(1u, PASS_COUNT, 1u, [this](uint passIndex) {
+        recordRenderPass(passIndex);
+    });
 
     return true;
 }
@@ -296,6 +299,42 @@ void StressTest::createPipeline() {
     _pipelineState = _device->createPipelineState(pipelineInfo);
 }
 
+void StressTest::recordRenderPass(uint passIndex) {
+    static const gfx::Color clearColors[] = {
+            { .2f, .2f, .2f, 1.f },
+            { 1.f, 0.f, 0.f, 1.f },
+            { 0.f, 1.f, 0.f, 1.f },
+            { .4f, .4f, .4f, 1.f },
+            { 0.f, 0.f, 1.f, 1.f },
+            { 1.f, 1.f, 0.f, 1.f },
+            { .8f, .8f, .8f, 1.f },
+            { 1.f, 0.f, 1.f, 1.f },
+            { 0.f, 1.f, 1.f, 1.f },
+    };
+
+    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
+    gfx::CommandBuffer *commandBuffer = _commandBuffers[passIndex];
+
+    commandBuffer->begin();
+    commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColors[passIndex], 1.0f, 0);
+    commandBuffer->bindInputAssembler(_inputAssembler);
+    commandBuffer->bindPipelineState(_pipelineState);
+
+    uint dynamicOffset = 0u;
+    for (uint t = 0; t < MODELS_PER_LINE * MODELS_PER_LINE; ++t) {
+#if USE_DYNAMIC_UNIFORM_BUFFER
+        dynamicOffset = _worldBufferStride * t;
+        commandBuffer->bindDescriptorSet(0, _uniDescriptorSet, 1, &dynamicOffset);
+#else
+        commandBuffer->bindDescriptorSet(0, _descriptorSets[t]);
+#endif
+        commandBuffer->draw(_inputAssembler);
+    }
+
+    commandBuffer->endRenderPass();
+    commandBuffer->end();
+}
+
 void StressTest::tick()
 {
     lookupTime();
@@ -335,46 +374,10 @@ void StressTest::tick()
     _uniformBufferVP->update(VP.m, 0, sizeof(Mat4));
     /* */
 
-    const gfx::Color clearColors[] = {
-        { .2f, .2f, .2f, 1.f },
-        { 1.f, 0.f, 0.f, 1.f },
-        { 0.f, 1.f, 0.f, 1.f },
-        { 0.f, 0.f, 1.f, 1.f },
-        { 1.f, 1.f, 0.f, 1.f },
-        { 1.f, 0.f, 1.f, 1.f },
-        { 0.f, 1.f, 1.f, 1.f },
-    };
-
-    auto recordRenderPass = [&clearColors, this](uint passIndex) {
-
-        gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
-        gfx::CommandBuffer *commandBuffer = _commandBuffers[passIndex];
-
-        commandBuffer->begin();
-        commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColors[passIndex], 1.0f, 0);
-        commandBuffer->bindInputAssembler(_inputAssembler);
-        commandBuffer->bindPipelineState(_pipelineState);
-
-        for (uint t = 0; t < MODELS_PER_LINE * MODELS_PER_LINE; ++t) {
-#if USE_DYNAMIC_UNIFORM_BUFFER
-            uint dynamicOffset = _worldBufferStride * t;
-            commandBuffer->bindDescriptorSet(0, _uniDescriptorSet, 1, &dynamicOffset);
-#else
-            commandBuffer->bindDescriptorSet(0, _descriptorSets[t]);
-#endif
-            commandBuffer->draw(_inputAssembler);
-        }
-
-        commandBuffer->endRenderPass();
-        commandBuffer->end();
-    };
-
     /* */
-    JobGraph g;
-    g.createForEachIndexJob(1u, PASS_COUNT, 1u, recordRenderPass);
-    JobSystem::getInstance().run(g);
+    JobSystem::getInstance().run(_jobGraph);
     recordRenderPass(0);
-    JobSystem::getInstance().waitForLastRun();
+    _jobGraph.waitForAll();
     /* *
     for (uint t = 0u; t < PASS_COUNT; ++t) {
         recordRenderPass(t);
