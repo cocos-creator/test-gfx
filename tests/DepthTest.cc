@@ -191,7 +191,7 @@ struct BigTriangle : public cc::Object {
 
         pipelineLayout = device->createPipelineLayout({{descriptorSetLayout}});
 
-        descriptorSet = device->createDescriptorSet({descriptorSetLayout});
+        descriptorSet = device->createDescriptorSet({pipelineLayout});
 
         descriptorSet->bindBuffer(0, nearFarUniformBuffer);
         descriptorSet->bindSampler(1, sampler);
@@ -385,7 +385,7 @@ struct Bunny : public cc::Object {
         pipelineLayout = device->createPipelineLayout({{descriptorSetLayout}});
 
         for (uint i = 0u; i < BUNNY_NUM; i++) {
-            descriptorSet[i] = device->createDescriptorSet({descriptorSetLayout});
+            descriptorSet[i] = device->createDescriptorSet({pipelineLayout});
 
             descriptorSet[i]->bindBuffer(0, mvpUniformBuffer[i]);
             descriptorSet[i]->update();

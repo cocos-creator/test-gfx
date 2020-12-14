@@ -261,7 +261,7 @@ void StencilTest::createPipelineState() {
 
     gfx::Texture *texView[BINDING_COUNT] = {_labelTexture, _uvCheckerTexture};
     for (uint i = 0; i < BINDING_COUNT; i++) {
-        _descriptorSet[i] = _device->createDescriptorSet({_descriptorSetLayout});
+        _descriptorSet[i] = _device->createDescriptorSet({_pipelineLayout});
         _descriptorSet[i]->bindBuffer(0, _uniformBuffer[i]);
         _descriptorSet[i]->bindSampler(1, _sampler);
         _descriptorSet[i]->bindTexture(1, texView[i]);

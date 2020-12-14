@@ -298,7 +298,7 @@ void ParticleTest::createPipeline() {
 
     _pipelineLayout = _device->createPipelineLayout({{_descriptorSetLayout}});
 
-    _descriptorSet = _device->createDescriptorSet({_descriptorSetLayout});
+    _descriptorSet = _device->createDescriptorSet({_pipelineLayout});
 
     _descriptorSet->bindBuffer(0, _uniformBuffer);
     _descriptorSet->bindSampler(1, _sampler);

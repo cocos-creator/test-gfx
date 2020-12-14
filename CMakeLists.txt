@@ -145,15 +145,15 @@ elseif(APPLE)
 		message(STATUS "Platform: Mac OSX")
 	endif()
 
-	set(CMAKE_CXX_FLAGS "-std=c++17 -fstrict-aliasing -Wno-expansion-to-defined -Wno-multichar -Wall -Wextra -Wno-unused-parameter -Wno-unknown-pragmas -Wno-ignored-qualifiers -Wno-long-long -Wno-overloaded-virtual -Wno-unused-volatile-lvalue -Wno-deprecated-writable-strings")
+	set(CMAKE_CXX_FLAGS "-std=c++17 -fstrict-aliasing -Wall -Wextra -Wno-comment -Wno-missing-field-initializers -Wno-expansion-to-defined -Wno-multichar -Wno-unused-parameter -Wno-unknown-pragmas -Wno-ignored-qualifiers -Wno-long-long -Wno-overloaded-virtual -Wno-unused-volatile-lvalue -Wno-deprecated-writable-strings")
 	set(CMAKE_CXX_FLAGS_RELEASE "-O3 -msse3 -DNDEBUG")
 	set(CMAKE_CXX_FLAGS_DEBUG "-O0 -D_DEBUG_ -D_DEBUG -DFIPS_DEBUG=1 -ggdb")
 
-	set(CMAKE_C_FLAGS "-fstrict-aliasing -Wno-multichar -Wall -Wextra -Wno-expansion-to-defined -Wno-unused-parameter -Wno-unknown-pragmas -Wno-ignored-qualifiers -Wno-long-long -Wno-overloaded-virtual -Wno-unused-volatile-lvalue  -Wno-deprecated-writable-strings")
+	set(CMAKE_C_FLAGS "-fstrict-aliasing -Wall -Wextra -Wno-multichar -Wno-comment -Wno-missing-field-initializers -Wno-expansion-to-defined -Wno-unused-parameter -Wno-unknown-pragmas -Wno-ignored-qualifiers -Wno-long-long -Wno-overloaded-virtual -Wno-unused-volatile-lvalue  -Wno-deprecated-writable-strings")
 	set(CMAKE_C_FLAGS_RELEASE "-O3 -msse3 -DNDEBUG")
 	set(CMAKE_C_FLAGS_DEBUG "-O0 -D_DEBUG_ -D_DEBUG -DFIPS_DEBUG=1 -g")
 
-	set(CMAKE_EXE_LINKER_FLAGS "-ObjC -dead_strip -lpthread")
+	set(CMAKE_EXE_LINKER_FLAGS "-ObjC -dead_strip")
 	set(CMAKE_EXE_LINKER_FLAGS_DEBUG "")
 	set(CMAKE_EXE_LINKER_FLAGS_RELEASE "")
 
@@ -219,7 +219,6 @@ foreach(TARGET ${COCOS_EXTERNAL_TARGETS})
 	add_subdirectory(${GFX_EXTERNAL_PATH}/${TARGET})
 endforeach()
 
-add_subdirectory("${COCOS_SRC_PATH}/base/job-system" "${PROJECT_BINARY_DIR}/base/job-system")
-add_subdirectory("${COCOS_SRC_PATH}/base/threading" "${PROJECT_BINARY_DIR}/base/threading")
+add_subdirectory("${COCOS_SRC_PATH}/base" "${PROJECT_BINARY_DIR}/base")
 add_subdirectory("${COCOS_SRC_PATH}/renderer" "${PROJECT_BINARY_DIR}/renderer")
 add_subdirectory(src)

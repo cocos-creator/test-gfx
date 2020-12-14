@@ -3,7 +3,7 @@
 namespace cc {
 
 constexpr uint MODELS_PER_LINE = 100;
-constexpr uint PASS_COUNT = 4;
+constexpr uint PASS_COUNT = 7;
 constexpr uint MAIN_THREAD_SLEEP = 15;
 
 #define USE_DYNAMIC_UNIFORM_BUFFER 1
@@ -271,14 +271,14 @@ void StressTest::createPipeline() {
     _pipelineLayout = _device->createPipelineLayout({{_descriptorSetLayout}});
 
 #if USE_DYNAMIC_UNIFORM_BUFFER
-    _uniDescriptorSet = _device->createDescriptorSet({_descriptorSetLayout});
+    _uniDescriptorSet = _device->createDescriptorSet({_pipelineLayout});
     _uniDescriptorSet->bindBuffer(0, _uniformBufferVP);
     _uniDescriptorSet->bindBuffer(1, _uniWorldBufferView);
     _uniDescriptorSet->update();
 #else
     _descriptorSets.resize(_worldBuffers.size());
     for (uint i = 0u; i < _worldBuffers.size(); ++i) {
-        _descriptorSets[i] = _device->createDescriptorSet({_descriptorSetLayout});
+        _descriptorSets[i] = _device->createDescriptorSet({_pipelineLayout});
         _descriptorSets[i]->bindBuffer(0, _uniformBufferVP);
         _descriptorSets[i]->bindBuffer(1, _worldBuffers[i]);
         _descriptorSets[i]->update();
@@ -371,10 +371,10 @@ void StressTest::tick()
 
     /* */
     JobGraph g;
-    Job j = g.createForEachIndexJob(1u, PASS_COUNT, 1u, recordRenderPass);
+    g.createForEachIndexJob(1u, PASS_COUNT, 1u, recordRenderPass);
     JobSystem::getInstance().run(g);
     recordRenderPass(0);
-    JobSystem::getInstance().waitForAll();
+    JobSystem::getInstance().waitForLastRun();
     /* *
     for (uint t = 0u; t < PASS_COUNT; ++t) {
         recordRenderPass(t);

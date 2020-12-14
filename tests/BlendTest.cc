@@ -249,7 +249,7 @@ struct Quad : public cc::Object {
 
         pipelineLayout = device->createPipelineLayout({{descriptorSetLayout}});
 
-        descriptorSet = device->createDescriptorSet({descriptorSetLayout});
+        descriptorSet = device->createDescriptorSet({pipelineLayout});
 
         descriptorSet->bindBuffer(0, uniformBufferView);
         descriptorSet->bindSampler(1, sampler);
@@ -543,7 +543,7 @@ struct BigTriangle : public cc::Object {
 
         pipelineLayout = device->createPipelineLayout({{descriptorSetLayout}});
 
-        descriptorSet = device->createDescriptorSet({descriptorSetLayout});
+        descriptorSet = device->createDescriptorSet({pipelineLayout});
 
         descriptorSet->bindBuffer(0, timeBuffer);
         descriptorSet->bindSampler(1, sampler);
