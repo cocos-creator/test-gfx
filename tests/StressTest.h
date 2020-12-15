@@ -17,13 +17,15 @@ class StressTest: public TestBaseI
      virtual void destroy() override;
 
  private:
+    static const gfx::Color clearColors[];
+ 
     void createShader();
     void createVertexBuffer();
     void createPipeline();
     void createInputAssembler();
 
     void recordRenderPass(uint index);
-
+    
     gfx::Shader *_shader = nullptr;
     gfx::Buffer *_vertexBuffer = nullptr;
     gfx::Buffer *_uniformBufferVP = nullptr;
@@ -39,8 +41,10 @@ class StressTest: public TestBaseI
     gfx::PipelineState* _pipelineState = nullptr;
     gfx::InputAssembler* _inputAssembler = nullptr;
 
+    vector<gfx::CommandBuffer*> _parallelCBs;
+
     uint _worldBufferStride = 0u;
-    JobGraph _jobGraph;
+    uint _threadCount = 1u;
 };
 
 } // namespace cc
