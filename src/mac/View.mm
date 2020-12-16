@@ -103,4 +103,9 @@ namespace
     [self.window makeFirstResponder:self];
 }
 
+- (void)onTerminate
+{
+    cc::TestBaseI::destroyGlobal();
+}
+
 @end

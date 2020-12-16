@@ -26,4 +26,5 @@
 @interface View : MTKView <MTKViewDelegate>
 @property(nonatomic, assign) id<MTLCommandQueue> mtlCommandQueue;
 
+- (void)onTerminate;
 @end

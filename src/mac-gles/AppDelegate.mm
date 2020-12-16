@@ -69,9 +69,13 @@ namespace
                       userInfo:nil repeats:YES];
 }
 
-
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
     // Insert code here to tear down your application
+    cc:TestBaseI::destroyGlobal();
+}
+
+-(BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)sender{
+    return YES;
 }
 
 - (BOOL) renderScene {

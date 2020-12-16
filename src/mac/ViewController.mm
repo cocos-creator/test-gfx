@@ -40,6 +40,11 @@
     [_view.window makeFirstResponder:self];
 }
 
+- (void)onTerminate
+{
+    [_view onTerminate];
+}
+
 - (BOOL)acceptsFirstResponder
 {
     return YES;
