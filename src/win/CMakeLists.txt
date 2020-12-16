@@ -100,3 +100,5 @@ source_group(TREE ${COCOS_SRC_PATH}/math PREFIX "Source Files/math" FILES ${CC_M
 source_group(TREE ${COCOS_EXTERNAL_PATH}/sources PREFIX "Header Files/external" FILES ${CC_EXTERNAL_SROUCES})
 
 message(STATUS "${TARGET_NAME} configuration completed.")
+set_property(TARGET ${APP_NAME} PROPERTY CXX_STANDARD 17)
+set_property(TARGET ${APP_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
