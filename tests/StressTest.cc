@@ -2,19 +2,19 @@
 
 namespace cc {
 
-/* *
+/* */
 constexpr uint PASS_COUNT = 1;
 constexpr uint MODELS_PER_LINE[PASS_COUNT] = {10};
-/* */
+/* *
 constexpr uint PASS_COUNT = 4;
-//constexpr uint MODELS_PER_LINE[PASS_COUNT] = {50, 1, 5, 50};
-constexpr uint MODELS_PER_LINE[PASS_COUNT] = {50, 50, 50, 50};
+constexpr uint MODELS_PER_LINE[PASS_COUNT] = {50, 1, 5, 50};
+//constexpr uint MODELS_PER_LINE[PASS_COUNT] = {50, 50, 50, 50};
 /* *
 constexpr uint PASS_COUNT = 9;
 constexpr uint MODELS_PER_LINE[PASS_COUNT] = {100, 2, 100, 100, 3, 4, 100, 5, 100};
 /* */
 constexpr uint MAIN_THREAD_SLEEP = 15;
-constexpr float QUAD_SIZE = .01f;
+constexpr float QUAD_SIZE = .03f;
 
 const gfx::Color StressTest::clearColors[] = {
     {.2f, .2f, .2f, 1.f},
@@ -33,7 +33,7 @@ const gfx::Color StressTest::clearColors[] = {
 #define PARALLEL_STRATEGY_RP_BASED_SECONDARY 2 // render pass level concurrency with the use of secondary command buffers, which completely sequentializes the submission process
 #define PARALLEL_STRATEGY_DC_BASED           3 // draw call level concurrency: current endgame milestone
 
-#define PARALLEL_STRATEGY 1
+#define PARALLEL_STRATEGY 3
 
 #define USE_DYNAMIC_UNIFORM_BUFFER 1
 #define USE_PARALLEL_RECORDING     1
@@ -97,7 +97,7 @@ bool StressTest::initialize() {
     createInputAssembler();
     createPipeline();
 
-    _threadCount = JobSystem::getInstance().threadCount();
+    _threadCount = JobSystem::getInstance().threadCount() + 1; // main thread counts too
     gfx::CommandBufferInfo info;
     info.queue = _device->getQueue();
     uint cbCount = 0u;
@@ -369,7 +369,17 @@ void StressTest::recordRenderPass(uint threadIndex) {
     gfx::Viewport vp = {0, 0, _device->getWidth(), _device->getHeight()};
 
     for (uint i = 0u; i < PASS_COUNT; ++i) {
+        uint dynamicOffset = 0u;
+        uint totalCount = MODELS_PER_LINE[i] * MODELS_PER_LINE[i];
+        uint perThreadCount = totalCount / _threadCount;
+        uint dcCount = perThreadCount;
+        if (threadIndex == _threadCount - 1) dcCount += totalCount % _threadCount;
+        if (!dcCount) continue;
+
         gfx::CommandBuffer *commandBuffer = _parallelCBs[i * _threadCount + threadIndex];
+
+//        CC_LOG_INFO("---- idx %x cb %x id %x dc %d", threadIndex, commandBuffer,
+//            std::hash<std::thread::id>()(std::this_thread::get_id()), dcCount);
 
         commandBuffer->begin(_renderPass, 0, _fbo);
         commandBuffer->bindInputAssembler(_inputAssembler);
@@ -377,9 +387,7 @@ void StressTest::recordRenderPass(uint threadIndex) {
         commandBuffer->setScissor(scissor);
         commandBuffer->setViewport(vp);
 
-        uint dynamicOffset = 0u;
-        uint dcCount = std::max(1u, MODELS_PER_LINE[i] * MODELS_PER_LINE[i] / _threadCount);
-        for (uint t = dcCount * threadIndex; t < dcCount * (threadIndex + 1); ++t) {
+        for (uint j = 0, t = perThreadCount * threadIndex; j < dcCount; ++j, ++t) {
     #if USE_DYNAMIC_UNIFORM_BUFFER
             dynamicOffset = _worldBufferStride * t;
             commandBuffer->bindDescriptorSet(0, _uniDescriptorSet, 1, &dynamicOffset);
@@ -487,17 +495,17 @@ void StressTest::tick() {
     recordRenderPass(0);
     _device->getQueue()->submit(_commandBuffers);
 #else
-    #if USE_PARALLEL_RECORDING
     uint jobCount = PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED ? _threadCount : PASS_COUNT;
+    #if USE_PARALLEL_RECORDING
     JobGraph g;
-    g.createForEachIndexJob(1u, jobCount, 1u, [this](uint passIndex) {
+    g.createForEachIndexJob(0u, jobCount - 1, 1u, [this](uint passIndex) {
         recordRenderPass(passIndex);
     });
     JobSystem::getInstance().run(g);
-    recordRenderPass(0);
+    recordRenderPass(jobCount - 1);
     g.waitForAll();
     #else
-    for (uint t = 0u; t < PASS_COUNT; ++t) {
+    for (uint t = 0u; t < jobCount; ++t) {
         recordRenderPass(t);
     }
     #endif
