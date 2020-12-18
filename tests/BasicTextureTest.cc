@@ -153,7 +153,7 @@ void BasicTexture::createVertexBuffer() {
         sizeof(vertexData),
         2 * sizeof(float),
     });
-    _vertexBuffer->update(vertexData, 0, sizeof(vertexData));
+    _vertexBuffer->update(vertexData, sizeof(vertexData));
 
     _uniformBuffer = _device->createBuffer({
         gfx::BufferUsage::UNIFORM,
@@ -268,7 +268,7 @@ void BasicTexture::tick() {
 
     _device->acquire();
 
-    _uniformBuffer->update(&mvpMatrix, 0, sizeof(mvpMatrix));
+    _uniformBuffer->update(&mvpMatrix, sizeof(mvpMatrix));
     gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
 
     auto commandBuffer = _commandBuffers[0];

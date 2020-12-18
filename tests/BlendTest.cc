@@ -184,7 +184,7 @@ struct Quad : public cc::Object {
             sizeof(vertexData),
             4 * sizeof(float),
         });
-        vertexBuffer->update(vertexData, 0, sizeof(vertexData));
+        vertexBuffer->update(vertexData, sizeof(vertexData));
 
         // index buffer
         indexBuffer = device->createBuffer({
@@ -193,7 +193,7 @@ struct Quad : public cc::Object {
             sizeof(indices),
             sizeof(unsigned short),
         });
-        indexBuffer->update(indices, 0, sizeof(indices));
+        indexBuffer->update(indices, sizeof(indices));
 
         // dynamic uniform buffer
         uboStride = TestBaseI::getAlignedUBOStride(device, sizeof(Mat4) * 2);
@@ -499,7 +499,7 @@ struct BigTriangle : public cc::Object {
             sizeof(vertexData),
             4 * sizeof(float),
         });
-        vertexBuffer->update(vertexData, 0, sizeof(vertexData));
+        vertexBuffer->update(vertexData, sizeof(vertexData));
 
         // uniform buffer
         timeBuffer = device->createBuffer({

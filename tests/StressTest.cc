@@ -2,10 +2,10 @@
 
 namespace cc {
 
-/* */
+/* *
 constexpr uint PASS_COUNT = 1;
 constexpr uint MODELS_PER_LINE[PASS_COUNT] = {10};
-/* *
+/* */
 constexpr uint PASS_COUNT = 4;
 constexpr uint MODELS_PER_LINE[PASS_COUNT] = {50, 1, 5, 50};
 //constexpr uint MODELS_PER_LINE[PASS_COUNT] = {50, 50, 50, 50};
@@ -14,7 +14,7 @@ constexpr uint PASS_COUNT = 9;
 constexpr uint MODELS_PER_LINE[PASS_COUNT] = {100, 2, 100, 100, 3, 4, 100, 5, 100};
 /* */
 constexpr uint MAIN_THREAD_SLEEP = 15;
-constexpr float QUAD_SIZE = .03f;
+constexpr float QUAD_SIZE = .01f;
 
 const gfx::Color StressTest::clearColors[] = {
     {.2f, .2f, .2f, 1.f},
@@ -83,10 +83,10 @@ void StressTest::destroy() {
     CC_SAFE_DESTROY(_pipelineLayout);
     CC_SAFE_DESTROY(_pipelineState);
 
-    for (size_t i = 1; i < _parallelCBs.size(); ++i) {
+    size_t i = PARALLEL_STRATEGY == PARALLEL_STRATEGY_RP_BASED_PRIMARY ? 1u : 0u;
+    for (; i < _parallelCBs.size(); ++i) {
         CC_SAFE_DESTROY(_parallelCBs[i]);
     }
-    if (PARALLEL_STRATEGY != PARALLEL_STRATEGY_RP_BASED_PRIMARY) CC_SAFE_DESTROY(_parallelCBs[0]);
     _parallelCBs.clear();
 }
 
@@ -231,7 +231,7 @@ void StressTest::createVertexBuffer() {
     };
 
     _vertexBuffer = _device->createBuffer(vertexBufferInfo);
-    _vertexBuffer->update(vertexData, 0, sizeof(vertexData));
+    _vertexBuffer->update(vertexData, sizeof(vertexData));
 
 #if USE_DYNAMIC_UNIFORM_BUFFER
     _worldBufferStride = TestBaseI::getAlignedUBOStride(_device, sizeof(Vec4));
@@ -251,7 +251,7 @@ void StressTest::createVertexBuffer() {
             buffer[idx * stride + 1] = 2.f * i / MODELS_PER_LINE[0];
         }
     }
-    _uniWorldBuffer->update(buffer.data(), 0, buffer.size() * sizeof(float));
+    _uniWorldBuffer->update(buffer.data(), buffer.size() * sizeof(float));
 
     gfx::BufferViewInfo worldBufferViewInfo = {
         _uniWorldBuffer,
@@ -266,16 +266,16 @@ void StressTest::createVertexBuffer() {
         gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
         size, size};
 
-    _worldBuffers.resize(MODELS_PER_LINE * MODELS_PER_LINE);
+    _worldBuffers.resize(MODELS_PER_LINE[0] * MODELS_PER_LINE[0]);
     vector<float> buffer(size / sizeof(float));
-    for (uint i = 0u, idx = 0u; i < MODELS_PER_LINE; i++) {
-        for (uint j = 0u; j < MODELS_PER_LINE; j++, idx++) {
+    for (uint i = 0u, idx = 0u; i < MODELS_PER_LINE[0]; i++) {
+        for (uint j = 0u; j < MODELS_PER_LINE[0]; j++, idx++) {
             _worldBuffers[idx] = _device->createBuffer(uniformBufferWInfo);
 
-            buffer[0] = 2.f * j / MODELS_PER_LINE;
-            buffer[1] = 2.f * i / MODELS_PER_LINE;
+            buffer[0] = 2.f * j / MODELS_PER_LINE[0];
+            buffer[1] = 2.f * i / MODELS_PER_LINE[0];
 
-            _worldBuffers[idx]->update(buffer.data(), 0, size);
+            _worldBuffers[idx]->update(buffer.data(), size);
         }
     }
 #endif
@@ -287,9 +287,7 @@ void StressTest::createVertexBuffer() {
     };
     _uniformBufferVP = _device->createBuffer(uniformBufferVPInfo);
 
-    Mat4 VP;
-    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &VP);
-    _uniformBufferVP->update(VP.m, 0, sizeof(Mat4));
+    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &_uboVP.matViewProj);
 }
 
 void StressTest::createInputAssembler() {
@@ -378,8 +376,8 @@ void StressTest::recordRenderPass(uint threadIndex) {
 
         gfx::CommandBuffer *commandBuffer = _parallelCBs[i * _threadCount + threadIndex];
 
-//        CC_LOG_INFO("---- idx %x cb %x id %x dc %d", threadIndex, commandBuffer,
-//            std::hash<std::thread::id>()(std::this_thread::get_id()), dcCount);
+        //CC_LOG_INFO("---- idx %x cb %x id %x dc %d", threadIndex, commandBuffer,
+        //            std::hash<std::thread::id>()(std::this_thread::get_id()), dcCount);
 
         commandBuffer->begin(_renderPass, 0, _fbo);
         commandBuffer->bindInputAssembler(_inputAssembler);
@@ -481,9 +479,9 @@ void StressTest::tick() {
 
     _device->acquire();
 
-    Vec4 color{0.f, 0.f, 0.f, 1.f};
-    HSV2RGB((hostThread.frameAcc * 20) % 360, .5f, 1.f, color.x, color.y, color.z);
-    _uniformBufferVP->update(&color, sizeof(Mat4), sizeof(Vec4));
+    _uboVP.color.w = 1.f;
+    HSV2RGB((hostThread.frameAcc * 20) % 360, .5f, 1.f, _uboVP.color.x, _uboVP.color.y, _uboVP.color.z);
+    _uniformBufferVP->update(&_uboVP, sizeof(_uboVP));
 
     /* un-toggle this to support dynamic screen rotation *
     Mat4 VP;
@@ -501,7 +499,7 @@ void StressTest::tick() {
     g.createForEachIndexJob(0u, jobCount - 1, 1u, [this](uint passIndex) {
         recordRenderPass(passIndex);
     });
-    JobSystem::getInstance().run(g);
+    g.run();
     recordRenderPass(jobCount - 1);
     g.waitForAll();
     #else

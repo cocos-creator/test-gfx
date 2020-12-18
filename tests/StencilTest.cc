@@ -163,7 +163,7 @@ void StencilTest::createBuffers() {
         sizeof(vertexData),
         4 * sizeof(float),
     });
-    _vertexBuffer->update(vertexData, 0, sizeof(vertexData));
+    _vertexBuffer->update(vertexData, sizeof(vertexData));
 
     gfx::BufferInfo uniformBufferInfo = {
         gfx::BufferUsage::UNIFORM,
@@ -171,14 +171,12 @@ void StencilTest::createBuffers() {
         TestBaseI::getUBOSize(sizeof(Mat4) * 2),
     };
 
-    Mat4 transform[BINDING_COUNT];
-    transform[0].scale(0.5f);
-    transform[0].rotateZ(cc::math::PI / 4);
-    transform[1].scale(0.5f, 0.5f, 0.25f);
+    _uboData[0].world.scale(0.5f);
+    _uboData[0].world.rotateZ(cc::math::PI / 4);
+    _uboData[1].world.scale(0.5f, 0.5f, 0.25f);
 
     for (uint i = 0; i < BINDING_COUNT; i++) {
         _uniformBuffer[i] = _device->createBuffer(uniformBufferInfo);
-        _uniformBuffer[i]->update(&transform[i], 0, sizeof(transform[i]));
     }
 }
 
@@ -387,7 +385,8 @@ void StencilTest::tick() {
     _device->acquire();
 
     for (uint i = 0; i < BINDING_COUNT; i++) {
-        _uniformBuffer[i]->update(&proj, sizeof(Mat4), sizeof(Mat4));
+        TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &_uboData[i].viewProj);
+        _uniformBuffer[i]->update(&_uboData[i], sizeof(MatrixUBO));
     }
 
     gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};

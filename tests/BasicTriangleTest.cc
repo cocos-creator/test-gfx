@@ -134,7 +134,7 @@ void BasicTriangle::createVertexBuffer() {
     };
 
     _vertexBuffer = _device->createBuffer(vertexBufferInfo);
-    _vertexBuffer->update(vertexData, 0, sizeof(vertexData));
+    _vertexBuffer->update(vertexData, sizeof(vertexData));
 
     gfx::BufferInfo uniformBufferInfo = {
         gfx::BufferUsage::UNIFORM,
@@ -152,7 +152,7 @@ void BasicTriangle::createVertexBuffer() {
 
     Mat4 MVP;
     TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &MVP);
-    _uniformBufferMVP->update(MVP.m, 0, sizeof(Mat4));
+    _uniformBufferMVP->update(MVP.m, sizeof(Mat4));
 
     unsigned short indices[] = {1, 3, 0, 1, 2, 3, 2, 4, 3};
     gfx::BufferInfo indexBufferInfo = {
@@ -162,7 +162,7 @@ void BasicTriangle::createVertexBuffer() {
         sizeof(unsigned short),
     };
     _indexBuffer = _device->createBuffer(indexBufferInfo);
-    _indexBuffer->update(indices, 0, sizeof(indices));
+    _indexBuffer->update(indices, sizeof(indices));
 
     gfx::DrawInfo drawInfo;
     drawInfo.firstIndex = 3;
@@ -175,7 +175,7 @@ void BasicTriangle::createVertexBuffer() {
         sizeof(gfx::DrawInfo),
     };
     _indirectBuffer = _device->createBuffer(indirectBufferInfo);
-    _indirectBuffer->update(&drawInfo, 0, sizeof(gfx::DrawInfo));
+    _indirectBuffer->update(&drawInfo, sizeof(gfx::DrawInfo));
 }
 
 void BasicTriangle::createInputAssembler() {
@@ -229,8 +229,8 @@ void BasicTriangle::tick() {
 
     _device->acquire();
 
-    _uniformBuffer->update(&uniformColor, 0, sizeof(uniformColor));
-    _uniformBufferMVP->update(MVP.m, 0, sizeof(Mat4));
+    _uniformBuffer->update(&uniformColor, sizeof(uniformColor));
+    _uniformBufferMVP->update(MVP.m, sizeof(Mat4));
 
     gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
 

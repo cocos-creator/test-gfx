@@ -48,7 +48,8 @@ private:
         float age;
         float life;
     };
-    
+
+    Mat4 _matrices[3];
     ParticleData _particles[PARTICLE_COUNT];
 };
 

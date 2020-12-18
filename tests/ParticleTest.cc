@@ -258,7 +258,7 @@ void ParticleTest::createVertexBuffer() {
         sizeof(_ibufferArray),
         sizeof(uint16_t),
     });
-    _indexBuffer->update(_ibufferArray, 0, sizeof(_ibufferArray));
+    _indexBuffer->update(_ibufferArray, sizeof(_ibufferArray));
 
     for (size_t i = 0; i < PARTICLE_COUNT; ++i) {
         _particles[i].velocity = vec3Random(cc::random(0.1f, 10.0f));
@@ -268,13 +268,10 @@ void ParticleTest::createVertexBuffer() {
 
     _uniformBuffer = _device->createBuffer({
         gfx::BufferUsage::UNIFORM,
-        gfx::MemoryUsage::DEVICE,
+        gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
         TestBaseI::getUBOSize(3 * sizeof(Mat4)),
     });
-    Mat4 model, view;
-    Mat4::createLookAt(Vec3(30.0f, 20.0f, 30.0f), Vec3(0.0f, 2.5f, 0.0f), Vec3(0.0f, 1.0f, 0.f), &view);
-    _uniformBuffer->update(model.m, 0, sizeof(model));
-    _uniformBuffer->update(view.m, sizeof(model), sizeof(view));
+    Mat4::createLookAt(Vec3(30.0f, 20.0f, 30.0f), Vec3(0.0f, 2.5f, 0.0f), Vec3(0.0f, 1.0f, 0.f), &_matrices[1]);
 }
 
 void ParticleTest::createInputAssembler() {
@@ -404,14 +401,13 @@ void ParticleTest::tick() {
         }
     }
 
-    Mat4 projection;
     gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize();
-    TestBaseI::createPerspective(60.0f, 1.0f * orientedSize.width / orientedSize.height, 0.01f, 1000.0f, &projection);
-    _uniformBuffer->update(projection.m, sizeof(Mat4) * 2, sizeof(projection));
+    TestBaseI::createPerspective(60.0f, 1.0f * orientedSize.width / orientedSize.height, 0.01f, 1000.0f, &_matrices[2]);
 
     _device->acquire();
 
-    _vertexBuffer->update(_vbufferArray, 0, sizeof(_vbufferArray));
+    _uniformBuffer->update(_matrices, sizeof(_matrices));
+    _vertexBuffer->update(_vbufferArray, sizeof(_vbufferArray));
     gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
 
     auto commandBuffer = _commandBuffers[0];

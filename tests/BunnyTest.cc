@@ -154,7 +154,7 @@ void BunnyTest::createBuffers() {
         sizeof(bunny_positions),
         3 * sizeof(float),
     });
-    _vertexBuffer->update((void *)&bunny_positions[0][0], 0, sizeof(bunny_positions));
+    _vertexBuffer->update((void *)&bunny_positions[0][0], sizeof(bunny_positions));
 
     // index buffer
     _indexBuffer = _device->createBuffer({
@@ -163,7 +163,7 @@ void BunnyTest::createBuffers() {
         sizeof(bunny_cells),
         sizeof(uint16_t),
     });
-    _indexBuffer->update((void *)&bunny_cells[0], 0, sizeof(bunny_cells));
+    _indexBuffer->update((void *)&bunny_cells[0], sizeof(bunny_cells));
 
     // root UBO
     uint offset = TestBaseI::getAlignedUBOStride(_device, 3 * sizeof(Mat4));
@@ -247,7 +247,7 @@ void BunnyTest::tick() {
 
     _device->acquire();
 
-    _rootUBO->update(_rootBuffer.data(), 0, _rootBuffer.size() * sizeof(float));
+    _rootUBO->update(_rootBuffer.data(), _rootBuffer.size() * sizeof(float));
     gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
 
     auto commandBuffer = _commandBuffers[0];

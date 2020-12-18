@@ -30,6 +30,12 @@ class StressTest: public TestBaseI
     gfx::Buffer *_vertexBuffer = nullptr;
     gfx::Buffer *_uniformBufferVP = nullptr;
 
+    struct ViewProjUBO {
+        Mat4 matViewProj;
+        Vec4 color;
+    };
+    ViewProjUBO _uboVP;
+
     gfx::Buffer *_uniWorldBuffer = nullptr, *_uniWorldBufferView = nullptr;
     gfx::DescriptorSet* _uniDescriptorSet = nullptr;
 

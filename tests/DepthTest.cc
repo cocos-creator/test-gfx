@@ -162,7 +162,7 @@ struct BigTriangle : public cc::Object {
             sizeof(vertices),
             4 * sizeof(float),
         });
-        vertexBuffer->update(vertices, 0, sizeof(vertices));
+        vertexBuffer->update(vertices, sizeof(vertices));
 
         // create uniform buffer
         nearFarUniformBuffer = device->createBuffer({
@@ -172,7 +172,7 @@ struct BigTriangle : public cc::Object {
         });
 
         float uboData[] = {0.1f, 100.0f};
-        nearFarUniformBuffer->update(uboData, 0, sizeof(uboData));
+        nearFarUniformBuffer->update(uboData, sizeof(uboData));
     }
 
     void createInputAssembler() {
@@ -346,7 +346,7 @@ struct Bunny : public cc::Object {
             sizeof(bunny_positions),
             3 * sizeof(float),
         });
-        vertexBuffer->update((void *)&bunny_positions[0][0], 0, sizeof(bunny_positions));
+        vertexBuffer->update((void *)&bunny_positions[0][0], sizeof(bunny_positions));
 
         // index buffer
         indexBuffer = device->createBuffer({
@@ -355,7 +355,7 @@ struct Bunny : public cc::Object {
             sizeof(bunny_cells),
             sizeof(unsigned short),
         });
-        indexBuffer->update((void *)&bunny_cells[0], 0, sizeof(bunny_cells));
+        indexBuffer->update((void *)&bunny_cells[0], sizeof(bunny_cells));
 
         // uniform buffer
         // create uniform buffer
@@ -503,23 +503,17 @@ void DepthTexture::tick() {
     _eye.set(30.f * std::cos(_dt), 20.f, 30.f * std::sin(_dt));
     _center.set(0, 2.5f, 0);
     _up.set(0, 1.f, 0);
-    Mat4::createLookAt(_eye, _center, _up, &_view);
+    Mat4::createLookAt(_eye, _center, _up, &_bunnyMatrices[1]);
     gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize();
-    TestBaseI::createPerspective(45.f, 1.0f * orientedSize.width / orientedSize.height, 0.1f, 100.f, &_projection, true);
+    TestBaseI::createPerspective(45.f, 1.0f * orientedSize.width / orientedSize.height, 0.1f, 100.f, &_bunnyMatrices[2], true);
 
     gfx::Color clearColor = {1.0, 0, 0, 1.0f};
 
     _device->acquire();
 
     for (uint i = 0; i < Bunny::BUNNY_NUM; i++) {
-        _model = Mat4::IDENTITY;
-        if (i % 2 == 0)
-            _model.translate(5, 0, 0);
-        else
-            _model.translate(-5, 0, 0);
-        bunny->mvpUniformBuffer[i]->update(_model.m, 0, sizeof(_model));
-        bunny->mvpUniformBuffer[i]->update(_view.m, sizeof(_model), sizeof(_view));
-        bunny->mvpUniformBuffer[i]->update(_projection.m, sizeof(_model) + sizeof(_view), sizeof(_projection));
+        _bunnyMatrices[0].m[12] = i % 2 ? -5 : 5;
+        bunny->mvpUniformBuffer[i]->update(_bunnyMatrices, sizeof(_bunnyMatrices));
     }
     gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
 

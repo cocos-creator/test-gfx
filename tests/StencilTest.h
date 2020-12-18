@@ -36,6 +36,12 @@ private:
     gfx::PipelineLayout* _pipelineLayout = nullptr;
     gfx::PipelineState* _pipelineState[PIPELIE_COUNT] = { nullptr };
     gfx::Sampler* _sampler = nullptr;
+
+    struct MatrixUBO {
+        Mat4 world;
+        Mat4 viewProj;
+    };
+    MatrixUBO _uboData[BINDING_COUNT];
     
     float _dt = 0.0f;
 };

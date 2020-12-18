@@ -20,9 +20,7 @@ public:
 private:
     Framebuffer* _bunnyFBO;
 
-    Mat4 _view;
-    Mat4 _model;
-    Mat4 _projection;
+    Mat4 _bunnyMatrices[3];
     Vec3 _eye;
     Vec3 _center;
     Vec3 _up;
