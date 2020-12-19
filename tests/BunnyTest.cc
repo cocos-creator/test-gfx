@@ -34,6 +34,7 @@ void BunnyTest::createShader() {
     ShaderSources sources;
     sources.glsl4 = {
         R"(
+            precision highp float;
             layout(location = 0) in vec3 a_position;
 
             layout(set = 0, binding = 0) uniform MVP_Matrix {
@@ -49,6 +50,7 @@ void BunnyTest::createShader() {
             }
         )",
         R"(
+            precision highp float;
             layout(set = 0, binding = 1) uniform Color {
                 vec4 u_color;
             };

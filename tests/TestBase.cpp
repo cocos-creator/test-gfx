@@ -41,13 +41,17 @@ std::vector<TestBaseI::createFunc> TestBaseI::g_tests =
     StressTest::create,
     ClearScreen::create,
     BasicTriangle::create,
-    BasicTexture::create,
     DepthTexture::create,
-    StencilTest::create,
     BlendTest::create,
     ParticleTest::create,
     BunnyTest::create,
+    // Need to fix lib jpeg on iOS
+#if CC_PLATFORM != CC_PLATFORM_MAC_IOS
+    BasicTexture::create,
+    StencilTest::create,
+#endif // CC_PLATFORM != CC_PLATFORM_MAC_IOS
 };
+
 
 gfx::Device *TestBaseI::_device         = nullptr;
 gfx::Framebuffer *TestBaseI::_fbo       = nullptr;
