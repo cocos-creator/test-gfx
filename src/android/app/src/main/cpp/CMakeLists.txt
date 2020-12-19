@@ -104,6 +104,7 @@ target_link_libraries(${APP_NAME}
     log
     Core
     TFJobSystem
+    TBBJobSystem
     GFXGLES3
     GFXGLES2
     GFXVulkan

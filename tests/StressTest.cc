@@ -2,10 +2,10 @@
 
 namespace cc {
 
-/* *
-constexpr uint PASS_COUNT = 1;
-constexpr uint MODELS_PER_LINE[PASS_COUNT] = {10};
 /* */
+constexpr uint PASS_COUNT = 2;
+constexpr uint MODELS_PER_LINE[PASS_COUNT] = {100, 100};
+/* *
 constexpr uint PASS_COUNT = 4;
 constexpr uint MODELS_PER_LINE[PASS_COUNT] = {50, 1, 5, 50};
 //constexpr uint MODELS_PER_LINE[PASS_COUNT] = {50, 50, 50, 50};
@@ -97,7 +97,7 @@ bool StressTest::initialize() {
     createInputAssembler();
     createPipeline();
 
-    _threadCount = JobSystem::getInstance().threadCount() + 1; // main thread counts too
+    _threadCount = JobSystem::getInstance()->threadCount() + 1; // main thread counts too
     gfx::CommandBufferInfo info;
     info.queue = _device->getQueue();
     uint cbCount = 0u;
@@ -495,13 +495,15 @@ void StressTest::tick() {
 #else
     uint jobCount = PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED ? _threadCount : PASS_COUNT;
     #if USE_PARALLEL_RECORDING
-    JobGraph g;
-    g.createForEachIndexJob(0u, jobCount - 1, 1u, [this](uint passIndex) {
-        recordRenderPass(passIndex);
-    });
-    g.run();
-    recordRenderPass(jobCount - 1);
-    g.waitForAll();
+    {
+        JobGraph g(JobSystem::getInstance());
+        uint job = g.createForEachIndexJob(0u, jobCount - 1, 1u, [this](uint passIndex) {
+            recordRenderPass(passIndex);
+        });
+        g.run(job);
+        recordRenderPass(jobCount - 1);
+        g.waitForAll();
+    }
     #else
     for (uint t = 0u; t < jobCount; ++t) {
         recordRenderPass(t);

@@ -77,6 +77,7 @@ target_link_libraries(${APP_NAME}
     ${PLATFORM_SPECIFIC_LIBS}
     Core
     TFJobSystem
+    TBBJobSystem
     GFXGLES2
     GFXGLES3
     ${CC_EXTERNAL_LIBS}

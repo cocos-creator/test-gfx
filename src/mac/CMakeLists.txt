@@ -97,6 +97,7 @@ target_link_libraries(${APP_NAME}
     ${PLATFORM_SPECIFIC_LIBS}
     Core
     TFJobSystem
+    TBBJobSystem
     ${GFX_LIB}
     ${CC_EXTERNAL_LIBS}
     z
