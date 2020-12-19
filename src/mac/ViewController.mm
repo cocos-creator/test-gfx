@@ -30,10 +30,6 @@
     // Update the view, if already loaded.
 }
 
-- (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size {
-    
-}
-
 - (void)viewDidAppear
 {
     // Make the view controller the window's first responder so that it can handle the Key events
