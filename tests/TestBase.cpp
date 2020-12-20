@@ -64,7 +64,7 @@ FrameRate TestBaseI::deviceThread;
 TestBaseI::TestBaseI(const WindowInfo &info)
 {
     if (_device == nullptr) {
-        _device = CC_NEW(gfx::DeviceProxy(CC_NEW(DeviceCtor), nullptr));
+        _device = CC_NEW(gfx::DeviceAgent(CC_NEW(DeviceCtor), nullptr));
 
         gfx::DeviceInfo dev_info;
         dev_info.windowHandle = info.windowHandle;
@@ -130,7 +130,7 @@ void TestBaseI::toggleMultithread()
 {
     static bool multithreaded = true;
     multithreaded = !multithreaded;
-    ((gfx::DeviceProxy *)_device)->setMultithreaded(multithreaded);
+    ((gfx::DeviceAgent *)_device)->setMultithreaded(multithreaded);
 }
 
 void TestBaseI::onTouchEnd(const WindowInfo& windowInfo)

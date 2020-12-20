@@ -1,15 +1,19 @@
 #include "StressTest.h"
+#include "gfx-vulkan/GFXVulkan.h"
+
+#define VK_NO_PROTOTYPES
+#include "gfx-vulkan/VKGPUObjects.h"
 
 namespace cc {
 
 /* *
 constexpr uint PASS_COUNT = 1;
 constexpr uint MODELS_PER_LINE[PASS_COUNT] = {10};
-/* */
+/* *
 constexpr uint PASS_COUNT = 4;
 constexpr uint MODELS_PER_LINE[PASS_COUNT] = {50, 1, 5, 50};
 //constexpr uint MODELS_PER_LINE[PASS_COUNT] = {50, 50, 50, 50};
-/* *
+/* */
 constexpr uint PASS_COUNT = 9;
 constexpr uint MODELS_PER_LINE[PASS_COUNT] = {100, 2, 100, 100, 3, 4, 100, 5, 100};
 /* */
@@ -456,7 +460,7 @@ void StressTest::tick() {
     // simulate heavy logic operation
     std::this_thread::sleep_for(std::chrono::milliseconds(MAIN_THREAD_SLEEP));
 
-    CommandEncoder *encoder = ((gfx::DeviceProxy *)_device)->getMainEncoder();
+    CommandEncoder *encoder = ((gfx::DeviceAgent *)_device)->getMainEncoder();
     hostThread.timeAcc = hostThread.timeAcc * 0.95f + hostThread.dt * 0.05f;
     hostThread.frameAcc++;
 
@@ -477,6 +481,16 @@ void StressTest::tick() {
         });
 
     _device->acquire();
+
+    //gfx::CCVKDevice *core = (gfx::CCVKDevice *)((gfx::DeviceCrust *)_device)->getRemote();
+    //ENCODE_COMMAND_1(
+    //    encoder,
+    //    ReserveEvents,
+    //    core, core,
+    //    {
+    //        for (int i = 0; i < PASS_COUNT; ++i)
+    //            core->gpuEventPool()->get(i);
+    //    });
 
     _uboVP.color.w = 1.f;
     HSV2RGB((hostThread.frameAcc * 20) % 360, .5f, 1.f, _uboVP.color.x, _uboVP.color.y, _uboVP.color.z);
