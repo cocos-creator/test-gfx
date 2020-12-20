@@ -32,6 +32,7 @@
 #endif
 #import <AppKit/NSTouch.h>
 #import <AppKit/NSEvent.h>
+#import <QuartzCore/QuartzCore.h>
 
 namespace
 {
@@ -42,46 +43,60 @@ namespace
 
 }
 
+- (CALayer *)makeBackingLayer
+{
+    return [CAMetalLayer layer];
+}
+
 - (instancetype)initWithFrame:(NSRect)frameRect {
     if (self = [super initWithFrame:frameRect]) {
         [self.window makeFirstResponder:self];
-        self.device = MTLCreateSystemDefaultDevice();
-        self.depthStencilPixelFormat = MTLPixelFormatDepth24Unorm_Stencil8;
-        self.mtlCommandQueue = [self.device newCommandQueue];
-        self.delegate = self;
+        
         int pixelRatio = 1;
 #if CC_PLATFORM == CC_PLATFORM_MAC_OSX
         pixelRatio = [[NSScreen mainScreen] backingScaleFactor];
 #else
         pixelRatio = [[UIScreen mainScreen] scale];
 #endif //CC_PLATFORM == CC_PLATFORM_MAC_OSX
+        CGSize size = CGSizeMake(frameRect.size.width * pixelRatio, frameRect.size.height * pixelRatio);
+        
+        // Create CAMetalLayer
+        self.wantsLayer = YES;
+        // Config metal layer
+        CAMetalLayer *layer = (CAMetalLayer*)self.layer;
+        layer.pixelFormat = MTLPixelFormatBGRA8Unorm;
+        layer.device = self.device = MTLCreateSystemDefaultDevice();
+        layer.drawableSize = size;
+        self.depthStencilPixelFormat = MTLPixelFormatDepth24Unorm_Stencil8;
+        self.mtlCommandQueue = [self.device newCommandQueue];
 
         g_windowInfo.windowHandle = (intptr_t)self;
 
         g_windowInfo.screen.x = frameRect.origin.x;
         g_windowInfo.screen.y = frameRect.origin.y;
-        g_windowInfo.screen.width = frameRect.size.width * pixelRatio;
-        g_windowInfo.screen.height = frameRect.size.height * pixelRatio;
-
-        g_windowInfo.physicalHeight = g_windowInfo.screen.height;
-        g_windowInfo.physicalWidth = g_windowInfo.screen.width;
+        g_windowInfo.screen.width = g_windowInfo.physicalWidth = size.width;
+        g_windowInfo.screen.height = g_windowInfo.physicalHeight = size.height;
+        
+        // Start main loop
+        self.timer = [NSTimer scheduledTimerWithTimeInterval:1.0f / 60
+                                                 target:self
+                                               selector:@selector(tick)
+                                               userInfo:nil
+                                                repeats:YES];
 
         cc::TestBaseI::nextTest(g_windowInfo);
     }
     return self;
 }
 
-- (void)drawInMTKView:(MTKView *)view {
-    cc::TestBaseI::onTick();
-}
-
-- (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size {
-}
-
 - (void)keyUp:(NSEvent *)event {
     if (event.keyCode == 49) { // space
         cc::TestBaseI::toggleMultithread();
     }
+}
+
+- (void)tick {
+    cc::TestBaseI::onTick();
 }
 
 - (void)mouseUp:(NSEvent *)event {

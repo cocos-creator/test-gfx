@@ -69,6 +69,7 @@ struct Quad : public cc::Object {
         ShaderSources sources;
         sources.glsl4 = {
             R"(
+                precision highp float;
                 layout(location = 0) in vec2 a_position;
                 layout(location = 1) in vec2 a_uv;
                 layout(location = 0) out vec2 uv;
@@ -81,6 +82,7 @@ struct Quad : public cc::Object {
                 }
             )",
             R"(
+                precision highp float;
                 layout(location = 0) in vec2 uv;
                 layout(set = 0, binding = 1) uniform sampler2D u_texture;
                 layout(location = 0) out vec4 o_color;
@@ -386,6 +388,7 @@ struct BigTriangle : public cc::Object {
         ShaderSources sources;
         sources.glsl4 = {
             R"(
+                precision highp float;
                 layout(location = 0) in vec2 a_position;
                 layout(location = 1) in vec2 a_texCoord;
                 layout(location = 0) out vec2 uv;
@@ -395,6 +398,7 @@ struct BigTriangle : public cc::Object {
                 }
             )",
             R"(
+                precision highp float;
                 layout(location = 0) in vec2 uv;
                 layout(set = 0, binding = 0) uniform Time {
                     float u_time;

@@ -80,10 +80,12 @@ set_xcode_property(${APP_NAME} PRODUCT_BUNDLE_IDENTIFIER ${APP_NAME})
 find_library(APPKIT_LIBRARY AppKit)
 find_library(METAL_LIBRARY Metal)
 find_library(METALKIT_LIBRARY MetalKit)
+find_library(QUARTZCORE_LIBRARY QuartzCore)
 list(APPEND PLATFORM_SPECIFIC_LIBS
      ${APPKIT_LIBRARY}
      ${METAL_LIBRARY}
      ${METALKIT_LIBRARY}
+     ${QUARTZCORE_LIBRARY}
 )
 
 if (USE_METAL)

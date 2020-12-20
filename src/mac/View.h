@@ -23,8 +23,11 @@
  ****************************************************************************/
 #import <MetalKit/MetalKit.h>
 
-@interface View : MTKView <MTKViewDelegate>
+@interface View : NSView
+@property(nonatomic, assign) NSTimer *timer;
+@property(nonatomic, assign) id<MTLDevice> device;
 @property(nonatomic, assign) id<MTLCommandQueue> mtlCommandQueue;
+@property MTLPixelFormat depthStencilPixelFormat;
 
 - (void)onTerminate;
 @end

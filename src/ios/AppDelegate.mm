@@ -39,9 +39,7 @@ namespace
     [self initWindowInfo: view size:rect.size];
     TestBaseI::nextTest(g_windowInfo);
 
-#ifndef USE_METAL
     [self run];
-#endif
 
     [self.window setRootViewController:viewController];
     [self.window makeKeyAndVisible];
