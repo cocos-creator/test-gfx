@@ -78,10 +78,12 @@ set_target_properties(${APP_NAME} PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_C
 find_library(APPKIT_LIBRARY AppKit)
 find_library(METAL_LIBRARY Metal)
 find_library(METALKIT_LIBRARY MetalKit)
+find_library(QUARTZCORE_LIBRARY QuartzCore)
 list(APPEND PLATFORM_SPECIFIC_LIBS
      ${APPKIT_LIBRARY}
      ${METAL_LIBRARY}
      ${METALKIT_LIBRARY}
+     ${QUARTZCORE_LIBRARY}
 )
 
 if (USE_METAL)
