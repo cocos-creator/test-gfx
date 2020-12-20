@@ -10,9 +10,9 @@
 @implementation View
 
 #ifdef USE_METAL
-+ (Class)layerClass
+- (CALayer *)makeBackingLayer
 {
-    return [CAMetalLayer class];
+    return [CAMetalLayer layer];
 }
 #else
 + (Class)layerClass
@@ -23,9 +23,17 @@
 
 - (id)initWithFrame:(CGRect)frame {
 #ifdef USE_METAL
-    if (self = [super initWithFrame:frame device:MTLCreateSystemDefaultDevice()]) {
-        self.framebufferOnly = YES;
-        self.delegate = self;
+    if (self = [super initWithFrame:frame]) {
+        // Create CAMetalLayer
+        self.wantsLayer = YES;
+        // Config metal layer
+        CAMetalLayer *layer = (CAMetalLayer*)self.layer;
+        layer.pixelFormat = MTLPixelFormatBGRA8Unorm;
+        layer.device = self.device = MTLCreateSystemDefaultDevice();
+        CGSize size = CGSizeMake(frameRect.size);
+        layer.drawableSize = size;
+        
+        self.device = MTLCreateSystemDefaultDevice();
     }
 #else
     self = [super initWithFrame:frame];
