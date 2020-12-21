@@ -9,11 +9,12 @@ namespace cc {
 /* *
 constexpr uint PASS_COUNT = 1;
 constexpr uint MODELS_PER_LINE[PASS_COUNT] = {10};
-/* *
-constexpr uint PASS_COUNT = 4;
-constexpr uint MODELS_PER_LINE[PASS_COUNT] = {50, 1, 5, 50};
-//constexpr uint MODELS_PER_LINE[PASS_COUNT] = {50, 50, 50, 50};
 /* */
+constexpr uint PASS_COUNT = 4;
+//constexpr uint MODELS_PER_LINE[PASS_COUNT] = {50, 1, 5, 50};
+//constexpr uint MODELS_PER_LINE[PASS_COUNT] = {100, 100, 100, 100};
+constexpr uint MODELS_PER_LINE[PASS_COUNT] = {150, 1, 2, 3};
+/* *
 constexpr uint PASS_COUNT = 9;
 constexpr uint MODELS_PER_LINE[PASS_COUNT] = {100, 2, 100, 100, 3, 4, 100, 5, 100};
 /* */
@@ -37,7 +38,7 @@ const gfx::Color StressTest::clearColors[] = {
 #define PARALLEL_STRATEGY_RP_BASED_SECONDARY 2 // render pass level concurrency with the use of secondary command buffers, which completely sequentializes the submission process
 #define PARALLEL_STRATEGY_DC_BASED           3 // draw call level concurrency: current endgame milestone
 
-#define PARALLEL_STRATEGY 1
+#define PARALLEL_STRATEGY 0
 
 #define USE_DYNAMIC_UNIFORM_BUFFER 1
 #define USE_PARALLEL_RECORDING     1
@@ -460,7 +461,8 @@ void StressTest::tick() {
     // simulate heavy logic operation
     std::this_thread::sleep_for(std::chrono::milliseconds(MAIN_THREAD_SLEEP));
 
-    hostThread.timeAcc = hostThread.timeAcc * 0.95f + hostThread.dt * 0.05f;
+    if (!hostThread.timeAcc) hostThread.timeAcc = hostThread.dt;
+    else hostThread.timeAcc = hostThread.timeAcc * 0.95f + hostThread.dt * 0.05f;
     hostThread.frameAcc++;
 
     if (hostThread.frameAcc % 6 == 0) {
@@ -473,7 +475,8 @@ void StressTest::tick() {
     //    DeviceStatistics,
     //    {
     //        lookupTime(deviceThread);
-    //        deviceThread.timeAcc = deviceThread.timeAcc * 0.95f + deviceThread.dt * 0.05f;
+    //        if (!deviceThread.timeAcc) deviceThread.timeAcc = deviceThread.dt;
+    //        else deviceThread.timeAcc = deviceThread.timeAcc * 0.95f + deviceThread.dt * 0.05f;
     //        deviceThread.frameAcc++;
     //        if (deviceThread.frameAcc % 6 == 0) {
     //            CC_LOG_INFO("Device thread avg: %.2fms (~%d FPS)", deviceThread.timeAcc * 1000.f, uint(1.f / deviceThread.timeAcc + .5f));
