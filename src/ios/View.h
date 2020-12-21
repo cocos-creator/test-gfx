@@ -12,11 +12,7 @@
 #import <MetalKit/MetalKit.h>
 #endif
 
-#ifdef USE_METAL
-@interface View : NSView
-#else
 @interface View : UIView
-#endif
 
 @property(nonatomic, assign) NSTimer *timer;
 @property(nonatomic, assign) id<MTLDevice> device;
