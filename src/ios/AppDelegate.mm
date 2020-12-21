@@ -50,13 +50,7 @@ namespace
 - (void)initWindowInfo:(UIView*)view size:(CGSize)size {
     g_windowInfo.windowHandle = (intptr_t)(view);
 
-    float scale = 1.0f;
-    if ( [view respondsToSelector:@selector(setContentScaleFactor:)] )
-    {
-        scale = [[UIScreen mainScreen] scale];
-        view.contentScaleFactor = scale;
-    }
-
+    float scale = view.contentScaleFactor;
     g_windowInfo.screen.x = 0;
     g_windowInfo.screen.y = 0;
     g_windowInfo.screen.width = size.width * scale;
