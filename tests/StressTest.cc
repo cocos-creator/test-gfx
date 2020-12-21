@@ -37,7 +37,7 @@ const gfx::Color StressTest::clearColors[] = {
 #define PARALLEL_STRATEGY_RP_BASED_SECONDARY 2 // render pass level concurrency with the use of secondary command buffers, which completely sequentializes the submission process
 #define PARALLEL_STRATEGY_DC_BASED           3 // draw call level concurrency: current endgame milestone
 
-#define PARALLEL_STRATEGY 3
+#define PARALLEL_STRATEGY 1
 
 #define USE_DYNAMIC_UNIFORM_BUFFER 1
 #define USE_PARALLEL_RECORDING     1
@@ -460,7 +460,6 @@ void StressTest::tick() {
     // simulate heavy logic operation
     std::this_thread::sleep_for(std::chrono::milliseconds(MAIN_THREAD_SLEEP));
 
-    CommandEncoder *encoder = ((gfx::DeviceAgent *)_device)->getMainEncoder();
     hostThread.timeAcc = hostThread.timeAcc * 0.95f + hostThread.dt * 0.05f;
     hostThread.frameAcc++;
 
@@ -468,29 +467,30 @@ void StressTest::tick() {
         CC_LOG_INFO("Host thread avg: %.2fms (~%d FPS)", hostThread.timeAcc * 1000.f, uint(1.f / hostThread.timeAcc + .5f));
     }
 
-    ENCODE_COMMAND_0(
-        encoder,
-        DeviceStatistics,
-        {
-            lookupTime(deviceThread);
-            deviceThread.timeAcc = deviceThread.timeAcc * 0.95f + deviceThread.dt * 0.05f;
-            deviceThread.frameAcc++;
-            if (deviceThread.frameAcc % 6 == 0) {
-                CC_LOG_INFO("Device thread avg: %.2fms (~%d FPS)", deviceThread.timeAcc * 1000.f, uint(1.f / deviceThread.timeAcc + .5f));
-            }
-        });
+    //CommandEncoder *encoder = ((gfx::DeviceAgent *)_device)->getMainEncoder();
+    //ENCODE_COMMAND_0(
+    //    encoder,
+    //    DeviceStatistics,
+    //    {
+    //        lookupTime(deviceThread);
+    //        deviceThread.timeAcc = deviceThread.timeAcc * 0.95f + deviceThread.dt * 0.05f;
+    //        deviceThread.frameAcc++;
+    //        if (deviceThread.frameAcc % 6 == 0) {
+    //            CC_LOG_INFO("Device thread avg: %.2fms (~%d FPS)", deviceThread.timeAcc * 1000.f, uint(1.f / deviceThread.timeAcc + .5f));
+    //        }
+    //    });
 
-    _device->acquire();
-
-    //gfx::CCVKDevice *core = (gfx::CCVKDevice *)((gfx::DeviceCrust *)_device)->getRemote();
+    //gfx::CCVKDevice *actor = (gfx::CCVKDevice *)((gfx::DeviceAgent *)_device)->getRemote();
     //ENCODE_COMMAND_1(
     //    encoder,
     //    ReserveEvents,
-    //    core, core,
+    //    actor, actor,
     //    {
     //        for (int i = 0; i < PASS_COUNT; ++i)
-    //            core->gpuEventPool()->get(i);
+    //            actor->gpuEventPool()->get(i);
     //    });
+
+    _device->acquire();
 
     _uboVP.color.w = 1.f;
     HSV2RGB((hostThread.frameAcc * 20) % 360, .5f, 1.f, _uboVP.color.x, _uboVP.color.y, _uboVP.color.z);

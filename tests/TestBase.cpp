@@ -64,7 +64,8 @@ FrameRate TestBaseI::deviceThread;
 TestBaseI::TestBaseI(const WindowInfo &info)
 {
     if (_device == nullptr) {
-        _device = CC_NEW(gfx::DeviceAgent(CC_NEW(DeviceCtor), nullptr));
+        _device = CC_NEW(DeviceCtor);
+        _device = CC_NEW(gfx::DeviceAgent(_device, nullptr));
 
         gfx::DeviceInfo dev_info;
         dev_info.windowHandle = info.windowHandle;
