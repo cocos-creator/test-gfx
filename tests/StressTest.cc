@@ -42,7 +42,7 @@ const gfx::Color StressTest::clearColors[] = {
 #define PARALLEL_STRATEGY_DC_BASED_FINER_JOBS               4 // draw call level concurrency with finer job generation (not works for single-threaded metal)
 #define PARALLEL_STRATEGY_DC_BASED_FINER_JOBS_MULTI_PRIMARY 5 // draw call level concurrency with finer job generation
 
-#define PARALLEL_STRATEGY 3
+#define PARALLEL_STRATEGY 2
 
 #define USE_DYNAMIC_UNIFORM_BUFFER 1
 #define USE_PARALLEL_RECORDING     1
@@ -522,23 +522,9 @@ void StressTest::tick() {
     else hostThread.timeAcc = hostThread.timeAcc * 0.95f + hostThread.dt * 0.05f;
     hostThread.frameAcc++;
 
-    if (hostThread.frameAcc % 6 == 0) {
-        CC_LOG_INFO("Host thread avg: %.2fms (~%d FPS)", hostThread.timeAcc * 1000.f, uint(1.f / hostThread.timeAcc + .5f));
-    }
-
-    //CommandEncoder *encoder = ((gfx::DeviceAgent *)_device)->getMainEncoder();
-    //ENCODE_COMMAND_0(
-    //    encoder,
-    //    DeviceStatistics,
-    //    {
-    //        lookupTime(deviceThread);
-    //        if (!deviceThread.timeAcc) deviceThread.timeAcc = deviceThread.dt;
-    //        else deviceThread.timeAcc = deviceThread.timeAcc * 0.95f + deviceThread.dt * 0.05f;
-    //        deviceThread.frameAcc++;
-    //        if (deviceThread.frameAcc % 6 == 0) {
-    //            CC_LOG_INFO("Device thread avg: %.2fms (~%d FPS)", deviceThread.timeAcc * 1000.f, uint(1.f / deviceThread.timeAcc + .5f));
-    //        }
-    //    });
+//    if (hostThread.frameAcc % 6 == 0) {
+        CC_LOG_INFO("Host thread n.%d avg: %.2fms (~%d FPS)", hostThread.frameAcc, hostThread.timeAcc * 1000.f, uint(1.f / hostThread.timeAcc + .5f));
+//    }
 
     //gfx::CCVKDevice *actor = (gfx::CCVKDevice *)((gfx::DeviceAgent *)_device)->getRemote();
     //ENCODE_COMMAND_1(
@@ -665,7 +651,8 @@ void StressTest::tick() {
     gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
     for (uint t = 0u; t < PASS_COUNT; ++t) {
         commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea,
-                                       &clearColors[t], 1.0f, 0, true);
+                                       &clearColors[t], 1.0f, 0,
+                                       _parallelCBs.data(), _threadCount);
         commandBuffer->execute(_parallelCBs.data(), _threadCount);
         commandBuffer->endRenderPass();
     }
@@ -677,7 +664,8 @@ void StressTest::tick() {
     commandBuffer->begin();
     for (uint t = 0u; t < PASS_COUNT; ++t) {
         commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea,
-                                       &clearColors[t], 1.0f, 0, true);
+                                       &clearColors[t], 1.0f, 0,
+                                       &_parallelCBs[t], 1);
         commandBuffer->execute(&_parallelCBs[t], 1);
         commandBuffer->endRenderPass();
     }
@@ -689,6 +677,20 @@ void StressTest::tick() {
 #endif
 
     _device->present();
+    
+    CommandEncoder *encoder = ((gfx::DeviceAgent *)_device)->getMainEncoder();
+    ENCODE_COMMAND_0(
+        encoder,
+        DeviceStatistics,
+        {
+            lookupTime(deviceThread);
+            if (!deviceThread.timeAcc) deviceThread.timeAcc = deviceThread.dt;
+            else deviceThread.timeAcc = deviceThread.timeAcc * 0.95f + deviceThread.dt * 0.05f;
+            deviceThread.frameAcc++;
+//            if (deviceThread.frameAcc % 6 == 0) {
+                CC_LOG_INFO("Device thread n.%d avg: %.2fms (~%d FPS)", deviceThread.frameAcc, deviceThread.timeAcc * 1000.f, uint(1.f / deviceThread.timeAcc + .5f));
+//            }
+        });
 }
 
 } // namespace cc

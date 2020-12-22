@@ -8,7 +8,7 @@ message(STATUS "App: ${APP_NAME}...")
 option(USE_METAL "USE METAL" ON)
 
 # toggle Metal/MoltenVK
-set(USE_METAL OFF)
+# set(USE_METAL OFF)
 
 # ---------------------------------------------------------------------
 # set include files
