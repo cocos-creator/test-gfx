@@ -259,7 +259,7 @@ void StressTest::createVertexBuffer() {
     _worldBufferStride = TestBaseI::getAlignedUBOStride(_device, sizeof(Vec4));
     gfx::BufferInfo uniformBufferWInfo = {
         gfx::BufferUsage::UNIFORM,
-        gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
+        gfx::MemoryUsage::DEVICE,
         TestBaseI::getUBOSize(_worldBufferStride * MODELS_PER_LINE[0] * MODELS_PER_LINE[0]),
         _worldBufferStride,
     };
@@ -285,7 +285,7 @@ void StressTest::createVertexBuffer() {
     uint size = TestBaseI::getUBOSize(sizeof(Vec4));
     gfx::BufferInfo uniformBufferWInfo = {
         gfx::BufferUsage::UNIFORM,
-        gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
+        gfx::MemoryUsage::DEVICE,
         size, size};
 
     _worldBuffers.resize(MODELS_PER_LINE[0] * MODELS_PER_LINE[0]);

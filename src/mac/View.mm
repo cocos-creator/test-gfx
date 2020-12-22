@@ -70,7 +70,11 @@ namespace
         self.depthStencilPixelFormat = MTLPixelFormatDepth24Unorm_Stencil8;
         self.mtlCommandQueue = [self.device newCommandQueue];
 
+#if USE_METAL
         g_windowInfo.windowHandle = (intptr_t)self;
+#else
+        g_windowInfo.windowHandle = (intptr_t)layer;
+#endif
 
         g_windowInfo.screen.x = frameRect.origin.x;
         g_windowInfo.screen.y = frameRect.origin.y;

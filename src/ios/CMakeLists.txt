@@ -66,7 +66,7 @@ if (USE_VULKAN)
     add_definitions("-DUSE_VULKAN")
     # MoltenVK need MTKView too
     add_definitions("-DUSE_METAL")
-    set(LIB_MOLTEN_VK "${GFX_EXTERNAL_PATH}/libMoltenVK.dylib")
+    set(LIB_MOLTEN_VK "${GFX_EXTERNAL_PATH}/MoltenVK/ios/release/libMoltenVK.dylib")
     list(APPEND ALL_FILES ${LIB_MOLTEN_VK})
 elseif (USE_METAL)
     add_definitions("-DUSE_METAL")

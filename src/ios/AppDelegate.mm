@@ -48,8 +48,11 @@ namespace
 }
 
 - (void)initWindowInfo:(UIView*)view size:(CGSize)size {
+#if USE_VULKAN
+    g_windowInfo.windowHandle = (intptr_t)[view layer];
+#else
     g_windowInfo.windowHandle = (intptr_t)(view);
-
+#endif
     float scale = view.contentScaleFactor;
     g_windowInfo.screen.x = 0;
     g_windowInfo.screen.y = 0;

@@ -72,6 +72,15 @@ if(COCOS_UNICODE)
 	add_definitions("-DUNICODE -D_UNICODE")
 endif()
 
+if (USE_METAL)
+    add_definitions("-DUSE_METAL")
+    set(GFX_LIB GFXMetal)
+else ()
+    set(GFX_LIB GFXVulkan)
+    set(LIB_MOLTEN_VK "${GFX_EXTERNAL_PATH}/MoltenVK/mac/release/libMoltenVK.dylib")
+    list(APPEND ALL_FILES ${LIB_MOLTEN_VK})
+endif()
+
 add_executable(${APP_NAME} MACOSX_BUNDLE ${ALL_FILES})
 
 set_target_properties(${APP_NAME} PROPERTIES RESOURCE "${APP_UI_RES}")
@@ -90,11 +99,11 @@ list(APPEND PLATFORM_SPECIFIC_LIBS
      ${QUARTZCORE_LIBRARY}
 )
 
-if (USE_METAL)
-    add_definitions("-DUSE_METAL")
-    set(GFX_LIB GFXMetal)
-else ()
-    set(GFX_LIB GFXVulkan)
+if (NOT USE_METAL)
+    set_source_files_properties(${LIB_MOLTEN_VK} PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
+    set_source_files_properties(${LIB_MOLTEN_VK} PROPERTIES XCODE_FILE_ATTRIBUTES "CodeSignOnCopy")
+    set_target_properties(${APP_NAME} PROPERTIES FRAMEWORK true)
+    set_xcode_property(${APP_NAME} LD_RUNPATH_SEARCH_PATHS @executable_path/../Frameworks)
 endif()
 
 target_link_libraries(${APP_NAME}
