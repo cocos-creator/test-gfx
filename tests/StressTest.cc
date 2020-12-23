@@ -42,7 +42,7 @@ const gfx::Color StressTest::clearColors[] = {
 #define PARALLEL_STRATEGY_DC_BASED_FINER_JOBS               4 // draw call level concurrency with finer job generation (not works for single-threaded metal)
 #define PARALLEL_STRATEGY_DC_BASED_FINER_JOBS_MULTI_PRIMARY 5 // draw call level concurrency with finer job generation
 
-#define PARALLEL_STRATEGY 2
+#define PARALLEL_STRATEGY 3
 
 #define USE_DYNAMIC_UNIFORM_BUFFER 1
 #define USE_PARALLEL_RECORDING     1
