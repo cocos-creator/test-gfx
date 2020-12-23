@@ -577,7 +577,8 @@ void StressTest::tick() {
     gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
     for (uint t = 0u; t < PASS_COUNT; ++t) {
         commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea,
-                                       &clearColors[t], 1.0f, 0, true);
+                                       &clearColors[t], 1.0f, 0,
+                                       _parallelCBs.data(), _threadCount);
         commandBuffer->execute(_parallelCBs.data(), _threadCount);
         commandBuffer->endRenderPass();
     }
@@ -620,7 +621,8 @@ void StressTest::tick() {
     for (uint t = 0u; t < PASS_COUNT; ++t) {
         gfx::CommandBuffer *commandBuffer = _commandBuffers[t];
         commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea,
-                                       &clearColors[t], 1.0f, 0, true);
+                                       &clearColors[t], 1.0f, 0,
+                                       &_parallelCBs[t * _threadCount], _threadCount);
         commandBuffer->execute(&_parallelCBs[t * _threadCount], _threadCount);
         commandBuffer->endRenderPass();
         commandBuffer->end();
