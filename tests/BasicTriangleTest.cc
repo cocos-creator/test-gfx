@@ -196,7 +196,7 @@ void BasicTriangle::createPipeline() {
 
     _pipelineLayout = _device->createPipelineLayout({{_descriptorSetLayout}});
 
-    _descriptorSet = _device->createDescriptorSet({_pipelineLayout});
+    _descriptorSet = _device->createDescriptorSet({_descriptorSetLayout});
 
     _descriptorSet->bindBuffer(0, _uniformBuffer);
     _descriptorSet->bindBuffer(1, _uniformBufferMVP);

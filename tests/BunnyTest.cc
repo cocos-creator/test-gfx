@@ -214,7 +214,7 @@ void BunnyTest::createPipelineState() {
 
     _pipelineLayout = _device->createPipelineLayout({{_descriptorSetLayout}});
 
-    _descriptorSet = _device->createDescriptorSet({_pipelineLayout});
+    _descriptorSet = _device->createDescriptorSet({_descriptorSetLayout});
 
     _descriptorSet->bindBuffer(static_cast<uint>(Binding::MVP), _mvpMatrix);
     _descriptorSet->bindBuffer(static_cast<uint>(Binding::COLOR), _color);

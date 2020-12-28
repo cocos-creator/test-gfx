@@ -331,14 +331,14 @@ void StressTest::createPipeline() {
     _pipelineLayout = _device->createPipelineLayout({{_descriptorSetLayout}});
 
 #if USE_DYNAMIC_UNIFORM_BUFFER
-    _uniDescriptorSet = _device->createDescriptorSet({_pipelineLayout});
+    _uniDescriptorSet = _device->createDescriptorSet({_descriptorSetLayout});
     _uniDescriptorSet->bindBuffer(0, _uniformBufferVP);
     _uniDescriptorSet->bindBuffer(1, _uniWorldBufferView);
     _uniDescriptorSet->update();
 #else
     _descriptorSets.resize(_worldBuffers.size());
     for (uint i = 0u; i < _worldBuffers.size(); ++i) {
-        _descriptorSets[i] = _device->createDescriptorSet({_pipelineLayout});
+        _descriptorSets[i] = _device->createDescriptorSet({_descriptorSetLayout});
         _descriptorSets[i]->bindBuffer(0, _uniformBufferVP);
         _descriptorSets[i]->bindBuffer(1, _worldBuffers[i]);
         _descriptorSets[i]->update();
@@ -679,7 +679,7 @@ void StressTest::tick() {
 #endif
 
     _device->present();
-    
+
     CommandEncoder *encoder = ((gfx::DeviceAgent *)_device)->getMainEncoder();
     ENCODE_COMMAND_0(
         encoder,
