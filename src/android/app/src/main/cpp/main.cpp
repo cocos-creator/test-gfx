@@ -49,7 +49,8 @@ namespace
                     g_windowInfo.physicalHeight = g_windowInfo.screen.height = ANativeWindow_getHeight(app->window);
                     g_windowInfo.screen.x = g_windowInfo.screen.y = 0;
 
-                    TestBaseI::nextTest(g_windowInfo);
+                    TestBaseI::setWindowInfo(g_windowInfo);
+                    TestBaseI::nextTest();
                 }
 
                 break;
@@ -84,7 +85,7 @@ namespace
                     break;
                 case AMOTION_EVENT_ACTION_UP:
                 case AMOTION_EVENT_ACTION_POINTER_UP:
-                    TestBaseI::onTouchEnd(g_windowInfo);
+                    TestBaseI::onTouchEnd();
                     return 1;
                     break;
             }

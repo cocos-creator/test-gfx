@@ -74,10 +74,11 @@ namespace cc {
         }
         static gfx::Device *getDevice() { return _device; }
         static void destroyGlobal();
+        static void setWindowInfo(const WindowInfo& info) { g_windowInfo = info; };
 
-        static void nextTest(const WindowInfo& windowInfo);
+        static void nextTest();
         static void toggleMultithread();
-        static void onTouchEnd(const WindowInfo& windowInfo);
+        static void onTouchEnd();
         static void onTick();
         static unsigned char *RGB2RGBA(Image *img);
         static void modifyProjectionBasedOnDevice(Mat4 &projection, bool isOffscreen = false);
@@ -95,9 +96,11 @@ namespace cc {
         static FrameRate deviceThread;
         
     protected:
+        static WindowInfo g_windowInfo;
         static int g_nextTestIndex;
         static std::vector<createFunc> g_tests;
         static TestBaseI* g_test;
+        static bool g_switchToNext;
         
         static gfx::Device *_device;
         static gfx::Framebuffer* _fbo;

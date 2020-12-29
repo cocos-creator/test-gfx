@@ -36,6 +36,8 @@ namespace cc {
 
 int TestBaseI::g_nextTestIndex          = 0;
 TestBaseI* TestBaseI::g_test            = nullptr;
+bool TestBaseI::g_switchToNext          = false;
+WindowInfo TestBaseI::g_windowInfo;
 std::vector<TestBaseI::createFunc> TestBaseI::g_tests =
 {
     StressTest::create,
@@ -119,12 +121,9 @@ void TestBaseI::destroyGlobal()
     CC_SAFE_DESTROY(_device);
 }
 
-void TestBaseI::nextTest(const WindowInfo& windowInfo)
+void TestBaseI::nextTest()
 {
-    g_nextTestIndex = g_nextTestIndex % g_tests.size();
-    CC_SAFE_DESTROY(g_test);
-    g_test = g_tests[g_nextTestIndex](windowInfo);
-    g_nextTestIndex++;
+    g_switchToNext = true;
 }
 
 void TestBaseI::toggleMultithread()
@@ -134,14 +133,22 @@ void TestBaseI::toggleMultithread()
     ((gfx::DeviceAgent *)_device)->setMultithreaded(multithreaded);
 }
 
-void TestBaseI::onTouchEnd(const WindowInfo& windowInfo)
+void TestBaseI::onTouchEnd()
 {
-    nextTest(windowInfo);
+    nextTest();
     // toggleMultithread();
 }
 
 void TestBaseI::onTick()
 {
+    if (g_switchToNext)
+    {
+        g_nextTestIndex = g_nextTestIndex % g_tests.size();
+        CC_SAFE_DESTROY(g_test);
+        g_test = g_tests[g_nextTestIndex](g_windowInfo);
+        g_nextTestIndex++;
+        g_switchToNext = false;
+    }
     if (g_test)
     {
         g_test->tick();

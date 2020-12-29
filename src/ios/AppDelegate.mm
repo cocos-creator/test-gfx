@@ -37,7 +37,8 @@ namespace
     viewController.view = view;
 
     [self initWindowInfo: view size:rect.size];
-    TestBaseI::nextTest(g_windowInfo);
+    TestBaseI::setWindowInfo(g_windowInfo);
+    TestBaseI::nextTest();
 
     [self run];
 
@@ -75,7 +76,7 @@ namespace
 
 - (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
 {
-    TestBaseI::onTouchEnd(g_windowInfo);
+    TestBaseI::onTouchEnd();
 }
 
 

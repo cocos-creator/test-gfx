@@ -61,7 +61,8 @@ namespace
     g_windowInfo.physicalHeight = g_windowInfo.screen.height;
     g_windowInfo.physicalWidth = g_windowInfo.screen.width;
 
-    cc::TestBaseI::nextTest(g_windowInfo);
+    cc::TestBaseI::setWindowInfo(g_windowInfo);
+    cc::TestBaseI::nextTest();
 
     _timer = [NSTimer scheduledTimerWithTimeInterval:(1.0 / 60)
                       target:self
@@ -90,11 +91,11 @@ namespace
 }
 
 - (void)mouseUp:(NSEvent *)event {
-    cc::TestBaseI::onTouchEnd(g_windowInfo);
+    cc::TestBaseI::onTouchEnd();
 }
 
 - (void)rightMouseUp:(NSEvent *)event {
-    cc::TestBaseI::onTouchEnd(g_windowInfo);
+    cc::TestBaseI::onTouchEnd();
 }
 
 - (BOOL)acceptsFirstResponder {

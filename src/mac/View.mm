@@ -88,7 +88,8 @@ namespace
                                                userInfo:nil
                                                 repeats:YES];
 
-        cc::TestBaseI::nextTest(g_windowInfo);
+        cc::TestBaseI::setWindowInfo(g_windowInfo);
+        cc::TestBaseI::nextTest();
     }
     return self;
 }
@@ -104,11 +105,11 @@ namespace
 }
 
 - (void)mouseUp:(NSEvent *)event {
-    cc::TestBaseI::onTouchEnd(g_windowInfo);
+    cc::TestBaseI::onTouchEnd();
 }
 
 - (void)rightMouseUp:(NSEvent *)event {
-    cc::TestBaseI::onTouchEnd(g_windowInfo);
+    cc::TestBaseI::onTouchEnd();
 }
 
 - (BOOL)acceptsFirstResponder
