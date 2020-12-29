@@ -522,9 +522,9 @@ void StressTest::tick() {
     else hostThread.timeAcc = hostThread.timeAcc * 0.95f + hostThread.dt * 0.05f;
     hostThread.frameAcc++;
 
-//    if (hostThread.frameAcc % 6 == 0) {
+    if (hostThread.frameAcc % 6 == 0) {
         CC_LOG_INFO("Host thread n.%d avg: %.2fms (~%d FPS)", hostThread.frameAcc, hostThread.timeAcc * 1000.f, uint(1.f / hostThread.timeAcc + .5f));
-//    }
+    }
 
     //gfx::CCVKDevice *actor = (gfx::CCVKDevice *)((gfx::DeviceAgent *)_device)->getRemote();
     //ENCODE_COMMAND_1(
@@ -680,18 +680,18 @@ void StressTest::tick() {
 
     _device->present();
 
-    CommandEncoder *encoder = ((gfx::DeviceAgent *)_device)->getMainEncoder();
-    ENCODE_COMMAND_0(
-        encoder,
+    MessageQueue *queue = ((gfx::DeviceAgent *)_device)->getMessageQueue();
+    ENQUEUE_MESSAGE_0(
+        queue,
         DeviceStatistics,
         {
             lookupTime(deviceThread);
             if (!deviceThread.timeAcc) deviceThread.timeAcc = deviceThread.dt;
             else deviceThread.timeAcc = deviceThread.timeAcc * 0.95f + deviceThread.dt * 0.05f;
             deviceThread.frameAcc++;
-//            if (deviceThread.frameAcc % 6 == 0) {
+            if (deviceThread.frameAcc % 6 == 0) {
                 CC_LOG_INFO("Device thread n.%d avg: %.2fms (~%d FPS)", deviceThread.frameAcc, deviceThread.timeAcc * 1000.f, uint(1.f / deviceThread.timeAcc + .5f));
-//            }
+            }
         });
 }
 
