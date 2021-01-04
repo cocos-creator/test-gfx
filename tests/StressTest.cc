@@ -12,9 +12,9 @@ constexpr uint PASS_COUNT = 1;
 constexpr uint MODELS_PER_LINE[PASS_COUNT] = {10};
 /* */
 constexpr uint PASS_COUNT = 4;
-//constexpr uint MODELS_PER_LINE[PASS_COUNT] = {50, 1, 5, 50};
+constexpr uint MODELS_PER_LINE[PASS_COUNT] = {150, 1, 5, 150};
 //constexpr uint MODELS_PER_LINE[PASS_COUNT] = {150, 1, 2, 3};
-constexpr uint MODELS_PER_LINE[PASS_COUNT] = {WORKLOAD, WORKLOAD, WORKLOAD, WORKLOAD};
+//constexpr uint MODELS_PER_LINE[PASS_COUNT] = {WORKLOAD, WORKLOAD, WORKLOAD, WORKLOAD};
 /* *
 constexpr uint PASS_COUNT = 9;
 constexpr uint MODELS_PER_LINE[PASS_COUNT] = {100, 2, 100, 100, 3, 4, 100, 5, 100};
@@ -42,7 +42,7 @@ const gfx::Color StressTest::clearColors[] = {
 #define PARALLEL_STRATEGY_DC_BASED_FINER_JOBS               4 // draw call level concurrency with finer job generation (not works for single-threaded metal)
 #define PARALLEL_STRATEGY_DC_BASED_FINER_JOBS_MULTI_PRIMARY 5 // draw call level concurrency with finer job generation
 
-#define PARALLEL_STRATEGY 3
+#define PARALLEL_STRATEGY 5
 
 #define USE_DYNAMIC_UNIFORM_BUFFER 1
 #define USE_PARALLEL_RECORDING     1
@@ -122,7 +122,7 @@ bool StressTest::initialize() {
     cbCount = _threadCount * PASS_COUNT;
     info.type = gfx::CommandBufferType::SECONDARY;
 #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED_FINER_JOBS
-    cbCount = _threadCount;
+    cbCount = _threadCount * PASS_COUNT;
     info.type = gfx::CommandBufferType::SECONDARY;
 #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED
     cbCount = _threadCount;
@@ -399,11 +399,7 @@ void StressTest::recordRenderPass(uint jobIdx) {
     //            std::hash<std::thread::id>()(std::this_thread::get_id()), dcCount);
 
     uint dynamicOffset = 0u;
-    #if PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED_FINER_JOBS
-    gfx::CommandBuffer *commandBuffer = _parallelCBs[threadIdx];
-    #else
     gfx::CommandBuffer *commandBuffer = _parallelCBs[jobIdx];
-    #endif
     commandBuffer->begin(_renderPass, 0, _fbo);
     if (dcCount) {
         commandBuffer->bindInputAssembler(_inputAssembler);
@@ -526,16 +522,6 @@ void StressTest::tick() {
         CC_LOG_INFO("Host thread n.%d avg: %.2fms (~%d FPS)", hostThread.frameAcc, hostThread.timeAcc * 1000.f, uint(1.f / hostThread.timeAcc + .5f));
     }
 
-    //gfx::CCVKDevice *actor = (gfx::CCVKDevice *)((gfx::DeviceAgent *)_device)->getRemote();
-    //ENCODE_COMMAND_1(
-    //    encoder,
-    //    ReserveEvents,
-    //    actor, actor,
-    //    {
-    //        for (int i = 0; i < PASS_COUNT; ++i)
-    //            actor->gpuEventPool()->get(i);
-    //    });
-
     _device->acquire();
 
     _uboVP.color.w = 1.f;
@@ -578,18 +564,15 @@ void StressTest::tick() {
     for (uint t = 0u; t < PASS_COUNT; ++t) {
         commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea,
                                        &clearColors[t], 1.0f, 0,
-                                       _parallelCBs.data(), _threadCount);
-        commandBuffer->execute(_parallelCBs.data(), _threadCount);
+                                       _threadCount, & _parallelCBs[t * _threadCount]);
+        commandBuffer->execute(&_parallelCBs[t * _threadCount], _threadCount);
         commandBuffer->endRenderPass();
     }
     commandBuffer->end();
 
     _device->getQueue()->submit(_commandBuffers);
 #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED_FINER_JOBS_MULTI_PRIMARY
-    for (uint t = 0u; t < PASS_COUNT; ++t) {
-        _commandBuffers[t]->begin();
-    }
-
+    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
     #if USE_PARALLEL_RECORDING
     {
         /* */
@@ -617,13 +600,21 @@ void StressTest::tick() {
     }
     #endif
 
-    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
     for (uint t = 0u; t < PASS_COUNT; ++t) {
         gfx::CommandBuffer *commandBuffer = _commandBuffers[t];
+        commandBuffer->begin();
         commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea,
                                        &clearColors[t], 1.0f, 0,
-                                       &_parallelCBs[t * _threadCount], _threadCount);
+                                       _threadCount , & _parallelCBs[t * _threadCount]);
+    }
+
+    for (uint t = 0u; t < PASS_COUNT; ++t) {
+        gfx::CommandBuffer *commandBuffer = _commandBuffers[t];
         commandBuffer->execute(&_parallelCBs[t * _threadCount], _threadCount);
+    }
+
+    for (uint t = 0u; t < PASS_COUNT; ++t) {
+        gfx::CommandBuffer *commandBuffer = _commandBuffers[t];
         commandBuffer->endRenderPass();
         commandBuffer->end();
     }
@@ -654,7 +645,7 @@ void StressTest::tick() {
     for (uint t = 0u; t < PASS_COUNT; ++t) {
         commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea,
                                        &clearColors[t], 1.0f, 0,
-                                       _parallelCBs.data(), _threadCount);
+                                       _threadCount, _parallelCBs.data());
         commandBuffer->execute(_parallelCBs.data(), _threadCount);
         commandBuffer->endRenderPass();
     }
@@ -667,7 +658,7 @@ void StressTest::tick() {
     for (uint t = 0u; t < PASS_COUNT; ++t) {
         commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea,
                                        &clearColors[t], 1.0f, 0,
-                                       &_parallelCBs[t], 1);
+                                       1, &_parallelCBs[t]);
         commandBuffer->execute(&_parallelCBs[t], 1);
         commandBuffer->endRenderPass();
     }
