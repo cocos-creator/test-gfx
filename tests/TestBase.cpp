@@ -1,5 +1,7 @@
 #include "TestBase.h"
 
+#include "gfx-agent/GFXDeviceAgent.h"
+
 #include "tests/ClearScreenTest.h"
 #include "tests/BasicTriangleTest.h"
 #include "tests/BasicTextureTest.h"

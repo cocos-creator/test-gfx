@@ -1,8 +1,7 @@
 #include "StressTest.h"
-#include "gfx-vulkan/GFXVulkan.h"
-
-#define VK_NO_PROTOTYPES
-#include "gfx-vulkan/VKGPUObjects.h"
+#include "gfx-agent/GFXDeviceAgent.h"
+#include "base/job-system/JobSystem.h"
+#include "base/threading/MessageQueue.h"
 
 namespace cc {
 
