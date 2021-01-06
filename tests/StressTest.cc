@@ -572,6 +572,14 @@ void StressTest::tick() {
     _device->getQueue()->submit(_commandBuffers);
 #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED_FINER_JOBS_MULTI_PRIMARY
     gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
+    for (uint t = 0u; t < PASS_COUNT; ++t) {
+        gfx::CommandBuffer *commandBuffer = _commandBuffers[t];
+        commandBuffer->begin();
+        commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea,
+                                       &clearColors[t], 1.0f, 0,
+                                       _threadCount , & _parallelCBs[t * _threadCount]);
+    }
+
     #if USE_PARALLEL_RECORDING
     {
         /* */
@@ -598,22 +606,11 @@ void StressTest::tick() {
         recordRenderPass(t);
     }
     #endif
-
-    for (uint t = 0u; t < PASS_COUNT; ++t) {
-        gfx::CommandBuffer *commandBuffer = _commandBuffers[t];
-        commandBuffer->begin();
-        commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea,
-                                       &clearColors[t], 1.0f, 0,
-                                       _threadCount , & _parallelCBs[t * _threadCount]);
-    }
+    _device->flushCommands(_parallelCBs.size(), _parallelCBs.data());
 
     for (uint t = 0u; t < PASS_COUNT; ++t) {
         gfx::CommandBuffer *commandBuffer = _commandBuffers[t];
         commandBuffer->execute(&_parallelCBs[t * _threadCount], _threadCount);
-    }
-
-    for (uint t = 0u; t < PASS_COUNT; ++t) {
-        gfx::CommandBuffer *commandBuffer = _commandBuffers[t];
         commandBuffer->endRenderPass();
         commandBuffer->end();
     }
