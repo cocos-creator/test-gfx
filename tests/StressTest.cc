@@ -394,6 +394,7 @@ void StressTest::recordRenderPass(uint jobIdx) {
     uint dcCount = perThreadCount;
     if (threadIdx == _threadCount - 1) dcCount += totalCount % _threadCount;
 
+    //CC_LOG_INFO("======= %d %d %d", passIdx, threadIdx, jobIdx);
     //CC_LOG_INFO("---- idx %x cb %x id %x dc %d", threadIdx, commandBuffer,
     //            std::hash<std::thread::id>()(std::this_thread::get_id()), dcCount);
 
@@ -485,7 +486,7 @@ void StressTest::recordRenderPass(uint passIndex) {
     gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
     gfx::CommandBuffer *commandBuffer = _commandBuffers[passIndex];
 
-    commandBuffer->begin(passIndex);
+    commandBuffer->begin();
     commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea,
                                    &clearColors[passIndex], 1.0f, 0);
     commandBuffer->bindInputAssembler(_inputAssembler);
@@ -533,8 +534,10 @@ void StressTest::tick() {
     _uniformBufferVP->update(VP.m, 0, sizeof(Mat4));
     /* */
 
+    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
 #if PARALLEL_STRATEGY == PARALLEL_STRATEGY_SEQUENTIAL
     recordRenderPass(0);
+    _device->flushCommands(_commandBuffers.size(), _commandBuffers.data());
     _device->getQueue()->submit(_commandBuffers);
 #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED_FINER_JOBS
     gfx::CommandBuffer *commandBuffer = _commandBuffers[0];
@@ -550,7 +553,7 @@ void StressTest::tick() {
             });
             if (t) g.makeEdge(jobs[t-1], jobs[t]);
         }
-        g.run(jobs[0]);
+        g.run();
         g.waitForAll();
     }
     #else
@@ -558,8 +561,8 @@ void StressTest::tick() {
         recordRenderPass(t);
     }
     #endif
+    _device->flushCommands(_parallelCBs.size(), _parallelCBs.data());
 
-    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
     for (uint t = 0u; t < PASS_COUNT; ++t) {
         commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea,
                                        &clearColors[t], 1.0f, 0,
@@ -569,35 +572,35 @@ void StressTest::tick() {
     }
     commandBuffer->end();
 
+    _device->flushCommands(_commandBuffers.size(), _commandBuffers.data());
     _device->getQueue()->submit(_commandBuffers);
 #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED_FINER_JOBS_MULTI_PRIMARY
-    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
     for (uint t = 0u; t < PASS_COUNT; ++t) {
         gfx::CommandBuffer *commandBuffer = _commandBuffers[t];
         commandBuffer->begin();
         commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea,
                                        &clearColors[t], 1.0f, 0,
                                        _threadCount , & _parallelCBs[t * _threadCount]);
+        _device->flushCommands(1, &commandBuffer);
     }
 
     #if USE_PARALLEL_RECORDING
     {
         /* */
         JobGraph g(JobSystem::getInstance());
-        uint job = g.createForEachIndexJob(0, PASS_COUNT * _threadCount, 1u, [this](uint jobIdx) {
+        g.createForEachIndexJob(0, PASS_COUNT * _threadCount, 1u, [this](uint jobIdx) {
             recordRenderPass(jobIdx);
         });
-        g.run(job);
+        g.run();
         g.waitForAll();
         /* *
         JobGraph g(JobSystem::getInstance());
-        uint jobs[PASS_COUNT];
         for (uint t = 0u; t < PASS_COUNT; ++t) {
-            jobs[t] = g.createForEachIndexJob(t * _threadCount, (t + 1) * _threadCount, 1u, [this](uint jobIdx) {
+            g.createForEachIndexJob(t * _threadCount, (t + 1) * _threadCount, 1u, [this](uint jobIdx) {
                 recordRenderPass(jobIdx);
             });
         }
-        g.run(jobs[0]);
+        g.run();
         g.waitForAll();
         /* */
     }
@@ -613,6 +616,7 @@ void StressTest::tick() {
         commandBuffer->execute(&_parallelCBs[t * _threadCount], _threadCount);
         commandBuffer->endRenderPass();
         commandBuffer->end();
+        _device->flushCommands(1, &commandBuffer);
     }
     _device->getQueue()->submit(_commandBuffers);
 #else
@@ -623,10 +627,10 @@ void StressTest::tick() {
     #if USE_PARALLEL_RECORDING
     {
         JobGraph g(JobSystem::getInstance());
-        uint job = g.createForEachIndexJob(0u, jobCount - 1, 1u, [this](uint index) {
+        g.createForEachIndexJob(0u, jobCount - 1, 1u, [this](uint index) {
             recordRenderPass(index);
         });
-        g.run(job);
+        g.run();
         recordRenderPass(jobCount - 1);
         g.waitForAll();
     }
@@ -635,9 +639,9 @@ void StressTest::tick() {
         recordRenderPass(t);
     }
     #endif
+    _device->flushCommands(_parallelCBs.size(), _parallelCBs.data());
 
     #if PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED
-    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
     for (uint t = 0u; t < PASS_COUNT; ++t) {
         commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea,
                                        &clearColors[t], 1.0f, 0,
@@ -646,11 +650,7 @@ void StressTest::tick() {
         commandBuffer->endRenderPass();
     }
     commandBuffer->end();
-    _device->getQueue()->submit(_commandBuffers);
     #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_RP_BASED_SECONDARY
-    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
-    gfx::CommandBuffer *commandBuffer = _commandBuffers[0];
-    commandBuffer->begin();
     for (uint t = 0u; t < PASS_COUNT; ++t) {
         commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea,
                                        &clearColors[t], 1.0f, 0,
@@ -659,10 +659,10 @@ void StressTest::tick() {
         commandBuffer->endRenderPass();
     }
     commandBuffer->end();
-    _device->getQueue()->submit(_commandBuffers);
-    #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_RP_BASED_PRIMARY
-    _device->getQueue()->submit(_commandBuffers);
     #endif
+
+    _device->flushCommands(_commandBuffers.size(), _commandBuffers.data());
+    _device->getQueue()->submit(_commandBuffers);
 #endif
 
     _device->present();
