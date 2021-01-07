@@ -219,6 +219,10 @@ foreach(TARGET ${COCOS_EXTERNAL_TARGETS})
 	add_subdirectory(${GFX_EXTERNAL_PATH}/${TARGET})
 endforeach()
 
+set(USE_SE_V8 ON)
+include(${COCOS_EXTERNAL_PATH}/CMakeLists.txt)
+list(REMOVE_ITEM CC_EXTERNAL_LIBS "glfw3")
+
 add_subdirectory("${COCOS_SRC_PATH}/base" "${PROJECT_BINARY_DIR}/base")
 add_subdirectory("${COCOS_SRC_PATH}/renderer" "${PROJECT_BINARY_DIR}/renderer")
 add_subdirectory(src)

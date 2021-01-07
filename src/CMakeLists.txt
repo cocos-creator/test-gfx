@@ -121,10 +121,6 @@ set(CC_MATH_SOURCES
     ${COCOS_SRC_PATH}/math/Math.cpp
 )
 
-set(USE_SE_V8 ON)
-include(${COCOS_EXTERNAL_PATH}/CMakeLists.txt)
-list(REMOVE_ITEM CC_EXTERNAL_LIBS "glfw3")
-
 # resources
 set(GAME_RES_FOLDER "${CMAKE_CURRENT_SOURCE_DIR}/Resources")
 if(VS)
@@ -154,6 +150,7 @@ elseif(APPLE)
     # add_subdirectory(mac-gles)
 endif()
 
-target_compile_definitions(${APP_NAME} PUBLIC
-    $<$<CONFIG:Debug>:CC_DEBUG=1>
+target_compile_definitions(${APP_NAME}
+    PUBLIC $<$<CONFIG:Debug>:CC_DEBUG=1>
+    PRIVATE ${CC_EXTERNAL_PRIVATE_DEFINITIONS}
 )
