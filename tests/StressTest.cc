@@ -645,7 +645,7 @@ void StressTest::tick() {
     for (uint t = 0u; t < PASS_COUNT; ++t) {
         commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea,
                                        &clearColors[t], 1.0f, 0,
-                                       _threadCount, _parallelCBs.data());
+                                       _parallelCBs.data(), _threadCount);
         commandBuffer->execute(_parallelCBs.data(), _threadCount);
         commandBuffer->endRenderPass();
     }
@@ -654,7 +654,7 @@ void StressTest::tick() {
     for (uint t = 0u; t < PASS_COUNT; ++t) {
         commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea,
                                        &clearColors[t], 1.0f, 0,
-                                       1, &_parallelCBs[t]);
+                                       &_parallelCBs[t], 1);
         commandBuffer->execute(&_parallelCBs[t], 1);
         commandBuffer->endRenderPass();
     }
