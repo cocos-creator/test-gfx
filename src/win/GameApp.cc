@@ -106,8 +106,9 @@ void GameApp::initialize() {
     info.windowHandle = (intptr_t)_hWnd;
     info.screen.x = posX;
     info.screen.y = posY;
-    info.physicalWidth = GetSystemMetrics(SM_CXSCREEN);
-    info.physicalHeight = GetSystemMetrics(SM_CYSCREEN);
+    info.screen.width = info.physicalWidth = screenWidth;
+    info.screen.height = info.physicalHeight = screenHeight;
+
     TestBaseI::setWindowInfo(info);
     TestBaseI::nextTest();
 }
