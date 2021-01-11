@@ -244,6 +244,7 @@ void BasicTriangle::tick() {
     commandBuffer->endRenderPass();
     commandBuffer->end();
 
+    _device->flushCommands(_commandBuffers);
     _device->getQueue()->submit(_commandBuffers);
     _device->present();
 }

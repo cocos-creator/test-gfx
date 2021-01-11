@@ -2,14 +2,14 @@
 
 #include "gfx-agent/GFXDeviceAgent.h"
 
-#include "tests/ClearScreenTest.h"
-#include "tests/BasicTriangleTest.h"
 #include "tests/BasicTextureTest.h"
-#include "tests/DepthTest.h"
-#include "tests/StencilTest.h"
+#include "tests/BasicTriangleTest.h"
 #include "tests/BlendTest.h"
-#include "tests/ParticleTest.h"
 #include "tests/BunnyTest.h"
+#include "tests/ClearScreenTest.h"
+#include "tests/DepthTest.h"
+#include "tests/ParticleTest.h"
+#include "tests/StencilTest.h"
 #include "tests/StressTest.h"
 
 //#define USE_GLES3
@@ -36,37 +36,36 @@
 
 namespace cc {
 
-int TestBaseI::g_nextTestIndex          = 0;
-TestBaseI* TestBaseI::g_test            = nullptr;
-bool TestBaseI::g_switchToNext          = false;
-WindowInfo TestBaseI::g_windowInfo;
-std::vector<TestBaseI::createFunc> TestBaseI::g_tests =
-{
-    StressTest::create,
-    ClearScreen::create,
-    BasicTriangle::create,
-    DepthTexture::create,
-    BlendTest::create,
-    ParticleTest::create,
-    BunnyTest::create,
-    // Need to fix lib jpeg on iOS
+int TestBaseI::_curTestIndex = -1;
+int TestBaseI::_nextDirection = 0;
+TestBaseI *TestBaseI::_test = nullptr;
+WindowInfo TestBaseI::_windowInfo;
+
+std::vector<TestBaseI::createFunc> TestBaseI::_tests =
+    {
+        StressTest::create,
+        ClearScreen::create,
+        BasicTriangle::create,
+        DepthTexture::create,
+        BlendTest::create,
+        ParticleTest::create,
+        BunnyTest::create,
+// Need to fix lib jpeg on iOS
 #if CC_PLATFORM != CC_PLATFORM_MAC_IOS
-    BasicTexture::create,
-    StencilTest::create,
+        BasicTexture::create,
+        StencilTest::create,
 #endif // CC_PLATFORM != CC_PLATFORM_MAC_IOS
 };
 
-
-gfx::Device *TestBaseI::_device         = nullptr;
-gfx::Framebuffer *TestBaseI::_fbo       = nullptr;
+gfx::Device *TestBaseI::_device = nullptr;
+gfx::Framebuffer *TestBaseI::_fbo = nullptr;
 gfx::RenderPass *TestBaseI::_renderPass = nullptr;
 std::vector<gfx::CommandBuffer *> TestBaseI::_commandBuffers;
 
 FrameRate TestBaseI::hostThread;
 FrameRate TestBaseI::deviceThread;
 
-TestBaseI::TestBaseI(const WindowInfo &info)
-{
+TestBaseI::TestBaseI(const WindowInfo &info) {
     if (_device == nullptr) {
         _device = CC_NEW(DeviceCtor);
         _device = CC_NEW(gfx::DeviceAgent(_device, nullptr));
@@ -115,45 +114,38 @@ TestBaseI::TestBaseI(const WindowInfo &info)
     deviceThread.prevTime = std::chrono::steady_clock::now();
 }
 
-void TestBaseI::destroyGlobal()
-{
-    CC_SAFE_DESTROY(g_test);
+void TestBaseI::destroyGlobal() {
+    CC_SAFE_DESTROY(_test);
     CC_SAFE_DESTROY(_fbo);
     CC_SAFE_DESTROY(_renderPass);
     CC_SAFE_DESTROY(_device);
 }
 
-void TestBaseI::nextTest()
-{
-    g_switchToNext = true;
+void TestBaseI::nextTest(bool backward) {
+    _nextDirection = backward ? -1 : 1;
 }
 
-void TestBaseI::toggleMultithread()
-{
+void TestBaseI::toggleMultithread() {
     static bool multithreaded = true;
     multithreaded = !multithreaded;
     ((gfx::DeviceAgent *)_device)->setMultithreaded(multithreaded);
 }
 
-void TestBaseI::onTouchEnd()
-{
+void TestBaseI::onTouchEnd() {
     nextTest();
     // toggleMultithread();
 }
 
-void TestBaseI::onTick()
-{
-    if (g_switchToNext)
-    {
-        g_nextTestIndex = g_nextTestIndex % g_tests.size();
-        CC_SAFE_DESTROY(g_test);
-        g_test = g_tests[g_nextTestIndex](g_windowInfo);
-        g_nextTestIndex++;
-        g_switchToNext = false;
+void TestBaseI::onTick() {
+    if (_nextDirection) {
+        CC_SAFE_DESTROY(_test);
+        if (_nextDirection < 0) _curTestIndex += _tests.size();
+        _curTestIndex = (_curTestIndex + _nextDirection) % _tests.size();
+        _test = _tests[_curTestIndex](_windowInfo);
+        _nextDirection = 0;
     }
-    if (g_test)
-    {
-        g_test->tick();
+    if (_test) {
+        _test->tick();
     }
 }
 
