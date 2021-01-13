@@ -66,7 +66,7 @@ struct Quad : public cc::Object {
 
     void createShader() {
 
-        ShaderSources sources;
+        ShaderSources<StandardShaderSource> sources;
         sources.glsl4 = {
             R"(
                 precision highp float;
@@ -138,7 +138,7 @@ struct Quad : public cc::Object {
             )",
         };
 
-        ShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
+        StandardShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
 
         gfx::ShaderStageList shaderStageList;
         gfx::ShaderStage vertexShaderStage;
@@ -385,7 +385,7 @@ struct BigTriangle : public cc::Object {
 
     void createShader() {
 
-        ShaderSources sources;
+        ShaderSources<StandardShaderSource> sources;
         sources.glsl4 = {
             R"(
                 precision highp float;
@@ -460,7 +460,7 @@ struct BigTriangle : public cc::Object {
             )",
         };
 
-        ShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
+        StandardShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
 
         gfx::ShaderStageList shaderStageList;
         gfx::ShaderStage vertexShaderStage;

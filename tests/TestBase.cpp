@@ -11,6 +11,7 @@
 #include "tests/ParticleTest.h"
 #include "tests/StencilTest.h"
 #include "tests/StressTest.h"
+#include "tests/ComputeTest.h"
 
 //#define USE_GLES3
 //#define USE_GLES2
@@ -43,6 +44,7 @@ WindowInfo TestBaseI::_windowInfo;
 
 std::vector<TestBaseI::createFunc> TestBaseI::_tests =
     {
+        ComputeTest::create,
         StressTest::create,
         ClearScreen::create,
         BasicTriangle::create,
@@ -297,20 +299,6 @@ uint TestBaseI::getMipmapLevelCounts(uint width, uint height) {
 
 uint TestBaseI::getUBOSize(uint size) {
     return (size + 15) / 16 * 16;
-}
-
-ShaderSource &TestBaseI::getAppropriateShaderSource(ShaderSources &sources) {
-    switch (_device->getGfxAPI()) {
-        case gfx::API::GLES2:
-            return sources.glsl1;
-        case gfx::API::GLES3:
-            return sources.glsl3;
-        case gfx::API::METAL:
-        case gfx::API::VULKAN:
-            return sources.glsl4;
-        default: break;
-    }
-    return sources.glsl4;
 }
 
 uint TestBaseI::getAlignedUBOStride(gfx::Device *device, uint stride) {

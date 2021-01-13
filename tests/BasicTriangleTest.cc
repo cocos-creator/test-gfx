@@ -27,7 +27,7 @@ bool BasicTriangle::initialize() {
 
 void BasicTriangle::createShader() {
 
-    ShaderSources sources;
+    ShaderSources<StandardShaderSource> sources;
     sources.glsl4 = {
         R"(
             precision highp float;
@@ -91,7 +91,7 @@ void BasicTriangle::createShader() {
         )",
     };
 
-    ShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
+    StandardShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
 
     gfx::ShaderStageList shaderStageList;
     gfx::ShaderStage vertexShaderStage;

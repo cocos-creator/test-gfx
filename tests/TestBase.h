@@ -27,14 +27,18 @@ struct Framebuffer {
     }
 };
 
-struct ShaderSource {
+struct StandardShaderSource {
     String vert;
     String frag;
 };
+
+using ComputeShaderSource = String;
+
+template<typename T>
 struct ShaderSources {
-    ShaderSource glsl4;
-    ShaderSource glsl3;
-    ShaderSource glsl1;
+    T glsl4;
+    T glsl3;
+    T glsl1;
 };
 
 struct FrameRate {
@@ -84,8 +88,22 @@ public:
     static gfx::Viewport getViewportBasedOnDevice(const Vec4 &relativeArea);
     static uint getUBOSize(uint size);
     static uint getMipmapLevelCounts(uint width, uint height);
-    static ShaderSource &getAppropriateShaderSource(ShaderSources &sources);
     static uint getAlignedUBOStride(gfx::Device *device, uint stride);
+
+    template <typename T>
+    static T &getAppropriateShaderSource(ShaderSources<T> &sources) {
+        switch (_device->getGfxAPI()) {
+            case gfx::API::GLES2:
+                return sources.glsl1;
+            case gfx::API::GLES3:
+                return sources.glsl3;
+            case gfx::API::METAL:
+            case gfx::API::VULKAN:
+                return sources.glsl4;
+            default: break;
+        }
+        return sources.glsl4;
+    }
 
     // FPS calculation
     static FrameRate hostThread;

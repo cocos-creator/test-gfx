@@ -6,10 +6,10 @@
 namespace cc {
 
 constexpr uint WORKLOAD = 150;
-/* *
+/* */
 constexpr uint PASS_COUNT = 1;
 constexpr uint MODELS_PER_LINE[PASS_COUNT] = {10};
-/* */
+/* *
 constexpr uint PASS_COUNT = 4;
 constexpr uint MODELS_PER_LINE[PASS_COUNT] = {50, 1, 5, 50};
 //constexpr uint MODELS_PER_LINE[PASS_COUNT] = {150, 1, 2, 3};
@@ -144,7 +144,7 @@ bool StressTest::initialize() {
 
 void StressTest::createShader() {
 
-    ShaderSources sources;
+    ShaderSources<StandardShaderSource> sources;
     sources.glsl4 = {
         R"(
             precision mediump float;
@@ -210,7 +210,7 @@ void StressTest::createShader() {
         )",
     };
 
-    ShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
+    StandardShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
 
     gfx::ShaderStageList shaderStageList;
     gfx::ShaderStage vertexShaderStage;

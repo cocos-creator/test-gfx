@@ -28,7 +28,7 @@ bool BasicTexture::initialize() {
 
 void BasicTexture::createShader() {
 
-    ShaderSources sources;
+    ShaderSources<StandardShaderSource> sources;
     sources.glsl4 = {
         R"(
             precision highp float;
@@ -111,7 +111,7 @@ void BasicTexture::createShader() {
         )",
     };
 
-    ShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
+    StandardShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
 
     gfx::ShaderStageList shaderStageList;
     gfx::ShaderStage vertexShaderStage;

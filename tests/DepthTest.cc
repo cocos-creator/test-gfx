@@ -15,7 +15,7 @@ struct BigTriangle : public cc::Object {
 
     void createShader() {
 
-        ShaderSources sources;
+        ShaderSources<StandardShaderSource> sources;
         sources.glsl4 = {
             R"(
                 precision highp float;
@@ -112,7 +112,7 @@ struct BigTriangle : public cc::Object {
             )",
         };
 
-        ShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
+        StandardShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
 
         gfx::ShaderStageList shaderStageList;
         gfx::ShaderStage vertexShaderStage;
@@ -250,7 +250,7 @@ struct Bunny : public cc::Object {
 
     void createShader() {
 
-        ShaderSources sources;
+        ShaderSources<StandardShaderSource> sources;
         sources.glsl4 = {
             R"(
                 layout(location = 0) in vec3 a_position;
@@ -307,7 +307,7 @@ struct Bunny : public cc::Object {
             )",
         };
 
-        ShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
+        StandardShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
 
         // vertex shader
         gfx::ShaderStageList shaderStageList;
