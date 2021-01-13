@@ -3,10 +3,9 @@
 namespace cc {
 
 #define GROUP_SIZE   64
-#define VERTEX_COUNT 16
+#define VERTEX_COUNT 200
 
 void ComputeTest::destroy() {
-    CC_SAFE_DESTROY(_vertexBuffer);
     CC_SAFE_DESTROY(_inputAssembler);
     CC_SAFE_DESTROY(_uniformBufferMVP);
     CC_SAFE_DESTROY(_shader);
@@ -17,19 +16,20 @@ void ComputeTest::destroy() {
 
     CC_SAFE_DESTROY(_compShader);
     CC_SAFE_DESTROY(_compRadiusBuffer);
+    CC_SAFE_DESTROY(_compStorageBuffer);
+    CC_SAFE_DESTROY(_compDescriptorSet);
     CC_SAFE_DESTROY(_compDescriptorSetLayout);
     CC_SAFE_DESTROY(_compPipelineLayout);
     CC_SAFE_DESTROY(_compPipelineState);
-    CC_SAFE_DESTROY(_compDescriptorSet);
 }
 
 bool ComputeTest::initialize() {
+    createComputePipeline();
+
     createShader();
-    createVertexBuffer();
+    createUniformBuffer();
     createInputAssembler();
     createPipeline();
-
-    createComputePipeline();
 
     return true;
 }
@@ -99,6 +99,15 @@ void ComputeTest::createComputePipeline() {
     Vec4 radius{.7f, 0.f, 0.f, 0.f};
     _compRadiusBuffer->update(&radius, sizeof(radius));
 
+    gfx::BufferInfo storageBufferInfo = {
+        gfx::BufferUsage::VERTEX | gfx::BufferUsage::STORAGE,
+        gfx::MemoryUsage::DEVICE,
+        VERTEX_COUNT * 2 * sizeof(Vec4),
+        2 * sizeof(Vec4),
+    };
+
+    _compStorageBuffer = _device->createBuffer(storageBufferInfo);
+
     gfx::DescriptorSetLayoutInfo dslInfo;
     dslInfo.bindings.push_back({0, gfx::DescriptorType::STORAGE_BUFFER, 1, gfx::ShaderStageFlagBit::COMPUTE});
     dslInfo.bindings.push_back({1, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::COMPUTE});
@@ -108,7 +117,7 @@ void ComputeTest::createComputePipeline() {
 
     _compDescriptorSet = _device->createDescriptorSet({_compDescriptorSetLayout});
 
-    _compDescriptorSet->bindBuffer(0, _vertexBuffer);
+    _compDescriptorSet->bindBuffer(0, _compStorageBuffer);
     _compDescriptorSet->bindBuffer(1, _compRadiusBuffer);
     _compDescriptorSet->update();
 
@@ -223,16 +232,7 @@ void ComputeTest::createShader() {
     _shader = _device->createShader(shaderInfo);
 }
 
-void ComputeTest::createVertexBuffer() {
-    gfx::BufferInfo vertexBufferInfo = {
-        gfx::BufferUsage::VERTEX,
-        gfx::MemoryUsage::DEVICE,
-        VERTEX_COUNT * 2 * sizeof(Vec4),
-        2 * sizeof(Vec4),
-    };
-
-    _vertexBuffer = _device->createBuffer(vertexBufferInfo);
-
+void ComputeTest::createUniformBuffer() {
     gfx::BufferInfo uniformBufferMVPInfo = {
         gfx::BufferUsage::UNIFORM,
         gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
@@ -249,7 +249,7 @@ void ComputeTest::createInputAssembler() {
     gfx::InputAssemblerInfo inputAssemblerInfo;
     inputAssemblerInfo.attributes.emplace_back(gfx::Attribute{"a_position", gfx::Format::RGBA32F, false, 0, false});
     inputAssemblerInfo.attributes.emplace_back(gfx::Attribute{"a_color", gfx::Format::RGBA32F, false, 0, false});
-    inputAssemblerInfo.vertexBuffers.emplace_back(_vertexBuffer);
+    inputAssemblerInfo.vertexBuffers.emplace_back(_compStorageBuffer);
     _inputAssembler = _device->createInputAssembler(inputAssemblerInfo);
 }
 
@@ -266,7 +266,7 @@ void ComputeTest::createPipeline() {
     _descriptorSet->update();
 
     gfx::PipelineStateInfo pipelineInfo;
-    pipelineInfo.primitive = gfx::PrimitiveMode::LINE_LOOP;
+    pipelineInfo.primitive = gfx::PrimitiveMode::LINE_LIST;
     pipelineInfo.shader = _shader;
     pipelineInfo.inputState = {_inputAssembler->getAttributes()};
     pipelineInfo.renderPass = _fbo->getRenderPass();
@@ -299,7 +299,7 @@ void ComputeTest::tick() {
     commandBuffer->bindDescriptorSet(0, _compDescriptorSet);
     commandBuffer->dispatch(dispatchInfo);
 
-    commandBuffer->pipelineBarrier(&barrier, 1u);
+    commandBuffer->pipelineBarrier(barrier);
 
     commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
     commandBuffer->bindInputAssembler(_inputAssembler);

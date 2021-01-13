@@ -18,14 +18,13 @@ class ComputeTest: public TestBaseI
 
  private:
     void createShader();
-    void createVertexBuffer();
+    void createUniformBuffer();
     void createPipeline();
     void createInputAssembler();
 
     void createComputePipeline();
 
     gfx::Shader* _shader = nullptr;
-    gfx::Buffer* _vertexBuffer = nullptr;
     gfx::Buffer *_uniformBufferMVP = nullptr;
     gfx::DescriptorSet* _descriptorSet = nullptr;
     gfx::DescriptorSetLayout* _descriptorSetLayout = nullptr;
@@ -35,6 +34,7 @@ class ComputeTest: public TestBaseI
 
     gfx::Shader *_compShader = nullptr;
     gfx::Buffer *_compRadiusBuffer = nullptr;
+    gfx::Buffer *_compStorageBuffer = nullptr;
     gfx::DescriptorSetLayout *_compDescriptorSetLayout = nullptr;
     gfx::PipelineLayout *_compPipelineLayout = nullptr;
     gfx::PipelineState *_compPipelineState = nullptr;
