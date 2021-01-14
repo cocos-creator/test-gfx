@@ -113,20 +113,43 @@ void GameApp::initialize() {
     TestBaseI::nextTest();
 }
 
+void GameApp::destroy() {
+    TestBaseI::destroyGlobal();
+
+    // Fix the display settings if leaving full screen mode.
+    if (_fullScreen) {
+        ChangeDisplaySettings(NULL, 0);
+    }
+
+    // Remove the window.
+    DestroyWindow(_hWnd);
+
+    // Remove the application instance.
+    UnregisterClass(_appName.c_str(), _hInstance);
+
+    // Release handles.
+    _hWnd = NULL;
+    _hInstance = NULL;
+
+    _instance = nullptr;
+}
+
 void GameApp::Run() {
     initialize();
 
     MSG msg;
     ZeroMemory(&msg, sizeof(MSG));
 
-    while (true) {
+    while (_running) {
         // Handle the windows messages, including exit & destroy
         while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
-        if (!_minimized) TestBaseI::onTick();
+        if (!_paused) TestBaseI::onTick();
     }
+
+    destroy();
 }
 
 LRESULT CALLBACK GameApp::MessageHandler(HWND hWnd, DWORD msg, WPARAM wParam, LPARAM lParam) {
@@ -140,31 +163,14 @@ LRESULT CALLBACK GameApp::MessageHandler(HWND hWnd, DWORD msg, WPARAM wParam, LP
         case WM_SIZE:
             width = (uint)LOWORD(lParam);
             height = (uint)HIWORD(lParam);
-            _minimized = !width || !height;
+            _paused = !width || !height;
             TestBaseI::resizeGlobal(width, height);
             break;
         // WM_CLOSE is sent when the user presses the 'X' button in the
         // caption bar menu.
         case WM_CLOSE:
-            TestBaseI::destroyGlobal();
-
-            // Fix the display settings if leaving full screen mode.
-            if (_fullScreen) {
-                ChangeDisplaySettings(NULL, 0);
-            }
-
-            // Remove the window.
-            DestroyWindow(_hWnd);
-
-            // Remove the application instance.
-            UnregisterClass(_appName.c_str(), _hInstance);
-
-            // Release handles.
-            _hWnd = NULL;
-            _hInstance = NULL;
-
-            _instance = nullptr;
-            exit(0);
+            _running = false;
+            _paused = true;
             break;
         case WM_KEYDOWN:
             if (wParam == VK_SPACE) {

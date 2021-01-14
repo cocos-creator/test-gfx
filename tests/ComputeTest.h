@@ -33,7 +33,7 @@ class ComputeTest: public TestBaseI
     gfx::InputAssembler* _inputAssembler = nullptr;
 
     gfx::Shader *_compShader = nullptr;
-    gfx::Buffer *_compRadiusBuffer = nullptr;
+    gfx::Buffer *_compTimeBuffer = nullptr;
     gfx::Buffer *_compStorageBuffer = nullptr;
     gfx::DescriptorSetLayout *_compDescriptorSetLayout = nullptr;
     gfx::PipelineLayout *_compPipelineLayout = nullptr;

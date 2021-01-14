@@ -4,6 +4,7 @@ namespace cc {
 
 #define GROUP_SIZE   64
 #define VERTEX_COUNT 200
+#define RADIUS       .7f
 
 void ComputeTest::destroy() {
     CC_SAFE_DESTROY(_inputAssembler);
@@ -15,7 +16,7 @@ void ComputeTest::destroy() {
     CC_SAFE_DESTROY(_pipelineState);
 
     CC_SAFE_DESTROY(_compShader);
-    CC_SAFE_DESTROY(_compRadiusBuffer);
+    CC_SAFE_DESTROY(_compTimeBuffer);
     CC_SAFE_DESTROY(_compStorageBuffer);
     CC_SAFE_DESTROY(_compDescriptorSet);
     CC_SAFE_DESTROY(_compDescriptorSetLayout);
@@ -35,78 +36,85 @@ bool ComputeTest::initialize() {
 }
 
 void ComputeTest::createComputePipeline() {
+    _compStorageBuffer = _device->createBuffer({
+        gfx::BufferUsage::STORAGE | gfx::BufferUsage::VERTEX,
+        gfx::MemoryUsage::DEVICE,
+        VERTEX_COUNT * 2 * sizeof(Vec4),
+        2 * sizeof(Vec4),
+    });
+
+    // default value for storage buffer
+    vector<Vec4> buffer{VERTEX_COUNT * 2};
+    for (uint i = 0u; i < VERTEX_COUNT; ++i) {
+        float alpha = 2.f * math::PI * i / VERTEX_COUNT;
+        buffer[i * 2] = Vec4(std::sin(alpha) * RADIUS, std::cos(alpha) * RADIUS, 0.f, 1.f);
+        buffer[i * 2 + 1] = Vec4(1.f, 1.f, 1.f, 1.f);
+    }
+    _compStorageBuffer->update(buffer.data(), buffer.size() * sizeof(Vec4));
+
+    if (!_device->hasFeature(gfx::Feature::COMPUTE_SHADER)) return;
+
     ShaderSources<ComputeShaderSource> sources;
-    sources.glsl4 = StringUtil::Format(R"(
+    sources.glsl4 = StringUtil::Format(
+        R"(
         #define GROUP_SIZE %du
-        #define VERTEX_COUNT %du
+        #define RADIUS %.1f
 
         layout (local_size_x = GROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
         struct AttribData { vec4 p; vec4 c; };
-        layout(set = 0, binding = 0) buffer DestBuffer { vec4 vertex[]; };
+        layout(set = 0, binding = 0) buffer DestBuffer { AttribData vertex[]; };
 
-        layout(set = 0, binding = 1) uniform Constants { float radius; };
+        layout(set = 0, binding = 1) uniform Constants { float time; float vertexCount; };
 
         void main() {
-            if (gl_GlobalInvocationID.x >= VERTEX_COUNT) return;
+            if (gl_GlobalInvocationID.x >= uint(vertexCount)) return;
 
             int i = int(gl_GlobalInvocationID.x);
-            float t = float(i) / float(VERTEX_COUNT);
+            float t = float(i) / vertexCount;
 
             float alpha = 2.0 * 3.14159265359 * t;
-            vertex[i * 2] = vec4(sin(alpha) * radius, cos(alpha) * radius, 0.0, 1.0);
-            vertex[i * 2 + 1] = vec4(t, 0.5, 0.5, 1.0);
-        }
-    )", GROUP_SIZE, VERTEX_COUNT);
-    sources.glsl3 = StringUtil::Format(R"(
+            vertex[i].p = vec4(sin(alpha) * RADIUS, cos(alpha) * RADIUS, 0.0, 1.0);
+            vertex[i].c = vec4(fract(t - time), fract(2.0 * t - time), 1.0, 1.0);
+        })",
+        GROUP_SIZE, RADIUS);
+    sources.glsl3 = StringUtil::Format(
+        R"(
         #define GROUP_SIZE %d
-        #define VERTEX_COUNT %du
+        #define RADIUS %.1f
 
         layout (local_size_x = GROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
         struct AttribData { vec4 p; vec4 c; };
-        layout(std140, binding = 0) buffer DestBuffer { vec4 vertex[]; };
+        layout(std140, binding = 0) buffer DestBuffer { AttribData vertex[]; };
 
-        layout(std140, binding = 1) uniform Constants { float radius; };
+        layout(std140, binding = 1) uniform Constants { float time; float vertexCount; };
 
         void main() {
-            if (gl_GlobalInvocationID.x >= VERTEX_COUNT) return;
+            if (gl_GlobalInvocationID.x >= uint(vertexCount)) return;
 
             int i = int(gl_GlobalInvocationID.x);
-            float t = float(i) / float(VERTEX_COUNT);
+            float t = float(i) / vertexCount;
 
             float alpha = 2.0 * 3.14159265359 * t;
-            vertex[i * 2] = vec4(sin(alpha) * radius, cos(alpha) * radius, 0.0, 1.0);
-            vertex[i * 2 + 1] = vec4(t, 0.5, 0.5, 1.0);
-        }
-    )", GROUP_SIZE, VERTEX_COUNT);
+            vertex[i].p = vec4(sin(alpha) * RADIUS, cos(alpha) * RADIUS, 0.0, 1.0);
+            vertex[i].c = vec4(fract(t - time), fract(2.0 * t - time), 1.0, 1.0);
+        })",
+        GROUP_SIZE, RADIUS);
     // no compute support in GLES2
 
     gfx::ShaderInfo shaderInfo;
     shaderInfo.name = "Compute Pass";
     shaderInfo.stages = {{gfx::ShaderStageFlagBit::COMPUTE, TestBaseI::getAppropriateShaderSource(sources)}};
-    shaderInfo.buffers = {{0, 0, "DestBuffer", {{"vertex", gfx::Type::FLOAT4, 0}}, 1}};
-    shaderInfo.blocks = {{0, 1, "Constants", {{"radius", gfx::Type::FLOAT, 1}}, 1}};
+    shaderInfo.buffers = {{0, 0, "DestBuffer", 1}};
+    shaderInfo.blocks = {{0, 1, "Constants", {{"time", gfx::Type::FLOAT, 1}, {"vertexCount", gfx::Type::FLOAT, 1}}, 1}};
     _compShader = _device->createShader(shaderInfo);
 
-    gfx::BufferInfo radiusBufferInfo = {
+    _compTimeBuffer = _device->createBuffer({
         gfx::BufferUsage::UNIFORM,
-        gfx::MemoryUsage::DEVICE,
-        TestBaseI::getUBOSize(sizeof(Vec4)),
-    };
-    _compRadiusBuffer = _device->createBuffer(radiusBufferInfo);
-
-    Vec4 radius{.7f, 0.f, 0.f, 0.f};
-    _compRadiusBuffer->update(&radius, sizeof(radius));
-
-    gfx::BufferInfo storageBufferInfo = {
-        gfx::BufferUsage::VERTEX | gfx::BufferUsage::STORAGE,
-        gfx::MemoryUsage::DEVICE,
-        VERTEX_COUNT * 2 * sizeof(Vec4),
-        2 * sizeof(Vec4),
-    };
-
-    _compStorageBuffer = _device->createBuffer(storageBufferInfo);
+        gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
+        TestBaseI::getUBOSize(sizeof(Vec2)),
+    });
 
     gfx::DescriptorSetLayoutInfo dslInfo;
     dslInfo.bindings.push_back({0, gfx::DescriptorType::STORAGE_BUFFER, 1, gfx::ShaderStageFlagBit::COMPUTE});
@@ -118,7 +126,7 @@ void ComputeTest::createComputePipeline() {
     _compDescriptorSet = _device->createDescriptorSet({_compDescriptorSetLayout});
 
     _compDescriptorSet->bindBuffer(0, _compStorageBuffer);
-    _compDescriptorSet->bindBuffer(1, _compRadiusBuffer);
+    _compDescriptorSet->bindBuffer(1, _compTimeBuffer);
     _compDescriptorSet->update();
 
     gfx::PipelineStateInfo pipelineInfo;
@@ -283,23 +291,26 @@ void ComputeTest::tick() {
 
     Mat4 MVP;
     TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &MVP);
+    Vec2 time{_time, VERTEX_COUNT};
+    gfx::DispatchInfo dispatchInfo{(VERTEX_COUNT - 1) / GROUP_SIZE + 1, 1, 1};
+    gfx::GlobalBarrier barrier{{gfx::AccessType::COMPUTE_SHADER_WRITE}, {gfx::AccessType::VERTEX_BUFFER}};
 
     _device->acquire();
 
-    _uniformBufferMVP->update(MVP.m, sizeof(Mat4));
+    if (_compTimeBuffer) _compTimeBuffer->update(&time, sizeof(time));
+    _uniformBufferMVP->update(MVP.m, sizeof(MVP.m));
 
     gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
-    gfx::DispatchInfo dispatchInfo{(VERTEX_COUNT - 1) / GROUP_SIZE + 1, 1, 1};
-    gfx::GlobalBarrier barrier{{gfx::AccessType::COMPUTE_SHADER_WRITE}, {gfx::AccessType::VERTEX_BUFFER}};
 
     auto commandBuffer = _commandBuffers[0];
     commandBuffer->begin();
 
-    commandBuffer->bindPipelineState(_compPipelineState);
-    commandBuffer->bindDescriptorSet(0, _compDescriptorSet);
-    commandBuffer->dispatch(dispatchInfo);
-
-    commandBuffer->pipelineBarrier(barrier);
+    if (_device->hasFeature(gfx::Feature::COMPUTE_SHADER)) {
+        commandBuffer->bindPipelineState(_compPipelineState);
+        commandBuffer->bindDescriptorSet(0, _compDescriptorSet);
+        commandBuffer->dispatch(dispatchInfo);
+        commandBuffer->pipelineBarrier(barrier);
+    }
 
     commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
     commandBuffer->bindInputAssembler(_inputAssembler);

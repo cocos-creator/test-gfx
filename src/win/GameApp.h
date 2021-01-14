@@ -17,12 +17,14 @@ public:
 
 private:
     void initialize();
+    void destroy();
 
     static GameApp *_instance;
 
-    bool _minimized = false;
-    bool _fullScreen = false;
+    bool _running = true;
+    bool _paused = false;
 
+    bool _fullScreen = false;
     std::wstring _appName;
     std::wstring _rootPath;
 
