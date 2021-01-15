@@ -13,7 +13,7 @@
 #include "tests/StressTest.h"
 #include "tests/ComputeTest.h"
 
-//#define USE_GLES3
+#define USE_GLES3
 //#define USE_GLES2
 
 #if defined(USE_VULKAN)
@@ -165,8 +165,8 @@ unsigned char *TestBaseI::RGB2RGBA(Image *img) {
 }
 
 void TestBaseI::modifyProjectionBasedOnDevice(Mat4 &projection, bool isOffscreen) {
-    float minZ = _device->getClipSpaceMinZ();
-    float signY = _device->getScreenSpaceSignY() * (isOffscreen ? _device->getUVSpaceSignY() : 1);
+    float minZ = _device->getCapabilities().clipSpaceMinZ;
+    float signY = _device->getCapabilities().screenSpaceSignY * (isOffscreen ? _device->getCapabilities().UVSpaceSignY : 1);
     float orientation = (float)_device->getSurfaceTransform();
 
     Mat4 trans, scale, rot;
@@ -191,7 +191,7 @@ void TestBaseI::createOrthographic(float left, float right, float bottom, float 
     TestBaseI::modifyProjectionBasedOnDevice(*dst, isOffscreen);
 #else
     float minZ = _device->getClipSpaceMinZ();
-    float signY = _device->getScreenSpaceSignY() * (isOffscreen ? _device->getUVSpaceSignY() : 1);
+    float signY = _device->getCapabilities().screenSpaceSignY * (isOffscreen ? _device->getUVSpaceSignY() : 1);
     gfx::SurfaceTransform orientation = _device->getSurfaceTransform();
     const float *preTransform = preTransforms[(uint)orientation];
 
@@ -220,7 +220,7 @@ void TestBaseI::createPerspective(float fov, float aspect, float zNear, float ZF
     TestBaseI::modifyProjectionBasedOnDevice(*dst, isOffscreen);
 #else
     float minZ = _device->getClipSpaceMinZ();
-    float signY = _device->getScreenSpaceSignY() * (isOffscreen ? _device->getUVSpaceSignY() : 1);
+    float signY = _device->getCapabilities().screenSpaceSignY * (isOffscreen ? _device->getUVSpaceSignY() : 1);
     gfx::SurfaceTransform orientation = _device->getSurfaceTransform();
     const float *preTransform = preTransforms[(uint)orientation];
 
@@ -256,7 +256,7 @@ gfx::Extent TestBaseI::getOrientedSurfaceSize() {
 
 gfx::Viewport TestBaseI::getViewportBasedOnDevice(const Vec4 &relativeArea) {
     float x = relativeArea.x;
-    float y = _device->getScreenSpaceSignY() < 0.0f ? 1.f - relativeArea.y - relativeArea.w : relativeArea.y;
+    float y = _device->getCapabilities().screenSpaceSignY < 0.0f ? 1.f - relativeArea.y - relativeArea.w : relativeArea.y;
     float w = relativeArea.z;
     float h = relativeArea.w;
 
@@ -302,7 +302,7 @@ uint TestBaseI::getUBOSize(uint size) {
 }
 
 uint TestBaseI::getAlignedUBOStride(gfx::Device *device, uint stride) {
-    uint alignment = device->getUboOffsetAlignment();
+    uint alignment = device->getCapabilities().uboOffsetAlignment;
     return (stride + alignment - 1) / alignment * alignment;
 }
 

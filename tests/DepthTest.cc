@@ -150,7 +150,7 @@ struct BigTriangle : public cc::Object {
 
     void createBuffers() {
         // create vertex buffer
-        float ySign = device->getScreenSpaceSignY();
+        float ySign = device->getCapabilities().screenSpaceSignY;
         // UV space origin is at top-left
         float vertices[] = {-1, 4 * ySign, 0.0, -1.5,
                             -1, -1 * ySign, 0.0, 1.0,

@@ -6,6 +6,11 @@ namespace cc {
 #define VERTEX_COUNT 200
 #define RADIUS       .7f
 
+#define BG_GROUP_SIZE_X 32
+#define BG_GROUP_SIZE_Y 32
+#define BG_WIDTH        256
+#define BG_HEIGHT       256
+
 void ComputeTest::destroy() {
     CC_SAFE_DESTROY(_inputAssembler);
     CC_SAFE_DESTROY(_uniformBufferMVP);
@@ -16,16 +21,24 @@ void ComputeTest::destroy() {
     CC_SAFE_DESTROY(_pipelineState);
 
     CC_SAFE_DESTROY(_compShader);
-    CC_SAFE_DESTROY(_compTimeBuffer);
+    CC_SAFE_DESTROY(_compConstantsBuffer);
     CC_SAFE_DESTROY(_compStorageBuffer);
     CC_SAFE_DESTROY(_compDescriptorSet);
     CC_SAFE_DESTROY(_compDescriptorSetLayout);
     CC_SAFE_DESTROY(_compPipelineLayout);
     CC_SAFE_DESTROY(_compPipelineState);
+
+    CC_SAFE_DESTROY(_compBGImage);
+    CC_SAFE_DESTROY(_compBGShader);
+    CC_SAFE_DESTROY(_compBGDescriptorSet);
+    CC_SAFE_DESTROY(_compBGDescriptorSetLayout);
+    CC_SAFE_DESTROY(_compBGPipelineLayout);
+    CC_SAFE_DESTROY(_compBGPipelineState);
 }
 
 bool ComputeTest::initialize() {
-    createComputePipeline();
+    createComputeVBPipeline();
+    createComputeBGPipeline();
 
     createShader();
     createUniformBuffer();
@@ -35,7 +48,7 @@ bool ComputeTest::initialize() {
     return true;
 }
 
-void ComputeTest::createComputePipeline() {
+void ComputeTest::createComputeVBPipeline() {
     _compStorageBuffer = _device->createBuffer({
         gfx::BufferUsage::STORAGE | gfx::BufferUsage::VERTEX,
         gfx::MemoryUsage::DEVICE,
@@ -57,15 +70,14 @@ void ComputeTest::createComputePipeline() {
     ShaderSources<ComputeShaderSource> sources;
     sources.glsl4 = StringUtil::Format(
         R"(
-        #define GROUP_SIZE %du
         #define RADIUS %.1f
 
-        layout (local_size_x = GROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
+        layout(local_size_x = %d, local_size_y = 1, local_size_z = 1) in;
+
+        layout(set = 0, binding = 0) readonly uniform Constants { float time; float vertexCount; };
 
         struct AttribData { vec4 p; vec4 c; };
-        layout(set = 0, binding = 0) buffer DestBuffer { AttribData vertex[]; };
-
-        layout(set = 0, binding = 1) uniform Constants { float time; float vertexCount; };
+        layout(set = 0, binding = 1) writeonly buffer DestBuffer { AttribData vertex[]; };
 
         void main() {
             if (gl_GlobalInvocationID.x >= uint(vertexCount)) return;
@@ -77,18 +89,17 @@ void ComputeTest::createComputePipeline() {
             vertex[i].p = vec4(sin(alpha) * RADIUS, cos(alpha) * RADIUS, 0.0, 1.0);
             vertex[i].c = vec4(fract(t - time), fract(2.0 * t - time), 1.0, 1.0);
         })",
-        GROUP_SIZE, RADIUS);
+        RADIUS, GROUP_SIZE);
     sources.glsl3 = StringUtil::Format(
         R"(
-        #define GROUP_SIZE %d
         #define RADIUS %.1f
 
-        layout (local_size_x = GROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
+        layout(local_size_x = %d, local_size_y = 1, local_size_z = 1) in;
+
+        layout(binding = 0, std140) uniform Constants { float time; float vertexCount; };
 
         struct AttribData { vec4 p; vec4 c; };
-        layout(std140, binding = 0) buffer DestBuffer { AttribData vertex[]; };
-
-        layout(std140, binding = 1) uniform Constants { float time; float vertexCount; };
+        layout(binding = 1, std140) writeonly buffer DestBuffer { AttribData vertex[]; };
 
         void main() {
             if (gl_GlobalInvocationID.x >= uint(vertexCount)) return;
@@ -100,33 +111,33 @@ void ComputeTest::createComputePipeline() {
             vertex[i].p = vec4(sin(alpha) * RADIUS, cos(alpha) * RADIUS, 0.0, 1.0);
             vertex[i].c = vec4(fract(t - time), fract(2.0 * t - time), 1.0, 1.0);
         })",
-        GROUP_SIZE, RADIUS);
+        RADIUS, GROUP_SIZE);
     // no compute support in GLES2
 
     gfx::ShaderInfo shaderInfo;
-    shaderInfo.name = "Compute Pass";
+    shaderInfo.name = "Compute VB";
     shaderInfo.stages = {{gfx::ShaderStageFlagBit::COMPUTE, TestBaseI::getAppropriateShaderSource(sources)}};
-    shaderInfo.buffers = {{0, 0, "DestBuffer", 1}};
-    shaderInfo.blocks = {{0, 1, "Constants", {{"time", gfx::Type::FLOAT, 1}, {"vertexCount", gfx::Type::FLOAT, 1}}, 1}};
+    shaderInfo.blocks = {{0, 0, "Constants", {{"time", gfx::Type::FLOAT, 1}, {"vertexCount", gfx::Type::FLOAT, 1}}, 1}};
+    shaderInfo.buffers = {{0, 1, "DestBuffer", 1}};
     _compShader = _device->createShader(shaderInfo);
 
-    _compTimeBuffer = _device->createBuffer({
+    _compConstantsBuffer = _device->createBuffer({
         gfx::BufferUsage::UNIFORM,
         gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
-        TestBaseI::getUBOSize(sizeof(Vec2)),
+        TestBaseI::getUBOSize(sizeof(Vec4)),
     });
 
     gfx::DescriptorSetLayoutInfo dslInfo;
-    dslInfo.bindings.push_back({0, gfx::DescriptorType::STORAGE_BUFFER, 1, gfx::ShaderStageFlagBit::COMPUTE});
-    dslInfo.bindings.push_back({1, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::COMPUTE});
+    dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::COMPUTE});
+    dslInfo.bindings.push_back({1, gfx::DescriptorType::STORAGE_BUFFER, 1, gfx::ShaderStageFlagBit::COMPUTE});
     _compDescriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
 
     _compPipelineLayout = _device->createPipelineLayout({{_compDescriptorSetLayout}});
 
     _compDescriptorSet = _device->createDescriptorSet({_compDescriptorSetLayout});
 
-    _compDescriptorSet->bindBuffer(0, _compStorageBuffer);
-    _compDescriptorSet->bindBuffer(1, _compTimeBuffer);
+    _compDescriptorSet->bindBuffer(0, _compConstantsBuffer);
+    _compDescriptorSet->bindBuffer(1, _compStorageBuffer);
     _compDescriptorSet->update();
 
     gfx::PipelineStateInfo pipelineInfo;
@@ -135,6 +146,81 @@ void ComputeTest::createComputePipeline() {
     pipelineInfo.bindPoint = gfx::PipelineBindPoint::COMPUTE;
 
     _compPipelineState = _device->createPipelineState(pipelineInfo);
+}
+
+void ComputeTest::createComputeBGPipeline() {
+    _compBGImage = _device->createTexture({
+        gfx::TextureType::TEX2D,
+        gfx::TextureUsage::SAMPLED | gfx::TextureUsage::STORAGE | gfx::TextureUsage::TRANSFER_DST,
+        gfx::Format::RGBA8,
+        BG_WIDTH,
+        BG_HEIGHT,
+        gfx::TextureFlagBit::IMMUTABLE,
+    });
+
+    if (!_device->hasFeature(gfx::Feature::COMPUTE_SHADER)) return;
+
+    ShaderSources<ComputeShaderSource> sources;
+    sources.glsl4 = StringUtil::Format(
+        R"(
+        layout(local_size_x = %d, local_size_y = %d, local_size_z = 1) in;
+
+        layout(set = 0, binding = 0) uniform Constants { float time; float vertexCount; vec2 texSize; };
+
+        layout(set = 0, binding = 1, rgba8) writeonly uniform image2D background;
+
+        void main() {
+            if (any(greaterThanEqual(gl_GlobalInvocationID.xy, texSize))) return;
+
+            vec2 uv = vec2(gl_GlobalInvocationID.xy) / texSize;
+            vec3 col = 0.5 + 0.5 * cos(time + uv.xyx + vec3(0, 2, 4));
+            imageStore(background, ivec2(gl_GlobalInvocationID.xy), vec4(col, 1.0));
+        })",
+        BG_GROUP_SIZE_X, BG_GROUP_SIZE_Y);
+    sources.glsl3 = StringUtil::Format(
+        R"(
+        layout(local_size_x = %d, local_size_y = %d, local_size_z = 1) in;
+
+        layout(binding = 0, std140) uniform Constants { float time; float vertexCount; vec2 texSize; };
+
+        layout(binding = 1, rgba8) writeonly uniform lowp image2D background;
+
+        void main() {
+            if (any(greaterThanEqual(vec2(gl_GlobalInvocationID.xy), texSize))) return;
+
+            vec2 uv = vec2(gl_GlobalInvocationID.xy) / texSize;
+            vec3 col = 0.5 + 0.5 * cos(time + uv.xyx + vec3(0, 2, 4));
+            imageStore(background, ivec2(gl_GlobalInvocationID.xy), vec4(col, 1.0));
+        })",
+        BG_GROUP_SIZE_X, BG_GROUP_SIZE_Y);
+    // no compute support in GLES2
+
+    gfx::ShaderInfo shaderInfo;
+    shaderInfo.name = "Compute BG";
+    shaderInfo.stages = {{gfx::ShaderStageFlagBit::COMPUTE, TestBaseI::getAppropriateShaderSource(sources)}};
+    shaderInfo.blocks = {{0, 0, "Constants", {{"time", gfx::Type::FLOAT, 1}, {"vertexCount", gfx::Type::FLOAT, 1}, {"texSize", gfx::Type::FLOAT2, 1}}, 1}};
+    shaderInfo.samplers = {{0, 1, "background", gfx::Type::SAMPLER2D, 1, gfx::UniformSamplerType::STORAGE_IMAGE}};
+    _compBGShader = _device->createShader(shaderInfo);
+
+    gfx::DescriptorSetLayoutInfo dslInfo;
+    dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::COMPUTE});
+    dslInfo.bindings.push_back({1, gfx::DescriptorType::STORAGE_IMAGE, 1, gfx::ShaderStageFlagBit::COMPUTE});
+    _compBGDescriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
+
+    _compBGPipelineLayout = _device->createPipelineLayout({{_compBGDescriptorSetLayout}});
+
+    _compBGDescriptorSet = _device->createDescriptorSet({_compBGDescriptorSetLayout});
+
+    _compBGDescriptorSet->bindBuffer(0, _compConstantsBuffer);
+    _compBGDescriptorSet->bindTexture(1, _compBGImage);
+    _compBGDescriptorSet->update();
+
+    gfx::PipelineStateInfo pipelineInfo;
+    pipelineInfo.shader = _compBGShader;
+    pipelineInfo.pipelineLayout = _compBGPipelineLayout;
+    pipelineInfo.bindPoint = gfx::PipelineBindPoint::COMPUTE;
+
+    _compBGPipelineState = _device->createPipelineState(pipelineInfo);
 }
 
 void ComputeTest::createShader() {
@@ -291,13 +377,14 @@ void ComputeTest::tick() {
 
     Mat4 MVP;
     TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &MVP);
-    Vec2 time{_time, VERTEX_COUNT};
+    Vec4 constants{_time, VERTEX_COUNT, BG_WIDTH, BG_HEIGHT};
     gfx::DispatchInfo dispatchInfo{(VERTEX_COUNT - 1) / GROUP_SIZE + 1, 1, 1};
-    gfx::GlobalBarrier barrier{{gfx::AccessType::COMPUTE_SHADER_WRITE}, {gfx::AccessType::VERTEX_BUFFER}};
+    gfx::DispatchInfo bgDispatchInfo{(BG_WIDTH - 1) / BG_GROUP_SIZE_X + 1, (BG_HEIGHT - 1) / BG_GROUP_SIZE_Y + 1, 1};
+    gfx::GlobalBarrier barrier{{gfx::AccessType::COMPUTE_SHADER_WRITE}, {gfx::AccessType::VERTEX_BUFFER, gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE}};
 
     _device->acquire();
 
-    if (_compTimeBuffer) _compTimeBuffer->update(&time, sizeof(time));
+    if (_compConstantsBuffer) _compConstantsBuffer->update(&constants, sizeof(constants));
     _uniformBufferMVP->update(MVP.m, sizeof(MVP.m));
 
     gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
@@ -309,6 +396,11 @@ void ComputeTest::tick() {
         commandBuffer->bindPipelineState(_compPipelineState);
         commandBuffer->bindDescriptorSet(0, _compDescriptorSet);
         commandBuffer->dispatch(dispatchInfo);
+
+        commandBuffer->bindPipelineState(_compBGPipelineState);
+        commandBuffer->bindDescriptorSet(0, _compBGDescriptorSet);
+        commandBuffer->dispatch(bgDispatchInfo);
+
         commandBuffer->pipelineBarrier(barrier);
     }
 
