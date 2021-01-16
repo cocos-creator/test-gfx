@@ -13,7 +13,7 @@
 #include "tests/StressTest.h"
 #include "tests/ComputeTest.h"
 
-#define USE_GLES3
+//#define USE_GLES3
 //#define USE_GLES2
 
 #if defined(USE_VULKAN)

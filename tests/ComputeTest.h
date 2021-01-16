@@ -31,6 +31,7 @@ private:
     gfx::PipelineLayout *_pipelineLayout = nullptr;
     gfx::PipelineState *_pipelineState = nullptr;
     gfx::InputAssembler *_inputAssembler = nullptr;
+    gfx::RenderPass *_renderPassLoad = nullptr;
 
     gfx::Buffer *_compConstantsBuffer = nullptr;
     gfx::Buffer *_compStorageBuffer = nullptr;
@@ -48,8 +49,6 @@ private:
     gfx::DescriptorSet *_compBGDescriptorSet = nullptr;
 
     float _time = 0.0f;
-
-    uint bgGroupLength = 0u;
 };
 
 } // namespace cc
