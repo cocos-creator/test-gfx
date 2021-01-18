@@ -8,8 +8,8 @@ namespace cc {
 
 static uint BG_GROUP_SIZE_X = 8u;
 static uint BG_GROUP_SIZE_Y = 8u;
-#define BG_WIDTH        100
-#define BG_HEIGHT       100
+#define BG_WIDTH  100
+#define BG_HEIGHT 100
 
 void ComputeTest::destroy() {
     CC_SAFE_DESTROY(_inputAssembler);
@@ -408,8 +408,7 @@ void ComputeTest::tick() {
     static gfx::TextureBarrier textureBarriers[3];
     static gfx::GlobalBarrier barrier{&CSWrite, 1, &VB, 1};
     static gfx::TextureBlit blit;
-    static bool inited = false;
-    if (!inited) {
+    if (!_time) {
         // before bg compute
         textureBarriers[0] = {&transferRead, 1, &CSWrite, 1, gfx::TextureBarrierLayout::OPTIMAL, gfx::TextureBarrierLayout::GENERAL, true, _compBGImage};
         // after bg compute, before blit
@@ -418,7 +417,6 @@ void ComputeTest::tick() {
 
         blit.srcExtent.width = BG_WIDTH;
         blit.srcExtent.height = BG_HEIGHT;
-        inited = true;
     }
 
     lookupTime();
