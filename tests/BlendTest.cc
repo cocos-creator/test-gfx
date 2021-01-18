@@ -160,14 +160,14 @@ struct Quad : public cc::Object {
             {"u_projection", gfx::Type::MAT4, 1},
         };
         gfx::UniformBlockList uniformBlockList = {{0, 0, "MVP_Matrix", mvpMatrix, 1}};
-        gfx::UniformSamplerList samplers = {{0, 1, "u_texture", gfx::Type::SAMPLER2D, 1}};
+        gfx::UniformSamplerTextureList samplers = {{0, 1, "u_texture", gfx::Type::SAMPLER2D, 1}};
 
         gfx::ShaderInfo shaderInfo;
         shaderInfo.name = "Blend Test: Quad";
         shaderInfo.stages = std::move(shaderStageList);
         shaderInfo.attributes = std::move(attributeList);
         shaderInfo.blocks = std::move(uniformBlockList);
-        shaderInfo.samplers = std::move(samplers);
+        shaderInfo.samplerTextures = std::move(samplers);
         shader = device->createShader(shaderInfo);
     }
 
@@ -246,7 +246,7 @@ struct Quad : public cc::Object {
     void createPipeline() {
         gfx::DescriptorSetLayoutInfo dslInfo;
         dslInfo.bindings.push_back({0, gfx::DescriptorType::DYNAMIC_UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX});
-        dslInfo.bindings.push_back({1, gfx::DescriptorType::SAMPLER, 1, gfx::ShaderStageFlagBit::FRAGMENT});
+        dslInfo.bindings.push_back({1, gfx::DescriptorType::SAMPLER_TEXTURE, 1, gfx::ShaderStageFlagBit::FRAGMENT});
         descriptorSetLayout = device->createDescriptorSetLayout(dslInfo);
 
         pipelineLayout = device->createPipelineLayout({{descriptorSetLayout}});
@@ -479,14 +479,14 @@ struct BigTriangle : public cc::Object {
         };
         gfx::UniformList time = {{"u_time", gfx::Type::FLOAT, 1}};
         gfx::UniformBlockList uniformBlockList = {{0, 0, "Time", time, 1}};
-        gfx::UniformSamplerList samplers = {{0, 1, "u_texture", gfx::Type::SAMPLER2D, 1}};
+        gfx::UniformSamplerTextureList samplers = {{0, 1, "u_texture", gfx::Type::SAMPLER2D, 1}};
 
         gfx::ShaderInfo shaderInfo;
         shaderInfo.name = "Blend Test: BigTriangle";
         shaderInfo.stages = std::move(shaderStageList);
         shaderInfo.attributes = std::move(attributeList);
         shaderInfo.blocks = std::move(uniformBlockList);
-        shaderInfo.samplers = std::move(samplers);
+        shaderInfo.samplerTextures = std::move(samplers);
         shader = device->createShader(shaderInfo);
     }
 
@@ -542,7 +542,7 @@ struct BigTriangle : public cc::Object {
     void createPipeline() {
         gfx::DescriptorSetLayoutInfo dslInfo;
         dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::FRAGMENT});
-        dslInfo.bindings.push_back({1, gfx::DescriptorType::SAMPLER, 1, gfx::ShaderStageFlagBit::FRAGMENT});
+        dslInfo.bindings.push_back({1, gfx::DescriptorType::SAMPLER_TEXTURE, 1, gfx::ShaderStageFlagBit::FRAGMENT});
         descriptorSetLayout = device->createDescriptorSetLayout(dslInfo);
 
         pipelineLayout = device->createPipelineLayout({{descriptorSetLayout}});

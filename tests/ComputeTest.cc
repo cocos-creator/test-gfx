@@ -75,7 +75,7 @@ void ComputeTest::createComputeVBPipeline() {
 
         layout(local_size_x = %d, local_size_y = 1, local_size_z = 1) in;
 
-        layout(set = 0, binding = 0) readonly uniform Constants { float time; float vertexCount; };
+        layout(set = 0, binding = 0) uniform Constants { float time; float vertexCount; };
 
         struct AttribData { vec4 p; vec4 c; };
         layout(set = 0, binding = 1) writeonly buffer DestBuffer { AttribData vertex[]; };
@@ -97,10 +97,10 @@ void ComputeTest::createComputeVBPipeline() {
 
         layout(local_size_x = %d, local_size_y = 1, local_size_z = 1) in;
 
-        layout(binding = 0, std140) uniform Constants { float time; float vertexCount; };
+        layout(std140) uniform Constants { float time; float vertexCount; };
 
         struct AttribData { vec4 p; vec4 c; };
-        layout(binding = 1, std140) writeonly buffer DestBuffer { AttribData vertex[]; };
+        layout(std140) writeonly buffer DestBuffer { AttribData vertex[]; };
 
         void main() {
             if (gl_GlobalInvocationID.x >= uint(vertexCount)) return;
@@ -119,7 +119,7 @@ void ComputeTest::createComputeVBPipeline() {
     shaderInfo.name = "Compute VB";
     shaderInfo.stages = {{gfx::ShaderStageFlagBit::COMPUTE, TestBaseI::getAppropriateShaderSource(sources)}};
     shaderInfo.blocks = {{0, 0, "Constants", {{"time", gfx::Type::FLOAT, 1}, {"vertexCount", gfx::Type::FLOAT, 1}}, 1}};
-    shaderInfo.buffers = {{0, 1, "DestBuffer", 1}};
+    shaderInfo.buffers = {{0, 1, "DestBuffer", 1, gfx::UniformMemoryAccessType::WRITE_ONLY}};
     _compShader = _device->createShader(shaderInfo);
 
     _compConstantsBuffer = _device->createBuffer({
@@ -186,9 +186,9 @@ void ComputeTest::createComputeBGPipeline() {
         R"(
         layout(local_size_x = %d, local_size_y = %d, local_size_z = 1) in;
 
-        layout(binding = 0, std140) uniform Constants { float time; float vertexCount; vec2 texSize; };
+        layout(std140) uniform Constants { float time; float vertexCount; vec2 texSize; };
 
-        layout(binding = 1, rgba8) writeonly uniform lowp image2D background;
+        layout(rgba8) writeonly uniform lowp image2D background;
 
         void main() {
             if (any(greaterThanEqual(vec2(gl_GlobalInvocationID.xy), texSize))) return;
@@ -204,7 +204,7 @@ void ComputeTest::createComputeBGPipeline() {
     shaderInfo.name = "Compute BG";
     shaderInfo.stages = {{gfx::ShaderStageFlagBit::COMPUTE, TestBaseI::getAppropriateShaderSource(sources)}};
     shaderInfo.blocks = {{0, 0, "Constants", {{"time", gfx::Type::FLOAT, 1}, {"vertexCount", gfx::Type::FLOAT, 1}, {"texSize", gfx::Type::FLOAT2, 1}}, 1}};
-    shaderInfo.samplers = {{0, 1, "background", gfx::Type::SAMPLER2D, 1, gfx::UniformSamplerType::STORAGE_IMAGE}};
+    shaderInfo.images = {{0, 1, "background", gfx::Type::IMAGE2D, 1, gfx::UniformMemoryAccessType::WRITE_ONLY}};
     _compBGShader = _device->createShader(shaderInfo);
 
     gfx::DescriptorSetLayoutInfo dslInfo;
@@ -421,6 +421,14 @@ void ComputeTest::tick() {
 
     lookupTime();
 
+    if (!hostThread.timeAcc) hostThread.timeAcc = hostThread.dt;
+    else hostThread.timeAcc = hostThread.timeAcc * 0.95f + hostThread.dt * 0.05f;
+    hostThread.frameAcc++;
+
+    if (hostThread.frameAcc % 6 == 0) {
+        CC_LOG_INFO("Host thread n.%d avg: %.2fms (~%d FPS)", hostThread.frameAcc, hostThread.timeAcc * 1000.f, uint(1.f / hostThread.timeAcc + .5f));
+    }
+
     _time += hostThread.dt;
     gfx::Color clearColor = {.2f, .2f, .2f, 1.0f};
     Vec4 constants{_time, VERTEX_COUNT, BG_WIDTH, BG_HEIGHT};
@@ -432,8 +440,8 @@ void ComputeTest::tick() {
     _uniformBufferMVP->update(MVP.m, sizeof(MVP.m));
 
     gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
-    blit.dstExtent.width = _device->getWidth();
-    blit.dstExtent.height = _device->getHeight();
+    blit.dstExtent.width = _device->getWidth(); // BG_WIDTH; 
+    blit.dstExtent.height = _device->getHeight(); // BG_HEIGHT; 
 
     auto commandBuffer = _commandBuffers[0];
     commandBuffer->begin();

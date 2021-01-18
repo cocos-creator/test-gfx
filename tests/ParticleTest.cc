@@ -220,14 +220,14 @@ void ParticleTest::createShader() {
     };
     gfx::UniformBlockList uniformBlockList = {{0, 0, "MVP_Matrix", mvpMatrix, 1}};
 
-    gfx::UniformSamplerList sampler = {{0, 1, "u_texture", gfx::Type::SAMPLER2D, 1}};
+    gfx::UniformSamplerTextureList sampler = {{0, 1, "u_texture", gfx::Type::SAMPLER2D, 1}};
 
     gfx::ShaderInfo shaderInfo;
     shaderInfo.name = "Particle Test";
     shaderInfo.stages = std::move(shaderStageList);
     shaderInfo.attributes = std::move(attributeList);
     shaderInfo.blocks = std::move(uniformBlockList);
-    shaderInfo.samplers = std::move(sampler);
+    shaderInfo.samplerTextures = std::move(sampler);
     _shader = _device->createShader(shaderInfo);
 }
 
@@ -290,7 +290,7 @@ void ParticleTest::createInputAssembler() {
 void ParticleTest::createPipeline() {
     gfx::DescriptorSetLayoutInfo dslInfo;
     dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX});
-    dslInfo.bindings.push_back({1, gfx::DescriptorType::SAMPLER, 1, gfx::ShaderStageFlagBit::FRAGMENT});
+    dslInfo.bindings.push_back({1, gfx::DescriptorType::SAMPLER_TEXTURE, 1, gfx::ShaderStageFlagBit::FRAGMENT});
     _descriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
 
     _pipelineLayout = _device->createPipelineLayout({{_descriptorSetLayout}});

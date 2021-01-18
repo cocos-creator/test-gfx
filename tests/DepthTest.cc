@@ -131,14 +131,14 @@ struct BigTriangle : public cc::Object {
         };
         gfx::UniformList nearFarUniform = {{"u_near", gfx::Type::FLOAT, 1}, {"u_far", gfx::Type::FLOAT, 1}};
         gfx::UniformBlockList uniformBlockList = {{0, 0, "Near_Far_Uniform", nearFarUniform, 1}};
-        gfx::UniformSamplerList samplers = {{0, 1, "u_texture", gfx::Type::SAMPLER2D, 1}};
+        gfx::UniformSamplerTextureList samplers = {{0, 1, "u_texture", gfx::Type::SAMPLER2D, 1}};
 
         gfx::ShaderInfo shaderInfo;
         shaderInfo.name = "BigTriangle";
         shaderInfo.stages = std::move(shaderStageList);
         shaderInfo.attributes = std::move(attributeList);
         shaderInfo.blocks = std::move(uniformBlockList);
-        shaderInfo.samplers = std::move(samplers);
+        shaderInfo.samplerTextures = std::move(samplers);
         shader = device->createShader(shaderInfo);
     }
 
@@ -186,7 +186,7 @@ struct BigTriangle : public cc::Object {
     void createPipeline() {
         gfx::DescriptorSetLayoutInfo dslInfo;
         dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::FRAGMENT});
-        dslInfo.bindings.push_back({1, gfx::DescriptorType::SAMPLER, 1, gfx::ShaderStageFlagBit::FRAGMENT});
+        dslInfo.bindings.push_back({1, gfx::DescriptorType::SAMPLER_TEXTURE, 1, gfx::ShaderStageFlagBit::FRAGMENT});
         descriptorSetLayout = device->createDescriptorSetLayout(dslInfo);
 
         pipelineLayout = device->createPipelineLayout({{descriptorSetLayout}});
@@ -512,7 +512,7 @@ void DepthTexture::tick() {
     _device->acquire();
 
     for (uint i = 0; i < Bunny::BUNNY_NUM; i++) {
-        _bunnyMatrices[0].m[12] = i % 2 ? -5 : 5;
+        _bunnyMatrices[0].m[12] = i % 2 ? -5.f : 5.f;
         bunny->mvpUniformBuffer[i]->update(_bunnyMatrices, sizeof(_bunnyMatrices));
     }
     gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
