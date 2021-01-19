@@ -103,7 +103,7 @@ endif()
 
 set(PVRSDK_LIB_DIR ${GFX_EXTERNAL_PATH}/pvrsdk/lib/OSX_x86)
 
-# Gather list of all .dll files
+# Gather list of all .dylib files
 file(GLOB PVRDLLS ${PVRSDK_LIB_DIR}/*.dylib)
 foreach(PVRDLL ${PVRDLLS})
   add_custom_command(TARGET ${APP_NAME} PRE_BUILD

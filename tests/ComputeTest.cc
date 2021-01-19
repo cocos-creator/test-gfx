@@ -421,14 +421,6 @@ void ComputeTest::tick() {
 
     lookupTime();
 
-    if (!hostThread.timeAcc) hostThread.timeAcc = hostThread.dt;
-    else hostThread.timeAcc = hostThread.timeAcc * 0.95f + hostThread.dt * 0.05f;
-    hostThread.frameAcc++;
-
-    if (hostThread.frameAcc % 6 == 0) {
-        CC_LOG_INFO("Host thread n.%d avg: %.2fms (~%d FPS)", hostThread.frameAcc, hostThread.timeAcc * 1000.f, uint(1.f / hostThread.timeAcc + .5f));
-    }
-
     _time += hostThread.dt;
     gfx::Color clearColor = {.2f, .2f, .2f, 1.0f};
     Vec4 constants{_time, VERTEX_COUNT, BG_WIDTH, BG_HEIGHT};
@@ -440,8 +432,8 @@ void ComputeTest::tick() {
     _uniformBufferMVP->update(MVP.m, sizeof(MVP.m));
 
     gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
-    blit.dstExtent.width = _device->getWidth(); // BG_WIDTH; 
-    blit.dstExtent.height = _device->getHeight(); // BG_HEIGHT; 
+    blit.dstExtent.width = _device->getWidth(); // BG_WIDTH;
+    blit.dstExtent.height = _device->getHeight(); // BG_HEIGHT;
 
     auto commandBuffer = _commandBuffers[0];
     commandBuffer->begin();
