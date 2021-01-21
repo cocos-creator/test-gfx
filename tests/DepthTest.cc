@@ -451,13 +451,7 @@ bool DepthTexture::initialize() {
 
     gfx::DepthStencilAttachment &depthStencilAttachment = renderPassInfo.depthStencilAttachment;
     depthStencilAttachment.format = _device->getDepthStencilFormat();
-    depthStencilAttachment.depthLoadOp = gfx::LoadOp::CLEAR;
-    depthStencilAttachment.depthStoreOp = gfx::StoreOp::STORE;
-    depthStencilAttachment.stencilLoadOp = gfx::LoadOp::CLEAR;
-    depthStencilAttachment.stencilStoreOp = gfx::StoreOp::STORE;
-    depthStencilAttachment.sampleCount = 1;
-    depthStencilAttachment.beginLayout = gfx::TextureLayout::UNDEFINED;
-    depthStencilAttachment.endLayout = gfx::TextureLayout::SHADER_READONLY_OPTIMAL;
+    depthStencilAttachment.endAccess = gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE;
 
     _bunnyFBO->renderPass = _device->createRenderPass(renderPassInfo);
 

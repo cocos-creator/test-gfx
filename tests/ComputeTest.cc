@@ -119,7 +119,7 @@ void ComputeTest::createComputeVBPipeline() {
     shaderInfo.name = "Compute VB";
     shaderInfo.stages = {{gfx::ShaderStageFlagBit::COMPUTE, TestBaseI::getAppropriateShaderSource(sources)}};
     shaderInfo.blocks = {{0, 0, "Constants", {{"time", gfx::Type::FLOAT, 1}, {"vertexCount", gfx::Type::FLOAT, 1}}, 1}};
-    shaderInfo.buffers = {{0, 1, "DestBuffer", 1, gfx::UniformMemoryAccessType::WRITE_ONLY}};
+    shaderInfo.buffers = {{0, 1, "DestBuffer", 1, gfx::MemoryAccessBit::WRITE_ONLY}};
     _compShader = _device->createShader(shaderInfo);
 
     _compConstantsBuffer = _device->createBuffer({
@@ -204,7 +204,7 @@ void ComputeTest::createComputeBGPipeline() {
     shaderInfo.name = "Compute BG";
     shaderInfo.stages = {{gfx::ShaderStageFlagBit::COMPUTE, TestBaseI::getAppropriateShaderSource(sources)}};
     shaderInfo.blocks = {{0, 0, "Constants", {{"time", gfx::Type::FLOAT, 1}, {"vertexCount", gfx::Type::FLOAT, 1}, {"texSize", gfx::Type::FLOAT2, 1}}, 1}};
-    shaderInfo.images = {{0, 1, "background", gfx::Type::IMAGE2D, 1, gfx::UniformMemoryAccessType::WRITE_ONLY}};
+    shaderInfo.images = {{0, 1, "background", gfx::Type::IMAGE2D, 1, gfx::MemoryAccessBit::WRITE_ONLY}};
     _compBGShader = _device->createShader(shaderInfo);
 
     gfx::DescriptorSetLayoutInfo dslInfo;
@@ -377,21 +377,11 @@ void ComputeTest::createPipeline() {
     gfx::ColorAttachment colorAttachment;
     colorAttachment.format = _device->getColorFormat();
     colorAttachment.loadOp = gfx::LoadOp::LOAD;
-    colorAttachment.storeOp = gfx::StoreOp::STORE;
-    colorAttachment.sampleCount = 1;
-    colorAttachment.beginLayout = gfx::TextureLayout::TRANSFER_DST_OPTIMAL;
-    colorAttachment.endLayout = gfx::TextureLayout::PRESENT_SRC;
+    colorAttachment.beginAccess = gfx::AccessType::TRANSFER_WRITE;
     renderPassInfo.colorAttachments.emplace_back(colorAttachment);
 
     gfx::DepthStencilAttachment &depthStencilAttachment = renderPassInfo.depthStencilAttachment;
     depthStencilAttachment.format = _device->getDepthStencilFormat();
-    depthStencilAttachment.depthLoadOp = gfx::LoadOp::CLEAR;
-    depthStencilAttachment.depthStoreOp = gfx::StoreOp::STORE;
-    depthStencilAttachment.stencilLoadOp = gfx::LoadOp::CLEAR;
-    depthStencilAttachment.stencilStoreOp = gfx::StoreOp::STORE;
-    depthStencilAttachment.sampleCount = 1;
-    depthStencilAttachment.beginLayout = gfx::TextureLayout::UNDEFINED;
-    depthStencilAttachment.endLayout = gfx::TextureLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     _renderPassLoad = _device->createRenderPass(renderPassInfo);
 }
@@ -410,10 +400,10 @@ void ComputeTest::tick() {
     static gfx::TextureBlit blit;
     if (!_time) {
         // before bg compute
-        textureBarriers[0] = {&transferRead, 1, &CSWrite, 1, gfx::TextureBarrierLayout::OPTIMAL, gfx::TextureBarrierLayout::GENERAL, true, _compBGImage};
+        textureBarriers[0] = {&gfx::AccessTypeV::TRANSFER_READ, 1, &gfx::AccessTypeV::COMPUTE_SHADER_WRITE, 1, true, _compBGImage};
         // after bg compute, before blit
-        textureBarriers[1] = {&CSWrite, 1, &transferRead, 1, gfx::TextureBarrierLayout::GENERAL, gfx::TextureBarrierLayout::OPTIMAL, false, _compBGImage};
-        textureBarriers[2] = {&present, 1, &transferWrite, 1, gfx::TextureBarrierLayout::OPTIMAL, gfx::TextureBarrierLayout::OPTIMAL, true, nullptr};
+        textureBarriers[1] = {&gfx::AccessTypeV::COMPUTE_SHADER_WRITE, 1, &gfx::AccessTypeV::TRANSFER_READ, 1, false, _compBGImage};
+        textureBarriers[2] = {&gfx::AccessTypeV::PRESENT, 1, &gfx::AccessTypeV::TRANSFER_WRITE, 1, true, nullptr};
 
         blit.srcExtent.width = BG_WIDTH;
         blit.srcExtent.height = BG_HEIGHT;
@@ -432,7 +422,7 @@ void ComputeTest::tick() {
     _uniformBufferMVP->update(MVP.m, sizeof(MVP.m));
 
     gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
-    blit.dstExtent.width = _device->getWidth(); // BG_WIDTH;
+    blit.dstExtent.width  = _device->getWidth();  // BG_WIDTH;
     blit.dstExtent.height = _device->getHeight(); // BG_HEIGHT;
 
     auto commandBuffer = _commandBuffers[0];
@@ -443,13 +433,13 @@ void ComputeTest::tick() {
         commandBuffer->bindDescriptorSet(0, _compDescriptorSet);
         commandBuffer->dispatch(dispatchInfo);
 
-        commandBuffer->pipelineBarrier(nullptr, &textureBarriers[0], 1u);
+        //commandBuffer->pipelineBarrier(nullptr, &textureBarriers[0], 1u);
 
         commandBuffer->bindPipelineState(_compBGPipelineState);
         commandBuffer->bindDescriptorSet(0, _compBGDescriptorSet);
         commandBuffer->dispatch(bgDispatchInfo);
 
-        commandBuffer->pipelineBarrier(&barrier, &textureBarriers[1], 2u);
+        commandBuffer->pipelineBarrier(&barrier);
 
         commandBuffer->blitTexture(_compBGImage, nullptr, &blit, 1u, gfx::Filter::POINT);
     }

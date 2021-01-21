@@ -84,22 +84,10 @@ TestBaseI::TestBaseI(const WindowInfo &info) {
         gfx::RenderPassInfo renderPassInfo;
         gfx::ColorAttachment colorAttachment;
         colorAttachment.format = _device->getColorFormat();
-        colorAttachment.loadOp = gfx::LoadOp::CLEAR;
-        colorAttachment.storeOp = gfx::StoreOp::STORE;
-        colorAttachment.sampleCount = 1;
-        colorAttachment.beginLayout = gfx::TextureLayout::UNDEFINED;
-        colorAttachment.endLayout = gfx::TextureLayout::PRESENT_SRC;
         renderPassInfo.colorAttachments.emplace_back(colorAttachment);
 
         gfx::DepthStencilAttachment &depthStencilAttachment = renderPassInfo.depthStencilAttachment;
         depthStencilAttachment.format = _device->getDepthStencilFormat();
-        depthStencilAttachment.depthLoadOp = gfx::LoadOp::CLEAR;
-        depthStencilAttachment.depthStoreOp = gfx::StoreOp::STORE;
-        depthStencilAttachment.stencilLoadOp = gfx::LoadOp::CLEAR;
-        depthStencilAttachment.stencilStoreOp = gfx::StoreOp::STORE;
-        depthStencilAttachment.sampleCount = 1;
-        depthStencilAttachment.beginLayout = gfx::TextureLayout::UNDEFINED;
-        depthStencilAttachment.endLayout = gfx::TextureLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
         _renderPass = _device->createRenderPass(renderPassInfo);
         gfx::FramebufferInfo fboInfo;
