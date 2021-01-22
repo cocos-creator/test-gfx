@@ -60,8 +60,8 @@ void ComputeTest::createComputeVBPipeline() {
     // default value for storage buffer
     vector<Vec4> buffer{VERTEX_COUNT * 2};
     for (uint i = 0u; i < VERTEX_COUNT; ++i) {
-        float alpha = 2.f * math::PI * i / VERTEX_COUNT;
-        buffer[i * 2] = Vec4(std::sin(alpha) * RADIUS, std::cos(alpha) * RADIUS, 0.f, 1.f);
+        float alpha       = 2.f * math::PI * i / VERTEX_COUNT;
+        buffer[i * 2]     = Vec4(std::sin(alpha) * RADIUS, std::cos(alpha) * RADIUS, 0.f, 1.f);
         buffer[i * 2 + 1] = Vec4(1.f, 1.f, 1.f, 1.f);
     }
     _compStorageBuffer->update(buffer.data(), buffer.size() * sizeof(Vec4));
@@ -116,11 +116,11 @@ void ComputeTest::createComputeVBPipeline() {
     // no compute support in GLES2
 
     gfx::ShaderInfo shaderInfo;
-    shaderInfo.name = "Compute VB";
-    shaderInfo.stages = {{gfx::ShaderStageFlagBit::COMPUTE, TestBaseI::getAppropriateShaderSource(sources)}};
-    shaderInfo.blocks = {{0, 0, "Constants", {{"time", gfx::Type::FLOAT, 1}, {"vertexCount", gfx::Type::FLOAT, 1}}, 1}};
+    shaderInfo.name    = "Compute VB";
+    shaderInfo.stages  = {{gfx::ShaderStageFlagBit::COMPUTE, TestBaseI::getAppropriateShaderSource(sources)}};
+    shaderInfo.blocks  = {{0, 0, "Constants", {{"time", gfx::Type::FLOAT, 1}, {"vertexCount", gfx::Type::FLOAT, 1}}, 1}};
     shaderInfo.buffers = {{0, 1, "DestBuffer", 1, gfx::MemoryAccessBit::WRITE_ONLY}};
-    _compShader = _device->createShader(shaderInfo);
+    _compShader        = _device->createShader(shaderInfo);
 
     _compConstantsBuffer = _device->createBuffer({
         gfx::BufferUsage::UNIFORM,
@@ -142,9 +142,9 @@ void ComputeTest::createComputeVBPipeline() {
     _compDescriptorSet->update();
 
     gfx::PipelineStateInfo pipelineInfo;
-    pipelineInfo.shader = _compShader;
+    pipelineInfo.shader         = _compShader;
     pipelineInfo.pipelineLayout = _compPipelineLayout;
-    pipelineInfo.bindPoint = gfx::PipelineBindPoint::COMPUTE;
+    pipelineInfo.bindPoint      = gfx::PipelineBindPoint::COMPUTE;
 
     _compPipelineState = _device->createPipelineState(pipelineInfo);
 }
@@ -201,11 +201,11 @@ void ComputeTest::createComputeBGPipeline() {
     // no compute support in GLES2
 
     gfx::ShaderInfo shaderInfo;
-    shaderInfo.name = "Compute BG";
+    shaderInfo.name   = "Compute BG";
     shaderInfo.stages = {{gfx::ShaderStageFlagBit::COMPUTE, TestBaseI::getAppropriateShaderSource(sources)}};
     shaderInfo.blocks = {{0, 0, "Constants", {{"time", gfx::Type::FLOAT, 1}, {"vertexCount", gfx::Type::FLOAT, 1}, {"texSize", gfx::Type::FLOAT2, 1}}, 1}};
     shaderInfo.images = {{0, 1, "background", gfx::Type::IMAGE2D, 1, gfx::MemoryAccessBit::WRITE_ONLY}};
-    _compBGShader = _device->createShader(shaderInfo);
+    _compBGShader     = _device->createShader(shaderInfo);
 
     gfx::DescriptorSetLayoutInfo dslInfo;
     dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::COMPUTE});
@@ -221,9 +221,9 @@ void ComputeTest::createComputeBGPipeline() {
     _compBGDescriptorSet->update();
 
     gfx::PipelineStateInfo pipelineInfo;
-    pipelineInfo.shader = _compBGShader;
+    pipelineInfo.shader         = _compBGShader;
     pipelineInfo.pipelineLayout = _compBGPipelineLayout;
-    pipelineInfo.bindPoint = gfx::PipelineBindPoint::COMPUTE;
+    pipelineInfo.bindPoint      = gfx::PipelineBindPoint::COMPUTE;
 
     _compBGPipelineState = _device->createPipelineState(pipelineInfo);
 }
@@ -305,13 +305,13 @@ void ComputeTest::createShader() {
     StandardShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
 
     gfx::ShaderStageList shaderStageList;
-    gfx::ShaderStage vertexShaderStage;
-    vertexShaderStage.stage = gfx::ShaderStageFlagBit::VERTEX;
+    gfx::ShaderStage     vertexShaderStage;
+    vertexShaderStage.stage  = gfx::ShaderStageFlagBit::VERTEX;
     vertexShaderStage.source = source.vert;
     shaderStageList.emplace_back(std::move(vertexShaderStage));
 
     gfx::ShaderStage fragmentShaderStage;
-    fragmentShaderStage.stage = gfx::ShaderStageFlagBit::FRAGMENT;
+    fragmentShaderStage.stage  = gfx::ShaderStageFlagBit::FRAGMENT;
     fragmentShaderStage.source = source.frag;
     shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
@@ -324,11 +324,11 @@ void ComputeTest::createShader() {
     };
 
     gfx::ShaderInfo shaderInfo;
-    shaderInfo.name = "Graphics Pass";
-    shaderInfo.stages = std::move(shaderStageList);
+    shaderInfo.name       = "Graphics Pass";
+    shaderInfo.stages     = std::move(shaderStageList);
     shaderInfo.attributes = std::move(attributeList);
-    shaderInfo.blocks = std::move(uniformBlockList);
-    _shader = _device->createShader(shaderInfo);
+    shaderInfo.blocks     = std::move(uniformBlockList);
+    _shader               = _device->createShader(shaderInfo);
 }
 
 void ComputeTest::createUniformBuffer() {
@@ -338,10 +338,6 @@ void ComputeTest::createUniformBuffer() {
         TestBaseI::getUBOSize(sizeof(Mat4)),
     };
     _uniformBufferMVP = _device->createBuffer(uniformBufferMVPInfo);
-
-    Mat4 MVP;
-    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &MVP);
-    _uniformBufferMVP->update(MVP.m, sizeof(Mat4));
 }
 
 void ComputeTest::createInputAssembler() {
@@ -365,55 +361,54 @@ void ComputeTest::createPipeline() {
     _descriptorSet->update();
 
     gfx::PipelineStateInfo pipelineInfo;
-    pipelineInfo.primitive = gfx::PrimitiveMode::LINE_LIST;
-    pipelineInfo.shader = _shader;
-    pipelineInfo.inputState = {_inputAssembler->getAttributes()};
-    pipelineInfo.renderPass = _fbo->getRenderPass();
+    pipelineInfo.primitive      = gfx::PrimitiveMode::LINE_LIST;
+    pipelineInfo.shader         = _shader;
+    pipelineInfo.inputState     = {_inputAssembler->getAttributes()};
+    pipelineInfo.renderPass     = _fbo->getRenderPass();
     pipelineInfo.pipelineLayout = _pipelineLayout;
 
     _pipelineState = _device->createPipelineState(pipelineInfo);
 
-    gfx::RenderPassInfo renderPassInfo;
+    gfx::RenderPassInfo  renderPassInfo;
     gfx::ColorAttachment colorAttachment;
-    colorAttachment.format = _device->getColorFormat();
-    colorAttachment.loadOp = gfx::LoadOp::LOAD;
+    colorAttachment.format      = _device->getColorFormat();
+    colorAttachment.loadOp      = gfx::LoadOp::LOAD;
     colorAttachment.beginAccess = gfx::AccessType::TRANSFER_WRITE;
     renderPassInfo.colorAttachments.emplace_back(colorAttachment);
 
     gfx::DepthStencilAttachment &depthStencilAttachment = renderPassInfo.depthStencilAttachment;
-    depthStencilAttachment.format = _device->getDepthStencilFormat();
+    depthStencilAttachment.format                       = _device->getDepthStencilFormat();
 
     _renderPassLoad = _device->createRenderPass(renderPassInfo);
 }
 
 void ComputeTest::tick() {
-    static Mat4 MVP;
-    static gfx::DispatchInfo dispatchInfo{(VERTEX_COUNT - 1) / GROUP_SIZE + 1, 1, 1};
-    static gfx::DispatchInfo bgDispatchInfo{(BG_WIDTH - 1) / BG_GROUP_SIZE_X + 1, (BG_HEIGHT - 1) / BG_GROUP_SIZE_Y + 1, 1};
-    static gfx::AccessType transferRead = gfx::AccessType::TRANSFER_READ;
-    static gfx::AccessType transferWrite = gfx::AccessType::TRANSFER_WRITE;
-    static gfx::AccessType CSWrite = gfx::AccessType::COMPUTE_SHADER_WRITE;
-    static gfx::AccessType VB = gfx::AccessType::VERTEX_BUFFER;
-    static gfx::AccessType present = gfx::AccessType::PRESENT;
-    static gfx::TextureBarrier textureBarriers[3];
-    static gfx::GlobalBarrier barrier{&CSWrite, 1, &VB, 1};
-    static gfx::TextureBlit blit;
-    if (!_time) {
-        // before bg compute
-        textureBarriers[0] = {&gfx::AccessTypeV::TRANSFER_READ, 1, &gfx::AccessTypeV::COMPUTE_SHADER_WRITE, 1, true, _compBGImage};
-        // after bg compute, before blit
-        textureBarriers[1] = {&gfx::AccessTypeV::COMPUTE_SHADER_WRITE, 1, &gfx::AccessTypeV::TRANSFER_READ, 1, false, _compBGImage};
-        textureBarriers[2] = {&gfx::AccessTypeV::PRESENT, 1, &gfx::AccessTypeV::TRANSFER_WRITE, 1, true, nullptr};
-
-        blit.srcExtent.width = BG_WIDTH;
-        blit.srcExtent.height = BG_HEIGHT;
-    }
+    Mat4                MVP;
+    gfx::DispatchInfo   dispatchInfo{(VERTEX_COUNT - 1) / GROUP_SIZE + 1, 1, 1};
+    gfx::DispatchInfo   bgDispatchInfo{(BG_WIDTH - 1) / BG_GROUP_SIZE_X + 1, (BG_HEIGHT - 1) / BG_GROUP_SIZE_Y + 1, 1};
+    gfx::TextureBlit    blit;
+    gfx::TextureBarrier beforeBlit[] = {
+        {&gfx::AccessTypeV::COMPUTE_SHADER_WRITE, 1, &gfx::AccessTypeV::TRANSFER_READ, 1, false, _compBGImage},
+        {&gfx::AccessTypeV::PRESENT, 1, &gfx::AccessTypeV::TRANSFER_WRITE, 1, true, nullptr},
+    };
+    gfx::TextureBarrier beforeCompute = {&gfx::AccessTypeV::TRANSFER_READ, 1, &gfx::AccessTypeV::COMPUTE_SHADER_WRITE, 1, true, _compBGImage};
+    gfx::AccessType     accesses[]    = {
+        gfx::AccessType::COMPUTE_SHADER_READ_UNIFORM_BUFFER,
+        gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
+        gfx::AccessType::TRANSFER_READ,
+        gfx::AccessType::VERTEX_BUFFER,
+    };
+    gfx::GlobalBarrier shader_RAW_transfer{&gfx::AccessTypeV::TRANSFER_WRITE, 1, &accesses[0], 2};
+    gfx::GlobalBarrier cs_WAW_transfer{&gfx::AccessTypeV::TRANSFER_WRITE, 1, &gfx::AccessTypeV::COMPUTE_SHADER_WRITE, 1};
+    gfx::GlobalBarrier transfer_VB_RAW_cs{&gfx::AccessTypeV::COMPUTE_SHADER_WRITE, 1, &accesses[2], 2};
+    blit.srcExtent.width  = BG_WIDTH;
+    blit.srcExtent.height = BG_HEIGHT;
 
     lookupTime();
 
     _time += hostThread.dt;
     gfx::Color clearColor = {.2f, .2f, .2f, 1.0f};
-    Vec4 constants{_time, VERTEX_COUNT, BG_WIDTH, BG_HEIGHT};
+    Vec4       constants{_time, VERTEX_COUNT, BG_WIDTH, BG_HEIGHT};
     TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &MVP);
 
     _device->acquire();
@@ -421,26 +416,28 @@ void ComputeTest::tick() {
     if (_compConstantsBuffer) _compConstantsBuffer->update(&constants, sizeof(constants));
     _uniformBufferMVP->update(MVP.m, sizeof(MVP.m));
 
-    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
+    gfx::Rect renderArea  = {0, 0, _device->getWidth(), _device->getHeight()};
     blit.dstExtent.width  = _device->getWidth();  // BG_WIDTH;
     blit.dstExtent.height = _device->getHeight(); // BG_HEIGHT;
 
     auto commandBuffer = _commandBuffers[0];
     commandBuffer->begin();
 
+    if (TestBaseI::MANUAL_BARRIER)
+        commandBuffer->pipelineBarrier(&shader_RAW_transfer);
+
     if (_device->hasFeature(gfx::Feature::COMPUTE_SHADER)) {
+        commandBuffer->pipelineBarrier(&cs_WAW_transfer, &beforeCompute, 1);
+
         commandBuffer->bindPipelineState(_compPipelineState);
         commandBuffer->bindDescriptorSet(0, _compDescriptorSet);
         commandBuffer->dispatch(dispatchInfo);
-
-        //commandBuffer->pipelineBarrier(nullptr, &textureBarriers[0], 1u);
 
         commandBuffer->bindPipelineState(_compBGPipelineState);
         commandBuffer->bindDescriptorSet(0, _compBGDescriptorSet);
         commandBuffer->dispatch(bgDispatchInfo);
 
-        commandBuffer->pipelineBarrier(&barrier);
-
+        commandBuffer->pipelineBarrier(&transfer_VB_RAW_cs, beforeBlit, 2);
         commandBuffer->blitTexture(_compBGImage, nullptr, &blit, 1u, gfx::Filter::POINT);
     }
 

@@ -18,7 +18,7 @@ public:
 
 private:
    
-    float _dt = 0.0f;
+    float _time = 0.0f;
 };
 
 } // namespace cc

@@ -115,13 +115,13 @@ struct BigTriangle : public cc::Object {
         StandardShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
 
         gfx::ShaderStageList shaderStageList;
-        gfx::ShaderStage vertexShaderStage;
-        vertexShaderStage.stage = gfx::ShaderStageFlagBit::VERTEX;
+        gfx::ShaderStage     vertexShaderStage;
+        vertexShaderStage.stage  = gfx::ShaderStageFlagBit::VERTEX;
         vertexShaderStage.source = source.vert;
         shaderStageList.emplace_back(std::move(vertexShaderStage));
 
         gfx::ShaderStage fragmentShaderStage;
-        fragmentShaderStage.stage = gfx::ShaderStageFlagBit::FRAGMENT;
+        fragmentShaderStage.stage  = gfx::ShaderStageFlagBit::FRAGMENT;
         fragmentShaderStage.source = source.frag;
         shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
@@ -129,17 +129,17 @@ struct BigTriangle : public cc::Object {
             {"a_position", gfx::Format::RG32F, false, 0, false, 0},
             {"a_texCoord", gfx::Format::RG32F, false, 0, false, 1},
         };
-        gfx::UniformList nearFarUniform = {{"u_near", gfx::Type::FLOAT, 1}, {"u_far", gfx::Type::FLOAT, 1}};
-        gfx::UniformBlockList uniformBlockList = {{0, 0, "Near_Far_Uniform", nearFarUniform, 1}};
-        gfx::UniformSamplerTextureList samplers = {{0, 1, "u_texture", gfx::Type::SAMPLER2D, 1}};
+        gfx::UniformList               nearFarUniform   = {{"u_near", gfx::Type::FLOAT, 1}, {"u_far", gfx::Type::FLOAT, 1}};
+        gfx::UniformBlockList          uniformBlockList = {{0, 0, "Near_Far_Uniform", nearFarUniform, 1}};
+        gfx::UniformSamplerTextureList samplers         = {{0, 1, "u_texture", gfx::Type::SAMPLER2D, 1}};
 
         gfx::ShaderInfo shaderInfo;
-        shaderInfo.name = "BigTriangle";
-        shaderInfo.stages = std::move(shaderStageList);
-        shaderInfo.attributes = std::move(attributeList);
-        shaderInfo.blocks = std::move(uniformBlockList);
+        shaderInfo.name            = "BigTriangle";
+        shaderInfo.stages          = std::move(shaderStageList);
+        shaderInfo.attributes      = std::move(attributeList);
+        shaderInfo.blocks          = std::move(uniformBlockList);
         shaderInfo.samplerTextures = std::move(samplers);
-        shader = device->createShader(shaderInfo);
+        shader                     = device->createShader(shaderInfo);
     }
 
     void createSampler() {
@@ -198,14 +198,14 @@ struct BigTriangle : public cc::Object {
         // don't update just yet for the texture is still missing
 
         gfx::PipelineStateInfo pipelineInfo;
-        pipelineInfo.primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
-        pipelineInfo.shader = shader;
-        pipelineInfo.inputState.attributes = inputAssembler->getAttributes();
-        pipelineInfo.renderPass = fbo->getRenderPass();
-        pipelineInfo.depthStencilState.depthTest = false;
+        pipelineInfo.primitive                    = gfx::PrimitiveMode::TRIANGLE_LIST;
+        pipelineInfo.shader                       = shader;
+        pipelineInfo.inputState.attributes        = inputAssembler->getAttributes();
+        pipelineInfo.renderPass                   = fbo->getRenderPass();
+        pipelineInfo.depthStencilState.depthTest  = false;
         pipelineInfo.depthStencilState.depthWrite = false;
-        pipelineInfo.rasterizerState.cullMode = gfx::CullMode::NONE;
-        pipelineInfo.pipelineLayout = pipelineLayout;
+        pipelineInfo.rasterizerState.cullMode     = gfx::CullMode::NONE;
+        pipelineInfo.pipelineLayout               = pipelineLayout;
 
         pipelineState = device->createPipelineState(pipelineInfo);
     }
@@ -224,18 +224,18 @@ struct BigTriangle : public cc::Object {
         CC_SAFE_DESTROY(nearFarUniformBuffer);
     }
 
-    gfx::Shader *shader = nullptr;
-    gfx::Framebuffer *fbo = nullptr;
-    gfx::Buffer *vertexBuffer = nullptr;
-    gfx::Buffer *nearFarUniformBuffer = nullptr;
-    gfx::Device *device = nullptr;
-    gfx::InputAssembler *inputAssembler = nullptr;
-    gfx::DescriptorSet *descriptorSet = nullptr;
-    gfx::DescriptorSetLayout *descriptorSetLayout = nullptr;
-    gfx::PipelineLayout *pipelineLayout = nullptr;
-    gfx::Sampler *sampler = nullptr;
-    gfx::Texture *texture = nullptr;
-    gfx::PipelineState *pipelineState = nullptr;
+    gfx::Shader *             shader               = nullptr;
+    gfx::Framebuffer *        fbo                  = nullptr;
+    gfx::Buffer *             vertexBuffer         = nullptr;
+    gfx::Buffer *             nearFarUniformBuffer = nullptr;
+    gfx::Device *             device               = nullptr;
+    gfx::InputAssembler *     inputAssembler       = nullptr;
+    gfx::DescriptorSet *      descriptorSet        = nullptr;
+    gfx::DescriptorSetLayout *descriptorSetLayout  = nullptr;
+    gfx::PipelineLayout *     pipelineLayout       = nullptr;
+    gfx::Sampler *            sampler              = nullptr;
+    gfx::Texture *            texture              = nullptr;
+    gfx::PipelineState *      pipelineState        = nullptr;
 };
 
 struct Bunny : public cc::Object {
@@ -311,19 +311,19 @@ struct Bunny : public cc::Object {
 
         // vertex shader
         gfx::ShaderStageList shaderStageList;
-        gfx::ShaderStage vertexShaderStage;
-        vertexShaderStage.stage = gfx::ShaderStageFlagBit::VERTEX;
+        gfx::ShaderStage     vertexShaderStage;
+        vertexShaderStage.stage  = gfx::ShaderStageFlagBit::VERTEX;
         vertexShaderStage.source = source.vert;
         shaderStageList.emplace_back(std::move(vertexShaderStage));
 
         // fragment shader
         gfx::ShaderStage fragmentShaderStage;
-        fragmentShaderStage.stage = gfx::ShaderStageFlagBit::FRAGMENT;
+        fragmentShaderStage.stage  = gfx::ShaderStageFlagBit::FRAGMENT;
         fragmentShaderStage.source = source.frag;
         shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
         gfx::AttributeList attributeList = {{"a_position", gfx::Format::RGB32F, false, 0, false, 0}};
-        gfx::UniformList mvpMatrix = {
+        gfx::UniformList   mvpMatrix     = {
             {"u_model", gfx::Type::MAT4, 1},
             {"u_view", gfx::Type::MAT4, 1},
             {"u_projection", gfx::Type::MAT4, 1},
@@ -331,11 +331,11 @@ struct Bunny : public cc::Object {
         gfx::UniformBlockList uniformBlockList = {{0, 0, "MVP_Matrix", mvpMatrix, 1}};
 
         gfx::ShaderInfo shaderInfo;
-        shaderInfo.name = "Bunny";
+        shaderInfo.name       = "Bunny";
         shaderInfo.attributes = std::move(attributeList);
-        shaderInfo.stages = std::move(shaderStageList);
-        shaderInfo.blocks = std::move(uniformBlockList);
-        shader = device->createShader(shaderInfo);
+        shaderInfo.stages     = std::move(shaderStageList);
+        shaderInfo.blocks     = std::move(uniformBlockList);
+        shader                = device->createShader(shaderInfo);
     }
 
     void createBuffers() {
@@ -369,12 +369,12 @@ struct Bunny : public cc::Object {
     }
 
     void createInputAssembler() {
-        gfx::Attribute position = {"a_position", gfx::Format::RGB32F, false, 0, false};
+        gfx::Attribute          position = {"a_position", gfx::Format::RGB32F, false, 0, false};
         gfx::InputAssemblerInfo inputAssemblerInfo;
         inputAssemblerInfo.attributes.emplace_back(std::move(position));
         inputAssemblerInfo.vertexBuffers.emplace_back(vertexBuffer);
         inputAssemblerInfo.indexBuffer = indexBuffer;
-        inputAssembler = device->createInputAssembler(inputAssemblerInfo);
+        inputAssembler                 = device->createInputAssembler(inputAssemblerInfo);
     }
 
     void createPipeline(gfx::Framebuffer *_fbo) {
@@ -392,14 +392,14 @@ struct Bunny : public cc::Object {
         }
 
         gfx::PipelineStateInfo pipelineInfo;
-        pipelineInfo.primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
-        pipelineInfo.shader = shader;
-        pipelineInfo.inputState = {inputAssembler->getAttributes()};
-        pipelineInfo.renderPass = _fbo->getRenderPass();
-        pipelineInfo.depthStencilState.depthTest = true;
+        pipelineInfo.primitive                    = gfx::PrimitiveMode::TRIANGLE_LIST;
+        pipelineInfo.shader                       = shader;
+        pipelineInfo.inputState                   = {inputAssembler->getAttributes()};
+        pipelineInfo.renderPass                   = _fbo->getRenderPass();
+        pipelineInfo.depthStencilState.depthTest  = true;
         pipelineInfo.depthStencilState.depthWrite = true;
-        pipelineInfo.depthStencilState.depthFunc = gfx::ComparisonFunc::LESS;
-        pipelineInfo.pipelineLayout = pipelineLayout;
+        pipelineInfo.depthStencilState.depthFunc  = gfx::ComparisonFunc::LESS;
+        pipelineInfo.pipelineLayout               = pipelineLayout;
 
         pipelineState = device->createPipelineState(pipelineInfo);
     }
@@ -419,23 +419,23 @@ struct Bunny : public cc::Object {
         CC_SAFE_DESTROY(pipelineLayout);
         CC_SAFE_DESTROY(pipelineState);
     }
-    const static uint BUNNY_NUM = 2;
-    gfx::Device *device = nullptr;
-    gfx::Shader *shader = nullptr;
-    gfx::Buffer *vertexBuffer = nullptr;
-    gfx::Buffer *indexBuffer = nullptr;
-    gfx::Sampler *sampler = nullptr;
-    gfx::Texture *depthTexture = nullptr;
-    gfx::InputAssembler *inputAssembler = nullptr;
-    gfx::DescriptorSetLayout *descriptorSetLayout = nullptr;
-    gfx::PipelineLayout *pipelineLayout = nullptr;
-    gfx::Buffer *mvpUniformBuffer[BUNNY_NUM] = {nullptr, nullptr};
-    gfx::DescriptorSet *descriptorSet[BUNNY_NUM] = {nullptr, nullptr};
-    gfx::PipelineState *pipelineState = nullptr;
+    const static uint         BUNNY_NUM                   = 2;
+    gfx::Device *             device                      = nullptr;
+    gfx::Shader *             shader                      = nullptr;
+    gfx::Buffer *             vertexBuffer                = nullptr;
+    gfx::Buffer *             indexBuffer                 = nullptr;
+    gfx::Sampler *            sampler                     = nullptr;
+    gfx::Texture *            depthTexture                = nullptr;
+    gfx::InputAssembler *     inputAssembler              = nullptr;
+    gfx::DescriptorSetLayout *descriptorSetLayout         = nullptr;
+    gfx::PipelineLayout *     pipelineLayout              = nullptr;
+    gfx::Buffer *             mvpUniformBuffer[BUNNY_NUM] = {nullptr, nullptr};
+    gfx::DescriptorSet *      descriptorSet[BUNNY_NUM]    = {nullptr, nullptr};
+    gfx::PipelineState *      pipelineState               = nullptr;
 };
 
 BigTriangle *bg;
-Bunny *bunny;
+Bunny *      bunny;
 } // namespace
 
 void DepthTexture::destroy() {
@@ -450,26 +450,26 @@ bool DepthTexture::initialize() {
     gfx::RenderPassInfo renderPassInfo;
 
     gfx::DepthStencilAttachment &depthStencilAttachment = renderPassInfo.depthStencilAttachment;
-    depthStencilAttachment.format = _device->getDepthStencilFormat();
-    depthStencilAttachment.endAccess = gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE;
+    depthStencilAttachment.format                       = _device->getDepthStencilFormat();
+    depthStencilAttachment.endAccess                    = gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE;
 
     _bunnyFBO->renderPass = _device->createRenderPass(renderPassInfo);
 
     gfx::TextureInfo depthStecnilTexInfo;
-    depthStecnilTexInfo.type = gfx::TextureType::TEX2D;
-    depthStecnilTexInfo.usage = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT | gfx::TextureUsageBit::SAMPLED;
+    depthStecnilTexInfo.type   = gfx::TextureType::TEX2D;
+    depthStecnilTexInfo.usage  = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT | gfx::TextureUsageBit::SAMPLED;
     depthStecnilTexInfo.format = _device->getDepthStencilFormat();
-    depthStecnilTexInfo.width = _device->getWidth();
+    depthStecnilTexInfo.width  = _device->getWidth();
     depthStecnilTexInfo.height = _device->getHeight();
     _bunnyFBO->depthStencilTex = _device->createTexture(depthStecnilTexInfo);
 
     gfx::FramebufferInfo fboInfo;
-    fboInfo.renderPass = _bunnyFBO->renderPass;
+    fboInfo.renderPass          = _bunnyFBO->renderPass;
     fboInfo.depthStencilTexture = _bunnyFBO->depthStencilTex;
-    _bunnyFBO->framebuffer = _device->createFramebuffer(fboInfo);
+    _bunnyFBO->framebuffer      = _device->createFramebuffer(fboInfo);
 
     bunny = CC_NEW(Bunny(_device, _bunnyFBO->framebuffer));
-    bg = CC_NEW(BigTriangle(_device, _fbo));
+    bg    = CC_NEW(BigTriangle(_device, _fbo));
 
     bg->descriptorSet->bindTexture(1, _bunnyFBO->depthStencilTex);
     bg->descriptorSet->update();
@@ -483,7 +483,7 @@ void DepthTexture::resize(uint width, uint height) {
     _bunnyFBO->depthStencilTex->resize(width, height);
 
     gfx::FramebufferInfo fboInfo;
-    fboInfo.renderPass = _bunnyFBO->renderPass;
+    fboInfo.renderPass          = _bunnyFBO->renderPass;
     fboInfo.depthStencilTexture = _bunnyFBO->depthStencilTex;
 
     _bunnyFBO->framebuffer->destroy();
@@ -491,10 +491,21 @@ void DepthTexture::resize(uint width, uint height) {
 }
 
 void DepthTexture::tick() {
-    lookupTime();
-    _dt += hostThread.dt;
+    gfx::AccessType accesses[] = {
+        gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
+        gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
+        gfx::AccessType::VERTEX_BUFFER,
+        gfx::AccessType::INDEX_BUFFER,
+    };
+    gfx::GlobalBarrier shader_RAW_transfer{&gfx::AccessTypeV::TRANSFER_WRITE, 1, &accesses[0], COUNTOF(accesses)};
+    if (_time) {
+        shader_RAW_transfer.nextAccessCount = 1;
+    }
 
-    _eye.set(30.f * std::cos(_dt), 20.f, 30.f * std::sin(_dt));
+    lookupTime();
+    _time += hostThread.dt;
+
+    _eye.set(30.f * std::cos(_time), 20.f, 30.f * std::sin(_time));
     _center.set(0, 2.5f, 0);
     _up.set(0, 1.f, 0);
     Mat4::createLookAt(_eye, _center, _up, &_bunnyMatrices[1]);
@@ -513,6 +524,9 @@ void DepthTexture::tick() {
 
     auto commandBuffer = _commandBuffers[0];
     commandBuffer->begin();
+
+    if (TestBaseI::MANUAL_BARRIER)
+        commandBuffer->pipelineBarrier(&shader_RAW_transfer);
 
     // render bunny
     commandBuffer->beginRenderPass(_bunnyFBO->renderPass, _bunnyFBO->framebuffer, renderArea, nullptr, 1.0f, 0);

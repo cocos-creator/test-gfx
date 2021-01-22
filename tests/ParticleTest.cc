@@ -16,7 +16,7 @@ void fillRectWithColor(uint8_t *buf, uint32_t totalWidth, uint32_t totalHeight,
     uint8_t *p;
     for (uint32_t offsetY = y0; offsetY < y1; ++offsetY) {
         for (uint32_t offsetX = x; offsetX < (x + width); ++offsetX) {
-            p = buf + (totalWidth * offsetY + offsetX) * 4;
+            p    = buf + (totalWidth * offsetY + offsetX) * 4;
             *p++ = r;
             *p++ = g;
             *p++ = b;
@@ -31,9 +31,9 @@ void fillRectWithColor(uint8_t *buf, uint32_t totalWidth, uint32_t totalHeight,
  * be returned
  */
 Vec3 vec3Random(float scale /* = 1.0f */) {
-    Vec3 out;
-    float r = cc::rand_0_1() * 2.0f * cc::math::PI;
-    float z = (cc::rand_0_1() * 2.0f) - 1.0f;
+    Vec3  out;
+    float r      = cc::rand_0_1() * 2.0f * cc::math::PI;
+    float z      = (cc::rand_0_1() * 2.0f) - 1.0f;
     float zScale = sqrtf(1.0f - z * z) * scale;
 
     out.x = cosf(r) * zScale;
@@ -198,13 +198,13 @@ void ParticleTest::createShader() {
     StandardShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
 
     gfx::ShaderStageList shaderStageList;
-    gfx::ShaderStage vertexShaderStage;
-    vertexShaderStage.stage = gfx::ShaderStageFlagBit::VERTEX;
+    gfx::ShaderStage     vertexShaderStage;
+    vertexShaderStage.stage  = gfx::ShaderStageFlagBit::VERTEX;
     vertexShaderStage.source = source.vert;
     shaderStageList.emplace_back(std::move(vertexShaderStage));
 
     gfx::ShaderStage fragmentShaderStage;
-    fragmentShaderStage.stage = gfx::ShaderStageFlagBit::FRAGMENT;
+    fragmentShaderStage.stage  = gfx::ShaderStageFlagBit::FRAGMENT;
     fragmentShaderStage.source = source.frag;
     shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
@@ -223,12 +223,12 @@ void ParticleTest::createShader() {
     gfx::UniformSamplerTextureList sampler = {{0, 1, "u_texture", gfx::Type::SAMPLER2D, 1}};
 
     gfx::ShaderInfo shaderInfo;
-    shaderInfo.name = "Particle Test";
-    shaderInfo.stages = std::move(shaderStageList);
-    shaderInfo.attributes = std::move(attributeList);
-    shaderInfo.blocks = std::move(uniformBlockList);
+    shaderInfo.name            = "Particle Test";
+    shaderInfo.stages          = std::move(shaderStageList);
+    shaderInfo.attributes      = std::move(attributeList);
+    shaderInfo.blocks          = std::move(uniformBlockList);
     shaderInfo.samplerTextures = std::move(sampler);
-    _shader = _device->createShader(shaderInfo);
+    _shader                    = _device->createShader(shaderInfo);
 }
 
 void ParticleTest::createVertexBuffer() {
@@ -241,16 +241,16 @@ void ParticleTest::createVertexBuffer() {
     });
 
     // index buffer: _ibufferArray[MAX_QUAD_COUNT][6];
-    uint16_t dst = 0;
-    uint16_t *p = _ibufferArray[0];
+    uint16_t  dst = 0;
+    uint16_t *p   = _ibufferArray[0];
     for (uint16_t i = 0; i < MAX_QUAD_COUNT; ++i) {
         uint16_t baseIndex = i * 4;
-        p[dst++] = baseIndex;
-        p[dst++] = baseIndex + 1;
-        p[dst++] = baseIndex + 2;
-        p[dst++] = baseIndex;
-        p[dst++] = baseIndex + 2;
-        p[dst++] = baseIndex + 3;
+        p[dst++]           = baseIndex;
+        p[dst++]           = baseIndex + 1;
+        p[dst++]           = baseIndex + 2;
+        p[dst++]           = baseIndex;
+        p[dst++]           = baseIndex + 2;
+        p[dst++]           = baseIndex + 3;
     }
     _indexBuffer = _device->createBuffer({
         gfx::BufferUsage::INDEX,
@@ -262,8 +262,8 @@ void ParticleTest::createVertexBuffer() {
 
     for (size_t i = 0; i < PARTICLE_COUNT; ++i) {
         _particles[i].velocity = vec3Random(cc::random(0.1f, 10.0f));
-        _particles[i].age = 0;
-        _particles[i].life = cc::random(1.0f, 10.0f);
+        _particles[i].age      = 0;
+        _particles[i].life     = cc::random(1.0f, 10.0f);
     }
 
     _uniformBuffer = _device->createBuffer({
@@ -275,16 +275,16 @@ void ParticleTest::createVertexBuffer() {
 }
 
 void ParticleTest::createInputAssembler() {
-    gfx::Attribute position = {"a_position", gfx::Format::RGB32F, false, 0, false};
-    gfx::Attribute quad = {"a_quad", gfx::Format::RG32F, false, 0, false};
-    gfx::Attribute color = {"a_color", gfx::Format::RGBA32F, false, 0, false};
+    gfx::Attribute          position = {"a_position", gfx::Format::RGB32F, false, 0, false};
+    gfx::Attribute          quad     = {"a_quad", gfx::Format::RG32F, false, 0, false};
+    gfx::Attribute          color    = {"a_color", gfx::Format::RGBA32F, false, 0, false};
     gfx::InputAssemblerInfo inputAssemblerInfo;
     inputAssemblerInfo.attributes.emplace_back(std::move(quad));
     inputAssemblerInfo.attributes.emplace_back(std::move(position));
     inputAssemblerInfo.attributes.emplace_back(std::move(color));
     inputAssemblerInfo.vertexBuffers.emplace_back(_vertexBuffer);
     inputAssemblerInfo.indexBuffer = _indexBuffer;
-    _inputAssembler = _device->createInputAssembler(inputAssemblerInfo);
+    _inputAssembler                = _device->createInputAssembler(inputAssemblerInfo);
 }
 
 void ParticleTest::createPipeline() {
@@ -303,27 +303,27 @@ void ParticleTest::createPipeline() {
     _descriptorSet->update();
 
     gfx::PipelineStateInfo pipelineInfo;
-    pipelineInfo.primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
-    pipelineInfo.shader = _shader;
-    pipelineInfo.inputState = {_inputAssembler->getAttributes()};
-    pipelineInfo.renderPass = _fbo->getRenderPass();
-    pipelineInfo.blendState.targets[0].blend = true;
-    pipelineInfo.blendState.targets[0].blendEq = gfx::BlendOp::ADD;
-    pipelineInfo.blendState.targets[0].blendAlphaEq = gfx::BlendOp::ADD;
-    pipelineInfo.blendState.targets[0].blendSrc = gfx::BlendFactor::SRC_ALPHA;
-    pipelineInfo.blendState.targets[0].blendDst = gfx::BlendFactor::ONE_MINUS_SRC_ALPHA;
+    pipelineInfo.primitive                           = gfx::PrimitiveMode::TRIANGLE_LIST;
+    pipelineInfo.shader                              = _shader;
+    pipelineInfo.inputState                          = {_inputAssembler->getAttributes()};
+    pipelineInfo.renderPass                          = _fbo->getRenderPass();
+    pipelineInfo.blendState.targets[0].blend         = true;
+    pipelineInfo.blendState.targets[0].blendEq       = gfx::BlendOp::ADD;
+    pipelineInfo.blendState.targets[0].blendAlphaEq  = gfx::BlendOp::ADD;
+    pipelineInfo.blendState.targets[0].blendSrc      = gfx::BlendFactor::SRC_ALPHA;
+    pipelineInfo.blendState.targets[0].blendDst      = gfx::BlendFactor::ONE_MINUS_SRC_ALPHA;
     pipelineInfo.blendState.targets[0].blendSrcAlpha = gfx::BlendFactor::ONE;
     pipelineInfo.blendState.targets[0].blendDstAlpha = gfx::BlendFactor::ONE;
-    pipelineInfo.pipelineLayout = _pipelineLayout;
+    pipelineInfo.pipelineLayout                      = _pipelineLayout;
 
     _pipelineState = _device->createPipelineState(pipelineInfo);
 }
 
 void ParticleTest::createTexture() {
-    const size_t LINE_WIDHT = 128;
+    const size_t LINE_WIDHT  = 128;
     const size_t LINE_HEIGHT = 128;
     const size_t BUFFER_SIZE = LINE_WIDHT * LINE_HEIGHT * 4;
-    uint8_t *imageData = (uint8_t *)CC_MALLOC(BUFFER_SIZE);
+    uint8_t *    imageData   = (uint8_t *)CC_MALLOC(BUFFER_SIZE);
     fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 0, 0, 128, 128, 0xD0, 0xD0, 0xD0);
     fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 0, 0, 64, 64, 0x50, 0x50, 0x50);
     fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 32, 32, 32, 32, 0xFF, 0x00, 0x00);
@@ -331,19 +331,19 @@ void ParticleTest::createTexture() {
     fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 96, 96, 32, 32, 0x00, 0x00, 0xFF);
 
     gfx::TextureInfo textureInfo;
-    textureInfo.usage = gfx::TextureUsage::SAMPLED | gfx::TextureUsage::TRANSFER_DST;
-    textureInfo.format = gfx::Format::RGBA8;
-    textureInfo.width = LINE_WIDHT;
-    textureInfo.height = LINE_HEIGHT;
-    textureInfo.flags = gfx::TextureFlagBit::GEN_MIPMAP;
+    textureInfo.usage      = gfx::TextureUsage::SAMPLED | gfx::TextureUsage::TRANSFER_DST;
+    textureInfo.format     = gfx::Format::RGBA8;
+    textureInfo.width      = LINE_WIDHT;
+    textureInfo.height     = LINE_HEIGHT;
+    textureInfo.flags      = gfx::TextureFlagBit::GEN_MIPMAP;
     textureInfo.levelCount = TestBaseI::getMipmapLevelCounts(textureInfo.width, textureInfo.height);
-    _texture = _device->createTexture(textureInfo);
+    _texture               = _device->createTexture(textureInfo);
 
     gfx::BufferTextureCopy textureRegion;
-    textureRegion.buffTexHeight = 0;
-    textureRegion.texExtent.width = LINE_WIDHT;
+    textureRegion.buffTexHeight    = 0;
+    textureRegion.texExtent.width  = LINE_WIDHT;
     textureRegion.texExtent.height = LINE_HEIGHT;
-    textureRegion.texExtent.depth = 1;
+    textureRegion.texExtent.depth  = 1;
 
     gfx::BufferTextureCopyList regions;
     regions.push_back(std::move(textureRegion));
@@ -354,13 +354,28 @@ void ParticleTest::createTexture() {
 
     // create sampler
     gfx::SamplerInfo samplerInfo;
-    samplerInfo.addressU = gfx::Address::WRAP;
-    samplerInfo.addressV = gfx::Address::WRAP;
+    samplerInfo.addressU  = gfx::Address::WRAP;
+    samplerInfo.addressV  = gfx::Address::WRAP;
     samplerInfo.mipFilter = gfx::Filter::LINEAR;
-    _sampler = _device->createSampler(samplerInfo);
+    _sampler              = _device->createSampler(samplerInfo);
 }
 
 void ParticleTest::tick() {
+    gfx::AccessType accesses[] = {
+        gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
+        gfx::AccessType::VERTEX_BUFFER,
+        gfx::AccessType::INDEX_BUFFER,
+    };
+    gfx::GlobalBarrier  shader_RAW_transfer{&gfx::AccessTypeV::TRANSFER_WRITE, 1, &accesses[0], COUNTOF(accesses)};
+    gfx::TextureBarrier beforeRender[] = {
+        {&gfx::AccessTypeV::TRANSFER_WRITE, 1, &gfx::AccessTypeV::FRAGMENT_SHADER_READ_TEXTURE, 1, false, _texture},
+    };
+    uint textureBarriers = COUNTOF(beforeRender);
+    if (_particles[0].age) {
+        shader_RAW_transfer.nextAccessCount = 2;
+        textureBarriers                     = 0;
+    }
+
     lookupTime();
 
     gfx::Color clearColor = {0.2f, 0.2f, 0.2f, 1.0f};
@@ -368,11 +383,11 @@ void ParticleTest::tick() {
     // update particles
     for (size_t i = 0; i < PARTICLE_COUNT; ++i) {
         ParticleData &p = _particles[i];
-        p.position = std::move(vec3ScaleAndAdd(p.position, p.velocity, hostThread.dt));
+        p.position      = std::move(vec3ScaleAndAdd(p.position, p.velocity, hostThread.dt));
         p.age += hostThread.dt;
 
         if (p.age >= p.life) {
-            p.age = 0;
+            p.age      = 0;
             p.position = Vec3::ZERO;
         }
     }
@@ -412,6 +427,10 @@ void ParticleTest::tick() {
 
     auto commandBuffer = _commandBuffers[0];
     commandBuffer->begin();
+
+    if (TestBaseI::MANUAL_BARRIER)
+        commandBuffer->pipelineBarrier(&shader_RAW_transfer, beforeRender, textureBarriers);
+
     commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
     commandBuffer->bindInputAssembler(_inputAssembler);
     commandBuffer->bindPipelineState(_pipelineState);

@@ -94,13 +94,13 @@ void BasicTriangle::createShader() {
     StandardShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
 
     gfx::ShaderStageList shaderStageList;
-    gfx::ShaderStage vertexShaderStage;
-    vertexShaderStage.stage = gfx::ShaderStageFlagBit::VERTEX;
+    gfx::ShaderStage     vertexShaderStage;
+    vertexShaderStage.stage  = gfx::ShaderStageFlagBit::VERTEX;
     vertexShaderStage.source = source.vert;
     shaderStageList.emplace_back(std::move(vertexShaderStage));
 
     gfx::ShaderStage fragmentShaderStage;
-    fragmentShaderStage.stage = gfx::ShaderStageFlagBit::FRAGMENT;
+    fragmentShaderStage.stage  = gfx::ShaderStageFlagBit::FRAGMENT;
     fragmentShaderStage.source = source.frag;
     shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
@@ -111,11 +111,11 @@ void BasicTriangle::createShader() {
     gfx::AttributeList attributeList = {{"a_position", gfx::Format::RG32F, false, 0, false, 0}};
 
     gfx::ShaderInfo shaderInfo;
-    shaderInfo.name = "Basic Triangle";
-    shaderInfo.stages = std::move(shaderStageList);
+    shaderInfo.name       = "Basic Triangle";
+    shaderInfo.stages     = std::move(shaderStageList);
     shaderInfo.attributes = std::move(attributeList);
-    shaderInfo.blocks = std::move(uniformBlockList);
-    _shader = _device->createShader(shaderInfo);
+    shaderInfo.blocks     = std::move(uniformBlockList);
+    _shader               = _device->createShader(shaderInfo);
 }
 
 void BasicTriangle::createVertexBuffer() {
@@ -150,11 +150,7 @@ void BasicTriangle::createVertexBuffer() {
     };
     _uniformBufferMVP = _device->createBuffer(uniformBufferMVPInfo);
 
-    Mat4 MVP;
-    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &MVP);
-    _uniformBufferMVP->update(MVP.m, sizeof(Mat4));
-
-    unsigned short indices[] = {1, 3, 0, 1, 2, 3, 2, 4, 3};
+    unsigned short  indices[]       = {1, 3, 0, 1, 2, 3, 2, 4, 3};
     gfx::BufferInfo indexBufferInfo = {
         gfx::BufferUsageBit::INDEX,
         gfx::MemoryUsage::DEVICE,
@@ -179,13 +175,13 @@ void BasicTriangle::createVertexBuffer() {
 }
 
 void BasicTriangle::createInputAssembler() {
-    gfx::Attribute position = {"a_position", gfx::Format::RG32F, false, 0, false};
+    gfx::Attribute          position = {"a_position", gfx::Format::RG32F, false, 0, false};
     gfx::InputAssemblerInfo inputAssemblerInfo;
     inputAssemblerInfo.attributes.emplace_back(std::move(position));
     inputAssemblerInfo.vertexBuffers.emplace_back(_vertexBuffer);
-    inputAssemblerInfo.indexBuffer = _indexBuffer;
+    inputAssemblerInfo.indexBuffer    = _indexBuffer;
     inputAssemblerInfo.indirectBuffer = _indirectBuffer;
-    _inputAssembler = _device->createInputAssembler(inputAssemblerInfo);
+    _inputAssembler                   = _device->createInputAssembler(inputAssemblerInfo);
 }
 
 void BasicTriangle::createPipeline() {
@@ -203,16 +199,28 @@ void BasicTriangle::createPipeline() {
     _descriptorSet->update();
 
     gfx::PipelineStateInfo pipelineInfo;
-    pipelineInfo.primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
-    pipelineInfo.shader = _shader;
-    pipelineInfo.inputState = {_inputAssembler->getAttributes()};
-    pipelineInfo.renderPass = _fbo->getRenderPass();
+    pipelineInfo.primitive      = gfx::PrimitiveMode::TRIANGLE_LIST;
+    pipelineInfo.shader         = _shader;
+    pipelineInfo.inputState     = {_inputAssembler->getAttributes()};
+    pipelineInfo.renderPass     = _fbo->getRenderPass();
     pipelineInfo.pipelineLayout = _pipelineLayout;
 
     _pipelineState = _device->createPipelineState(pipelineInfo);
 }
 
 void BasicTriangle::tick() {
+    gfx::AccessType accesses[] = {
+        gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
+        gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
+        gfx::AccessType::INDIRECT_BUFFER,
+        gfx::AccessType::VERTEX_BUFFER,
+        gfx::AccessType::INDEX_BUFFER,
+    };
+    gfx::GlobalBarrier shader_RAW_transfer{&gfx::AccessTypeV::TRANSFER_WRITE, 1, &accesses[0], COUNTOF(accesses)};
+    if (_time) {
+        shader_RAW_transfer.nextAccessCount = 2;
+    }
+
     lookupTime();
 
     _time += hostThread.dt;
@@ -236,6 +244,10 @@ void BasicTriangle::tick() {
 
     auto commandBuffer = _commandBuffers[0];
     commandBuffer->begin();
+
+    if (TestBaseI::MANUAL_BARRIER)
+        commandBuffer->pipelineBarrier(&shader_RAW_transfer);
+
     commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
     commandBuffer->bindInputAssembler(_inputAssembler);
     commandBuffer->bindPipelineState(_pipelineState);

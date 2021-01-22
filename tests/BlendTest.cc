@@ -12,30 +12,6 @@ enum {
     TOTAL_BLEND
 };
 
-gfx::Texture *createTexture(gfx::Device *device, const gfx::TextureInfo &textureInfo,
-                            std::string imageFile) {
-    auto img = new cc::Image();
-    img->autorelease();
-    bool valid = img->initWithImageFile(imageFile);
-    CCASSERT(valid, "load image failed");
-    auto imgData = img->getRenderFormat() == gfx::Format::RGB8 ? TestBaseI::RGB2RGBA(img) : img->getData();
-
-    auto texture = device->createTexture(textureInfo);
-
-    gfx::BufferTextureCopy textureRegion;
-    textureRegion.texExtent.width = img->getWidth();
-    textureRegion.texExtent.height = img->getHeight();
-    textureRegion.texExtent.depth = 1;
-
-    gfx::BufferTextureCopyList regions;
-    regions.push_back(std::move(textureRegion));
-
-    gfx::BufferDataList imageBuffers = {imgData};
-    device->copyBuffersToTexture(imageBuffers, texture, regions);
-    delete[] imgData;
-    return texture;
-}
-
 struct Quad : public cc::Object {
     Quad(gfx::Device *_device, gfx::Framebuffer *_fbo) : device(_device), fbo(_fbo) {
         createShader();
@@ -141,13 +117,13 @@ struct Quad : public cc::Object {
         StandardShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
 
         gfx::ShaderStageList shaderStageList;
-        gfx::ShaderStage vertexShaderStage;
-        vertexShaderStage.stage = gfx::ShaderStageFlagBit::VERTEX;
+        gfx::ShaderStage     vertexShaderStage;
+        vertexShaderStage.stage  = gfx::ShaderStageFlagBit::VERTEX;
         vertexShaderStage.source = source.vert;
         shaderStageList.emplace_back(std::move(vertexShaderStage));
 
         gfx::ShaderStage fragmentShaderStage;
-        fragmentShaderStage.stage = gfx::ShaderStageFlagBit::FRAGMENT;
+        fragmentShaderStage.stage  = gfx::ShaderStageFlagBit::FRAGMENT;
         fragmentShaderStage.source = source.frag;
         shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
@@ -159,16 +135,16 @@ struct Quad : public cc::Object {
             {"u_model", gfx::Type::MAT4, 1},
             {"u_projection", gfx::Type::MAT4, 1},
         };
-        gfx::UniformBlockList uniformBlockList = {{0, 0, "MVP_Matrix", mvpMatrix, 1}};
-        gfx::UniformSamplerTextureList samplers = {{0, 1, "u_texture", gfx::Type::SAMPLER2D, 1}};
+        gfx::UniformBlockList          uniformBlockList = {{0, 0, "MVP_Matrix", mvpMatrix, 1}};
+        gfx::UniformSamplerTextureList samplers         = {{0, 1, "u_texture", gfx::Type::SAMPLER2D, 1}};
 
         gfx::ShaderInfo shaderInfo;
-        shaderInfo.name = "Blend Test: Quad";
-        shaderInfo.stages = std::move(shaderStageList);
-        shaderInfo.attributes = std::move(attributeList);
-        shaderInfo.blocks = std::move(uniformBlockList);
+        shaderInfo.name            = "Blend Test: Quad";
+        shaderInfo.stages          = std::move(shaderStageList);
+        shaderInfo.attributes      = std::move(attributeList);
+        shaderInfo.blocks          = std::move(uniformBlockList);
         shaderInfo.samplerTextures = std::move(samplers);
-        shader = device->createShader(shaderInfo);
+        shader                     = device->createShader(shaderInfo);
     }
 
     void createVertexBuffer() {
@@ -201,7 +177,7 @@ struct Quad : public cc::Object {
         uboStride = TestBaseI::getAlignedUBOStride(device, sizeof(Mat4) * 2);
         models.resize(uboStride * TOTAL_BLEND / sizeof(float), 0);
 
-        uniformBuffer = device->createBuffer({
+        uniformBuffer     = device->createBuffer({
             gfx::BufferUsage::UNIFORM,
             gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
             uboStride * TOTAL_BLEND,
@@ -218,29 +194,27 @@ struct Quad : public cc::Object {
     }
 
     void createInputAssembler() {
-        gfx::Attribute position = {"a_position", gfx::Format::RG32F, false, 0, false, 0};
-        gfx::Attribute texcoord = {"a_uv", gfx::Format::RG32F, false, 0, false, 1};
+        gfx::Attribute          position = {"a_position", gfx::Format::RG32F, false, 0, false, 0};
+        gfx::Attribute          texcoord = {"a_uv", gfx::Format::RG32F, false, 0, false, 1};
         gfx::InputAssemblerInfo inputAssemblerInfo;
         inputAssemblerInfo.attributes.emplace_back(std::move(position));
         inputAssemblerInfo.attributes.emplace_back(std::move(texcoord));
         inputAssemblerInfo.vertexBuffers.emplace_back(vertexBuffer);
         inputAssemblerInfo.indexBuffer = indexBuffer;
-        inputAssembler = device->createInputAssembler(inputAssemblerInfo);
+        inputAssembler                 = device->createInputAssembler(inputAssemblerInfo);
     }
 
     void createTexture() {
         gfx::TextureInfo textureInfo;
-        textureInfo.usage = gfx::TextureUsage::SAMPLED | gfx::TextureUsage::TRANSFER_DST;
+        textureInfo.usage  = gfx::TextureUsage::SAMPLED | gfx::TextureUsage::TRANSFER_DST;
         textureInfo.format = gfx::Format::RGBA8;
-        textureInfo.width = 128;
-        textureInfo.height = 128;
-        texture = cc::createTexture(device, textureInfo, "sprite0.png");
+        texture            = TestBaseI::createTextureWithFile(device, textureInfo, "sprite0.png");
 
         // create sampler
         gfx::SamplerInfo samplerInfo;
         samplerInfo.addressU = gfx::Address::CLAMP;
         samplerInfo.addressV = gfx::Address::CLAMP;
-        sampler = device->createSampler(samplerInfo);
+        sampler              = device->createSampler(samplerInfo);
     }
 
     void createPipeline() {
@@ -259,106 +233,106 @@ struct Quad : public cc::Object {
         descriptorSet->update();
 
         gfx::PipelineStateInfo pipelineInfo[TOTAL_BLEND];
-        pipelineInfo[NO_BLEND].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
-        pipelineInfo[NO_BLEND].shader = shader;
-        pipelineInfo[NO_BLEND].inputState = {inputAssembler->getAttributes()};
-        pipelineInfo[NO_BLEND].renderPass = fbo->getRenderPass();
-        pipelineInfo[NO_BLEND].rasterizerState.cullMode = gfx::CullMode::NONE;
-        pipelineInfo[NO_BLEND].depthStencilState.depthWrite = false;
-        pipelineInfo[NO_BLEND].blendState.targets[0].blend = true;
-        pipelineInfo[NO_BLEND].blendState.targets[0].blendEq = gfx::BlendOp::ADD;
-        pipelineInfo[NO_BLEND].blendState.targets[0].blendAlphaEq = gfx::BlendOp::ADD;
-        pipelineInfo[NO_BLEND].blendState.targets[0].blendSrc = gfx::BlendFactor::ONE;
-        pipelineInfo[NO_BLEND].blendState.targets[0].blendDst = gfx::BlendFactor::ZERO;
+        pipelineInfo[NO_BLEND].primitive                           = gfx::PrimitiveMode::TRIANGLE_LIST;
+        pipelineInfo[NO_BLEND].shader                              = shader;
+        pipelineInfo[NO_BLEND].inputState                          = {inputAssembler->getAttributes()};
+        pipelineInfo[NO_BLEND].renderPass                          = fbo->getRenderPass();
+        pipelineInfo[NO_BLEND].rasterizerState.cullMode            = gfx::CullMode::NONE;
+        pipelineInfo[NO_BLEND].depthStencilState.depthWrite        = false;
+        pipelineInfo[NO_BLEND].blendState.targets[0].blend         = true;
+        pipelineInfo[NO_BLEND].blendState.targets[0].blendEq       = gfx::BlendOp::ADD;
+        pipelineInfo[NO_BLEND].blendState.targets[0].blendAlphaEq  = gfx::BlendOp::ADD;
+        pipelineInfo[NO_BLEND].blendState.targets[0].blendSrc      = gfx::BlendFactor::ONE;
+        pipelineInfo[NO_BLEND].blendState.targets[0].blendDst      = gfx::BlendFactor::ZERO;
         pipelineInfo[NO_BLEND].blendState.targets[0].blendSrcAlpha = gfx::BlendFactor::ONE;
         pipelineInfo[NO_BLEND].blendState.targets[0].blendDstAlpha = gfx::BlendFactor::ONE_MINUS_SRC_ALPHA;
-        pipelineInfo[NO_BLEND].pipelineLayout = pipelineLayout;
-        pipelineState[NO_BLEND] = device->createPipelineState(pipelineInfo[NO_BLEND]);
+        pipelineInfo[NO_BLEND].pipelineLayout                      = pipelineLayout;
+        pipelineState[NO_BLEND]                                    = device->createPipelineState(pipelineInfo[NO_BLEND]);
 
-        pipelineInfo[NORMAL_BLEND].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
-        pipelineInfo[NORMAL_BLEND].shader = shader;
-        pipelineInfo[NORMAL_BLEND].inputState = {inputAssembler->getAttributes()};
-        pipelineInfo[NORMAL_BLEND].renderPass = fbo->getRenderPass();
-        pipelineInfo[NORMAL_BLEND].rasterizerState.cullMode = gfx::CullMode::NONE;
+        pipelineInfo[NORMAL_BLEND].primitive                    = gfx::PrimitiveMode::TRIANGLE_LIST;
+        pipelineInfo[NORMAL_BLEND].shader                       = shader;
+        pipelineInfo[NORMAL_BLEND].inputState                   = {inputAssembler->getAttributes()};
+        pipelineInfo[NORMAL_BLEND].renderPass                   = fbo->getRenderPass();
+        pipelineInfo[NORMAL_BLEND].rasterizerState.cullMode     = gfx::CullMode::NONE;
         pipelineInfo[NORMAL_BLEND].depthStencilState.depthWrite = false;
 
-        pipelineInfo[NORMAL_BLEND].blendState.targets[0].blend = true;
-        pipelineInfo[NORMAL_BLEND].blendState.targets[0].blendEq = gfx::BlendOp::ADD;
-        pipelineInfo[NORMAL_BLEND].blendState.targets[0].blendAlphaEq = gfx::BlendOp::ADD;
-        pipelineInfo[NORMAL_BLEND].blendState.targets[0].blendSrc = gfx::BlendFactor::SRC_ALPHA;
-        pipelineInfo[NORMAL_BLEND].blendState.targets[0].blendDst = gfx::BlendFactor::ONE_MINUS_SRC_ALPHA;
+        pipelineInfo[NORMAL_BLEND].blendState.targets[0].blend         = true;
+        pipelineInfo[NORMAL_BLEND].blendState.targets[0].blendEq       = gfx::BlendOp::ADD;
+        pipelineInfo[NORMAL_BLEND].blendState.targets[0].blendAlphaEq  = gfx::BlendOp::ADD;
+        pipelineInfo[NORMAL_BLEND].blendState.targets[0].blendSrc      = gfx::BlendFactor::SRC_ALPHA;
+        pipelineInfo[NORMAL_BLEND].blendState.targets[0].blendDst      = gfx::BlendFactor::ONE_MINUS_SRC_ALPHA;
         pipelineInfo[NORMAL_BLEND].blendState.targets[0].blendSrcAlpha = gfx::BlendFactor::ONE;
         pipelineInfo[NORMAL_BLEND].blendState.targets[0].blendDstAlpha = gfx::BlendFactor::ONE_MINUS_SRC_ALPHA;
-        pipelineInfo[NORMAL_BLEND].pipelineLayout = pipelineLayout;
-        pipelineState[NORMAL_BLEND] = device->createPipelineState(pipelineInfo[NORMAL_BLEND]);
+        pipelineInfo[NORMAL_BLEND].pipelineLayout                      = pipelineLayout;
+        pipelineState[NORMAL_BLEND]                                    = device->createPipelineState(pipelineInfo[NORMAL_BLEND]);
 
-        pipelineInfo[ADDITIVE_BLEND].blendState.targets[0].blend = true;
-        pipelineInfo[ADDITIVE_BLEND].blendState.targets[0].blendEq = gfx::BlendOp::ADD;
-        pipelineInfo[ADDITIVE_BLEND].blendState.targets[0].blendAlphaEq = gfx::BlendOp::ADD;
-        pipelineInfo[ADDITIVE_BLEND].blendState.targets[0].blendSrc = gfx::BlendFactor::SRC_ALPHA;
-        pipelineInfo[ADDITIVE_BLEND].blendState.targets[0].blendDst = gfx::BlendFactor::ONE;
+        pipelineInfo[ADDITIVE_BLEND].blendState.targets[0].blend         = true;
+        pipelineInfo[ADDITIVE_BLEND].blendState.targets[0].blendEq       = gfx::BlendOp::ADD;
+        pipelineInfo[ADDITIVE_BLEND].blendState.targets[0].blendAlphaEq  = gfx::BlendOp::ADD;
+        pipelineInfo[ADDITIVE_BLEND].blendState.targets[0].blendSrc      = gfx::BlendFactor::SRC_ALPHA;
+        pipelineInfo[ADDITIVE_BLEND].blendState.targets[0].blendDst      = gfx::BlendFactor::ONE;
         pipelineInfo[ADDITIVE_BLEND].blendState.targets[0].blendSrcAlpha = gfx::BlendFactor::ONE;
         pipelineInfo[ADDITIVE_BLEND].blendState.targets[0].blendDstAlpha = gfx::BlendFactor::ONE_MINUS_SRC_ALPHA;
-        pipelineInfo[ADDITIVE_BLEND].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
-        pipelineInfo[ADDITIVE_BLEND].shader = shader;
-        pipelineInfo[ADDITIVE_BLEND].inputState = {inputAssembler->getAttributes()};
-        pipelineInfo[ADDITIVE_BLEND].renderPass = fbo->getRenderPass();
-        pipelineInfo[ADDITIVE_BLEND].rasterizerState.cullMode = gfx::CullMode::NONE;
-        pipelineInfo[ADDITIVE_BLEND].depthStencilState.depthWrite = false;
-        pipelineInfo[ADDITIVE_BLEND].pipelineLayout = pipelineLayout;
-        pipelineState[ADDITIVE_BLEND] = device->createPipelineState(pipelineInfo[ADDITIVE_BLEND]);
+        pipelineInfo[ADDITIVE_BLEND].primitive                           = gfx::PrimitiveMode::TRIANGLE_LIST;
+        pipelineInfo[ADDITIVE_BLEND].shader                              = shader;
+        pipelineInfo[ADDITIVE_BLEND].inputState                          = {inputAssembler->getAttributes()};
+        pipelineInfo[ADDITIVE_BLEND].renderPass                          = fbo->getRenderPass();
+        pipelineInfo[ADDITIVE_BLEND].rasterizerState.cullMode            = gfx::CullMode::NONE;
+        pipelineInfo[ADDITIVE_BLEND].depthStencilState.depthWrite        = false;
+        pipelineInfo[ADDITIVE_BLEND].pipelineLayout                      = pipelineLayout;
+        pipelineState[ADDITIVE_BLEND]                                    = device->createPipelineState(pipelineInfo[ADDITIVE_BLEND]);
 
-        pipelineInfo[SUBSTRACT_BLEND].blendState.targets[0].blend = true;
-        pipelineInfo[SUBSTRACT_BLEND].blendState.targets[0].blendEq = gfx::BlendOp::ADD;
-        pipelineInfo[SUBSTRACT_BLEND].blendState.targets[0].blendAlphaEq = gfx::BlendOp::ADD;
-        pipelineInfo[SUBSTRACT_BLEND].blendState.targets[0].blendSrc = gfx::BlendFactor::ZERO;
-        pipelineInfo[SUBSTRACT_BLEND].blendState.targets[0].blendDst = gfx::BlendFactor::ONE_MINUS_SRC_COLOR;
+        pipelineInfo[SUBSTRACT_BLEND].blendState.targets[0].blend         = true;
+        pipelineInfo[SUBSTRACT_BLEND].blendState.targets[0].blendEq       = gfx::BlendOp::ADD;
+        pipelineInfo[SUBSTRACT_BLEND].blendState.targets[0].blendAlphaEq  = gfx::BlendOp::ADD;
+        pipelineInfo[SUBSTRACT_BLEND].blendState.targets[0].blendSrc      = gfx::BlendFactor::ZERO;
+        pipelineInfo[SUBSTRACT_BLEND].blendState.targets[0].blendDst      = gfx::BlendFactor::ONE_MINUS_SRC_COLOR;
         pipelineInfo[SUBSTRACT_BLEND].blendState.targets[0].blendSrcAlpha = gfx::BlendFactor::ONE;
         pipelineInfo[SUBSTRACT_BLEND].blendState.targets[0].blendDstAlpha = gfx::BlendFactor::ONE_MINUS_SRC_ALPHA;
-        pipelineInfo[SUBSTRACT_BLEND].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
-        pipelineInfo[SUBSTRACT_BLEND].shader = shader;
-        pipelineInfo[SUBSTRACT_BLEND].inputState = {inputAssembler->getAttributes()};
-        pipelineInfo[SUBSTRACT_BLEND].renderPass = fbo->getRenderPass();
-        pipelineInfo[SUBSTRACT_BLEND].rasterizerState.cullMode = gfx::CullMode::NONE;
-        pipelineInfo[SUBSTRACT_BLEND].depthStencilState.depthWrite = false;
-        pipelineInfo[SUBSTRACT_BLEND].pipelineLayout = pipelineLayout;
-        pipelineState[SUBSTRACT_BLEND] = device->createPipelineState(pipelineInfo[SUBSTRACT_BLEND]);
+        pipelineInfo[SUBSTRACT_BLEND].primitive                           = gfx::PrimitiveMode::TRIANGLE_LIST;
+        pipelineInfo[SUBSTRACT_BLEND].shader                              = shader;
+        pipelineInfo[SUBSTRACT_BLEND].inputState                          = {inputAssembler->getAttributes()};
+        pipelineInfo[SUBSTRACT_BLEND].renderPass                          = fbo->getRenderPass();
+        pipelineInfo[SUBSTRACT_BLEND].rasterizerState.cullMode            = gfx::CullMode::NONE;
+        pipelineInfo[SUBSTRACT_BLEND].depthStencilState.depthWrite        = false;
+        pipelineInfo[SUBSTRACT_BLEND].pipelineLayout                      = pipelineLayout;
+        pipelineState[SUBSTRACT_BLEND]                                    = device->createPipelineState(pipelineInfo[SUBSTRACT_BLEND]);
 
-        pipelineInfo[MULTIPLY_BLEND].blendState.targets[0].blend = true;
-        pipelineInfo[MULTIPLY_BLEND].blendState.targets[0].blendEq = gfx::BlendOp::ADD;
-        pipelineInfo[MULTIPLY_BLEND].blendState.targets[0].blendAlphaEq = gfx::BlendOp::ADD;
-        pipelineInfo[MULTIPLY_BLEND].blendState.targets[0].blendSrc = gfx::BlendFactor::ZERO;
-        pipelineInfo[MULTIPLY_BLEND].blendState.targets[0].blendDst = gfx::BlendFactor::SRC_COLOR;
+        pipelineInfo[MULTIPLY_BLEND].blendState.targets[0].blend         = true;
+        pipelineInfo[MULTIPLY_BLEND].blendState.targets[0].blendEq       = gfx::BlendOp::ADD;
+        pipelineInfo[MULTIPLY_BLEND].blendState.targets[0].blendAlphaEq  = gfx::BlendOp::ADD;
+        pipelineInfo[MULTIPLY_BLEND].blendState.targets[0].blendSrc      = gfx::BlendFactor::ZERO;
+        pipelineInfo[MULTIPLY_BLEND].blendState.targets[0].blendDst      = gfx::BlendFactor::SRC_COLOR;
         pipelineInfo[MULTIPLY_BLEND].blendState.targets[0].blendSrcAlpha = gfx::BlendFactor::ONE;
         pipelineInfo[MULTIPLY_BLEND].blendState.targets[0].blendDstAlpha = gfx::BlendFactor::ONE_MINUS_SRC_ALPHA;
-        pipelineInfo[MULTIPLY_BLEND].primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
-        pipelineInfo[MULTIPLY_BLEND].shader = shader;
-        pipelineInfo[MULTIPLY_BLEND].inputState = {inputAssembler->getAttributes()};
-        pipelineInfo[MULTIPLY_BLEND].renderPass = fbo->getRenderPass();
-        pipelineInfo[MULTIPLY_BLEND].rasterizerState.cullMode = gfx::CullMode::NONE;
-        pipelineInfo[MULTIPLY_BLEND].depthStencilState.depthWrite = false;
-        pipelineInfo[MULTIPLY_BLEND].pipelineLayout = pipelineLayout;
-        pipelineState[MULTIPLY_BLEND] = device->createPipelineState(pipelineInfo[MULTIPLY_BLEND]);
+        pipelineInfo[MULTIPLY_BLEND].primitive                           = gfx::PrimitiveMode::TRIANGLE_LIST;
+        pipelineInfo[MULTIPLY_BLEND].shader                              = shader;
+        pipelineInfo[MULTIPLY_BLEND].inputState                          = {inputAssembler->getAttributes()};
+        pipelineInfo[MULTIPLY_BLEND].renderPass                          = fbo->getRenderPass();
+        pipelineInfo[MULTIPLY_BLEND].rasterizerState.cullMode            = gfx::CullMode::NONE;
+        pipelineInfo[MULTIPLY_BLEND].depthStencilState.depthWrite        = false;
+        pipelineInfo[MULTIPLY_BLEND].pipelineLayout                      = pipelineLayout;
+        pipelineState[MULTIPLY_BLEND]                                    = device->createPipelineState(pipelineInfo[MULTIPLY_BLEND]);
     }
 
-    gfx::Device *device = nullptr;
-    gfx::Framebuffer *fbo = nullptr;
-    gfx::Shader *shader = nullptr;
-    gfx::Buffer *vertexBuffer = nullptr;
-    gfx::Buffer *indexBuffer = nullptr;
-    gfx::InputAssembler *inputAssembler = nullptr;
-    gfx::Sampler *sampler = nullptr;
-    gfx::Texture *texture = nullptr;
-    gfx::DescriptorSetLayout *descriptorSetLayout = nullptr;
-    gfx::PipelineLayout *pipelineLayout = nullptr;
-    gfx::Buffer *uniformBuffer = nullptr;
-    gfx::Buffer *uniformBufferView = nullptr;
-    gfx::DescriptorSet *descriptorSet = nullptr;
-    gfx::PipelineState *pipelineState[TOTAL_BLEND] = {nullptr};
-    uint dynamicOffsets[TOTAL_BLEND];
+    gfx::Device *             device                     = nullptr;
+    gfx::Framebuffer *        fbo                        = nullptr;
+    gfx::Shader *             shader                     = nullptr;
+    gfx::Buffer *             vertexBuffer               = nullptr;
+    gfx::Buffer *             indexBuffer                = nullptr;
+    gfx::InputAssembler *     inputAssembler             = nullptr;
+    gfx::Sampler *            sampler                    = nullptr;
+    gfx::Texture *            texture                    = nullptr;
+    gfx::DescriptorSetLayout *descriptorSetLayout        = nullptr;
+    gfx::PipelineLayout *     pipelineLayout             = nullptr;
+    gfx::Buffer *             uniformBuffer              = nullptr;
+    gfx::Buffer *             uniformBufferView          = nullptr;
+    gfx::DescriptorSet *      descriptorSet              = nullptr;
+    gfx::PipelineState *      pipelineState[TOTAL_BLEND] = {nullptr};
+    uint                      dynamicOffsets[TOTAL_BLEND];
 
     vector<float> models;
-    uint uboStride;
+    uint          uboStride;
 };
 
 struct BigTriangle : public cc::Object {
@@ -463,13 +437,13 @@ struct BigTriangle : public cc::Object {
         StandardShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
 
         gfx::ShaderStageList shaderStageList;
-        gfx::ShaderStage vertexShaderStage;
-        vertexShaderStage.stage = gfx::ShaderStageFlagBit::VERTEX;
+        gfx::ShaderStage     vertexShaderStage;
+        vertexShaderStage.stage  = gfx::ShaderStageFlagBit::VERTEX;
         vertexShaderStage.source = source.vert;
         shaderStageList.emplace_back(std::move(vertexShaderStage));
 
         gfx::ShaderStage fragmentShaderStage;
-        fragmentShaderStage.stage = gfx::ShaderStageFlagBit::FRAGMENT;
+        fragmentShaderStage.stage  = gfx::ShaderStageFlagBit::FRAGMENT;
         fragmentShaderStage.source = source.frag;
         shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
@@ -477,21 +451,21 @@ struct BigTriangle : public cc::Object {
             {"a_position", gfx::Format::RG32F, false, 0, false, 0},
             {"a_texCoord", gfx::Format::RG32F, false, 0, false, 1},
         };
-        gfx::UniformList time = {{"u_time", gfx::Type::FLOAT, 1}};
-        gfx::UniformBlockList uniformBlockList = {{0, 0, "Time", time, 1}};
-        gfx::UniformSamplerTextureList samplers = {{0, 1, "u_texture", gfx::Type::SAMPLER2D, 1}};
+        gfx::UniformList               time             = {{"u_time", gfx::Type::FLOAT, 1}};
+        gfx::UniformBlockList          uniformBlockList = {{0, 0, "Time", time, 1}};
+        gfx::UniformSamplerTextureList samplers         = {{0, 1, "u_texture", gfx::Type::SAMPLER2D, 1}};
 
         gfx::ShaderInfo shaderInfo;
-        shaderInfo.name = "Blend Test: BigTriangle";
-        shaderInfo.stages = std::move(shaderStageList);
-        shaderInfo.attributes = std::move(attributeList);
-        shaderInfo.blocks = std::move(uniformBlockList);
+        shaderInfo.name            = "Blend Test: BigTriangle";
+        shaderInfo.stages          = std::move(shaderStageList);
+        shaderInfo.attributes      = std::move(attributeList);
+        shaderInfo.blocks          = std::move(uniformBlockList);
         shaderInfo.samplerTextures = std::move(samplers);
-        shader = device->createShader(shaderInfo);
+        shader                     = device->createShader(shaderInfo);
     }
 
     void createVertexBuffer() {
-        float ySign = device->getCapabilities().screenSpaceSignY;
+        float ySign        = device->getCapabilities().screenSpaceSignY;
         float vertexData[] = {-1.0f, 4.0f * ySign, 0.0, -1.5,
                               -1.0f, -1.0f * ySign, 0.0, 1.0,
                               4.0f, -1.0f * ySign, 2.5, 1.0};
@@ -523,20 +497,17 @@ struct BigTriangle : public cc::Object {
 
     void createTexture() {
         gfx::TextureInfo textureInfo;
-        textureInfo.usage = gfx::TextureUsage::SAMPLED | gfx::TextureUsage::TRANSFER_DST;
+        textureInfo.usage  = gfx::TextureUsage::SAMPLED | gfx::TextureUsage::TRANSFER_DST;
         textureInfo.format = gfx::Format::RGBA8;
-        textureInfo.width = 128;
-        textureInfo.height = 128;
-        textureInfo.flags = gfx::TextureFlagBit::GEN_MIPMAP;
-        textureInfo.levelCount = TestBaseI::getMipmapLevelCounts(textureInfo.width, textureInfo.height);
-        texture = cc::createTexture(device, textureInfo, "background.png");
+        textureInfo.flags  = gfx::TextureFlagBit::GEN_MIPMAP;
+        texture            = TestBaseI::createTextureWithFile(device, textureInfo, "background.png");
 
         // create sampler
         gfx::SamplerInfo samplerInfo;
         samplerInfo.mipFilter = gfx::Filter::LINEAR;
-        samplerInfo.addressU = gfx::Address::WRAP;
-        samplerInfo.addressV = gfx::Address::WRAP;
-        sampler = device->createSampler(samplerInfo);
+        samplerInfo.addressU  = gfx::Address::WRAP;
+        samplerInfo.addressV  = gfx::Address::WRAP;
+        sampler               = device->createSampler(samplerInfo);
     }
 
     void createPipeline() {
@@ -555,27 +526,27 @@ struct BigTriangle : public cc::Object {
         descriptorSet->update();
 
         gfx::PipelineStateInfo pipelineInfo;
-        pipelineInfo.primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
-        pipelineInfo.shader = shader;
-        pipelineInfo.inputState = {inputAssembler->getAttributes()};
-        pipelineInfo.renderPass = fbo->getRenderPass();
+        pipelineInfo.primitive      = gfx::PrimitiveMode::TRIANGLE_LIST;
+        pipelineInfo.shader         = shader;
+        pipelineInfo.inputState     = {inputAssembler->getAttributes()};
+        pipelineInfo.renderPass     = fbo->getRenderPass();
         pipelineInfo.pipelineLayout = pipelineLayout;
 
         pipelineState = device->createPipelineState(pipelineInfo);
     }
 
-    gfx::Device *device = nullptr;
-    gfx::Framebuffer *fbo = nullptr;
-    gfx::Shader *shader = nullptr;
-    gfx::Buffer *vertexBuffer = nullptr;
-    gfx::Buffer *timeBuffer = nullptr;
-    gfx::InputAssembler *inputAssembler = nullptr;
-    gfx::Sampler *sampler = nullptr;
-    gfx::Texture *texture = nullptr;
-    gfx::DescriptorSet *descriptorSet = nullptr;
+    gfx::Device *             device              = nullptr;
+    gfx::Framebuffer *        fbo                 = nullptr;
+    gfx::Shader *             shader              = nullptr;
+    gfx::Buffer *             vertexBuffer        = nullptr;
+    gfx::Buffer *             timeBuffer          = nullptr;
+    gfx::InputAssembler *     inputAssembler      = nullptr;
+    gfx::Sampler *            sampler             = nullptr;
+    gfx::Texture *            texture             = nullptr;
+    gfx::DescriptorSet *      descriptorSet       = nullptr;
     gfx::DescriptorSetLayout *descriptorSetLayout = nullptr;
-    gfx::PipelineLayout *pipelineLayout = nullptr;
-    gfx::PipelineState *pipelineState = nullptr;
+    gfx::PipelineLayout *     pipelineLayout      = nullptr;
+    gfx::PipelineState *      pipelineState       = nullptr;
 };
 
 void createModelTransform(Mat4 &model, const Vec3 &t, const Vec3 &s) {
@@ -583,45 +554,62 @@ void createModelTransform(Mat4 &model, const Vec3 &t, const Vec3 &s) {
     model.scale(s);
 }
 
-BigTriangle *bigTriangle = nullptr;
-Quad *quad = nullptr;
-gfx::Rect renderArea;
+BigTriangle *         bigTriangle = nullptr;
+Quad *                quad        = nullptr;
 gfx::SurfaceTransform orientation = gfx::SurfaceTransform::IDENTITY;
-gfx::Color clearColor{0, 0, 0, 1};
+gfx::Color            clearColor  = {0, 0, 0, 1};
+gfx::Rect             renderArea;
 } // namespace
 
 void BlendTest::destroy() {
     CC_SAFE_DESTROY(bigTriangle);
     CC_SAFE_DESTROY(quad);
     renderArea.width = renderArea.height = 1u;
-    orientation = gfx::SurfaceTransform::IDENTITY;
+    orientation                          = gfx::SurfaceTransform::IDENTITY;
 }
 
 bool BlendTest::initialize() {
     bigTriangle = CC_NEW(BigTriangle(_device, _fbo));
-    quad = CC_NEW(Quad(_device, _fbo));
+    quad        = CC_NEW(Quad(_device, _fbo));
     return true;
 }
 
 void BlendTest::tick() {
+    gfx::AccessType accesses[] = {
+        gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
+        gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
+        gfx::AccessType::VERTEX_BUFFER,
+        gfx::AccessType::INDEX_BUFFER,
+    };
+    gfx::GlobalBarrier  shader_RAW_transfer{&gfx::AccessTypeV::TRANSFER_WRITE, 1, &accesses[0], COUNTOF(accesses)};
+    gfx::TextureBarrier beforeRender[] = {
+        {&gfx::AccessTypeV::TRANSFER_WRITE, 1, &gfx::AccessTypeV::FRAGMENT_SHADER_READ_TEXTURE, 1, false, bigTriangle->texture},
+        {&gfx::AccessTypeV::TRANSFER_WRITE, 1, &gfx::AccessTypeV::FRAGMENT_SHADER_READ_TEXTURE, 1, false, quad->texture},
+    };
+    uint textureBarriers = COUNTOF(beforeRender);
+    if (_time) {
+        shader_RAW_transfer.nextAccessCount = 1;
+        textureBarriers                     = 0;
+    }
+
     lookupTime();
 
-    _dt += hostThread.dt;
+    _time += hostThread.dt;
 
     _device->acquire();
 
-    gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize();
-    bool matricesDirty = renderArea.width != orientedSize.width || renderArea.height != orientedSize.height || _device->getSurfaceTransform() != orientation;
+    gfx::Extent orientedSize  = TestBaseI::getOrientedSurfaceSize();
+    bool        matricesDirty = renderArea.width != orientedSize.width || renderArea.height != orientedSize.height || _device->getSurfaceTransform() != orientation;
 
     if (matricesDirty) {
         Mat4 model;
         Mat4 projection;
         TestBaseI::createOrthographic(0.f, (float)orientedSize.width, (float)orientedSize.height, 0.f, -1.0f, 1.f, &projection);
 
-        float size = std::min(orientedSize.width, orientedSize.height) * 0.15f;
+        float size     = std::min(orientedSize.width, orientedSize.height) * 0.15f;
         float halfSize = size * 0.5f;
-        float offsetX = 5.f + halfSize;
-        float offsetY = 50.f + halfSize;
+        float offsetX  = 5.f + halfSize;
+        float offsetY  = 50.f + halfSize;
 
         for (uint i = 0; i < TOTAL_BLEND; i++) {
             createModelTransform(model, Vec3(offsetX, offsetY, 0), Vec3(size, size, 1));
@@ -630,21 +618,23 @@ void BlendTest::tick() {
             offsetY += 5.f + size;
         }
         // render area is not oriented
-        renderArea.width = _device->getWidth();
+        renderArea.width  = _device->getWidth();
         renderArea.height = _device->getHeight();
-        orientation = _device->getSurfaceTransform();
+        orientation       = _device->getSurfaceTransform();
     }
 
     auto commandBuffer = _commandBuffers[0];
     commandBuffer->begin();
 
-    commandBuffer->updateBuffer(bigTriangle->timeBuffer, &_dt, sizeof(_dt));
+    commandBuffer->updateBuffer(bigTriangle->timeBuffer, &_time, sizeof(_time));
 
     if (matricesDirty)
         commandBuffer->updateBuffer(quad->uniformBuffer, quad->models.data(), quad->models.size() * sizeof(float));
 
-    commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
+    if (TestBaseI::MANUAL_BARRIER)
+        commandBuffer->pipelineBarrier(&shader_RAW_transfer, beforeRender, textureBarriers);
 
+    commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
     // draw background
     commandBuffer->bindInputAssembler(bigTriangle->inputAssembler);
     commandBuffer->bindPipelineState(bigTriangle->pipelineState);

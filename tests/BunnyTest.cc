@@ -4,7 +4,8 @@
 namespace cc {
 
 namespace {
-enum class Binding : uint8_t { MVP, COLOR };
+enum class Binding : uint8_t { MVP,
+                               COLOR };
 }
 
 void BunnyTest::destroy() {
@@ -117,35 +118,35 @@ void BunnyTest::createShader() {
     StandardShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
 
     gfx::ShaderStageList shaderStageList;
-    gfx::ShaderStage vertexShaderStage;
-    vertexShaderStage.stage = gfx::ShaderStageFlagBit::VERTEX;
+    gfx::ShaderStage     vertexShaderStage;
+    vertexShaderStage.stage  = gfx::ShaderStageFlagBit::VERTEX;
     vertexShaderStage.source = source.vert;
     shaderStageList.emplace_back(std::move(vertexShaderStage));
 
     // fragment shader
     gfx::ShaderStage fragmentShaderStage;
-    fragmentShaderStage.stage = gfx::ShaderStageFlagBit::FRAGMENT;
+    fragmentShaderStage.stage  = gfx::ShaderStageFlagBit::FRAGMENT;
     fragmentShaderStage.source = source.frag;
     shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
     gfx::AttributeList attributeList = {{"a_position", gfx::Format::RGB32F, false, 0, false, 0}};
-    gfx::UniformList mvpMatrix = {
+    gfx::UniformList   mvpMatrix     = {
         {"u_model", gfx::Type::MAT4, 1},
         {"u_view", gfx::Type::MAT4, 1},
         {"u_projection", gfx::Type::MAT4, 1},
     };
-    gfx::UniformList color = {{"u_color", gfx::Type::FLOAT4, 1}};
+    gfx::UniformList      color            = {{"u_color", gfx::Type::FLOAT4, 1}};
     gfx::UniformBlockList uniformBlockList = {
         {0, static_cast<uint>(Binding::MVP), "MVP_Matrix", mvpMatrix, 1},
         {0, static_cast<uint>(Binding::COLOR), "Color", color, 1},
     };
 
     gfx::ShaderInfo shaderInfo;
-    shaderInfo.name = "Bunny Test";
-    shaderInfo.stages = std::move(shaderStageList);
+    shaderInfo.name       = "Bunny Test";
+    shaderInfo.stages     = std::move(shaderStageList);
     shaderInfo.attributes = std::move(attributeList);
-    shaderInfo.blocks = std::move(uniformBlockList);
-    _shader = _device->createShader(shaderInfo);
+    shaderInfo.blocks     = std::move(uniformBlockList);
+    _shader               = _device->createShader(shaderInfo);
 }
 
 void BunnyTest::createBuffers() {
@@ -169,8 +170,8 @@ void BunnyTest::createBuffers() {
 
     // root UBO
     uint offset = TestBaseI::getAlignedUBOStride(_device, 3 * sizeof(Mat4));
-    uint size = offset + 4 * sizeof(float);
-    _rootUBO = _device->createBuffer({
+    uint size   = offset + 4 * sizeof(float);
+    _rootUBO    = _device->createBuffer({
         gfx::BufferUsage::UNIFORM,
         gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
         TestBaseI::getUBOSize(size),
@@ -198,12 +199,12 @@ void BunnyTest::createBuffers() {
 }
 
 void BunnyTest::createInputAssembler() {
-    gfx::Attribute position = {"a_position", gfx::Format::RGB32F, false, 0, false};
+    gfx::Attribute          position = {"a_position", gfx::Format::RGB32F, false, 0, false};
     gfx::InputAssemblerInfo inputAssemblerInfo;
     inputAssemblerInfo.attributes.emplace_back(std::move(position));
     inputAssemblerInfo.vertexBuffers.emplace_back(_vertexBuffer);
     inputAssemblerInfo.indexBuffer = _indexBuffer;
-    _inputAssembler = _device->createInputAssembler(inputAssemblerInfo);
+    _inputAssembler                = _device->createInputAssembler(inputAssemblerInfo);
 }
 
 void BunnyTest::createPipelineState() {
@@ -221,26 +222,37 @@ void BunnyTest::createPipelineState() {
     _descriptorSet->update();
 
     gfx::PipelineStateInfo pipelineStateInfo;
-    pipelineStateInfo.primitive = gfx::PrimitiveMode::TRIANGLE_LIST;
-    pipelineStateInfo.shader = _shader;
-    pipelineStateInfo.inputState = {_inputAssembler->getAttributes()};
-    pipelineStateInfo.renderPass = _fbo->getRenderPass();
-    pipelineStateInfo.depthStencilState.depthTest = true;
+    pipelineStateInfo.primitive                    = gfx::PrimitiveMode::TRIANGLE_LIST;
+    pipelineStateInfo.shader                       = _shader;
+    pipelineStateInfo.inputState                   = {_inputAssembler->getAttributes()};
+    pipelineStateInfo.renderPass                   = _fbo->getRenderPass();
+    pipelineStateInfo.depthStencilState.depthTest  = true;
     pipelineStateInfo.depthStencilState.depthWrite = true;
-    pipelineStateInfo.depthStencilState.depthFunc = gfx::ComparisonFunc::LESS;
-    pipelineStateInfo.pipelineLayout = _pipelineLayout;
-    _pipelineState = _device->createPipelineState(pipelineStateInfo);
+    pipelineStateInfo.depthStencilState.depthFunc  = gfx::ComparisonFunc::LESS;
+    pipelineStateInfo.pipelineLayout               = _pipelineLayout;
+    _pipelineState                                 = _device->createPipelineState(pipelineStateInfo);
 }
 
 void BunnyTest::tick() {
-    lookupTime();
-    _dt += hostThread.dt;
+    gfx::AccessType accesses[] = {
+        gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
+        gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
+        gfx::AccessType::VERTEX_BUFFER,
+        gfx::AccessType::INDEX_BUFFER,
+    };
+    gfx::GlobalBarrier shader_RAW_transfer{&gfx::AccessTypeV::TRANSFER_WRITE, 1, &accesses[0], COUNTOF(accesses)};
+    if (_time) {
+        shader_RAW_transfer.nextAccessCount = 2;
+    }
 
-    Mat4::createLookAt(Vec3(30.0f * std::cos(_dt), 20.0f, 30.0f * std::sin(_dt)),
+    lookupTime();
+    _time += hostThread.dt;
+
+    Mat4::createLookAt(Vec3(30.0f * std::cos(_time), 20.0f, 30.0f * std::sin(_time)),
                        Vec3(0.0f, 2.5f, 0.0f), Vec3(0.0f, 1.0f, 0.f), &_view);
     std::copy(_view.m, _view.m + 16, &_rootBuffer[16]);
 
-    Mat4 projection;
+    Mat4        projection;
     gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize();
     TestBaseI::createPerspective(60.0f, 1.0f * orientedSize.width / orientedSize.height, 0.01f, 1000.0f, &projection);
     std::copy(projection.m, projection.m + 16, &_rootBuffer[32]);
@@ -254,6 +266,10 @@ void BunnyTest::tick() {
 
     auto commandBuffer = _commandBuffers[0];
     commandBuffer->begin();
+
+    if (TestBaseI::MANUAL_BARRIER)
+        commandBuffer->pipelineBarrier(&shader_RAW_transfer);
+
     commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
 
     commandBuffer->bindInputAssembler(_inputAssembler);

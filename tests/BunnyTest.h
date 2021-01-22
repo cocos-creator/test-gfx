@@ -36,7 +36,7 @@ private:
     gfx::PipelineState* _pipelineState = nullptr;
     
     Mat4 _view;
-    float _dt = 0.0f;
+    float _time = 0.0f;
 };
 
 } // namespace cc

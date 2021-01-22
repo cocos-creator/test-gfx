@@ -35,6 +35,8 @@ private:
     gfx::Texture* _texture2 = nullptr;
     gfx::Buffer* _image = nullptr;
     gfx::Sampler* _sampler = nullptr;
+
+    float _time = 0.f;
 };
 
 } // namespace cc

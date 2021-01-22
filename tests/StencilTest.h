@@ -43,7 +43,7 @@ private:
     };
     MatrixUBO _uboData[BINDING_COUNT];
     
-    float _dt = 0.0f;
+    float _time = 0.0f;
 };
 
 } // namespace cc
