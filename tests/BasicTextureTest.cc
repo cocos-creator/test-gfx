@@ -12,7 +12,6 @@ void BasicTexture::onDestroy() {
     CC_SAFE_DESTROY(_pipelineState);
     CC_SAFE_DESTROY(_uniformBuffer);
     CC_SAFE_DESTROY(_sampler);
-    _textureBarriers.pop_back();
 }
 
 bool BasicTexture::onInit() {
@@ -209,7 +208,7 @@ void BasicTexture::createPipeline() {
 
     _pipelineState = _device->createPipelineState(pipelineInfo);
 
-    _globalBarriers.push_back(_device->createGlobalBarrier({
+    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -220,7 +219,7 @@ void BasicTexture::createPipeline() {
         },
     }));
 
-    _globalBarriers.push_back(_device->createGlobalBarrier({
+    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -229,7 +228,7 @@ void BasicTexture::createPipeline() {
         },
     }));
 
-    _textureBarriers.push_back(_device->createTextureBarrier({
+    _textureBarriers.push_back(TestBaseI::getTextureBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },

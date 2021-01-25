@@ -232,7 +232,7 @@ void BunnyTest::createPipelineState() {
     pipelineStateInfo.pipelineLayout               = _pipelineLayout;
     _pipelineState                                 = _device->createPipelineState(pipelineStateInfo);
 
-    _globalBarriers.push_back(_device->createGlobalBarrier({
+    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -244,7 +244,7 @@ void BunnyTest::createPipelineState() {
         },
     }));
 
-    _globalBarriers.push_back(_device->createGlobalBarrier({
+    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -254,7 +254,7 @@ void BunnyTest::createPipelineState() {
         },
     }));
 
-    _textureBarriers.push_back(_device->createTextureBarrier({
+    _textureBarriers.push_back(TestBaseI::getTextureBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },

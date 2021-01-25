@@ -67,9 +67,11 @@ std::vector<TestBaseI::createFunc> TestBaseI::_tests = {
 #endif // CC_PLATFORM != CC_PLATFORM_MAC_IOS
 };
 
-FrameRate                         TestBaseI::hostThread;
-FrameRate                         TestBaseI::deviceThread;
-std::vector<gfx::CommandBuffer *> TestBaseI::_commandBuffers;
+FrameRate                                       TestBaseI::hostThread;
+FrameRate                                       TestBaseI::deviceThread;
+std::vector<gfx::CommandBuffer *>               TestBaseI::_commandBuffers;
+std::unordered_map<uint, gfx::GlobalBarrier *>  TestBaseI::_globalBarrierMap;
+std::unordered_map<uint, gfx::TextureBarrier *> TestBaseI::_textureBarrierMap;
 
 TestBaseI::TestBaseI(const WindowInfo &info) {
     if (!_device) {
@@ -116,6 +118,17 @@ void TestBaseI::destroyGlobal() {
     CC_SAFE_DESTROY(_test);
     CC_SAFE_DESTROY(_fbo);
     CC_SAFE_DESTROY(_renderPass);
+
+    for (auto textureBarrier : _textureBarrierMap) {
+        CC_SAFE_DELETE(textureBarrier.second);
+    }
+    _textureBarrierMap.clear();
+
+    for (auto globalBarrier : _globalBarrierMap) {
+        CC_SAFE_DELETE(globalBarrier.second);
+    }
+    _globalBarrierMap.clear();
+
     CC_SAFE_DESTROY(_device);
 }
 
@@ -328,6 +341,22 @@ uint TestBaseI::getUBOSize(uint size) {
 uint TestBaseI::getAlignedUBOStride(gfx::Device *device, uint stride) {
     uint alignment = device->getCapabilities().uboOffsetAlignment;
     return (stride + alignment - 1) / alignment * alignment;
+}
+
+gfx::GlobalBarrier *TestBaseI::getGlobalBarrier(const gfx::GlobalBarrierInfo &info) {
+    uint hash = gfx::GlobalBarrier::computeHash(info);
+    if (!_globalBarrierMap.count(hash)) {
+        _globalBarrierMap[hash] = _device->createGlobalBarrier(info);
+    }
+    return _globalBarrierMap[hash];
+}
+
+gfx::TextureBarrier *TestBaseI::getTextureBarrier(const gfx::TextureBarrierInfo &info) {
+    uint hash = gfx::TextureBarrier::computeHash(info);
+    if (!_textureBarrierMap.count(hash)) {
+        _textureBarrierMap[hash] = _device->createTextureBarrier(info);
+    }
+    return _textureBarrierMap[hash];
 }
 
 } // namespace cc

@@ -79,21 +79,23 @@ public:
     }
     static void setWindowInfo(const WindowInfo &info) { _windowInfo = info; }
 
-    static void           nextTest(bool backward = false);
-    static void           destroyGlobal();
-    static void           toggleMultithread();
-    static void           onTouchEnd();
-    static void           update();
-    static unsigned char *RGB2RGBA(Image *img);
-    static gfx::Texture * createTextureWithFile(gfx::Device *device, gfx::TextureInfo &textureInfo, std::string imageFile);
-    static void           modifyProjectionBasedOnDevice(Mat4 &projection, bool isOffscreen = false);
-    static void           createOrthographic(float left, float right, float bottom, float top, float near, float ZFar, Mat4 *dst, bool isOffscreen = false);
-    static void           createPerspective(float fov, float aspect, float near, float ZFar, Mat4 *dst, bool isOffscreen = false);
-    static gfx::Extent    getOrientedSurfaceSize();
-    static gfx::Viewport  getViewportBasedOnDevice(const Vec4 &relativeArea);
-    static uint           getUBOSize(uint size);
-    static uint           getMipmapLevelCounts(uint width, uint height);
-    static uint           getAlignedUBOStride(gfx::Device *device, uint stride);
+    static void                 nextTest(bool backward = false);
+    static void                 destroyGlobal();
+    static void                 toggleMultithread();
+    static void                 onTouchEnd();
+    static void                 update();
+    static unsigned char *      RGB2RGBA(Image *img);
+    static gfx::Texture *       createTextureWithFile(gfx::Device *device, gfx::TextureInfo &textureInfo, std::string imageFile);
+    static void                 modifyProjectionBasedOnDevice(Mat4 &projection, bool isOffscreen = false);
+    static void                 createOrthographic(float left, float right, float bottom, float top, float near, float ZFar, Mat4 *dst, bool isOffscreen = false);
+    static void                 createPerspective(float fov, float aspect, float near, float ZFar, Mat4 *dst, bool isOffscreen = false);
+    static gfx::Extent          getOrientedSurfaceSize();
+    static gfx::Viewport        getViewportBasedOnDevice(const Vec4 &relativeArea);
+    static uint                 getUBOSize(uint size);
+    static uint                 getMipmapLevelCounts(uint width, uint height);
+    static uint                 getAlignedUBOStride(gfx::Device *device, uint stride);
+    static gfx::GlobalBarrier * getGlobalBarrier(const gfx::GlobalBarrierInfo &info);
+    static gfx::TextureBarrier *getTextureBarrier(const gfx::TextureBarrierInfo &info);
 
     template <typename T>
     static T &getAppropriateShaderSource(ShaderSources<T> &sources) {
@@ -150,16 +152,6 @@ public:
             CC_SAFE_DESTROY(texture);
         }
         _textures.clear();
-
-        for (auto textureBarrier : _textureBarriers) {
-            CC_SAFE_DELETE(textureBarrier);
-        }
-        _textureBarriers.clear();
-
-        for (auto globalBarrier : _globalBarriers) {
-            CC_SAFE_DELETE(globalBarrier);
-        }
-        _globalBarriers.clear();
     }
 
 protected:
@@ -175,12 +167,15 @@ protected:
 
     static gfx::RenderPass *_renderPass;
 
+    static std::unordered_map<uint, gfx::GlobalBarrier *>  _globalBarrierMap;
+    static std::unordered_map<uint, gfx::TextureBarrier *> _textureBarrierMap;
+
     std::vector<gfx::GlobalBarrier *> _globalBarriers;
 
     std::vector<gfx::Texture *>        _textures;
     std::vector<gfx::TextureBarrier *> _textureBarriers;
 
-    float _time = 0.f;
+    float _time       = 0.f;
     uint  _frameCount = 0u;
 };
 

@@ -207,7 +207,7 @@ void BasicTriangle::createPipeline() {
 
     _pipelineState = _device->createPipelineState(pipelineInfo);
 
-    _globalBarriers.push_back(_device->createGlobalBarrier({
+    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -220,7 +220,7 @@ void BasicTriangle::createPipeline() {
         },
     }));
 
-    _globalBarriers.push_back(_device->createGlobalBarrier({
+    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },

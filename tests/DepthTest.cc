@@ -485,7 +485,7 @@ bool DepthTexture::onInit() {
     bg->descriptorSet->bindTexture(1, _bunnyFBO->depthStencilTex);
     bg->descriptorSet->update();
 
-    _globalBarriers.push_back(_device->createGlobalBarrier({
+    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -497,7 +497,7 @@ bool DepthTexture::onInit() {
         },
     }));
 
-    _globalBarriers.push_back(_device->createGlobalBarrier({
+    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },

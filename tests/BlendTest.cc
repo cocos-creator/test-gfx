@@ -567,14 +567,13 @@ void BlendTest::onDestroy() {
     CC_SAFE_DESTROY(quad);
     renderArea.width = renderArea.height = 1u;
     orientation                          = gfx::SurfaceTransform::IDENTITY;
-    _textureBarriers.pop_back();
 }
 
 bool BlendTest::onInit() {
     bigTriangle = CC_NEW(BigTriangle(_device, _fbo));
     quad        = CC_NEW(Quad(_device, _fbo));
 
-    _globalBarriers.push_back(_device->createGlobalBarrier({
+    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -586,7 +585,7 @@ bool BlendTest::onInit() {
         },
     }));
 
-    _globalBarriers.push_back(_device->createGlobalBarrier({
+    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -596,7 +595,7 @@ bool BlendTest::onInit() {
         },
     }));
 
-    _textureBarriers.push_back(_device->createTextureBarrier({
+    _textureBarriers.push_back(TestBaseI::getTextureBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },

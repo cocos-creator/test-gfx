@@ -28,7 +28,6 @@ void StencilTest::onDestroy() {
     for (uint i = 0; i < PIPELIE_COUNT; i++) {
         CC_SAFE_DESTROY(_pipelineState[i]);
     }
-    _textureBarriers.pop_back();
 }
 
 bool StencilTest::onInit() {
@@ -323,7 +322,7 @@ void StencilTest::createPipelineState() {
     pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].pipelineLayout           = _pipelineLayout;
     _pipelineState[(uint8_t)PipelineType::FRONT_BACK_STENCIL]                        = _device->createPipelineState(pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]);
 
-    _globalBarriers.push_back(_device->createGlobalBarrier({
+    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -333,7 +332,7 @@ void StencilTest::createPipelineState() {
         },
     }));
 
-    _globalBarriers.push_back(_device->createGlobalBarrier({
+    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -342,7 +341,7 @@ void StencilTest::createPipelineState() {
         },
     }));
 
-    _textureBarriers.push_back(_device->createTextureBarrier({
+    _textureBarriers.push_back(TestBaseI::getTextureBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },

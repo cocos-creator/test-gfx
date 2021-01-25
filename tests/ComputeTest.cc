@@ -382,7 +382,7 @@ void ComputeTest::createPipeline() {
 
     _renderPassLoad = _device->createRenderPass(renderPassInfo);
 
-    _globalBarriers.push_back(_device->createGlobalBarrier({
+    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -392,7 +392,7 @@ void ComputeTest::createPipeline() {
         },
     }));
 
-    _globalBarriers.push_back(_device->createGlobalBarrier({
+    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -401,7 +401,7 @@ void ComputeTest::createPipeline() {
         },
     }));
 
-    _globalBarriers.push_back(_device->createGlobalBarrier({
+    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
         {
             gfx::AccessType::COMPUTE_SHADER_WRITE,
         },
@@ -411,7 +411,7 @@ void ComputeTest::createPipeline() {
         },
     }));
 
-    _textureBarriers.push_back(_device->createTextureBarrier({
+    _textureBarriers.push_back(TestBaseI::getTextureBarrier({
         {
             gfx::AccessType::TRANSFER_READ,
         },
@@ -421,7 +421,7 @@ void ComputeTest::createPipeline() {
         true,
     }));
 
-    _textureBarriers.push_back(_device->createTextureBarrier({
+    _textureBarriers.push_back(TestBaseI::getTextureBarrier({
         {
             gfx::AccessType::COMPUTE_SHADER_WRITE,
         },
@@ -431,7 +431,7 @@ void ComputeTest::createPipeline() {
         false,
     }));
 
-    _textureBarriers.push_back(_device->createTextureBarrier({
+    _textureBarriers.push_back(TestBaseI::getTextureBarrier({
         {
             gfx::AccessType::PRESENT,
         },
