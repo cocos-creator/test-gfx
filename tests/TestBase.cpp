@@ -134,7 +134,7 @@ void TestBaseI::onTouchEnd() {
     // toggleMultithread();
 }
 
-void TestBaseI::onTick() {
+void TestBaseI::update() {
     if (_nextDirection) {
         CC_SAFE_DESTROY(_test);
         if (_nextDirection < 0) _curTestIndex += _tests.size();
@@ -174,6 +174,7 @@ gfx::Texture *TestBaseI::createTextureWithFile(gfx::Device *device, gfx::Texture
 
     textureInfo.width  = img->getWidth();
     textureInfo.height = img->getHeight();
+    textureInfo.format = gfx::Format::RGBA8;
     if (textureInfo.flags & gfx::TextureFlagBit::GEN_MIPMAP) {
         textureInfo.levelCount = TestBaseI::getMipmapLevelCounts(textureInfo.width, textureInfo.height);
     }

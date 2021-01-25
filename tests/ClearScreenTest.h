@@ -4,20 +4,16 @@
 
 namespace cc {
 
-class ClearScreen: public TestBaseI
-{
- public:
+class ClearScreen : public TestBaseI {
+public:
     DEFINE_CREATE_METHOD(ClearScreen)
-    ClearScreen(const WindowInfo& info) : TestBaseI(info) {};
+    ClearScreen(const WindowInfo &info) : TestBaseI(info){};
     ~ClearScreen() = default;
 
- public:
-     virtual void tick() override;
-     virtual bool initialize() override;
-     virtual void destroy() override;
-
- private:
-     float _time = 0.0f;
+public:
+    bool onInit() override;
+    void onTick() override;
+    void onDestroy() override;
 };
 
 } // namespace cc

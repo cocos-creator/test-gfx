@@ -438,13 +438,24 @@ BigTriangle *bg;
 Bunny *      bunny;
 } // namespace
 
-void DepthTexture::destroy() {
+void DepthTexture::onDestroy() {
     CC_SAFE_DESTROY(bg);
     CC_SAFE_DESTROY(bunny);
     CC_SAFE_DELETE(_bunnyFBO);
 }
 
-bool DepthTexture::initialize() {
+void DepthTexture::onResize(uint width, uint height) {
+    _bunnyFBO->depthStencilTex->resize(width, height);
+
+    gfx::FramebufferInfo fboInfo;
+    fboInfo.renderPass          = _bunnyFBO->renderPass;
+    fboInfo.depthStencilTexture = _bunnyFBO->depthStencilTex;
+
+    _bunnyFBO->framebuffer->destroy();
+    _bunnyFBO->framebuffer->initialize(fboInfo);
+}
+
+bool DepthTexture::onInit() {
     _bunnyFBO = CC_NEW(Framebuffer);
 
     gfx::RenderPassInfo renderPassInfo;
@@ -474,36 +485,32 @@ bool DepthTexture::initialize() {
     bg->descriptorSet->bindTexture(1, _bunnyFBO->depthStencilTex);
     bg->descriptorSet->update();
 
+    _globalBarriers.push_back(_device->createGlobalBarrier({
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+        {
+            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
+            gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
+            gfx::AccessType::VERTEX_BUFFER,
+            gfx::AccessType::INDEX_BUFFER,
+        },
+    }));
+
+    _globalBarriers.push_back(_device->createGlobalBarrier({
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+        {
+            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
+        },
+    }));
+
     return true;
 }
 
-void DepthTexture::resize(uint width, uint height) {
-    TestBaseI::resize(width, height);
-
-    _bunnyFBO->depthStencilTex->resize(width, height);
-
-    gfx::FramebufferInfo fboInfo;
-    fboInfo.renderPass          = _bunnyFBO->renderPass;
-    fboInfo.depthStencilTexture = _bunnyFBO->depthStencilTex;
-
-    _bunnyFBO->framebuffer->destroy();
-    _bunnyFBO->framebuffer->initialize(fboInfo);
-}
-
-void DepthTexture::tick() {
-    gfx::AccessType accesses[] = {
-        gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-        gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
-        gfx::AccessType::VERTEX_BUFFER,
-        gfx::AccessType::INDEX_BUFFER,
-    };
-    gfx::GlobalBarrier shader_RAW_transfer{&gfx::AccessTypeV::TRANSFER_WRITE, 1, &accesses[0], COUNTOF(accesses)};
-    if (_time) {
-        shader_RAW_transfer.nextAccessCount = 1;
-    }
-
-    lookupTime();
-    _time += hostThread.dt;
+void DepthTexture::onTick() {
+    uint globalBarrierIdx = _frameCount ? 1 : 0;
 
     _eye.set(30.f * std::cos(_time), 20.f, 30.f * std::sin(_time));
     _center.set(0, 2.5f, 0);
@@ -526,7 +533,7 @@ void DepthTexture::tick() {
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER)
-        commandBuffer->pipelineBarrier(&shader_RAW_transfer);
+        commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx]);
 
     // render bunny
     commandBuffer->beginRenderPass(_bunnyFBO->renderPass, _bunnyFBO->framebuffer, renderArea, nullptr, 1.0f, 0);

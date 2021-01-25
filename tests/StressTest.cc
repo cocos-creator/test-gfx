@@ -46,7 +46,7 @@ const gfx::Color StressTest::clearColors[] = {
 #define USE_DYNAMIC_UNIFORM_BUFFER 1
 #define USE_PARALLEL_RECORDING     1
 
-uint8_t const taskCount = std::thread::hardware_concurrency() - 1;
+uint const taskCount = std::thread::hardware_concurrency() - 1u;
 
 void HSV2RGB(const float h, const float s, const float v, float &r, float &g, float &b) {
     int hi = (int)(h / 60.0f) % 6;
@@ -65,7 +65,7 @@ void HSV2RGB(const float h, const float s, const float v, float &r, float &g, fl
     }
 }
 
-void StressTest::destroy() {
+void StressTest::onDestroy() {
     CC_SAFE_DESTROY(_vertexBuffer);
     CC_SAFE_DESTROY(_inputAssembler);
 
@@ -102,7 +102,7 @@ void StressTest::destroy() {
     _commandBuffers.resize(1);
 }
 
-bool StressTest::initialize() {
+bool StressTest::onInit() {
 
     createShader();
     createVertexBuffer();
@@ -508,9 +508,7 @@ void StressTest::recordRenderPass(uint passIndex) {
 }
 #endif
 
-void StressTest::tick() {
-    lookupTime();
-
+void StressTest::onTick() {
     // simulate heavy logic operation
     std::this_thread::sleep_for(std::chrono::milliseconds(MAIN_THREAD_SLEEP));
 
@@ -525,7 +523,7 @@ void StressTest::tick() {
     _device->acquire();
 
     _uboVP.color.w = 1.f;
-    HSV2RGB((hostThread.frameAcc * 20) % 360, .5f, 1.f, _uboVP.color.x, _uboVP.color.y, _uboVP.color.z);
+    HSV2RGB(float((hostThread.frameAcc * 20u) % 360u), .5f, 1.f, _uboVP.color.x, _uboVP.color.y, _uboVP.color.z);
     _uniformBufferVP->update(&_uboVP, sizeof(_uboVP));
 
     /* un-toggle this to support dynamic screen rotation *

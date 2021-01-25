@@ -80,7 +80,7 @@ namespace
 }
 
 - (BOOL) renderScene {
-    cc::TestBaseI::onTick();
+    cc::TestBaseI::update();
     return true;
 }
 

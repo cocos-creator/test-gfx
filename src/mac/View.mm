@@ -51,7 +51,7 @@ namespace
 - (instancetype)initWithFrame:(NSRect)frameRect {
     if (self = [super initWithFrame:frameRect]) {
         [self.window makeFirstResponder:self];
-        
+
         int pixelRatio = 1;
 #if CC_PLATFORM == CC_PLATFORM_MAC_OSX
         pixelRatio = [[NSScreen mainScreen] backingScaleFactor];
@@ -59,7 +59,7 @@ namespace
         pixelRatio = [[UIScreen mainScreen] scale];
 #endif //CC_PLATFORM == CC_PLATFORM_MAC_OSX
         CGSize size = CGSizeMake(frameRect.size.width * pixelRatio, frameRect.size.height * pixelRatio);
-        
+
         // Create CAMetalLayer
         self.wantsLayer = YES;
         // Config metal layer
@@ -80,7 +80,7 @@ namespace
         g_windowInfo.screen.y = frameRect.origin.y;
         g_windowInfo.screen.width = g_windowInfo.physicalWidth = size.width;
         g_windowInfo.screen.height = g_windowInfo.physicalHeight = size.height;
-        
+
         // Start main loop
         self.timer = [NSTimer scheduledTimerWithTimeInterval:1.0f / 60
                                                  target:self
@@ -101,7 +101,7 @@ namespace
 }
 
 - (void)tick {
-    cc::TestBaseI::onTick();
+    cc::TestBaseI::update();
 }
 
 - (void)mouseUp:(NSEvent *)event {

@@ -2,17 +2,14 @@
 
 namespace cc {
 
-void ClearScreen::destroy() {
+void ClearScreen::onDestroy() {
 }
 
-bool ClearScreen::initialize() {
+bool ClearScreen::onInit() {
     return true;
 }
 
-void ClearScreen::tick() {
-    lookupTime();
-
-    _time += hostThread.dt;
+void ClearScreen::onTick() {
     gfx::Color clearColor;
     clearColor.x = 1.0f;
     clearColor.y = std::abs(std::sin(_time));

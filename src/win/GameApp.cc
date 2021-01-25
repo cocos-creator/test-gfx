@@ -146,7 +146,7 @@ void GameApp::Run() {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
-        if (!_paused) TestBaseI::onTick();
+        if (!_paused) TestBaseI::update();
     }
 
     destroy();

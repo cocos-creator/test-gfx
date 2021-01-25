@@ -133,7 +133,7 @@ void android_main(struct android_app* state) {
 
         if (savedState.animating)
         {
-            TestBaseI::onTick();
+            TestBaseI::update();
             lastTime = time;
         }
     }

@@ -2,7 +2,7 @@
 
 namespace cc {
 
-void BasicTriangle::destroy() {
+void BasicTriangle::onDestroy() {
     CC_SAFE_DESTROY(_vertexBuffer);
     CC_SAFE_DESTROY(_inputAssembler);
     CC_SAFE_DESTROY(_uniformBuffer);
@@ -16,7 +16,7 @@ void BasicTriangle::destroy() {
     CC_SAFE_DESTROY(_indirectBuffer);
 }
 
-bool BasicTriangle::initialize() {
+bool BasicTriangle::onInit() {
     createShader();
     createVertexBuffer();
     createInputAssembler();
@@ -206,24 +206,34 @@ void BasicTriangle::createPipeline() {
     pipelineInfo.pipelineLayout = _pipelineLayout;
 
     _pipelineState = _device->createPipelineState(pipelineInfo);
+
+    _globalBarriers.push_back(_device->createGlobalBarrier({
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+        {
+            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
+            gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
+            gfx::AccessType::INDIRECT_BUFFER,
+            gfx::AccessType::VERTEX_BUFFER,
+            gfx::AccessType::INDEX_BUFFER,
+        },
+    }));
+
+    _globalBarriers.push_back(_device->createGlobalBarrier({
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+        {
+            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
+            gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
+        },
+    }));
 }
 
-void BasicTriangle::tick() {
-    gfx::AccessType accesses[] = {
-        gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-        gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
-        gfx::AccessType::INDIRECT_BUFFER,
-        gfx::AccessType::VERTEX_BUFFER,
-        gfx::AccessType::INDEX_BUFFER,
-    };
-    gfx::GlobalBarrier shader_RAW_transfer{&gfx::AccessTypeV::TRANSFER_WRITE, 1, &accesses[0], COUNTOF(accesses)};
-    if (_time) {
-        shader_RAW_transfer.nextAccessCount = 2;
-    }
+void BasicTriangle::onTick() {
+    uint globalBarrierIdx = _frameCount ? 1 : 0;
 
-    lookupTime();
-
-    _time += hostThread.dt;
     gfx::Color clearColor = {1.0f, 0, 0, 1.0f};
 
     gfx::Color uniformColor;
@@ -246,7 +256,7 @@ void BasicTriangle::tick() {
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER)
-        commandBuffer->pipelineBarrier(&shader_RAW_transfer);
+        commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx]);
 
     commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
     commandBuffer->bindInputAssembler(_inputAssembler);

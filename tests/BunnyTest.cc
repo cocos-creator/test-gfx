@@ -8,7 +8,7 @@ enum class Binding : uint8_t { MVP,
                                COLOR };
 }
 
-void BunnyTest::destroy() {
+void BunnyTest::onDestroy() {
     CC_SAFE_DESTROY(_shader);
     CC_SAFE_DESTROY(_vertexBuffer);
     CC_SAFE_DESTROY(_indexBuffer);
@@ -22,7 +22,7 @@ void BunnyTest::destroy() {
     CC_SAFE_DESTROY(_pipelineState);
 }
 
-bool BunnyTest::initialize() {
+bool BunnyTest::onInit() {
     createShader();
     createBuffers();
     createInputAssembler();
@@ -231,22 +231,42 @@ void BunnyTest::createPipelineState() {
     pipelineStateInfo.depthStencilState.depthFunc  = gfx::ComparisonFunc::LESS;
     pipelineStateInfo.pipelineLayout               = _pipelineLayout;
     _pipelineState                                 = _device->createPipelineState(pipelineStateInfo);
+
+    _globalBarriers.push_back(_device->createGlobalBarrier({
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+        {
+            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
+            gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
+            gfx::AccessType::VERTEX_BUFFER,
+            gfx::AccessType::INDEX_BUFFER,
+        },
+    }));
+
+    _globalBarriers.push_back(_device->createGlobalBarrier({
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+        {
+            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
+            gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
+        },
+    }));
+
+    _textureBarriers.push_back(_device->createTextureBarrier({
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+        {
+            gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE,
+        },
+        false,
+    }));
 }
 
-void BunnyTest::tick() {
-    gfx::AccessType accesses[] = {
-        gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-        gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
-        gfx::AccessType::VERTEX_BUFFER,
-        gfx::AccessType::INDEX_BUFFER,
-    };
-    gfx::GlobalBarrier shader_RAW_transfer{&gfx::AccessTypeV::TRANSFER_WRITE, 1, &accesses[0], COUNTOF(accesses)};
-    if (_time) {
-        shader_RAW_transfer.nextAccessCount = 2;
-    }
-
-    lookupTime();
-    _time += hostThread.dt;
+void BunnyTest::onTick() {
+    uint globalBarrierIdx = _frameCount ? 1 : 0;
 
     Mat4::createLookAt(Vec3(30.0f * std::cos(_time), 20.0f, 30.0f * std::sin(_time)),
                        Vec3(0.0f, 2.5f, 0.0f), Vec3(0.0f, 1.0f, 0.f), &_view);
@@ -268,7 +288,7 @@ void BunnyTest::tick() {
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER)
-        commandBuffer->pipelineBarrier(&shader_RAW_transfer);
+        commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx]);
 
     commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
 

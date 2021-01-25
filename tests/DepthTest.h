@@ -4,28 +4,25 @@
 
 namespace cc {
 
-class DepthTexture: public TestBaseI
-{
+class DepthTexture : public TestBaseI {
 public:
     DEFINE_CREATE_METHOD(DepthTexture)
-    DepthTexture(const WindowInfo& info) : TestBaseI(info) {};
+    DepthTexture(const WindowInfo &info) : TestBaseI(info){};
     ~DepthTexture() = default;
 
 public:
-     virtual bool initialize() override;
-     virtual void destroy() override;
-     virtual void tick() override;
-     virtual void resize(uint width, uint height) override;
+    bool onInit() override;
+    void onDestroy() override;
+    void onTick() override;
+    void onResize(uint width, uint height) override;
 
 private:
-    Framebuffer* _bunnyFBO;
+    Framebuffer *_bunnyFBO;
 
     Mat4 _bunnyMatrices[3];
     Vec3 _eye;
     Vec3 _center;
     Vec3 _up;
-    
-    float _time = 0.0f;
 };
 
 } // namespace cc

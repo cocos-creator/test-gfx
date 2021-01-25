@@ -2,7 +2,7 @@
 
 namespace cc {
 
-void BasicTexture::destroy() {
+void BasicTexture::onDestroy() {
     CC_SAFE_DESTROY(_shader);
     CC_SAFE_DESTROY(_vertexBuffer);
     CC_SAFE_DESTROY(_inputAssembler);
@@ -11,13 +11,11 @@ void BasicTexture::destroy() {
     CC_SAFE_DESTROY(_pipelineLayout);
     CC_SAFE_DESTROY(_pipelineState);
     CC_SAFE_DESTROY(_uniformBuffer);
-    CC_SAFE_DESTROY(_texture);
-    CC_SAFE_DESTROY(_texture2);
-    CC_SAFE_DESTROY(_image);
     CC_SAFE_DESTROY(_sampler);
+    _textureBarriers.pop_back();
 }
 
-bool BasicTexture::initialize() {
+bool BasicTexture::onInit() {
     createShader();
     createVertexBuffer();
     createInputAssembler();
@@ -171,6 +169,20 @@ void BasicTexture::createInputAssembler() {
     _inputAssembler = _device->createInputAssembler(inputAssemblerInfo);
 }
 
+void BasicTexture::createTexture() {
+    gfx::TextureInfo textureInfo;
+    textureInfo.usage  = gfx::TextureUsage::SAMPLED | gfx::TextureUsage::TRANSFER_DST;
+    textureInfo.format = gfx::Format::RGBA8;
+
+    _textures.resize(2);
+    _textures[0] = TestBaseI::createTextureWithFile(_device, textureInfo, "uv_checker_01.jpg");
+    _textures[1] = TestBaseI::createTextureWithFile(_device, textureInfo, "uv_checker_02.jpg");
+
+    //create sampler
+    gfx::SamplerInfo samplerInfo;
+    _sampler = _device->createSampler(samplerInfo);
+}
+
 void BasicTexture::createPipeline() {
     gfx::DescriptorSetLayoutInfo dslInfo;
     dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX});
@@ -183,9 +195,9 @@ void BasicTexture::createPipeline() {
 
     _descriptorSet->bindBuffer(0, _uniformBuffer);
     _descriptorSet->bindSampler(1, _sampler);
-    _descriptorSet->bindTexture(1, _texture2);
+    _descriptorSet->bindTexture(1, _textures[1]);
     _descriptorSet->bindSampler(1, _sampler, 1);
-    _descriptorSet->bindTexture(1, _texture, 1);
+    _descriptorSet->bindTexture(1, _textures[0], 1);
     _descriptorSet->update();
 
     gfx::PipelineStateInfo pipelineInfo;
@@ -196,40 +208,43 @@ void BasicTexture::createPipeline() {
     pipelineInfo.pipelineLayout = _pipelineLayout;
 
     _pipelineState = _device->createPipelineState(pipelineInfo);
+
+    _globalBarriers.push_back(_device->createGlobalBarrier({
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+        {
+            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
+            gfx::AccessType::VERTEX_BUFFER,
+            gfx::AccessType::INDEX_BUFFER,
+        },
+    }));
+
+    _globalBarriers.push_back(_device->createGlobalBarrier({
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+        {
+            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
+        },
+    }));
+
+    _textureBarriers.push_back(_device->createTextureBarrier({
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+        {
+            gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE,
+        },
+        false,
+    }));
+
+    _textureBarriers.push_back(_textureBarriers.back());
 }
 
-void BasicTexture::createTexture() {
-    gfx::TextureInfo textureInfo;
-    textureInfo.usage  = gfx::TextureUsage::SAMPLED | gfx::TextureUsage::TRANSFER_DST;
-    textureInfo.format = gfx::Format::RGBA8;
-    _texture           = TestBaseI::createTextureWithFile(_device, textureInfo, "uv_checker_01.jpg");
-    _texture2          = TestBaseI::createTextureWithFile(_device, textureInfo, "uv_checker_02.jpg");
-
-    //create sampler
-    gfx::SamplerInfo samplerInfo;
-    _sampler = _device->createSampler(samplerInfo);
-}
-
-void BasicTexture::tick() {
-    gfx::AccessType accesses[] = {
-        gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-        gfx::AccessType::VERTEX_BUFFER,
-        gfx::AccessType::INDEX_BUFFER,
-    };
-    gfx::GlobalBarrier  shader_RAW_transfer{&gfx::AccessTypeV::TRANSFER_WRITE, 1, &accesses[0], COUNTOF(accesses)};
-    gfx::TextureBarrier beforeRender[] = {
-        {&gfx::AccessTypeV::TRANSFER_WRITE, 1, &gfx::AccessTypeV::FRAGMENT_SHADER_READ_TEXTURE, 1, false, _texture},
-        {&gfx::AccessTypeV::TRANSFER_WRITE, 1, &gfx::AccessTypeV::FRAGMENT_SHADER_READ_TEXTURE, 1, false, _texture2},
-    };
-    uint textureBarriers = COUNTOF(beforeRender);
-    if (_time) {
-        shader_RAW_transfer.nextAccessCount = 1;
-        textureBarriers                     = 0;
-    }
-
-    lookupTime();
-
-    _time += hostThread.dt;
+void BasicTexture::onTick() {
+    uint globalBarrierIdx = _frameCount ? 1 : 0;
+    uint textureBarriers  = _frameCount ? 0 : _textureBarriers.size();
 
     gfx::Color clearColor = {0, 0, 0, 1.0f};
 
@@ -245,7 +260,7 @@ void BasicTexture::tick() {
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER)
-        commandBuffer->pipelineBarrier(&shader_RAW_transfer, beforeRender, textureBarriers);
+        commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx], _textureBarriers.data(), _textures.data(), textureBarriers);
 
     commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
     commandBuffer->bindInputAssembler(_inputAssembler);

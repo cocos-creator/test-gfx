@@ -14,10 +14,8 @@ enum class PipelineType : uint8_t {
 };
 }
 
-void StencilTest::destroy() {
+void StencilTest::onDestroy() {
     CC_SAFE_DESTROY(_shader);
-    CC_SAFE_DESTROY(_labelTexture);
-    CC_SAFE_DESTROY(_uvCheckerTexture);
     CC_SAFE_DESTROY(_vertexBuffer);
     CC_SAFE_DESTROY(_inputAssembler);
     CC_SAFE_DESTROY(_sampler);
@@ -30,9 +28,10 @@ void StencilTest::destroy() {
     for (uint i = 0; i < PIPELIE_COUNT; i++) {
         CC_SAFE_DESTROY(_pipelineState[i]);
     }
+    _textureBarriers.pop_back();
 }
 
-bool StencilTest::initialize() {
+bool StencilTest::onInit() {
     createShader();
     createBuffers();
     createTextures();
@@ -181,15 +180,12 @@ void StencilTest::createBuffers() {
 }
 
 void StencilTest::createTextures() {
-    gfx::TextureInfo labelTextureInfo;
-    labelTextureInfo.usage  = gfx::TextureUsage::SAMPLED | gfx::TextureUsage::TRANSFER_DST;
-    labelTextureInfo.format = gfx::Format::RGBA8;
-    _labelTexture           = TestBaseI::createTextureWithFile(_device, labelTextureInfo, "stencil.jpg");
-
     gfx::TextureInfo textureInfo;
-    textureInfo.usage  = gfx::TextureUsage::SAMPLED | gfx::TextureUsage::TRANSFER_DST;
-    textureInfo.format = gfx::Format::RGBA8;
-    _uvCheckerTexture  = TestBaseI::createTextureWithFile(_device, textureInfo, "uv_checker_02.jpg");
+    textureInfo.usage = gfx::TextureUsage::SAMPLED | gfx::TextureUsage::TRANSFER_DST;
+
+    _textures.resize(2);
+    _textures[0] = TestBaseI::createTextureWithFile(_device, textureInfo, "stencil.jpg");
+    _textures[1] = TestBaseI::createTextureWithFile(_device, textureInfo, "uv_checker_02.jpg");
 
     // create sampler
     gfx::SamplerInfo samplerInfo;
@@ -212,12 +208,11 @@ void StencilTest::createPipelineState() {
 
     _pipelineLayout = _device->createPipelineLayout({{_descriptorSetLayout}});
 
-    gfx::Texture *texView[BINDING_COUNT] = {_labelTexture, _uvCheckerTexture};
     for (uint i = 0; i < BINDING_COUNT; i++) {
         _descriptorSet[i] = _device->createDescriptorSet({_descriptorSetLayout});
         _descriptorSet[i]->bindBuffer(0, _uniformBuffer[i]);
         _descriptorSet[i]->bindSampler(1, _sampler);
-        _descriptorSet[i]->bindTexture(1, texView[i]);
+        _descriptorSet[i]->bindTexture(1, _textures[i]);
         _descriptorSet[i]->update();
     }
 
@@ -327,26 +322,43 @@ void StencilTest::createPipelineState() {
     pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].dynamicStates            = gfx::DynamicStateFlagBit::VIEWPORT;
     pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL].pipelineLayout           = _pipelineLayout;
     _pipelineState[(uint8_t)PipelineType::FRONT_BACK_STENCIL]                        = _device->createPipelineState(pipelineInfo[(uint8_t)PipelineType::FRONT_BACK_STENCIL]);
+
+    _globalBarriers.push_back(_device->createGlobalBarrier({
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+        {
+            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
+            gfx::AccessType::VERTEX_BUFFER,
+        },
+    }));
+
+    _globalBarriers.push_back(_device->createGlobalBarrier({
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+        {
+            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
+        },
+    }));
+
+    _textureBarriers.push_back(_device->createTextureBarrier({
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+        {
+            gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE,
+        },
+        false,
+    }));
+
+    _textureBarriers.push_back(_textureBarriers.back());
 }
 
-void StencilTest::tick() {
-    gfx::AccessType accesses[] = {
-        gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-        gfx::AccessType::VERTEX_BUFFER,
-    };
-    gfx::GlobalBarrier  shader_RAW_transfer{&gfx::AccessTypeV::TRANSFER_WRITE, 1, &accesses[0], COUNTOF(accesses)};
-    gfx::TextureBarrier beforeRender[] = {
-        {&gfx::AccessTypeV::TRANSFER_WRITE, 1, &gfx::AccessTypeV::FRAGMENT_SHADER_READ_TEXTURE, 1, false, _labelTexture},
-        {&gfx::AccessTypeV::TRANSFER_WRITE, 1, &gfx::AccessTypeV::FRAGMENT_SHADER_READ_TEXTURE, 1, false, _uvCheckerTexture},
-    };
-    uint textureBarriers = COUNTOF(beforeRender);
-    if (_time) {
-        shader_RAW_transfer.nextAccessCount = 1;
-        textureBarriers                     = 0;
-    }
+void StencilTest::onTick() {
+    uint globalBarrierIdx = _frameCount ? 1 : 0;
+    uint textureBarriers  = _frameCount ? 0 : _textureBarriers.size();
 
-    lookupTime();
-    _time += hostThread.dt;
     gfx::Color clearColor = {1.0f, 0, 0, 1.0f};
 
     Mat4 proj;
@@ -365,7 +377,7 @@ void StencilTest::tick() {
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER)
-        commandBuffer->pipelineBarrier(&shader_RAW_transfer, beforeRender, textureBarriers);
+        commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx], _textureBarriers.data(), _textures.data(), textureBarriers);
 
     commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
 

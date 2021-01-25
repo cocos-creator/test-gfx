@@ -561,40 +561,61 @@ gfx::Color            clearColor  = {0, 0, 0, 1};
 gfx::Rect             renderArea;
 } // namespace
 
-void BlendTest::destroy() {
+void BlendTest::onDestroy() {
+    _textures.clear();
     CC_SAFE_DESTROY(bigTriangle);
     CC_SAFE_DESTROY(quad);
     renderArea.width = renderArea.height = 1u;
     orientation                          = gfx::SurfaceTransform::IDENTITY;
+    _textureBarriers.pop_back();
 }
 
-bool BlendTest::initialize() {
+bool BlendTest::onInit() {
     bigTriangle = CC_NEW(BigTriangle(_device, _fbo));
     quad        = CC_NEW(Quad(_device, _fbo));
+
+    _globalBarriers.push_back(_device->createGlobalBarrier({
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+        {
+            gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
+            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
+            gfx::AccessType::VERTEX_BUFFER,
+            gfx::AccessType::INDEX_BUFFER,
+        },
+    }));
+
+    _globalBarriers.push_back(_device->createGlobalBarrier({
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+        {
+            gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
+            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
+        },
+    }));
+
+    _textureBarriers.push_back(_device->createTextureBarrier({
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+        {
+            gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE,
+        },
+        false,
+    }));
+
+    _textureBarriers.push_back(_textureBarriers.back());
+
+    _textures.assign({bigTriangle->texture, quad->texture});
+
     return true;
 }
 
-void BlendTest::tick() {
-    gfx::AccessType accesses[] = {
-        gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
-        gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-        gfx::AccessType::VERTEX_BUFFER,
-        gfx::AccessType::INDEX_BUFFER,
-    };
-    gfx::GlobalBarrier  shader_RAW_transfer{&gfx::AccessTypeV::TRANSFER_WRITE, 1, &accesses[0], COUNTOF(accesses)};
-    gfx::TextureBarrier beforeRender[] = {
-        {&gfx::AccessTypeV::TRANSFER_WRITE, 1, &gfx::AccessTypeV::FRAGMENT_SHADER_READ_TEXTURE, 1, false, bigTriangle->texture},
-        {&gfx::AccessTypeV::TRANSFER_WRITE, 1, &gfx::AccessTypeV::FRAGMENT_SHADER_READ_TEXTURE, 1, false, quad->texture},
-    };
-    uint textureBarriers = COUNTOF(beforeRender);
-    if (_time) {
-        shader_RAW_transfer.nextAccessCount = 1;
-        textureBarriers                     = 0;
-    }
-
-    lookupTime();
-
-    _time += hostThread.dt;
+void BlendTest::onTick() {
+    uint globalBarrierIdx = _frameCount ? 1 : 0;
+    uint textureBarriers  = _frameCount ? 0 : _textureBarriers.size();
 
     _device->acquire();
 
@@ -632,7 +653,7 @@ void BlendTest::tick() {
         commandBuffer->updateBuffer(quad->uniformBuffer, quad->models.data(), quad->models.size() * sizeof(float));
 
     if (TestBaseI::MANUAL_BARRIER)
-        commandBuffer->pipelineBarrier(&shader_RAW_transfer, beforeRender, textureBarriers);
+        commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx], _textureBarriers.data(), _textures.data(), textureBarriers);
 
     commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
     // draw background

@@ -71,7 +71,7 @@ namespace
 }
 
 -(void)loop:(id)sender {
-    TestBaseI::onTick();
+    TestBaseI::update();
 }
 
 - (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event

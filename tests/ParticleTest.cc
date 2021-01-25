@@ -51,7 +51,7 @@ Vec3 vec3ScaleAndAdd(const Vec3 &a, const Vec3 &b, float scale) {
 };
 } // namespace
 
-void ParticleTest::destroy() {
+void ParticleTest::onDestroy() {
     CC_SAFE_DESTROY(_shader);
     CC_SAFE_DESTROY(_vertexBuffer);
     CC_SAFE_DESTROY(_indexBuffer);
@@ -61,11 +61,10 @@ void ParticleTest::destroy() {
     CC_SAFE_DESTROY(_descriptorSetLayout);
     CC_SAFE_DESTROY(_pipelineLayout);
     CC_SAFE_DESTROY(_uniformBuffer);
-    CC_SAFE_DESTROY(_texture);
     CC_SAFE_DESTROY(_sampler);
 }
 
-bool ParticleTest::initialize() {
+bool ParticleTest::onInit() {
     createShader();
     createVertexBuffer();
     createInputAssembler();
@@ -287,38 +286,6 @@ void ParticleTest::createInputAssembler() {
     _inputAssembler                = _device->createInputAssembler(inputAssemblerInfo);
 }
 
-void ParticleTest::createPipeline() {
-    gfx::DescriptorSetLayoutInfo dslInfo;
-    dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX});
-    dslInfo.bindings.push_back({1, gfx::DescriptorType::SAMPLER_TEXTURE, 1, gfx::ShaderStageFlagBit::FRAGMENT});
-    _descriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
-
-    _pipelineLayout = _device->createPipelineLayout({{_descriptorSetLayout}});
-
-    _descriptorSet = _device->createDescriptorSet({_descriptorSetLayout});
-
-    _descriptorSet->bindBuffer(0, _uniformBuffer);
-    _descriptorSet->bindSampler(1, _sampler);
-    _descriptorSet->bindTexture(1, _texture);
-    _descriptorSet->update();
-
-    gfx::PipelineStateInfo pipelineInfo;
-    pipelineInfo.primitive                           = gfx::PrimitiveMode::TRIANGLE_LIST;
-    pipelineInfo.shader                              = _shader;
-    pipelineInfo.inputState                          = {_inputAssembler->getAttributes()};
-    pipelineInfo.renderPass                          = _fbo->getRenderPass();
-    pipelineInfo.blendState.targets[0].blend         = true;
-    pipelineInfo.blendState.targets[0].blendEq       = gfx::BlendOp::ADD;
-    pipelineInfo.blendState.targets[0].blendAlphaEq  = gfx::BlendOp::ADD;
-    pipelineInfo.blendState.targets[0].blendSrc      = gfx::BlendFactor::SRC_ALPHA;
-    pipelineInfo.blendState.targets[0].blendDst      = gfx::BlendFactor::ONE_MINUS_SRC_ALPHA;
-    pipelineInfo.blendState.targets[0].blendSrcAlpha = gfx::BlendFactor::ONE;
-    pipelineInfo.blendState.targets[0].blendDstAlpha = gfx::BlendFactor::ONE;
-    pipelineInfo.pipelineLayout                      = _pipelineLayout;
-
-    _pipelineState = _device->createPipelineState(pipelineInfo);
-}
-
 void ParticleTest::createTexture() {
     const size_t LINE_WIDHT  = 128;
     const size_t LINE_HEIGHT = 128;
@@ -337,7 +304,7 @@ void ParticleTest::createTexture() {
     textureInfo.height     = LINE_HEIGHT;
     textureInfo.flags      = gfx::TextureFlagBit::GEN_MIPMAP;
     textureInfo.levelCount = TestBaseI::getMipmapLevelCounts(textureInfo.width, textureInfo.height);
-    _texture               = _device->createTexture(textureInfo);
+    _textures.push_back(_device->createTexture(textureInfo));
 
     gfx::BufferTextureCopy textureRegion;
     textureRegion.buffTexHeight    = 0;
@@ -349,7 +316,7 @@ void ParticleTest::createTexture() {
     regions.push_back(std::move(textureRegion));
 
     gfx::BufferDataList imageBuffer = {imageData};
-    _device->copyBuffersToTexture(imageBuffer, _texture, regions);
+    _device->copyBuffersToTexture(imageBuffer, _textures[0], regions);
     CC_SAFE_FREE(imageData);
 
     // create sampler
@@ -360,23 +327,71 @@ void ParticleTest::createTexture() {
     _sampler              = _device->createSampler(samplerInfo);
 }
 
-void ParticleTest::tick() {
-    gfx::AccessType accesses[] = {
-        gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-        gfx::AccessType::VERTEX_BUFFER,
-        gfx::AccessType::INDEX_BUFFER,
-    };
-    gfx::GlobalBarrier  shader_RAW_transfer{&gfx::AccessTypeV::TRANSFER_WRITE, 1, &accesses[0], COUNTOF(accesses)};
-    gfx::TextureBarrier beforeRender[] = {
-        {&gfx::AccessTypeV::TRANSFER_WRITE, 1, &gfx::AccessTypeV::FRAGMENT_SHADER_READ_TEXTURE, 1, false, _texture},
-    };
-    uint textureBarriers = COUNTOF(beforeRender);
-    if (_particles[0].age) {
-        shader_RAW_transfer.nextAccessCount = 2;
-        textureBarriers                     = 0;
-    }
+void ParticleTest::createPipeline() {
+    gfx::DescriptorSetLayoutInfo dslInfo;
+    dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX});
+    dslInfo.bindings.push_back({1, gfx::DescriptorType::SAMPLER_TEXTURE, 1, gfx::ShaderStageFlagBit::FRAGMENT});
+    _descriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
 
-    lookupTime();
+    _pipelineLayout = _device->createPipelineLayout({{_descriptorSetLayout}});
+
+    _descriptorSet = _device->createDescriptorSet({_descriptorSetLayout});
+
+    _descriptorSet->bindBuffer(0, _uniformBuffer);
+    _descriptorSet->bindSampler(1, _sampler);
+    _descriptorSet->bindTexture(1, _textures[0]);
+    _descriptorSet->update();
+
+    gfx::PipelineStateInfo pipelineInfo;
+    pipelineInfo.primitive                           = gfx::PrimitiveMode::TRIANGLE_LIST;
+    pipelineInfo.shader                              = _shader;
+    pipelineInfo.inputState                          = {_inputAssembler->getAttributes()};
+    pipelineInfo.renderPass                          = _fbo->getRenderPass();
+    pipelineInfo.blendState.targets[0].blend         = true;
+    pipelineInfo.blendState.targets[0].blendEq       = gfx::BlendOp::ADD;
+    pipelineInfo.blendState.targets[0].blendAlphaEq  = gfx::BlendOp::ADD;
+    pipelineInfo.blendState.targets[0].blendSrc      = gfx::BlendFactor::SRC_ALPHA;
+    pipelineInfo.blendState.targets[0].blendDst      = gfx::BlendFactor::ONE_MINUS_SRC_ALPHA;
+    pipelineInfo.blendState.targets[0].blendSrcAlpha = gfx::BlendFactor::ONE;
+    pipelineInfo.blendState.targets[0].blendDstAlpha = gfx::BlendFactor::ONE;
+    pipelineInfo.pipelineLayout                      = _pipelineLayout;
+
+    _pipelineState = _device->createPipelineState(pipelineInfo);
+
+    _globalBarriers.push_back(_device->createGlobalBarrier({
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+        {
+            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
+            gfx::AccessType::VERTEX_BUFFER,
+            gfx::AccessType::INDEX_BUFFER,
+        },
+    }));
+
+    _globalBarriers.push_back(_device->createGlobalBarrier({
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+        {
+            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
+        },
+    }));
+
+    _textureBarriers.push_back(_device->createTextureBarrier({
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+        {
+            gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE,
+        },
+        false,
+    }));
+}
+
+void ParticleTest::onTick() {
+    uint globalBarrierIdx = _frameCount ? 1 : 0;
+    uint textureBarriers  = _frameCount ? 0 : _textureBarriers.size();
 
     gfx::Color clearColor = {0.2f, 0.2f, 0.2f, 1.0f};
 
@@ -429,7 +444,7 @@ void ParticleTest::tick() {
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER)
-        commandBuffer->pipelineBarrier(&shader_RAW_transfer, beforeRender, textureBarriers);
+        commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx], _textureBarriers.data(), _textures.data(), textureBarriers);
 
     commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
     commandBuffer->bindInputAssembler(_inputAssembler);

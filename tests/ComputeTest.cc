@@ -11,7 +11,7 @@ static uint BG_GROUP_SIZE_Y = 8u;
 #define BG_WIDTH  100
 #define BG_HEIGHT 100
 
-void ComputeTest::destroy() {
+void ComputeTest::onDestroy() {
     CC_SAFE_DESTROY(_inputAssembler);
     CC_SAFE_DESTROY(_uniformBufferMVP);
     CC_SAFE_DESTROY(_shader);
@@ -29,7 +29,6 @@ void ComputeTest::destroy() {
     CC_SAFE_DESTROY(_compPipelineLayout);
     CC_SAFE_DESTROY(_compPipelineState);
 
-    CC_SAFE_DESTROY(_compBGImage);
     CC_SAFE_DESTROY(_compBGShader);
     CC_SAFE_DESTROY(_compBGDescriptorSet);
     CC_SAFE_DESTROY(_compBGDescriptorSetLayout);
@@ -37,7 +36,7 @@ void ComputeTest::destroy() {
     CC_SAFE_DESTROY(_compBGPipelineState);
 }
 
-bool ComputeTest::initialize() {
+bool ComputeTest::onInit() {
     createComputeVBPipeline();
     createComputeBGPipeline();
 
@@ -150,14 +149,16 @@ void ComputeTest::createComputeVBPipeline() {
 }
 
 void ComputeTest::createComputeBGPipeline() {
-    _compBGImage = _device->createTexture({
+    _textures.push_back(_device->createTexture({
         gfx::TextureType::TEX2D,
         gfx::TextureUsage::STORAGE | gfx::TextureUsage::TRANSFER_SRC,
         gfx::Format::RGBA8,
         BG_WIDTH,
         BG_HEIGHT,
         gfx::TextureFlagBit::IMMUTABLE,
-    });
+    }));
+
+    _textures.push_back(nullptr);
 
     if (!_device->hasFeature(gfx::Feature::COMPUTE_SHADER)) return;
 
@@ -217,7 +218,7 @@ void ComputeTest::createComputeBGPipeline() {
     _compBGDescriptorSet = _device->createDescriptorSet({_compBGDescriptorSetLayout});
 
     _compBGDescriptorSet->bindBuffer(0, _compConstantsBuffer);
-    _compBGDescriptorSet->bindTexture(1, _compBGImage);
+    _compBGDescriptorSet->bindTexture(1, _textures[0]);
     _compBGDescriptorSet->update();
 
     gfx::PipelineStateInfo pipelineInfo;
@@ -380,35 +381,75 @@ void ComputeTest::createPipeline() {
     depthStencilAttachment.format                       = _device->getDepthStencilFormat();
 
     _renderPassLoad = _device->createRenderPass(renderPassInfo);
+
+    _globalBarriers.push_back(_device->createGlobalBarrier({
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+        {
+            gfx::AccessType::COMPUTE_SHADER_READ_UNIFORM_BUFFER,
+            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
+        },
+    }));
+
+    _globalBarriers.push_back(_device->createGlobalBarrier({
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+        {
+            gfx::AccessType::COMPUTE_SHADER_WRITE,
+        },
+    }));
+
+    _globalBarriers.push_back(_device->createGlobalBarrier({
+        {
+            gfx::AccessType::COMPUTE_SHADER_WRITE,
+        },
+        {
+            gfx::AccessType::TRANSFER_READ,
+            gfx::AccessType::VERTEX_BUFFER,
+        },
+    }));
+
+    _textureBarriers.push_back(_device->createTextureBarrier({
+        {
+            gfx::AccessType::TRANSFER_READ,
+        },
+        {
+            gfx::AccessType::COMPUTE_SHADER_WRITE,
+        },
+        true,
+    }));
+
+    _textureBarriers.push_back(_device->createTextureBarrier({
+        {
+            gfx::AccessType::COMPUTE_SHADER_WRITE,
+        },
+        {
+            gfx::AccessType::TRANSFER_READ,
+        },
+        false,
+    }));
+
+    _textureBarriers.push_back(_device->createTextureBarrier({
+        {
+            gfx::AccessType::PRESENT,
+        },
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+        true,
+    }));
 }
 
-void ComputeTest::tick() {
-    Mat4                MVP;
-    gfx::DispatchInfo   dispatchInfo{(VERTEX_COUNT - 1) / GROUP_SIZE + 1, 1, 1};
-    gfx::DispatchInfo   bgDispatchInfo{(BG_WIDTH - 1) / BG_GROUP_SIZE_X + 1, (BG_HEIGHT - 1) / BG_GROUP_SIZE_Y + 1, 1};
-    gfx::TextureBlit    blit;
-    gfx::TextureBarrier beforeBlit[] = {
-        {&gfx::AccessTypeV::COMPUTE_SHADER_WRITE, 1, &gfx::AccessTypeV::TRANSFER_READ, 1, false, _compBGImage},
-        {&gfx::AccessTypeV::PRESENT, 1, &gfx::AccessTypeV::TRANSFER_WRITE, 1, true, nullptr},
-    };
-    gfx::TextureBarrier beforeCompute = {&gfx::AccessTypeV::TRANSFER_READ, 1, &gfx::AccessTypeV::COMPUTE_SHADER_WRITE, 1, true, _compBGImage};
-    gfx::AccessType     accesses[]    = {
-        gfx::AccessType::COMPUTE_SHADER_READ_UNIFORM_BUFFER,
-        gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-        gfx::AccessType::TRANSFER_READ,
-        gfx::AccessType::VERTEX_BUFFER,
-    };
-    gfx::GlobalBarrier shader_RAW_transfer{&gfx::AccessTypeV::TRANSFER_WRITE, 1, &accesses[0], 2};
-    gfx::GlobalBarrier cs_WAW_transfer{&gfx::AccessTypeV::TRANSFER_WRITE, 1, &gfx::AccessTypeV::COMPUTE_SHADER_WRITE, 1};
-    gfx::GlobalBarrier transfer_VB_RAW_cs{&gfx::AccessTypeV::COMPUTE_SHADER_WRITE, 1, &accesses[2], 2};
-    blit.srcExtent.width  = BG_WIDTH;
-    blit.srcExtent.height = BG_HEIGHT;
+void ComputeTest::onTick() {
+    gfx::DispatchInfo dispatchInfo{(VERTEX_COUNT - 1) / GROUP_SIZE + 1, 1, 1};
+    gfx::DispatchInfo bgDispatchInfo{(BG_WIDTH - 1) / BG_GROUP_SIZE_X + 1, (BG_HEIGHT - 1) / BG_GROUP_SIZE_Y + 1, 1};
 
-    lookupTime();
-
-    _time += hostThread.dt;
     gfx::Color clearColor = {.2f, .2f, .2f, 1.0f};
     Vec4       constants{_time, VERTEX_COUNT, BG_WIDTH, BG_HEIGHT};
+
+    Mat4 MVP;
     TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &MVP);
 
     _device->acquire();
@@ -416,7 +457,11 @@ void ComputeTest::tick() {
     if (_compConstantsBuffer) _compConstantsBuffer->update(&constants, sizeof(constants));
     _uniformBufferMVP->update(MVP.m, sizeof(MVP.m));
 
-    gfx::Rect renderArea  = {0, 0, _device->getWidth(), _device->getHeight()};
+    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
+
+    gfx::TextureBlit blit;
+    blit.srcExtent.width  = BG_WIDTH;
+    blit.srcExtent.height = BG_HEIGHT;
     blit.dstExtent.width  = _device->getWidth();  // BG_WIDTH;
     blit.dstExtent.height = _device->getHeight(); // BG_HEIGHT;
 
@@ -424,10 +469,10 @@ void ComputeTest::tick() {
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER)
-        commandBuffer->pipelineBarrier(&shader_RAW_transfer);
+        commandBuffer->pipelineBarrier(_globalBarriers[0]);
 
     if (_device->hasFeature(gfx::Feature::COMPUTE_SHADER)) {
-        commandBuffer->pipelineBarrier(&cs_WAW_transfer, &beforeCompute, 1);
+        commandBuffer->pipelineBarrier(_globalBarriers[1], _textureBarriers.data(), _textures.data(), 1);
 
         commandBuffer->bindPipelineState(_compPipelineState);
         commandBuffer->bindDescriptorSet(0, _compDescriptorSet);
@@ -437,8 +482,8 @@ void ComputeTest::tick() {
         commandBuffer->bindDescriptorSet(0, _compBGDescriptorSet);
         commandBuffer->dispatch(bgDispatchInfo);
 
-        commandBuffer->pipelineBarrier(&transfer_VB_RAW_cs, beforeBlit, 2);
-        commandBuffer->blitTexture(_compBGImage, nullptr, &blit, 1u, gfx::Filter::POINT);
+        commandBuffer->pipelineBarrier(_globalBarriers[2], &_textureBarriers[1], _textures.data(), 2);
+        commandBuffer->blitTexture(_textures[0], nullptr, &blit, 1u, gfx::Filter::POINT);
     }
 
     commandBuffer->beginRenderPass(_renderPassLoad, _fbo, renderArea, &clearColor, 1.0f, 0);

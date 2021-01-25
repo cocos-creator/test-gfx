@@ -83,7 +83,7 @@ public:
     static void           destroyGlobal();
     static void           toggleMultithread();
     static void           onTouchEnd();
-    static void           onTick();
+    static void           update();
     static unsigned char *RGB2RGBA(Image *img);
     static gfx::Texture * createTextureWithFile(gfx::Device *device, gfx::TextureInfo &textureInfo, std::string imageFile);
     static void           modifyProjectionBasedOnDevice(Mat4 &projection, bool isOffscreen = false);
@@ -118,10 +118,49 @@ public:
     static const uint NANOSECONDS_PER_SECOND;
     static const uint NANOSECONDS_60FPS;
 
-    virtual bool initialize() { return true; }
-    virtual void tick() {}
-    virtual void destroy() {}
-    virtual void resize(uint width, uint height) { _device->resize(width, height); }
+    virtual bool onInit() { return true; }
+    virtual void onTick() {}
+    virtual void onResize(uint width, uint height) {}
+    virtual void onDestroy() {}
+
+    CC_INLINE bool initialize() {
+        return onInit();
+    }
+
+    CC_INLINE void tick() {
+        lookupTime();
+
+        _time += hostThread.dt;
+
+        onTick();
+
+        ++_frameCount;
+    }
+
+    CC_INLINE void resize(uint width, uint height) {
+        onResize(width, height);
+
+        _device->resize(width, height);
+    }
+
+    CC_INLINE void destroy() {
+        onDestroy();
+
+        for (auto texture : _textures) {
+            CC_SAFE_DESTROY(texture);
+        }
+        _textures.clear();
+
+        for (auto textureBarrier : _textureBarriers) {
+            CC_SAFE_DELETE(textureBarrier);
+        }
+        _textureBarriers.clear();
+
+        for (auto globalBarrier : _globalBarriers) {
+            CC_SAFE_DELETE(globalBarrier);
+        }
+        _globalBarriers.clear();
+    }
 
 protected:
     static WindowInfo              _windowInfo;
@@ -135,6 +174,14 @@ protected:
     static std::vector<gfx::CommandBuffer *> _commandBuffers;
 
     static gfx::RenderPass *_renderPass;
+
+    std::vector<gfx::GlobalBarrier *> _globalBarriers;
+
+    std::vector<gfx::Texture *>        _textures;
+    std::vector<gfx::TextureBarrier *> _textureBarriers;
+
+    float _time = 0.f;
+    uint  _frameCount = 0u;
 };
 
 } // namespace cc
