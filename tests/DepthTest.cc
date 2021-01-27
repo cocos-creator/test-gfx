@@ -462,7 +462,7 @@ bool DepthTexture::onInit() {
 
     gfx::DepthStencilAttachment &depthStencilAttachment = renderPassInfo.depthStencilAttachment;
     depthStencilAttachment.format                       = _device->getDepthStencilFormat();
-    depthStencilAttachment.endAccess                    = gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE;
+    depthStencilAttachment.endAccesses                  = {gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE};
 
     _bunnyFBO->renderPass = _device->createRenderPass(renderPassInfo);
 

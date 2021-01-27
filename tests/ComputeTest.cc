@@ -11,6 +11,8 @@ static uint BG_GROUP_SIZE_Y = 8u;
 #define BG_WIDTH  100
 #define BG_HEIGHT 100
 
+#define USE_BLIT_TEXTURE 1
+
 void ComputeTest::onDestroy() {
     CC_SAFE_DESTROY(_inputAssembler);
     CC_SAFE_DESTROY(_uniformBufferMVP);
@@ -372,9 +374,9 @@ void ComputeTest::createPipeline() {
 
     gfx::RenderPassInfo  renderPassInfo;
     gfx::ColorAttachment colorAttachment;
-    colorAttachment.format      = _device->getColorFormat();
-    colorAttachment.loadOp      = gfx::LoadOp::LOAD;
-    colorAttachment.beginAccess = gfx::AccessType::TRANSFER_WRITE;
+    colorAttachment.format        = _device->getColorFormat();
+    colorAttachment.loadOp        = gfx::LoadOp::LOAD;
+    colorAttachment.beginAccesses = {gfx::AccessType::TRANSFER_WRITE};
     renderPassInfo.colorAttachments.emplace_back(colorAttachment);
 
     gfx::DepthStencilAttachment &depthStencilAttachment = renderPassInfo.depthStencilAttachment;
@@ -482,8 +484,10 @@ void ComputeTest::onTick() {
         commandBuffer->bindDescriptorSet(0, _compBGDescriptorSet);
         commandBuffer->dispatch(bgDispatchInfo);
 
+#if USE_BLIT_TEXTURE
         commandBuffer->pipelineBarrier(_globalBarriers[2], &_textureBarriers[1], _textures.data(), 2);
         commandBuffer->blitTexture(_textures[0], nullptr, &blit, 1u, gfx::Filter::POINT);
+#endif
     }
 
     commandBuffer->beginRenderPass(_renderPassLoad, _fbo, renderArea, &clearColor, 1.0f, 0);

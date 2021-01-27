@@ -214,6 +214,7 @@ struct Quad : public cc::Object {
         gfx::SamplerInfo samplerInfo;
         samplerInfo.addressU = gfx::Address::CLAMP;
         samplerInfo.addressV = gfx::Address::CLAMP;
+        samplerInfo.addressW = gfx::Address::CLAMP;
         sampler              = device->createSampler(samplerInfo);
     }
 
