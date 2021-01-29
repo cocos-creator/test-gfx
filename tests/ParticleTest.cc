@@ -1,4 +1,5 @@
 #include "ParticleTest.h"
+#include "base/Random.h"
 
 namespace cc {
 

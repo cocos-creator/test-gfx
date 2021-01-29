@@ -72,7 +72,6 @@ set(CC_BASE_HEADERS
     ${COCOS_SRC_PATH}/base/etc1.h
     ${COCOS_SRC_PATH}/base/etc2.h
     ${COCOS_SRC_PATH}/base/uthash.h
-    ${COCOS_SRC_PATH}/base/utlist.h
     ${COCOS_SRC_PATH}/base/ZipUtils.h
 )
 

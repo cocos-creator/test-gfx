@@ -1,6 +1,8 @@
 #pragma once
 #include "Core.h"
-#include "cocos2d.h"
+#include "platform/Image.h"
+#include "math/Vec4.h"
+#include "math/Mat4.h"
 
 namespace cc {
 typedef struct WindowInfo {

@@ -41,8 +41,10 @@ set(ALL_FILES
     ${CC_MATH_HEADERS}
     ${CC_MATH_SOURCES}
     ${cc_common_res}
-    ${COCOS_SRC_PATH}/cocos2d.h
-    ${COCOS_SRC_PATH}/cocos2d.cpp
+    ${COCOS_SRC_PATH}/platform/Image.h
+    ${COCOS_SRC_PATH}/math/Mat4.h
+    ${COCOS_SRC_PATH}/math/Vec4.h
+    ${COCOS_SRC_PATH}/math/Vec3.h
 )
 
 if(COCOS_UNICODE)
