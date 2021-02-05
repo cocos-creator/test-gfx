@@ -85,6 +85,7 @@ target_link_libraries(${TARGET_NAME}
   TFJobSystem
   TBBJobSystem
   Threading
+  GFXGLESCommon
   GFXGLES2
   GFXGLES3
   GFXVulkan

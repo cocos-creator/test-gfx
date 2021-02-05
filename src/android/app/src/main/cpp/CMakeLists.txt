@@ -109,8 +109,9 @@ target_link_libraries(${APP_NAME}
     Core
     TFJobSystem
     TBBJobSystem
-    GFXGLES3
+    GFXGLESCommon
     GFXGLES2
+    GFXGLES3
     GFXVulkan
     ${CC_EXTERNAL_LIBS}
 )
