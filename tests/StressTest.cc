@@ -5,21 +5,31 @@
 
 namespace cc {
 
-constexpr uint WORKLOAD = 150;
-/* */
+#define USE_PARALLEL_RECORDING  1
+#define TEST_MODE               1
+
+#if TEST_MODE == 1
+constexpr uint WORKLOAD = 200;
 constexpr uint PASS_COUNT = 1;
-constexpr uint MODELS_PER_LINE[PASS_COUNT] = {10};
-/* *
+constexpr uint MODELS_PER_LINE[PASS_COUNT] = {WORKLOAD};
+#elif TEST_MODE == 2
+constexpr uint WORKLOAD = 100;
 constexpr uint PASS_COUNT = 4;
-constexpr uint MODELS_PER_LINE[PASS_COUNT] = {50, 1, 5, 50};
-//constexpr uint MODELS_PER_LINE[PASS_COUNT] = {150, 1, 2, 3};
-//constexpr uint MODELS_PER_LINE[PASS_COUNT] = {WORKLOAD, WORKLOAD, WORKLOAD, WORKLOAD};
+constexpr uint MODELS_PER_LINE[PASS_COUNT] = {WORKLOAD, WORKLOAD, WORKLOAD, WORKLOAD};
+#elif TEST_MODE == 3
+constexpr uint WORKLOAD = 150;
+constexpr uint PASS_COUNT = 4;
+constexpr uint MODELS_PER_LINE[PASS_COUNT] = {WORKLOAD, WORKLOAD, WORKLOAD, WORKLOAD};
+#elif TEST_MODE == 4
+constexpr uint PASS_COUNT = 4;
+constexpr uint MODELS_PER_LINE[PASS_COUNT] = {150, 2, 3, 150};
+#endif
 /* *
 constexpr uint PASS_COUNT = 9;
 constexpr uint MODELS_PER_LINE[PASS_COUNT] = {100, 2, 100, 100, 3, 4, 100, 5, 100};
 //constexpr uint MODELS_PER_LINE[PASS_COUNT] = {WORKLOAD, WORKLOAD, WORKLOAD, WORKLOAD, WORKLOAD, WORKLOAD, WORKLOAD, WORKLOAD, WORKLOAD};
 /* */
-constexpr uint MAIN_THREAD_SLEEP = 15;
+constexpr uint MAIN_THREAD_SLEEP = 10;
 constexpr float QUAD_SIZE = .01f;
 
 const gfx::Color StressTest::clearColors[] = {
@@ -44,7 +54,6 @@ const gfx::Color StressTest::clearColors[] = {
 #define PARALLEL_STRATEGY 5
 
 #define USE_DYNAMIC_UNIFORM_BUFFER 1
-#define USE_PARALLEL_RECORDING     1
 
 uint const taskCount = std::thread::hardware_concurrency() - 1u;
 
