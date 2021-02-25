@@ -82,9 +82,9 @@ target_include_directories(${TARGET_NAME} PUBLIC
 
 target_link_libraries(${TARGET_NAME}
   Core
-  TFJobSystem
-  TBBJobSystem
-  Threading
+  GFXBase
+  GFXAgent
+  FrameGraph
   GFXGLESCommon
   GFXGLES2
   GFXGLES3

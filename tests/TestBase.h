@@ -1,8 +1,10 @@
 #pragma once
-#include "Core.h"
-#include "platform/Image.h"
-#include "math/Vec4.h"
+#include "base/CoreStd.h"
 #include "math/Mat4.h"
+#include "math/Vec4.h"
+#include "platform/Image.h"
+#include "renderer/gfx-base/GFXDef.h"
+#include "renderer/gfx-base/GFXDevice.h"
 
 namespace cc {
 typedef struct WindowInfo {

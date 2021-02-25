@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Core.h"
 #include "tests/TestBase.h"
 #include <Windows.h>
 

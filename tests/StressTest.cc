@@ -1,7 +1,7 @@
 #include "StressTest.h"
-#include "gfx-agent/GFXDeviceAgent.h"
 #include "base/job-system/JobSystem.h"
 #include "base/threading/MessageQueue.h"
+#include "renderer/gfx-agent/GFXDeviceAgent.h"
 
 namespace cc {
 
@@ -58,11 +58,11 @@ const gfx::Color StressTest::clearColors[] = {
 uint const taskCount = std::thread::hardware_concurrency() - 1u;
 
 void HSV2RGB(const float h, const float s, const float v, float &r, float &g, float &b) {
-    int hi = (int)(h / 60.0f) % 6;
-    float f = (h / 60.0f) - hi;
-    float p = v * (1.0f - s);
-    float q = v * (1.0f - s * f);
-    float t = v * (1.0f - s * (1.0f - f));
+    int   hi = (int)(h / 60.0f) % 6;
+    float f  = (h / 60.0f) - hi;
+    float p  = v * (1.0f - s);
+    float q  = v * (1.0f - s * f);
+    float t  = v * (1.0f - s * (1.0f - f));
 
     switch (hi) {
         case 0: r = v, g = t, b = p; break;
@@ -120,23 +120,23 @@ bool StressTest::onInit() {
 
     _threadCount = JobSystem::getInstance()->threadCount() + 1; // main thread counts too
     gfx::CommandBufferInfo info;
-    info.queue = _device->getQueue();
+    info.queue   = _device->getQueue();
     uint cbCount = 0u;
 
 #if PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED_FINER_JOBS_MULTI_PRIMARY
     for (uint i = 1u; i < PASS_COUNT; ++i) {
         _commandBuffers.push_back(_device->createCommandBuffer(info));
     }
-    cbCount = _threadCount * PASS_COUNT;
+    cbCount   = _threadCount * PASS_COUNT;
     info.type = gfx::CommandBufferType::SECONDARY;
 #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED_FINER_JOBS
-    cbCount = _threadCount * PASS_COUNT;
-    info.type = gfx::CommandBufferType::SECONDARY;
+    cbCount                            = _threadCount * PASS_COUNT;
+    info.type                          = gfx::CommandBufferType::SECONDARY;
 #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED
-    cbCount = _threadCount;
+    cbCount   = _threadCount;
     info.type = gfx::CommandBufferType::SECONDARY;
 #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_RP_BASED_SECONDARY
-    cbCount = PASS_COUNT;
+    cbCount   = PASS_COUNT;
     info.type = gfx::CommandBufferType::SECONDARY;
 #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_RP_BASED_PRIMARY
     for (uint i = 1u; i < PASS_COUNT; ++i) {
@@ -222,13 +222,13 @@ void StressTest::createShader() {
     StandardShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
 
     gfx::ShaderStageList shaderStageList;
-    gfx::ShaderStage vertexShaderStage;
-    vertexShaderStage.stage = gfx::ShaderStageFlagBit::VERTEX;
+    gfx::ShaderStage     vertexShaderStage;
+    vertexShaderStage.stage  = gfx::ShaderStageFlagBit::VERTEX;
     vertexShaderStage.source = source.vert;
     shaderStageList.emplace_back(std::move(vertexShaderStage));
 
     gfx::ShaderStage fragmentShaderStage;
-    fragmentShaderStage.stage = gfx::ShaderStageFlagBit::FRAGMENT;
+    fragmentShaderStage.stage  = gfx::ShaderStageFlagBit::FRAGMENT;
     fragmentShaderStage.source = source.frag;
     shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
@@ -239,15 +239,15 @@ void StressTest::createShader() {
     gfx::AttributeList attributeList = {{"a_position", gfx::Format::RG32F, false, 0, false, 0}};
 
     gfx::ShaderInfo shaderInfo;
-    shaderInfo.name = "StressTest";
-    shaderInfo.stages = std::move(shaderStageList);
+    shaderInfo.name       = "StressTest";
+    shaderInfo.stages     = std::move(shaderStageList);
     shaderInfo.attributes = std::move(attributeList);
-    shaderInfo.blocks = std::move(uniformBlockList);
-    _shader = _device->createShader(shaderInfo);
+    shaderInfo.blocks     = std::move(uniformBlockList);
+    _shader               = _device->createShader(shaderInfo);
 }
 
 void StressTest::createVertexBuffer() {
-    float y = 1.f - QUAD_SIZE;
+    float y            = 1.f - QUAD_SIZE;
     float vertexData[] = {-1.f, -y,
                           -1.f, -1.f,
                           -y, -y,
@@ -264,7 +264,7 @@ void StressTest::createVertexBuffer() {
     _vertexBuffer->update(vertexData, sizeof(vertexData));
 
 #if USE_DYNAMIC_UNIFORM_BUFFER
-    _worldBufferStride = TestBaseI::getAlignedUBOStride(_device, sizeof(Vec4));
+    _worldBufferStride                 = TestBaseI::getAlignedUBOStride(_device, sizeof(Vec4));
     gfx::BufferInfo uniformBufferWInfo = {
         gfx::BufferUsage::UNIFORM,
         gfx::MemoryUsage::DEVICE,
@@ -273,11 +273,11 @@ void StressTest::createVertexBuffer() {
     };
     _uniWorldBuffer = _device->createBuffer(uniformBufferWInfo);
 
-    uint stride = _worldBufferStride / sizeof(float);
+    uint          stride = _worldBufferStride / sizeof(float);
     vector<float> buffer(stride * MODELS_PER_LINE[0] * MODELS_PER_LINE[0]);
     for (uint i = 0u, idx = 0u; i < MODELS_PER_LINE[0]; i++) {
         for (uint j = 0u; j < MODELS_PER_LINE[0]; j++, idx++) {
-            buffer[idx * stride] = 2.f * j / MODELS_PER_LINE[0];
+            buffer[idx * stride]     = 2.f * j / MODELS_PER_LINE[0];
             buffer[idx * stride + 1] = 2.f * i / MODELS_PER_LINE[0];
         }
     }
@@ -290,7 +290,7 @@ void StressTest::createVertexBuffer() {
     };
     _uniWorldBufferView = _device->createBuffer(worldBufferViewInfo);
 #else
-    uint size = TestBaseI::getUBOSize(sizeof(Vec4));
+    uint            size               = TestBaseI::getUBOSize(sizeof(Vec4));
     gfx::BufferInfo uniformBufferWInfo = {
         gfx::BufferUsage::UNIFORM,
         gfx::MemoryUsage::DEVICE,
@@ -321,7 +321,7 @@ void StressTest::createVertexBuffer() {
 }
 
 void StressTest::createInputAssembler() {
-    gfx::Attribute position = {"a_position", gfx::Format::RG32F, false, 0, false};
+    gfx::Attribute          position = {"a_position", gfx::Format::RG32F, false, 0, false};
     gfx::InputAssemblerInfo inputAssemblerInfo;
     inputAssemblerInfo.attributes.emplace_back(std::move(position));
     inputAssemblerInfo.vertexBuffers.emplace_back(_vertexBuffer);
@@ -354,19 +354,19 @@ void StressTest::createPipeline() {
 #endif
 
     gfx::PipelineStateInfo pipelineInfo;
-    pipelineInfo.primitive = gfx::PrimitiveMode::TRIANGLE_STRIP;
-    pipelineInfo.shader = _shader;
+    pipelineInfo.primitive                = gfx::PrimitiveMode::TRIANGLE_STRIP;
+    pipelineInfo.shader                   = _shader;
     pipelineInfo.rasterizerState.cullMode = gfx::CullMode::NONE;
-    pipelineInfo.inputState = {_inputAssembler->getAttributes()};
-    pipelineInfo.renderPass = _fbo->getRenderPass();
-    pipelineInfo.pipelineLayout = _pipelineLayout;
+    pipelineInfo.inputState               = {_inputAssembler->getAttributes()};
+    pipelineInfo.renderPass               = _fbo->getRenderPass();
+    pipelineInfo.pipelineLayout           = _pipelineLayout;
 
     _pipelineState = _device->createPipelineState(pipelineInfo);
 }
 
 #if PARALLEL_STRATEGY == PARALLEL_STRATEGY_SEQUENTIAL
 void StressTest::recordRenderPass(uint passIndex) {
-    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
+    gfx::Rect           renderArea    = {0, 0, _device->getWidth(), _device->getHeight()};
     gfx::CommandBuffer *commandBuffer = _commandBuffers[0];
 
     commandBuffer->begin();
@@ -521,8 +521,10 @@ void StressTest::onTick() {
     // simulate heavy logic operation
     std::this_thread::sleep_for(std::chrono::milliseconds(MAIN_THREAD_SLEEP));
 
-    if (!hostThread.timeAcc) hostThread.timeAcc = hostThread.dt;
-    else hostThread.timeAcc = hostThread.timeAcc * 0.95f + hostThread.dt * 0.05f;
+    if (!hostThread.timeAcc)
+        hostThread.timeAcc = hostThread.dt;
+    else
+        hostThread.timeAcc = hostThread.timeAcc * 0.95f + hostThread.dt * 0.05f;
     hostThread.frameAcc++;
 
     if (hostThread.frameAcc % 6 == 0) {
@@ -558,7 +560,7 @@ void StressTest::onTick() {
             jobs[t] = g.createForEachIndexJob(t * _threadCount, (t + 1) * _threadCount, 1u, [this](uint jobIdx) {
                 recordRenderPass(jobIdx);
             });
-            if (t) g.makeEdge(jobs[t-1], jobs[t]);
+            if (t) g.makeEdge(jobs[t - 1], jobs[t]);
         }
         g.run();
         g.waitForAll();
@@ -573,7 +575,7 @@ void StressTest::onTick() {
     for (uint t = 0u; t < PASS_COUNT; ++t) {
         commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea,
                                        &clearColors[t], 1.0f, 0,
-                                       _threadCount, & _parallelCBs[t * _threadCount]);
+                                       _threadCount, &_parallelCBs[t * _threadCount]);
         commandBuffer->execute(&_parallelCBs[t * _threadCount], _threadCount);
         commandBuffer->endRenderPass();
     }
@@ -680,8 +682,10 @@ void StressTest::onTick() {
         DeviceStatistics,
         {
             lookupTime(deviceThread);
-            if (!deviceThread.timeAcc) deviceThread.timeAcc = deviceThread.dt;
-            else deviceThread.timeAcc = deviceThread.timeAcc * 0.95f + deviceThread.dt * 0.05f;
+            if (!deviceThread.timeAcc)
+                deviceThread.timeAcc = deviceThread.dt;
+            else
+                deviceThread.timeAcc = deviceThread.timeAcc * 0.95f + deviceThread.dt * 0.05f;
             deviceThread.frameAcc++;
             if (deviceThread.frameAcc % 6 == 0) {
                 CC_LOG_INFO("Device thread n.%d avg: %.2fms (~%d FPS)", deviceThread.frameAcc, deviceThread.timeAcc * 1000.f, uint(1.f / deviceThread.timeAcc + .5f));

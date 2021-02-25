@@ -223,6 +223,23 @@ set(USE_SE_V8 ON)
 include(${COCOS_EXTERNAL_PATH}/CMakeLists.txt)
 list(REMOVE_ITEM CC_EXTERNAL_LIBS "glfw3")
 
+set(GFX_INCLUDE_FILES
+  ${GFX_EXTERNAL_PATH}/khronos
+  ${GFX_EXTERNAL_PATH}/taskflow
+  ${GFX_EXTERNAL_PATH}/boost
+  ${GFX_EXTERNAL_PATH}/tbb/include
+  ${GFX_EXTERNAL_PATH}/acl/includes
+  ${GFX_EXTERNAL_PATH}/rtm/includes
+  ${GFX_EXTERNAL_PATH}/concurrentqueue
+  ${CC_EXTERNAL_INCLUDES}
+  ${CC_EXTERNAL_PRIVATE_INCLUDES}
+  ${COCOS_2dx_LITE_PATH}
+  ${COCOS_SRC_PATH}
+  ${COCOS_SRC_PATH}/renderer
+)
+
+include_directories(${GFX_INCLUDE_FILES})
+
 add_subdirectory("${COCOS_SRC_PATH}/base" "${PROJECT_BINARY_DIR}/base")
 add_subdirectory("${COCOS_SRC_PATH}/renderer" "${PROJECT_BINARY_DIR}/renderer")
 add_subdirectory(src)

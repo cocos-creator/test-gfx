@@ -1,6 +1,6 @@
 #include "TestBase.h"
 
-#include "gfx-agent/GFXDeviceAgent.h"
+#include "renderer/gfx-agent/GFXDeviceAgent.h"
 
 #include "tests/BasicTextureTest.h"
 #include "tests/BasicTriangleTest.h"
@@ -17,19 +17,19 @@
 //#define USE_GLES2
 
 #if defined(USE_VULKAN)
-    #include "gfx-vulkan/GFXVulkan.h"
+    #include "renderer/gfx-vulkan/GFXVulkan.h"
     #define DeviceCtor gfx::CCVKDevice
 #elif defined(USE_GLES2)
-    #include "gfx-gles2/GFXGLES2.h"
+    #include "renderer/gfx-gles2/GFXGLES2.h"
     #define DeviceCtor gfx::GLES2Device
 #elif defined(USE_GLES3)
-    #include "gfx-gles3/GFXGLES3.h"
+    #include "renderer/gfx-gles3/GFXGLES3.h"
     #define DeviceCtor gfx::GLES3Device
 #elif defined(USE_METAL)
-    #include "gfx-metal/GFXMTL.h"
+    #include "renderer/gfx-metal/GFXMTL.h"
     #define DeviceCtor gfx::CCMTLDevice
 #else
-    #include "gfx-vulkan/GFXVulkan.h"
+    #include "renderer/gfx-vulkan/GFXVulkan.h"
     #define DeviceCtor gfx::CCVKDevice
 #endif
 

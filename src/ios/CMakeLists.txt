@@ -117,9 +117,9 @@ endif()
 target_link_libraries(${APP_NAME}
     ${PLATFORM_SPECIFIC_LIBS}
     Core
-    TFJobSystem
-    TBBJobSystem
-    Threading
+    GFXBase
+    GFXAgent
+    FrameGraph
     ${GRAPHIC_LIBS}
     ${CC_EXTERNAL_LIBS}
     z

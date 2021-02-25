@@ -107,8 +107,9 @@ target_link_libraries(${APP_NAME}
     GLESv3
     log
     Core
-    TFJobSystem
-    TBBJobSystem
+    GFXBase
+    GFXAgent
+    FrameGraph
     GFXGLESCommon
     GFXGLES2
     GFXGLES3

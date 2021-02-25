@@ -80,8 +80,9 @@ list(APPEND PLATFORM_SPECIFIC_LIBS
 target_link_libraries(${APP_NAME}
     ${PLATFORM_SPECIFIC_LIBS}
     Core
-    TFJobSystem
-    TBBJobSystem
+    GFXBase
+    GFXAgent
+    FrameGraph
     GFXGLESCommon
     GFXGLES2
     GFXGLES3
