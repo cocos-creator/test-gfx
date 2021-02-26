@@ -240,6 +240,6 @@ set(GFX_INCLUDE_FILES
 
 include_directories(${GFX_INCLUDE_FILES})
 
-add_subdirectory("${COCOS_SRC_PATH}/base" "${PROJECT_BINARY_DIR}/base")
-add_subdirectory("${COCOS_SRC_PATH}/renderer" "${PROJECT_BINARY_DIR}/renderer")
+add_subdirectory(engine/base)
+add_subdirectory(engine/renderer)
 add_subdirectory(src)
