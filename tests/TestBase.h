@@ -5,8 +5,10 @@
 #include "platform/Image.h"
 #include "renderer/gfx-base/GFXDef.h"
 #include "renderer/gfx-base/GFXDevice.h"
+#include "renderer/frame-graph/FrameGraph.h"
 
 namespace cc {
+
 typedef struct WindowInfo {
     intptr_t  windowHandle;
     gfx::Rect screen;

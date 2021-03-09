@@ -30,6 +30,7 @@ void BasicTexture::createShader() {
         R"(
             precision highp float;
             layout(location = 0) in vec2 a_position;
+            layout(location = 1) in vec2 a_texCoord;
             layout(location = 0) out vec2 texcoord;
             layout(set = 0, binding = 0) uniform MVP_Matrix
             {
@@ -39,8 +40,7 @@ void BasicTexture::createShader() {
             void main()
             {
                 gl_Position = u_mvpMatrix * vec4(a_position, 0, 1);
-                texcoord = a_position * 0.5 + 0.5;
-                texcoord = vec2(texcoord.x, 1.0 - texcoord.y);
+                texcoord = a_texCoord;
             }
         )",
         R"(
@@ -49,7 +49,7 @@ void BasicTexture::createShader() {
             layout(binding = 1) uniform sampler2D u_texture[2];
             layout(location = 0) out vec4 o_color;
             void main () {
-                const int idx = texcoord.x > 0.5 ? 1 : 0; // 1;
+                const int idx = 1;
                 o_color = texture(u_texture[idx], texcoord);
             }
         )",
@@ -59,6 +59,7 @@ void BasicTexture::createShader() {
         R"(
             precision highp float;
             in vec2 a_position;
+            in vec2 a_texCoord;
             out vec2 texcoord;
             layout(std140) uniform MVP_Matrix
             {
@@ -68,8 +69,7 @@ void BasicTexture::createShader() {
             void main()
             {
                 gl_Position = u_mvpMatrix * vec4(a_position, 0, 1);
-                texcoord = a_position * 0.5 + 0.5;
-                texcoord = vec2(texcoord.x, 1.0 - texcoord.y);
+                texcoord = a_texCoord;
             }
         )",
         R"(
@@ -88,13 +88,13 @@ void BasicTexture::createShader() {
         R"(
             precision highp float;
             attribute vec2 a_position;
+            attribute vec2 a_texCoord;
             uniform mat4 u_mvpMatrix;
             varying vec2 texcoord;
             void main ()
             {
                 gl_Position = u_mvpMatrix * vec4(a_position, 0, 1);
-                texcoord = a_position * 0.5 + 0.5;
-                texcoord = vec2(texcoord.x, 1.0 - texcoord.y);
+                texcoord = a_texCoord;
             }
         )",
         R"(
@@ -121,7 +121,10 @@ void BasicTexture::createShader() {
     fragmentShaderStage.source = source.frag;
     shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
-    gfx::AttributeList             attributeList    = {{"a_position", gfx::Format::RG32F, false, 0, false, 0}};
+    gfx::AttributeList             attributeList    = {
+        {"a_position", gfx::Format::RG32F, false, 0, false, 0},
+        {"a_texCoord", gfx::Format::RG32F, false, 0, false, 1},
+    };
     gfx::UniformList               mvpMatrix        = {{"u_mvpMatrix", gfx::Type::MAT4, 1}};
     gfx::UniformBlockList          uniformBlockList = {{0, 0, "MVP_Matrix", mvpMatrix, 1}};
     gfx::UniformSamplerTextureList sampler          = {{0, 1, "u_texture", gfx::Type::SAMPLER2D, 2}};
@@ -136,19 +139,19 @@ void BasicTexture::createShader() {
 }
 
 void BasicTexture::createVertexBuffer() {
-    float vertexData[] = {-1.0f, -1.0f,
-                          1.0f, -1.0f,
-                          1.0f, 1.0f,
+    float vertexData[] = {-.7f, -.2f, 0.f, 0.f,
+                          .1f, -.2f, 1.f, 0.f,
+                          .1f, .6f, 1.f, 1.f,
 
-                          1.0f, 1.0f,
-                          -1.0f, 1.0f,
-                          -1.0f, -1.0f};
+                          .1f, .6f, 1.f, 1.f,
+                          -.7f, .6f, 0.f, 1.f,
+                          -.7f, -.2f, 0.f, 0.f};
 
     _vertexBuffer = _device->createBuffer({
         gfx::BufferUsage::VERTEX,
         gfx::MemoryUsage::DEVICE,
         sizeof(vertexData),
-        2 * sizeof(float),
+        4 * sizeof(float),
     });
     _vertexBuffer->update(vertexData, sizeof(vertexData));
 
@@ -161,9 +164,9 @@ void BasicTexture::createVertexBuffer() {
 }
 
 void BasicTexture::createInputAssembler() {
-    gfx::Attribute          position = {"a_position", gfx::Format::RG32F, false, 0, false};
     gfx::InputAssemblerInfo inputAssemblerInfo;
-    inputAssemblerInfo.attributes.emplace_back(std::move(position));
+    inputAssemblerInfo.attributes.emplace_back(gfx::Attribute{"a_position", gfx::Format::RG32F, false, 0, false});
+    inputAssemblerInfo.attributes.emplace_back(gfx::Attribute{"a_texCoord", gfx::Format::RG32F, false, 0, false});
     inputAssemblerInfo.vertexBuffers.emplace_back(_vertexBuffer);
     _inputAssembler = _device->createInputAssembler(inputAssemblerInfo);
 }

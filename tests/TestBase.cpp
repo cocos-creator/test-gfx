@@ -9,6 +9,7 @@
 #include "tests/ClearScreenTest.h"
 #include "tests/ComputeTest.h"
 #include "tests/DepthTest.h"
+#include "tests/FrameGraphTest.h"
 #include "tests/ParticleTest.h"
 #include "tests/StencilTest.h"
 #include "tests/StressTest.h"
@@ -34,7 +35,7 @@
 #endif
 
 #define DEFAULT_MATRIX_MATH
-#define MULTITHREAD 1
+#define MULTITHREAD 0
 
 namespace cc {
 
@@ -54,6 +55,7 @@ std::vector<TestBaseI::createFunc> TestBaseI::_tests = {
 #if CC_PLATFORM != CC_PLATFORM_MAC_IOS && CC_PLATFORM != CC_PLATFORM_MAC_OSX
 //    ComputeTest::create,
 #endif // CC_PLATFORM != CC_PLATFORM_MAC_IOS && CC_PLATFORM != CC_PLATFORM_MAC_OSX
+//    FrameGraphTest::create,
     StressTest::create,
 //    ClearScreen::create,
 //    BasicTriangle::create,
@@ -86,7 +88,7 @@ TestBaseI::TestBaseI(const WindowInfo &info) {
         dev_info.nativeWidth  = info.physicalWidth;
         dev_info.nativeHeight = info.physicalHeight;
         _device->initialize(dev_info);
-        
+
 #if MULTITHREAD
         ((gfx::DeviceAgent *)_device)->setMultithreaded(true);
 #else
@@ -234,27 +236,27 @@ void TestBaseI::createOrthographic(float left, float right, float bottom, float 
     Mat4::createOrthographic(left, right, bottom, top, ZNear, ZFar, dst);
     TestBaseI::modifyProjectionBasedOnDevice(*dst, isOffscreen);
 #else
-    float                 minZ         = _device->getCapabilities().clipSpaceMinZ;
-    float                 signY        = _device->getCapabilities().screenSpaceSignY * (isOffscreen ? _device->getCapabilities().UVSpaceSignY : 1);
-    gfx::SurfaceTransform orientation  = _device->getSurfaceTransform();
-    const float *         preTransform = preTransforms[(uint)orientation];
+    float minZ = _device->getCapabilities().clipSpaceMinZ;
+    float signY = _device->getCapabilities().screenSpaceSignY * (isOffscreen ? _device->getCapabilities().UVSpaceSignY : 1);
+    gfx::SurfaceTransform orientation = _device->getSurfaceTransform();
+    const float *preTransform = preTransforms[(uint)orientation];
 
     memset(dst, 0, MATRIX_SIZE);
 
-    float x  = 2.f / (right - left);
-    float y  = 2.f / (top - bottom) * signY;
+    float x = 2.f / (right - left);
+    float y = 2.f / (top - bottom) * signY;
     float dx = (left + right) / (left - right);
     float dy = (bottom + top) / (bottom - top) * signY;
 
-    dst->m[0]                          = x * preTransform[0];
-    dst->m[1]                          = x * preTransform[1];
-    dst->m[4]                          = y * preTransform[2];
-    dst->m[5]                          = y * preTransform[3];
-    dst->m[10]                         = (1.0f - minZ) / (ZNear - ZFar);
-    dst->m[12]                         = dx * preTransform[0] + dy * preTransform[2];
-    dst->m[13]                         = dx * preTransform[1] + dy * preTransform[3];
-    dst->m[14]                         = (ZNear - minZ * ZFar) / (ZNear - ZFar);
-    dst->m[15]                         = 1.0f;
+    dst->m[0] = x * preTransform[0];
+    dst->m[1] = x * preTransform[1];
+    dst->m[4] = y * preTransform[2];
+    dst->m[5] = y * preTransform[3];
+    dst->m[10] = (1.0f - minZ) / (ZNear - ZFar);
+    dst->m[12] = dx * preTransform[0] + dy * preTransform[2];
+    dst->m[13] = dx * preTransform[1] + dy * preTransform[3];
+    dst->m[14] = (ZNear - minZ * ZFar) / (ZNear - ZFar);
+    dst->m[15] = 1.0f;
 #endif
 }
 
@@ -263,23 +265,23 @@ void TestBaseI::createPerspective(float fov, float aspect, float zNear, float ZF
     Mat4::createPerspective(MATH_DEG_TO_RAD(fov), aspect, zNear, ZFar, dst);
     TestBaseI::modifyProjectionBasedOnDevice(*dst, isOffscreen);
 #else
-    float                 minZ         = _device->getCapabilities().clipSpaceMinZ;
-    float                 signY        = _device->getCapabilities().screenSpaceSignY * (isOffscreen ? _device->getCapabilities().UVSpaceSignY : 1);
-    gfx::SurfaceTransform orientation  = _device->getSurfaceTransform();
-    const float *         preTransform = preTransforms[(uint)orientation];
+    float minZ = _device->getCapabilities().clipSpaceMinZ;
+    float signY = _device->getCapabilities().screenSpaceSignY * (isOffscreen ? _device->getCapabilities().UVSpaceSignY : 1);
+    gfx::SurfaceTransform orientation = _device->getSurfaceTransform();
+    const float *preTransform = preTransforms[(uint)orientation];
 
     memset(dst, 0, MATRIX_SIZE);
 
-    float f  = 1.0f / std::tan(MATH_DEG_TO_RAD(fov * 0.5f));
+    float f = 1.0f / std::tan(MATH_DEG_TO_RAD(fov * 0.5f));
     float nf = 1.0f / (zNear - ZFar);
 
     float x = f / aspect;
     float y = f * signY;
 
-    dst->m[0]  = x * preTransform[0];
-    dst->m[1]  = x * preTransform[1];
-    dst->m[4]  = y * preTransform[2];
-    dst->m[5]  = y * preTransform[3];
+    dst->m[0] = x * preTransform[0];
+    dst->m[1] = x * preTransform[1];
+    dst->m[4] = y * preTransform[2];
+    dst->m[5] = y * preTransform[3];
     dst->m[10] = (ZFar - minZ * zNear) * nf;
     dst->m[11] = -1.0f;
     dst->m[14] = ZFar * zNear * nf * (1.0f - minZ);

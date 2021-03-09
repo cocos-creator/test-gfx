@@ -171,7 +171,7 @@ struct BigTriangle : public cc::Object {
             TestBaseI::getUBOSize(2 * sizeof(float)),
         });
 
-        float uboData[] = {0.1f, 100.0f};
+        float uboData[] = {1.f, 100.0f};
         nearFarUniformBuffer->update(uboData, sizeof(uboData));
     }
 
@@ -517,7 +517,7 @@ void DepthTexture::onTick() {
     _up.set(0, 1.f, 0);
     Mat4::createLookAt(_eye, _center, _up, &_bunnyMatrices[1]);
     gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize();
-    TestBaseI::createPerspective(45.f, 1.0f * orientedSize.width / orientedSize.height, 0.1f, 100.f, &_bunnyMatrices[2], true);
+    TestBaseI::createPerspective(45.f, 1.0f * orientedSize.width / orientedSize.height, 1.f, 100.f, &_bunnyMatrices[2], true);
 
     gfx::Color clearColor = {1.0, 0, 0, 1.0f};
 
