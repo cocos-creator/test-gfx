@@ -49,7 +49,7 @@ void BasicTexture::createShader() {
             layout(binding = 1) uniform sampler2D u_texture[2];
             layout(location = 0) out vec4 o_color;
             void main () {
-                const int idx = 1;
+                const int idx = texcoord.x > 0.5 ? 1 : 0; // 1;
                 o_color = texture(u_texture[idx], texcoord);
             }
         )",
@@ -121,7 +121,7 @@ void BasicTexture::createShader() {
     fragmentShaderStage.source = source.frag;
     shaderStageList.emplace_back(std::move(fragmentShaderStage));
 
-    gfx::AttributeList             attributeList    = {
+    gfx::AttributeList attributeList = {
         {"a_position", gfx::Format::RG32F, false, 0, false, 0},
         {"a_texCoord", gfx::Format::RG32F, false, 0, false, 1},
     };
@@ -139,13 +139,15 @@ void BasicTexture::createShader() {
 }
 
 void BasicTexture::createVertexBuffer() {
-    float vertexData[] = {-.7f, -.2f, 0.f, 0.f,
-                          .1f, -.2f, 1.f, 0.f,
-                          .1f, .6f, 1.f, 1.f,
+    //float left = -.7f, bottom = -.2f, right = .1f, top = .6f;
+    float left = -1.f, bottom = -1.f, right = 1.f, top = 1.f;
+    float vertexData[] = {left, bottom, 0.f, 1.f,
+                          right, bottom, 1.f, 1.f,
+                          right, top, 1.f, 0.f,
 
-                          .1f, .6f, 1.f, 1.f,
-                          -.7f, .6f, 0.f, 1.f,
-                          -.7f, -.2f, 0.f, 0.f};
+                          right, top, 1.f, 0.f,
+                          left, top, 0.f, 0.f,
+                          left, bottom, 0.f, 1.f};
 
     _vertexBuffer = _device->createBuffer({
         gfx::BufferUsage::VERTEX,

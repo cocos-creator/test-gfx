@@ -323,22 +323,19 @@ void FrameGraphTest::onTick() {
 
             data.depthStencilTex = builder.write(data.depthStencilTex, depthStencilAttachmentInfo);
             builder.writeToBlackboard(depthStencilTexName, data.depthStencilTex);
-        };
-    };
 
-    auto drawExecFactory = [=](uint second) {
-        return [=](DrawData const &data, const framegraph::DevicePassResourceTable &table) {
             int           xOff = second * _device->getWidth() / 2;
             gfx::Viewport vp   = {xOff, 0, _device->getWidth() / 2, _device->getHeight(), 0, 1};
             gfx::Rect     rect = {xOff, 0, _device->getWidth() / 2, _device->getHeight()};
-            commandBuffer->setViewport(vp);
-            commandBuffer->setScissor(rect);
-
-            commandBuffer->bindInputAssembler(_inputAssembler);
-            commandBuffer->bindPipelineState(_pipelineState);
-            commandBuffer->bindDescriptorSet(0, _descriptorSet);
-            commandBuffer->draw(_inputAssembler);
+            builder.setViewport(vp, rect);
         };
+    };
+
+    auto drawExecFactory = [=](DrawData const &data, const framegraph::DevicePassResourceTable &table) {
+        commandBuffer->bindInputAssembler(_inputAssembler);
+        commandBuffer->bindPipelineState(_pipelineState);
+        commandBuffer->bindDescriptorSet(0, _descriptorSet);
+        commandBuffer->draw(_inputAssembler);
     };
 
     static framegraph::StringHandle blitName                   = framegraph::FrameGraph::stringToHandle("Blit");
@@ -378,8 +375,8 @@ void FrameGraphTest::onTick() {
     fg.getBlackboard().put(backBufferName, fg.importExternal(backBufferName, _backBuffer));
     fg.getBlackboard().put(depthStencilBackBufferName, fg.importExternal(depthStencilBackBufferName, _depthStencilBackBuffer));
 
-    fg.addPass<DrawData>(100, leftName, drawSetupFactory(0), drawExecFactory(0));
-    fg.addPass<DrawData>(200, rightName, drawSetupFactory(1), drawExecFactory(1));
+    fg.addPass<DrawData>(100, leftName, drawSetupFactory(0), drawExecFactory);
+    fg.addPass<DrawData>(200, rightName, drawSetupFactory(1), drawExecFactory);
     fg.addPass<BlitData>(300, blitName, blitSetup, blitExec);
 
     fg.presentFromBlackboard(backBufferName);
