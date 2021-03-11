@@ -131,10 +131,21 @@ set(APP_UI_RES
     "${GAME_RES_FOLDER}/stencil.jpg"
     "${GAME_RES_FOLDER}/background.png"
     "${GAME_RES_FOLDER}/sprite0.png"
+    "${GAME_RES_FOLDER}/main.js"
 )
 
 # add test cases
+set(USE_SE_V8 ON)
+set(USE_V8_DEBUGGER ON)
 include(${PROJECT_SOURCE_DIR}/tests/CMakeLists.txt)
+
+set(ENGINE_BASE_LIBS
+    Core
+    GFXBase
+    GFXAgent
+    FrameGraph
+    ScriptEngine
+)
 
 if(WIN32)
     add_definitions("-DCC_STATIC")

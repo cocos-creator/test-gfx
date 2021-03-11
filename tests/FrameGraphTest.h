@@ -21,8 +21,6 @@ private:
     void createPipeline();
     void createInputAssembler();
 
-    void setupPasses();
-
     gfx::Shader *             _shader              = nullptr;
     gfx::Buffer *             _vertexBuffer        = nullptr;
     gfx::Buffer *             _uniformBuffer       = nullptr;

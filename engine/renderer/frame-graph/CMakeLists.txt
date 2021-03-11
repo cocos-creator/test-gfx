@@ -30,7 +30,7 @@ else()
 	add_library(${TARGET_NAME} SHARED ${HEADER_FILES} ${ALL_FILES})
 endif()
 
-target_link_libraries(${TARGET_NAME})
+target_link_libraries(${TARGET_NAME} GFXBase)
 
 set_target_properties(${TARGET_NAME} PROPERTIES OUTPUT_NAME CCFrameGraph)
 set_target_properties(${TARGET_NAME} PROPERTIES OUTPUT_NAME_DEBUG CCFrameGraph_d)

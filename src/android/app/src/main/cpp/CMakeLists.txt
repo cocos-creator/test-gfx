@@ -52,24 +52,22 @@ include_directories( ${INCLUDE_FILES} )
 # ---------------------------------------------------------------------
 
 set(ALL_FILES
-        ${GFX_TESTCASE_HEADER}
-        ${GFX_TESTCASE_SOURCE}
-        ${CC_PLATFORM_SOURCES}
-        ${CC_BASE_HEADERS}
-        ${CC_BASE_SOURCES}
-        ${CC_MATH_HEADERS}
-        ${CC_MATH_SOURCES}
-        ${CC_EXTERNAL_SROUCES}
-        ${COCOS_SRC_PATH}/platform/Image.h
-        ${COCOS_SRC_PATH}/math/Mat4.h
-        ${COCOS_SRC_PATH}/math/Vec4.h
-        ${COCOS_SRC_PATH}/math/Vec3.h
-        main.cpp
-        JniImp.cpp
-        JniImp.h
-        EventDispatcher.cpp
-        EventDispatcher.h
-        )
+    ${GFX_TESTCASE_HEADER}
+    ${GFX_TESTCASE_SOURCE}
+    ${CC_PLATFORM_SOURCES}
+    ${CC_BASE_HEADERS}
+    ${CC_BASE_SOURCES}
+    ${CC_MATH_HEADERS}
+    ${CC_MATH_SOURCES}
+    ${CC_EXTERNAL_SROUCES}
+    ${COCOS_SRC_PATH}/platform/Image.h
+    ${COCOS_SRC_PATH}/math/Mat4.h
+    ${COCOS_SRC_PATH}/math/Vec4.h
+    ${COCOS_SRC_PATH}/math/Vec3.h
+    main.cpp
+    JniImp.cpp
+    JniImp.h
+)
 
 if(COCOS_UNICODE)
     add_definitions("-DUNICODE -D_UNICODE")
@@ -106,10 +104,7 @@ target_link_libraries(${APP_NAME}
     GLESv2
     GLESv3
     log
-    Core
-    GFXBase
-    GFXAgent
-    FrameGraph
+    ${ENGINE_BASE_LIBS}
     GFXGLESCommon
     GFXGLES2
     GFXGLES3

@@ -80,11 +80,12 @@ target_include_directories(${TARGET_NAME} PUBLIC
     ${COCOS_SRC_PATH}/platform
 )
 
+list(APPEND CC_EXTERNAL_LIBS
+  ws2_32 userenv psapi winmm Version Iphlpapi opengl32
+)
+
 target_link_libraries(${TARGET_NAME}
-  Core
-  GFXBase
-  GFXAgent
-  FrameGraph
+  ${ENGINE_BASE_LIBS}
   GFXGLESCommon
   GFXGLES2
   GFXGLES3
@@ -99,6 +100,22 @@ if(LINUX OR WINDOWS)
     cocos_copy_target_res(${TARGET_NAME} LINK_TO "${COCOS_BUILD_PATH}/${CMAKE_CFG_INTDIR}/Resources" FOLDERS ${GAME_RES_FOLDER})
 endif()
 
+if(MSVC)
+    file(GLOB_RECURSE WIN32_DLLS
+        ${COCOS_EXTERNAL_PATH}/win32/libs/*.dll
+        ${COCOS_EXTERNAL_PATH}/win32/libs/Debug/*.dll
+    )
+
+    foreach(item ${WIN32_DLLS})
+        get_filename_component(filename ${item} NAME)
+        get_filename_component(abs ${item} ABSOLUTE)
+        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${abs} $<TARGET_FILE_DIR:${TARGET_NAME}>/${filename}
+        )
+    endforeach()
+    target_link_options(${TARGET_NAME} PRIVATE /SUBSYSTEM:WINDOWS)
+endif()
+
 source_group(TREE ${COCOS_SRC_PATH}/platform PREFIX "Header Files/platform" FILES ${CC_PLATFORM_SOURCES})
 source_group(TREE ${COCOS_SRC_PATH}/base PREFIX "Header Files/base" FILES ${CC_BASE_HEADERS})
 source_group(TREE ${COCOS_SRC_PATH}/base PREFIX "Source Files/base" FILES ${CC_BASE_SOURCES})
@@ -107,5 +124,5 @@ source_group(TREE ${COCOS_SRC_PATH}/math PREFIX "Source Files/math" FILES ${CC_M
 source_group(TREE ${COCOS_EXTERNAL_PATH}/sources PREFIX "Header Files/external" FILES ${CC_EXTERNAL_SROUCES})
 
 message(STATUS "${TARGET_NAME} configuration completed.")
-set_property(TARGET ${APP_NAME} PROPERTY CXX_STANDARD 17)
-set_property(TARGET ${APP_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 17)
+set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD_REQUIRED ON)

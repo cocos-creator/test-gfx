@@ -116,10 +116,7 @@ endif()
 
 target_link_libraries(${APP_NAME}
     ${PLATFORM_SPECIFIC_LIBS}
-    Core
-    GFXBase
-    GFXAgent
-    FrameGraph
+    ${ENGINE_BASE_LIBS}
     ${GRAPHIC_LIBS}
     ${CC_EXTERNAL_LIBS}
     z

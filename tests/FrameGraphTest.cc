@@ -20,7 +20,6 @@ bool FrameGraphTest::onInit() {
     createVertexBuffer();
     createInputAssembler();
     createPipeline();
-    setupPasses();
 
     return true;
 }
@@ -233,10 +232,6 @@ void FrameGraphTest::createPipeline() {
     }));
 }
 
-void FrameGraphTest::setupPasses() {
-    fg.enableMerge(true);
-}
-
 void FrameGraphTest::onTick() {
     uint globalBarrierIdx = _frameCount ? 1 : 0;
 
@@ -365,7 +360,7 @@ void FrameGraphTest::onTick() {
         region.srcExtent.height = _device->getHeight();
         region.dstExtent.width  = _device->getWidth();
         region.dstExtent.height = _device->getHeight();
-        commandBuffer->blitTexture(input, nullptr, &region, 1, gfx::Filter::LINEAR);
+        commandBuffer->blitTexture(input, nullptr, &region, 1, gfx::Filter::POINT);
 
         commandBuffer->pipelineBarrier(nullptr, &_textureBarriers[1], &output, 1);
     };
@@ -383,7 +378,7 @@ void FrameGraphTest::onTick() {
 
     fg.compile();
 
-    fg.exportGraphViz("fg_vis.dot");
+    //fg.exportGraphViz("fg_vis.dot");
 
     fg.execute();
 

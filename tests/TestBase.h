@@ -3,9 +3,9 @@
 #include "math/Mat4.h"
 #include "math/Vec4.h"
 #include "platform/Image.h"
+#include "renderer/frame-graph/FrameGraph.h"
 #include "renderer/gfx-base/GFXDef.h"
 #include "renderer/gfx-base/GFXDevice.h"
-#include "renderer/frame-graph/FrameGraph.h"
 
 namespace cc {
 
@@ -85,11 +85,15 @@ public:
     }
     static void setWindowInfo(const WindowInfo &info) { _windowInfo = info; }
 
-    static void                 nextTest(bool backward = false);
-    static void                 destroyGlobal();
-    static void                 toggleMultithread();
-    static void                 onTouchEnd();
-    static void                 update();
+    static void nextTest(bool backward = false);
+    static void destroyGlobal();
+    static void toggleMultithread();
+    static void onTouchEnd();
+    static void update();
+
+    static void                 evalString(std::string code);
+    static void                 runScript(std::string file);
+    static void                 tickScript();
     static unsigned char *      RGB2RGBA(Image *img);
     static gfx::Texture *       createTextureWithFile(gfx::Device *device, gfx::TextureInfo &textureInfo, std::string imageFile);
     static void                 modifyProjectionBasedOnDevice(Mat4 &projection, bool isOffscreen = false);

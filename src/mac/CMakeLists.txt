@@ -95,10 +95,10 @@ find_library(METAL_LIBRARY Metal)
 find_library(METALKIT_LIBRARY MetalKit)
 find_library(QUARTZCORE_LIBRARY QuartzCore)
 list(APPEND PLATFORM_SPECIFIC_LIBS
-     ${APPKIT_LIBRARY}
-     ${METAL_LIBRARY}
-     ${METALKIT_LIBRARY}
-     ${QUARTZCORE_LIBRARY}
+    ${APPKIT_LIBRARY}
+    ${METAL_LIBRARY}
+    ${METALKIT_LIBRARY}
+    ${QUARTZCORE_LIBRARY}
 )
 
 if (NOT USE_METAL)
@@ -110,10 +110,7 @@ endif()
 
 target_link_libraries(${APP_NAME}
     ${PLATFORM_SPECIFIC_LIBS}
-    Core
-    GFXBase
-    GFXAgent
-    FrameGraph
+    ${ENGINE_BASE_LIBS}
     ${GFX_LIB}
     ${CC_EXTERNAL_LIBS}
     z

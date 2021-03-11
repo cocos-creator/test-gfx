@@ -79,10 +79,7 @@ list(APPEND PLATFORM_SPECIFIC_LIBS
 
 target_link_libraries(${APP_NAME}
     ${PLATFORM_SPECIFIC_LIBS}
-    Core
-    GFXBase
-    GFXAgent
-    FrameGraph
+    ${ENGINE_BASE_LIBS}
     GFXGLESCommon
     GFXGLES2
     GFXGLES3

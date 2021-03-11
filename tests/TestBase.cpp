@@ -11,8 +11,19 @@
 #include "tests/DepthTest.h"
 #include "tests/FrameGraphTest.h"
 #include "tests/ParticleTest.h"
+#include "tests/ScriptTest.h"
 #include "tests/StencilTest.h"
 #include "tests/StressTest.h"
+
+#include "cocos/base/AutoreleasePool.h"
+#include "cocos/bindings/auto/jsb_gfx_auto.h"
+#include "cocos/bindings/dop/jsb_dop.h"
+#include "cocos/bindings/event/CustomEventTypes.h"
+#include "cocos/bindings/event/EventDispatcher.h"
+#include "cocos/bindings/jswrapper/SeApi.h"
+#include "cocos/bindings/manual/jsb_classtype.h"
+#include "cocos/bindings/manual/jsb_gfx_manual.h"
+#include "cocos/bindings/manual/jsb_global_init.h"
 
 //#define USE_GLES3
 //#define USE_GLES2
@@ -55,7 +66,8 @@ std::vector<TestBaseI::createFunc> TestBaseI::_tests = {
 #if CC_PLATFORM != CC_PLATFORM_MAC_IOS && CC_PLATFORM != CC_PLATFORM_MAC_OSX
 //    ComputeTest::create,
 #endif // CC_PLATFORM != CC_PLATFORM_MAC_IOS && CC_PLATFORM != CC_PLATFORM_MAC_OSX
-    FrameGraphTest::create,
+    ScriptTest::create,
+//    FrameGraphTest::create,
 //    StressTest::create,
 //    ClearScreen::create,
 //    BasicTriangle::create,
@@ -78,6 +90,43 @@ std::unordered_map<uint, gfx::TextureBarrier *> TestBaseI::_textureBarrierMap;
 
 TestBaseI::TestBaseI(const WindowInfo &info) {
     if (!_device) {
+        EventDispatcher::init();
+
+        se::ScriptEngine *se = se::ScriptEngine::getInstance();
+
+        jsb_set_xxtea_key("");
+        jsb_init_file_operation_delegate();
+
+#if defined(CC_DEBUG) && (CC_DEBUG > 0)
+        // Enable debugger here
+        jsb_enable_debugger("0.0.0.0", 6086, false);
+#endif
+
+        se->setExceptionCallback([](const char *location, const char *message, const char *stack) {
+            // Send exception information to server like Tencent Bugly.
+            CC_LOG_ERROR("\nUncaught Exception:\n - location :  %s\n - msg : %s\n - detail : \n      %s\n", location, message, stack);
+        });
+
+        se->addBeforeInitHook([]() {
+            JSBClassType::init();
+        });
+
+        se->addBeforeCleanupHook([se]() {
+            se->garbageCollect();
+            PoolManager::getInstance()->getCurrentPool()->clear();
+            se->garbageCollect();
+            PoolManager::getInstance()->getCurrentPool()->clear();
+        });
+
+        se->addAfterCleanupHook([]() {
+            PoolManager::getInstance()->getCurrentPool()->clear();
+            JSBClassType::destroy();
+        });
+
+        se->addRegisterCallback(register_all_dop_bindings);
+
+        se->start();
+
         _device = CC_NEW(DeviceCtor);
         _device = CC_NEW(gfx::DeviceAgent(_device));
 
@@ -121,6 +170,11 @@ TestBaseI::TestBaseI(const WindowInfo &info) {
 
     hostThread.prevTime   = std::chrono::steady_clock::now();
     deviceThread.prevTime = std::chrono::steady_clock::now();
+}
+
+void TestBaseI::tickScript() {
+    EventDispatcher::dispatchTickEvent(0.f);
+    PoolManager::getInstance()->getCurrentPool()->clear();
 }
 
 void TestBaseI::destroyGlobal() {
@@ -167,6 +221,16 @@ void TestBaseI::update() {
     if (_test) {
         _test->tick();
     }
+}
+
+void TestBaseI::evalString(std::string code) {
+    se::AutoHandleScope hs;
+    se::ScriptEngine::getInstance()->evalString(code.c_str());
+}
+
+void TestBaseI::runScript(std::string file) {
+    se::AutoHandleScope hs;
+    se::ScriptEngine::getInstance()->runScript(file.c_str());
 }
 
 unsigned char *TestBaseI::RGB2RGBA(Image *img) {
