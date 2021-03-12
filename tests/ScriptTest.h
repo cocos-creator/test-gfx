@@ -1,7 +1,6 @@
 #pragma once
 
 #include "TestBase.h"
-#include "base/threading/ConditionVariable.h"
 
 namespace cc {
 
@@ -18,7 +17,6 @@ public:
 
 private:
     bool _shouldStop{false};
-    ConditionVariable _cv;
 };
 
 } // namespace cc

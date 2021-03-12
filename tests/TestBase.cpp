@@ -46,7 +46,6 @@
 #endif
 
 #define DEFAULT_MATRIX_MATH
-#define MULTITHREAD 0
 
 namespace cc {
 
@@ -137,12 +136,6 @@ TestBaseI::TestBaseI(const WindowInfo &info) {
         dev_info.nativeWidth  = info.physicalWidth;
         dev_info.nativeHeight = info.physicalHeight;
         _device->initialize(dev_info);
-
-#if MULTITHREAD
-        ((gfx::DeviceAgent *)_device)->setMultithreaded(true);
-#else
-        ((gfx::DeviceAgent *)_device)->setMultithreaded(false);
-#endif
     }
 
     if (!_renderPass) {

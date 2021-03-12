@@ -1,19 +1,21 @@
 #include "ScriptTest.h"
 
 #include "bindings/jswrapper/SeApi.h"
+#include "base/threading/ConditionVariable.h"
 
 #define SEPARATE_RENDER_THREAD 1
 
 namespace {
 se::Value       sharedBuffer;
 cc::gfx::Color *pClearColor{nullptr};
+cc::ConditionVariable cv;
 } // namespace
 
 namespace cc {
 
 void ScriptTest::onDestroy() {
     _shouldStop = true;
-    _cv.wait();
+    cv.wait();
 }
 
 bool ScriptTest::onInit() {
@@ -29,7 +31,7 @@ bool ScriptTest::onInit() {
         while (!_shouldStop) {
             renderThreadTick();
         }
-        _cv.signal();
+        cv.signal();
     });
     renderThread.detach();
 #endif
