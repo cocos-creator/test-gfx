@@ -20,6 +20,7 @@ void ScriptTest::onDestroy() {
 
 bool ScriptTest::onInit() {
     se::AutoHandleScope scope;
+    se::ScriptEngine::getInstance()->runScript("gl-matrix-min.js");
     se::ScriptEngine::getInstance()->runScript("main.js");
 
     size_t size{0u};

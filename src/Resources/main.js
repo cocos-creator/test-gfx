@@ -1,9 +1,13 @@
 
-const buffer = window.sharedBuffer = new Float32Array(4);
+const { mat4, vec4 } = glMatrix;
+
+const color = window.sharedBuffer = vec4.create();
 
 window.gameTick = (timeInMS) => {
-    buffer[0] = Math.abs(Math.sin(timeInMS / 1000));
-    buffer[1] = Math.abs(Math.cos(timeInMS / 1000));
-    buffer[2] = Math.abs(Math.sin(timeInMS / 1000));
-    buffer[3] = 1;
+    vec4.set(color,
+        Math.abs(Math.sin(timeInMS / 1000)),
+        Math.abs(Math.cos(timeInMS / 1000)),
+        Math.abs(Math.sin(timeInMS / 1000)),
+        1
+    );
 };

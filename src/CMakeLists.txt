@@ -131,6 +131,7 @@ set(APP_UI_RES
     "${GAME_RES_FOLDER}/stencil.jpg"
     "${GAME_RES_FOLDER}/background.png"
     "${GAME_RES_FOLDER}/sprite0.png"
+    "${GAME_RES_FOLDER}/gl-matrix-min.js"
     "${GAME_RES_FOLDER}/main.js"
 )
 
