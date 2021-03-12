@@ -66,10 +66,10 @@ std::vector<TestBaseI::createFunc> TestBaseI::_tests = {
 #if CC_PLATFORM != CC_PLATFORM_MAC_IOS && CC_PLATFORM != CC_PLATFORM_MAC_OSX
 //    ComputeTest::create,
 #endif // CC_PLATFORM != CC_PLATFORM_MAC_IOS && CC_PLATFORM != CC_PLATFORM_MAC_OSX
-    ScriptTest::create,
+    //ScriptTest::create,
 //    FrameGraphTest::create,
 //    StressTest::create,
-//    ClearScreen::create,
+    ClearScreen::create,
 //    BasicTriangle::create,
 //    DepthTexture::create,
 //    BlendTest::create,
@@ -193,6 +193,8 @@ void TestBaseI::destroyGlobal() {
     _globalBarrierMap.clear();
 
     CC_SAFE_DESTROY(_device);
+
+    se::ScriptEngine::getInstance()->cleanup();
 }
 
 void TestBaseI::nextTest(bool backward) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "TestBase.h"
+#include "base/threading/ConditionVariable.h"
 
 namespace cc {
 
@@ -13,10 +14,11 @@ public:
     bool onInit() override;
     void onTick() override;
     void onDestroy() override;
-    void renderThreadLoop();
+    void renderThreadTick();
 
 private:
-    bool _working{false};
+    bool _shouldStop{false};
+    ConditionVariable _cv;
 };
 
 } // namespace cc

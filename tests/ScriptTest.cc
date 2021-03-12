@@ -1,47 +1,64 @@
 #include "ScriptTest.h"
 
+#include "bindings/jswrapper/SeApi.h"
+
+#define SEPARATE_RENDER_THREAD 1
+
+namespace {
+se::Value       sharedBuffer;
+cc::gfx::Color *pClearColor{nullptr};
+} // namespace
+
 namespace cc {
 
 void ScriptTest::onDestroy() {
-    _working = false;
+    _shouldStop = true;
+    _cv.wait();
 }
 
 bool ScriptTest::onInit() {
-    TestBaseI::runScript("main.js");
+    se::AutoHandleScope scope;
+    se::ScriptEngine::getInstance()->runScript("main.js");
+    se::ScriptEngine::getInstance()->getGlobalObject()->getProperty("sharedBuffer", &sharedBuffer);
 
-    std::thread renderThread(&ScriptTest::renderThreadLoop, this);
+    size_t size{0u};
+    sharedBuffer.toObject()->getTypedArrayData((uint8_t **)&pClearColor, &size);
+
+#if SEPARATE_RENDER_THREAD
+    std::thread renderThread([this]() {
+        while (!_shouldStop) {
+            renderThreadTick();
+        }
+        _cv.signal();
+    });
     renderThread.detach();
-    _working = true;
+#endif
 
     return true;
 }
 
 void ScriptTest::onTick() {
     tickScript();
+
+#if !SEPARATE_RENDER_THREAD
+    renderThreadTick();
+#endif
 }
 
-void ScriptTest::renderThreadLoop() {
-    while (_working) {
-        gfx::Color clearColor;
-        clearColor.x = 1.0f;
-        clearColor.y = std::abs(std::sin(_time));
-        clearColor.z = 0.0f;
-        clearColor.w = 1.0f;
+void ScriptTest::renderThreadTick() {
+    _device->acquire();
 
-        _device->acquire();
+    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
 
-        gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
+    auto commandBuffer = _commandBuffers[0];
+    commandBuffer->begin();
+    commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, pClearColor, 1.0f, 0);
+    commandBuffer->endRenderPass();
+    commandBuffer->end();
 
-        auto commandBuffer = _commandBuffers[0];
-        commandBuffer->begin();
-        commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
-        commandBuffer->endRenderPass();
-        commandBuffer->end();
-
-        _device->flushCommands(_commandBuffers);
-        _device->getQueue()->submit(_commandBuffers);
-        _device->present();
-    }
+    _device->flushCommands(_commandBuffers);
+    _device->getQueue()->submit(_commandBuffers);
+    _device->present();
 }
 
 } // namespace cc
