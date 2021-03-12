@@ -19,9 +19,9 @@ void ScriptTest::onDestroy() {
 bool ScriptTest::onInit() {
     se::AutoHandleScope scope;
     se::ScriptEngine::getInstance()->runScript("main.js");
-    se::ScriptEngine::getInstance()->getGlobalObject()->getProperty("sharedBuffer", &sharedBuffer);
 
     size_t size{0u};
+    se::ScriptEngine::getInstance()->getGlobalObject()->getProperty("sharedBuffer", &sharedBuffer);
     sharedBuffer.toObject()->getTypedArrayData((uint8_t **)&pClearColor, &size);
 
 #if SEPARATE_RENDER_THREAD

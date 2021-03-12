@@ -64,21 +64,21 @@ gfx::RenderPass * TestBaseI::_renderPass            = nullptr;
 
 std::vector<TestBaseI::createFunc> TestBaseI::_tests = {
 #if CC_PLATFORM != CC_PLATFORM_MAC_IOS && CC_PLATFORM != CC_PLATFORM_MAC_OSX
-//    ComputeTest::create,
+    ComputeTest::create,
 #endif // CC_PLATFORM != CC_PLATFORM_MAC_IOS && CC_PLATFORM != CC_PLATFORM_MAC_OSX
-    //ScriptTest::create,
-//    FrameGraphTest::create,
-//    StressTest::create,
+    ScriptTest::create,
+    FrameGraphTest::create,
+    StressTest::create,
     ClearScreen::create,
-//    BasicTriangle::create,
-//    DepthTexture::create,
-//    BlendTest::create,
-//    ParticleTest::create,
-//    BunnyTest::create,
+    BasicTriangle::create,
+    DepthTexture::create,
+    BlendTest::create,
+    ParticleTest::create,
+    BunnyTest::create,
 // Need to fix lib jpeg on iOS
 #if CC_PLATFORM != CC_PLATFORM_MAC_IOS
-//    BasicTexture::create,
-//    StencilTest::create,
+    BasicTexture::create,
+    StencilTest::create,
 #endif // CC_PLATFORM != CC_PLATFORM_MAC_IOS
 };
 
