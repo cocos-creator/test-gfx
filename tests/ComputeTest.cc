@@ -464,8 +464,19 @@ void ComputeTest::onTick() {
     gfx::TextureBlit blit;
     blit.srcExtent.width  = BG_WIDTH;
     blit.srcExtent.height = BG_HEIGHT;
-    blit.dstExtent.width  = _device->getWidth();  // BG_WIDTH;
-    blit.dstExtent.height = _device->getHeight(); // BG_HEIGHT;
+#if CC_PLATFORM == CC_PLATFORM_WINDOWS
+    // TODO: somehow the back buffer on windows is using MSAA by default?
+    if (_device->getGfxAPI() == gfx::API::GLES3) {
+        blit.dstExtent.width  = BG_WIDTH;
+        blit.dstExtent.height = BG_HEIGHT;
+    } else {
+        blit.dstExtent.width  = _device->getWidth();
+        blit.dstExtent.height = _device->getHeight();
+    }
+#else
+    blit.dstExtent.width  = _device->getWidth();
+    blit.dstExtent.height = _device->getHeight();
+#endif
 
     auto commandBuffer = _commandBuffers[0];
     commandBuffer->begin();

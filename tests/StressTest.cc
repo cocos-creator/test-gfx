@@ -6,7 +6,7 @@
 namespace cc {
 
 #define USE_PARALLEL_RECORDING  1
-#define TEST_MODE               1
+#define TEST_MODE               4
 
 #if TEST_MODE == 1
 constexpr uint WORKLOAD = 200;
