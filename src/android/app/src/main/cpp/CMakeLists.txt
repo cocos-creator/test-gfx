@@ -73,6 +73,10 @@ if(COCOS_UNICODE)
     add_definitions("-DUNICODE -D_UNICODE")
 endif()
 
+add_definitions("-DCC_USE_VULKAN")
+add_definitions("-DCC_USE_GLES3")
+add_definitions("-DCC_USE_GLES2")
+
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.

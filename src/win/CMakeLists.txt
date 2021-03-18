@@ -51,6 +51,10 @@ if(COCOS_UNICODE)
 	add_definitions("-DUNICODE -D_UNICODE")
 endif()
 
+add_definitions("-DCC_USE_VULKAN")
+add_definitions("-DCC_USE_GLES3")
+add_definitions("-DCC_USE_GLES2")
+
 add_executable(${TARGET_NAME} WIN32 ${ALL_FILES})
 
 if(COCOS_CPU_X64)

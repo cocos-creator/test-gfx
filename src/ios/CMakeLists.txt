@@ -65,15 +65,15 @@ set(ALL_FILES
     )
 
 if (USE_VULKAN)
-    add_definitions("-DUSE_VULKAN")
+    add_definitions("-DCC_USE_VULKAN")
     # MoltenVK need MTKView too
-    add_definitions("-DUSE_METAL")
+    add_definitions("-DCC_USE_METAL")
     set(LIB_MOLTEN_VK "${GFX_EXTERNAL_PATH}/MoltenVK/ios/release/libMoltenVK.dylib")
     list(APPEND ALL_FILES ${LIB_MOLTEN_VK})
 elseif (USE_METAL)
-    add_definitions("-DUSE_METAL")
+    add_definitions("-DCC_USE_METAL")
 else ()
-    add_definitions("-DUSE_GLES3")
+    add_definitions("-DCC_USE_GLES3")
 endif()
 
 if(COCOS_UNICODE)

@@ -61,7 +61,8 @@ set(ALL_FILES
 if(COCOS_UNICODE)
 	add_definitions("-DUNICODE -D_UNICODE")
 endif()
-add_definitions("-DUSE_GLES3")
+add_definitions("-DCC_USE_GLES3")
+add_definitions("-DCC_USE_GLES2")
 
 add_executable(${APP_NAME} MACOSX_BUNDLE ${ALL_FILES})
 

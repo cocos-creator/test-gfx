@@ -1,7 +1,7 @@
 #include "StressTest.h"
 #include "base/job-system/JobSystem.h"
 #include "base/threading/MessageQueue.h"
-#include "renderer/gfx-agent/GFXDeviceAgent.h"
+#include "renderer/gfx-agent/DeviceAgent.h"
 
 namespace cc {
 

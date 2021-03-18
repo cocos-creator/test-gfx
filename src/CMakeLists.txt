@@ -146,6 +146,7 @@ set(ENGINE_BASE_LIBS
     GFXAgent
     FrameGraph
     ScriptEngine
+    GFXEmpty
 )
 
 if(WIN32)
