@@ -1,5 +1,5 @@
 set(GFX_TESTCASE_HEADER
-    ${COCOS_SRC_PATH}/renderer/GFXDeviceCreator.h
+    ${COCOS_SRC_PATH}/renderer/GFXDeviceManager.h
 
     ${COCOS_ROOT_PATH}/tests/TestBase.h
     ${COCOS_ROOT_PATH}/tests/ClearScreenTest.h

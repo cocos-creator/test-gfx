@@ -143,10 +143,11 @@ include(${PROJECT_SOURCE_DIR}/tests/CMakeLists.txt)
 set(ENGINE_BASE_LIBS
     Core
     GFXBase
+    GFXEmpty
     GFXAgent
+    GFXValidator
     FrameGraph
     ScriptEngine
-    GFXEmpty
 )
 
 if(WIN32)

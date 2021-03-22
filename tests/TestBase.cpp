@@ -28,7 +28,7 @@
 //#undef CC_USE_VULKAN
 //#undef CC_USE_GLES3
 //#undef CC_USE_GLES2
-#include "renderer/GFXDeviceCreator.h"
+#include "renderer/GFXDeviceManager.h"
 
 namespace cc {
 
@@ -116,7 +116,7 @@ TestBaseI::TestBaseI(const WindowInfo &info) {
         dev_info.nativeWidth  = info.physicalWidth;
         dev_info.nativeHeight = info.physicalHeight;
 
-        _device = gfx::DeviceCreator::createDevice(dev_info);
+        _device = gfx::DeviceManager::create(dev_info);
     }
 
     if (!_renderPass) {
@@ -166,9 +166,9 @@ void TestBaseI::destroyGlobal() {
     }
     _globalBarrierMap.clear();
 
-    CC_SAFE_DESTROY(_device);
-
     se::ScriptEngine::getInstance()->cleanup();
+
+    CC_SAFE_DESTROY(_device);
 }
 
 void TestBaseI::nextTest(bool backward) {
