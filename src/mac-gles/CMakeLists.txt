@@ -46,16 +46,9 @@ set(ALL_FILES
     ${GFX_TESTCASE_SOURCE}
     ${APP_UI_RES}
     ${CC_PLATFORM_SOURCES}
-    ${CC_BASE_HEADERS}
-    ${CC_BASE_SOURCES}
-    ${CC_MATH_HEADERS}
-    ${CC_MATH_SOURCES}
     ${CC_EXTERNAL_SROUCES}
     ${cc_common_res}
     ${COCOS_SRC_PATH}/platform/Image.h
-    ${COCOS_SRC_PATH}/math/Mat4.h
-    ${COCOS_SRC_PATH}/math/Vec4.h
-    ${COCOS_SRC_PATH}/math/Vec3.h
     )
 
 if(COCOS_UNICODE)

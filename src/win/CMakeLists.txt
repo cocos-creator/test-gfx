@@ -36,15 +36,8 @@ set(ALL_FILES
     ${GFX_TESTCASE_SOURCE}
     ${CC_PLATFORM_SOURCES}
     ${CC_EXTERNAL_SROUCES}
-    ${CC_BASE_HEADERS}
-    ${CC_BASE_SOURCES}
-    ${CC_MATH_HEADERS}
-    ${CC_MATH_SOURCES}
     ${cc_common_res}
     ${COCOS_SRC_PATH}/platform/Image.h
-    ${COCOS_SRC_PATH}/math/Mat4.h
-    ${COCOS_SRC_PATH}/math/Vec4.h
-    ${COCOS_SRC_PATH}/math/Vec3.h
 )
 
 if(COCOS_UNICODE)
@@ -85,7 +78,7 @@ target_include_directories(${TARGET_NAME} PUBLIC
 )
 
 list(APPEND CC_EXTERNAL_LIBS
-  ws2_32 userenv psapi winmm Version Iphlpapi opengl32
+  ws2_32 userenv psapi winmm Iphlpapi
 )
 
 target_link_libraries(${TARGET_NAME}
