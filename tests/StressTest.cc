@@ -1,28 +1,29 @@
 #include "StressTest.h"
 #include "base/job-system/JobSystem.h"
 #include "base/threading/MessageQueue.h"
+#include "renderer/GFXDeviceManager.h"
 #include "renderer/gfx-agent/DeviceAgent.h"
 #include "renderer/gfx-validator/DeviceValidator.h"
 
 namespace cc {
 
-#define USE_PARALLEL_RECORDING  1
-#define TEST_MODE               4
+#define USE_PARALLEL_RECORDING 1
+#define TEST_MODE              4
 
 #if TEST_MODE == 1
-constexpr uint WORKLOAD = 200;
-constexpr uint PASS_COUNT = 1;
+constexpr uint WORKLOAD                    = 200;
+constexpr uint PASS_COUNT                  = 1;
 constexpr uint MODELS_PER_LINE[PASS_COUNT] = {WORKLOAD};
 #elif TEST_MODE == 2
-constexpr uint WORKLOAD = 100;
-constexpr uint PASS_COUNT = 4;
+constexpr uint WORKLOAD                    = 100;
+constexpr uint PASS_COUNT                  = 4;
 constexpr uint MODELS_PER_LINE[PASS_COUNT] = {WORKLOAD, WORKLOAD, WORKLOAD, WORKLOAD};
 #elif TEST_MODE == 3
-constexpr uint WORKLOAD = 150;
-constexpr uint PASS_COUNT = 4;
+constexpr uint WORKLOAD                    = 150;
+constexpr uint PASS_COUNT                  = 4;
 constexpr uint MODELS_PER_LINE[PASS_COUNT] = {WORKLOAD, WORKLOAD, WORKLOAD, WORKLOAD};
 #elif TEST_MODE == 4
-constexpr uint PASS_COUNT = 4;
+constexpr uint PASS_COUNT                  = 4;
 constexpr uint MODELS_PER_LINE[PASS_COUNT] = {150, 2, 3, 150};
 #endif
 /* *
@@ -30,8 +31,8 @@ constexpr uint PASS_COUNT = 9;
 constexpr uint MODELS_PER_LINE[PASS_COUNT] = {100, 2, 100, 100, 3, 4, 100, 5, 100};
 //constexpr uint MODELS_PER_LINE[PASS_COUNT] = {WORKLOAD, WORKLOAD, WORKLOAD, WORKLOAD, WORKLOAD, WORKLOAD, WORKLOAD, WORKLOAD, WORKLOAD};
 /* */
-constexpr uint MAIN_THREAD_SLEEP = 10;
-constexpr float QUAD_SIZE = .01f;
+constexpr uint  MAIN_THREAD_SLEEP = 10;
+constexpr float QUAD_SIZE         = .01f;
 
 const gfx::Color StressTest::clearColors[] = {
     {.2f, .2f, .2f, 1.f},
@@ -394,21 +395,21 @@ void StressTest::recordRenderPass(uint passIndex) {
 }
 #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED_FINER_JOBS || PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED_FINER_JOBS_MULTI_PRIMARY
 void StressTest::recordRenderPass(uint jobIdx) {
-    gfx::Rect scissor = {0, 0, _device->getWidth(), _device->getHeight()};
-    gfx::Viewport vp = {0, 0, _device->getWidth(), _device->getHeight()};
+    gfx::Rect     scissor = {0, 0, _device->getWidth(), _device->getHeight()};
+    gfx::Viewport vp      = {0, 0, _device->getWidth(), _device->getHeight()};
 
-    uint passIdx = jobIdx / _threadCount;
-    uint threadIdx = jobIdx % _threadCount;
-    uint totalCount = MODELS_PER_LINE[passIdx] * MODELS_PER_LINE[passIdx];
+    uint passIdx        = jobIdx / _threadCount;
+    uint threadIdx      = jobIdx % _threadCount;
+    uint totalCount     = MODELS_PER_LINE[passIdx] * MODELS_PER_LINE[passIdx];
     uint perThreadCount = totalCount / _threadCount;
-    uint dcCount = perThreadCount;
+    uint dcCount        = perThreadCount;
     if (threadIdx == _threadCount - 1) dcCount += totalCount % _threadCount;
 
     //CC_LOG_INFO("======= %d %d %d", passIdx, threadIdx, jobIdx);
     //CC_LOG_INFO("---- idx %x cb %x id %x dc %d", threadIdx, commandBuffer,
     //            std::hash<std::thread::id>()(std::this_thread::get_id()), dcCount);
 
-    uint dynamicOffset = 0u;
+    uint                dynamicOffset = 0u;
     gfx::CommandBuffer *commandBuffer = _parallelCBs[jobIdx];
     commandBuffer->begin(_renderPass, 0, _fbo);
     if (dcCount) {
@@ -431,15 +432,15 @@ void StressTest::recordRenderPass(uint jobIdx) {
 }
 #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED
 void StressTest::recordRenderPass(uint threadIdx) {
-    gfx::Rect scissor = {0, 0, _device->getWidth(), _device->getHeight()};
-    gfx::Viewport vp = {0, 0, _device->getWidth(), _device->getHeight()};
+    gfx::Rect           scissor       = {0, 0, _device->getWidth(), _device->getHeight()};
+    gfx::Viewport       vp            = {0, 0, _device->getWidth(), _device->getHeight()};
     gfx::CommandBuffer *commandBuffer = _parallelCBs[threadIdx];
 
     for (uint i = 0u; i < PASS_COUNT; ++i) {
-        uint dynamicOffset = 0u;
-        uint totalCount = MODELS_PER_LINE[i] * MODELS_PER_LINE[i];
+        uint dynamicOffset  = 0u;
+        uint totalCount     = MODELS_PER_LINE[i] * MODELS_PER_LINE[i];
         uint perThreadCount = totalCount / _threadCount;
-        uint dcCount = perThreadCount;
+        uint dcCount        = perThreadCount;
         if (threadIdx == _threadCount - 1) dcCount += totalCount % _threadCount;
 
         //CC_LOG_INFO("---- idx %x cb %x id %x dc %d", threadIdx, commandBuffer,
@@ -467,8 +468,8 @@ void StressTest::recordRenderPass(uint threadIdx) {
 }
 #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_RP_BASED_SECONDARY
 void StressTest::recordRenderPass(uint passIndex) {
-    gfx::Rect scissor = {0, 0, _device->getWidth(), _device->getHeight()};
-    gfx::Viewport vp = {0, 0, _device->getWidth(), _device->getHeight()};
+    gfx::Rect     scissor = {0, 0, _device->getWidth(), _device->getHeight()};
+    gfx::Viewport vp      = {0, 0, _device->getWidth(), _device->getHeight()};
 
     gfx::CommandBuffer *commandBuffer = _parallelCBs[passIndex];
 
@@ -556,7 +557,7 @@ void StressTest::onTick() {
     #if USE_PARALLEL_RECORDING
     {
         JobGraph g(JobSystem::getInstance());
-        uint jobs[PASS_COUNT];
+        uint     jobs[PASS_COUNT];
         for (uint t = 0u; t < PASS_COUNT; ++t) {
             jobs[t] = g.createForEachIndexJob(t * _threadCount, (t + 1) * _threadCount, 1u, [this](uint jobIdx) {
                 recordRenderPass(jobIdx);
@@ -677,22 +678,31 @@ void StressTest::onTick() {
 
     _device->present();
 
-    gfx::DeviceAgent *agent = (gfx::DeviceAgent *)((gfx::DeviceValidator *)_device)->getActor();
-    MessageQueue *queue = agent->getMessageQueue();
-    ENQUEUE_MESSAGE_0(
-        queue,
-        DeviceStatistics,
-        {
-            lookupTime(deviceThread);
-            if (!deviceThread.timeAcc)
-                deviceThread.timeAcc = deviceThread.dt;
-            else
-                deviceThread.timeAcc = deviceThread.timeAcc * 0.95f + deviceThread.dt * 0.05f;
-            deviceThread.frameAcc++;
-            if (deviceThread.frameAcc % 6 == 0) {
-                CC_LOG_INFO("Device thread n.%d avg: %.2fms (~%d FPS)", deviceThread.frameAcc, deviceThread.timeAcc * 1000.f, uint(1.f / deviceThread.timeAcc + .5f));
-            }
-        });
+    if (gfx::DeviceManager::useAgent()) {
+        gfx::DeviceAgent *agent = nullptr;
+
+        if (gfx::DeviceManager::useValidator()) {
+            agent = (gfx::DeviceAgent *)((gfx::DeviceValidator *)_device)->getActor();
+        } else {
+            agent = (gfx::DeviceAgent *)_device;
+        }
+
+        MessageQueue *queue = agent->getMessageQueue();
+        ENQUEUE_MESSAGE_0(
+            queue,
+            DeviceStatistics,
+            {
+                lookupTime(deviceThread);
+                if (!deviceThread.timeAcc)
+                    deviceThread.timeAcc = deviceThread.dt;
+                else
+                    deviceThread.timeAcc = deviceThread.timeAcc * 0.95f + deviceThread.dt * 0.05f;
+                deviceThread.frameAcc++;
+                if (deviceThread.frameAcc % 6 == 0) {
+                    CC_LOG_INFO("Device thread n.%d avg: %.2fms (~%d FPS)", deviceThread.frameAcc, deviceThread.timeAcc * 1000.f, uint(1.f / deviceThread.timeAcc + .5f));
+                }
+            });
+    }
 }
 
 } // namespace cc
