@@ -2,6 +2,7 @@
 #include "base/job-system/JobSystem.h"
 #include "base/threading/MessageQueue.h"
 #include "renderer/gfx-agent/DeviceAgent.h"
+#include "renderer/gfx-validator/DeviceValidator.h"
 
 namespace cc {
 
@@ -676,7 +677,8 @@ void StressTest::onTick() {
 
     _device->present();
 
-    MessageQueue *queue = ((gfx::DeviceAgent *)_device)->getMessageQueue();
+    gfx::DeviceAgent *agent = (gfx::DeviceAgent *)((gfx::DeviceValidator *)_device)->getActor();
+    MessageQueue *queue = agent->getMessageQueue();
     ENQUEUE_MESSAGE_0(
         queue,
         DeviceStatistics,
