@@ -6,49 +6,6 @@ if(WIN32)
     include(CocosBuildSet)
 endif()
 
-# ---------------------------------------------
-# set cocos platform, base, math, external files
-set(CC_PLATFORM_SOURCES
-    ${COCOS_SRC_PATH}/platform/Application.h
-    ${COCOS_SRC_PATH}/platform/Device.h
-    ${COCOS_SRC_PATH}/platform/FileUtils.h
-    ${COCOS_SRC_PATH}/platform/Image.h
-    ${COCOS_SRC_PATH}/platform/SAXParser.h
-
-    ${COCOS_SRC_PATH}/platform/FileUtils.cpp
-    ${COCOS_SRC_PATH}/platform/Image.cpp
-    ${COCOS_SRC_PATH}/platform/SAXParser.cpp
-)
-if(WIN32)
-    list(APPEND CC_PLATFORM_SOURCES
-        ${COCOS_SRC_PATH}/platform/win32/FileUtils-win32.h
-        ${COCOS_SRC_PATH}/platform/win32/Utils-win32.h
-
-        ${COCOS_SRC_PATH}/platform/win32/Device-win32.cpp
-        ${COCOS_SRC_PATH}/platform/win32/FileUtils-win32.cpp
-        ${COCOS_SRC_PATH}/platform/win32/Utils-win32.cpp
-    )
-elseif(ANDROID)
-    list(APPEND CC_PLATFORM_SOURCES
-        ${COCOS_SRC_PATH}/platform/android/FileUtils-android.h
-        ${COCOS_SRC_PATH}/platform/android/jni/JniHelper.h
-        # ${COCOS_SRC_PATH}/platform/android/jni/JniImp.h
-
-        # ${COCOS_SRC_PATH}/platform/android/Device-android.cpp
-        ${COCOS_SRC_PATH}/platform/android/FileUtils-android.cpp
-        # ${COCOS_SRC_PATH}/platform/android/Application-android.cpp
-        # ${COCOS_SRC_PATH}/platform/android/CanvasRenderingContext2D-android.cpp
-        # ${COCOS_SRC_PATH}/platform/android/jni/JniImp.cpp
-        ${COCOS_SRC_PATH}/platform/android/jni/JniHelper.cpp
-    )
-elseif(APPLE)
-    list(APPEND CC_PLATFORM_SOURCES
-        ${COCOS_SRC_PATH}/platform/apple/FileUtils-apple.h
-
-        ${COCOS_SRC_PATH}/platform/apple/FileUtils-apple.mm
-    )
-endif()
-
 # resources
 set(GAME_RES_FOLDER "${CMAKE_CURRENT_SOURCE_DIR}/Resources")
 if(VS)
@@ -71,12 +28,12 @@ include(${PROJECT_SOURCE_DIR}/tests/CMakeLists.txt)
 
 set(ENGINE_BASE_LIBS
     Core
+    ScriptEngine
     GFXBase
     GFXEmpty
     GFXAgent
     GFXValidator
     FrameGraph
-    ScriptEngine
 )
 
 if(WIN32)

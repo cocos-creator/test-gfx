@@ -45,8 +45,7 @@ set(ALL_FILES
     ${GFX_TESTCASE_HEADER}
     ${GFX_TESTCASE_SOURCE}
     ${APP_UI_RES}
-    ${CC_PLATFORM_SOURCES}
-    ${CC_EXTERNAL_SROUCES}
+    ${CC_EXTERNAL_SOURCES}
     ${cc_common_res}
     ${COCOS_SRC_PATH}/platform/Image.h
     )
@@ -107,12 +106,11 @@ foreach(PVRDLL ${PVRDLLS})
                          copy ${PVRDLL} $<TARGET_FILE_DIR:${APP_NAME}>/../Frameworks/)
 endforeach()
 
-source_group(TREE ${COCOS_SRC_PATH}/platform PREFIX "Header Files/platform" FILES ${CC_PLATFORM_SOURCES})
 source_group(TREE ${COCOS_SRC_PATH}/base PREFIX "Header Files/base" FILES ${CC_BASE_HEADERS})
 source_group(TREE ${COCOS_SRC_PATH}/base PREFIX "Source Files/base" FILES ${CC_BASE_SOURCES})
 source_group(TREE ${COCOS_SRC_PATH}/math PREFIX "Header Files/math" FILES ${CC_MATH_HEADERS})
 source_group(TREE ${COCOS_SRC_PATH}/math PREFIX "Source Files/math" FILES ${CC_MATH_SOURCES})
-source_group(TREE ${COCOS_EXTERNAL_PATH}/sources PREFIX "Header Files/external" FILES ${CC_EXTERNAL_SROUCES})
+source_group(TREE ${COCOS_EXTERNAL_PATH}/sources PREFIX "Header Files/external" FILES ${CC_EXTERNAL_SOURCES})
 
 # setup default flags
 target_compile_definitions(${APP_NAME} PUBLIC

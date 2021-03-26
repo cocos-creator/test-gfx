@@ -57,10 +57,8 @@ set(ALL_FILES
     ${GFX_TESTCASE_HEADER}
     ${GFX_TESTCASE_SOURCE}
     ${APP_UI_RES}
-    ${CC_PLATFORM_SOURCES}
-    ${CC_EXTERNAL_SROUCES}
+    ${CC_EXTERNAL_SOURCES}
     ${cc_common_res}
-    ${COCOS_SRC_PATH}/platform/Image.h
     )
 
 if(COCOS_UNICODE)
@@ -80,7 +78,9 @@ endif()
 add_executable(${APP_NAME} MACOSX_BUNDLE ${ALL_FILES})
 
 set_target_properties(${APP_NAME} PROPERTIES RESOURCE "${APP_UI_RES}")
-set_target_properties(${APP_NAME} PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_LIST_DIR}/Info.plist")
+set_target_properties(${APP_NAME} PROPERTIES
+    MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_LIST_DIR}/Info.plist"
+)
 set_xcode_property(${APP_NAME} PRODUCT_BUNDLE_IDENTIFIER ${APP_NAME})
 
 # Locate system libraries on macOS
@@ -125,12 +125,11 @@ if(MACOSX)
     )
 endif()
 
-source_group(TREE ${COCOS_SRC_PATH}/platform PREFIX "Header Files/platform" FILES ${CC_PLATFORM_SOURCES})
 source_group(TREE ${COCOS_SRC_PATH}/base PREFIX "Header Files/base" FILES ${CC_BASE_HEADERS})
 source_group(TREE ${COCOS_SRC_PATH}/base PREFIX "Source Files/base" FILES ${CC_BASE_SOURCES})
 source_group(TREE ${COCOS_SRC_PATH}/math PREFIX "Header Files/math" FILES ${CC_MATH_HEADERS})
 source_group(TREE ${COCOS_SRC_PATH}/math PREFIX "Source Files/math" FILES ${CC_MATH_SOURCES})
-source_group(TREE ${COCOS_EXTERNAL_PATH}/sources PREFIX "Header Files/external" FILES ${CC_EXTERNAL_SROUCES})
+source_group(TREE ${COCOS_EXTERNAL_PATH}/sources PREFIX "Header Files/external" FILES ${CC_EXTERNAL_SOURCES})
 
 # setup default flags
 target_compile_definitions(${APP_NAME} PUBLIC

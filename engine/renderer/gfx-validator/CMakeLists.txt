@@ -30,7 +30,7 @@ else()
 	add_library(${TARGET_NAME} SHARED ${HEADER_FILES} ${ALL_FILES})
 endif()
 
-target_link_libraries(${TARGET_NAME} Core GFXBase)
+target_link_libraries(${TARGET_NAME} Core ScriptEngine GFXBase)
 
 set_target_properties(${TARGET_NAME} PROPERTIES OUTPUT_NAME CCGFXValidator)
 set_target_properties(${TARGET_NAME} PROPERTIES OUTPUT_NAME_DEBUG CCGFXValidator_d)

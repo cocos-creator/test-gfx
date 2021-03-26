@@ -54,9 +54,7 @@ include_directories( ${INCLUDE_FILES} )
 set(ALL_FILES
     ${GFX_TESTCASE_HEADER}
     ${GFX_TESTCASE_SOURCE}
-    ${CC_PLATFORM_SOURCES}
-    ${CC_EXTERNAL_SROUCES}
-    ${COCOS_SRC_PATH}/platform/Image.h
+    ${CC_EXTERNAL_SOURCES}
     main.cpp
     JniImp.cpp
     JniImp.h
