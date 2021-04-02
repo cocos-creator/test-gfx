@@ -1,9 +1,7 @@
 #include "StressTest.h"
 #include "base/job-system/JobSystem.h"
 #include "base/threading/MessageQueue.h"
-#include "renderer/GFXDeviceManager.h"
 #include "renderer/gfx-agent/DeviceAgent.h"
-#include "renderer/gfx-validator/DeviceValidator.h"
 
 namespace cc {
 
@@ -678,15 +676,9 @@ void StressTest::onTick() {
 
     _device->present();
 
-    if (gfx::DeviceManager::useAgent()) {
-        gfx::DeviceAgent *agent = nullptr;
+    gfx::DeviceAgent *agent = gfx::DeviceAgent::getInstance();
 
-        if (gfx::DeviceManager::useValidator()) {
-            agent = (gfx::DeviceAgent *)((gfx::DeviceValidator *)_device)->getActor();
-        } else {
-            agent = (gfx::DeviceAgent *)_device;
-        }
-
+    if (agent) {
         MessageQueue *queue = agent->getMessageQueue();
         ENQUEUE_MESSAGE_0(
             queue,
