@@ -93,13 +93,9 @@ TestBaseI::TestBaseI(const WindowInfo &info) {
 
         se->addBeforeCleanupHook([se]() {
             se->garbageCollect();
-            PoolManager::getInstance()->getCurrentPool()->clear();
-            se->garbageCollect();
-            PoolManager::getInstance()->getCurrentPool()->clear();
         });
 
         se->addAfterCleanupHook([]() {
-            PoolManager::getInstance()->getCurrentPool()->clear();
             JSBClassType::destroy();
         });
 
@@ -146,7 +142,6 @@ TestBaseI::TestBaseI(const WindowInfo &info) {
 
 void TestBaseI::tickScript() {
     EventDispatcher::dispatchTickEvent(0.f);
-    PoolManager::getInstance()->getCurrentPool()->clear();
 }
 
 void TestBaseI::destroyGlobal() {

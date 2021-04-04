@@ -33,8 +33,8 @@ void fillRectWithColor(uint8_t *buf, uint32_t totalWidth, uint32_t totalHeight,
  */
 Vec3 vec3Random(float scale /* = 1.0f */) {
     Vec3  out;
-    float r      = cc::rand_0_1() * 2.0f * cc::math::PI;
-    float z      = (cc::rand_0_1() * 2.0f) - 1.0f;
+    float r      = rand0_1() * 2.0f * cc::math::PI;
+    float z      = rand0_1() * 2.0f - 1.0f;
     float zScale = sqrtf(1.0f - z * z) * scale;
 
     out.x = cosf(r) * zScale;

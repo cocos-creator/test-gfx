@@ -70,7 +70,7 @@ void ComputeTest::createComputeVBPipeline() {
     if (!_device->hasFeature(gfx::Feature::COMPUTE_SHADER)) return;
 
     ShaderSources<ComputeShaderSource> sources;
-    sources.glsl4 = StringUtil::Format(
+    sources.glsl4 = StringUtil::format(
         R"(
         #define RADIUS %.1f
 
@@ -92,7 +92,7 @@ void ComputeTest::createComputeVBPipeline() {
             vertex[i].c = vec4(fract(t - time), fract(2.0 * t - time), 1.0, 1.0);
         })",
         RADIUS, GROUP_SIZE);
-    sources.glsl3 = StringUtil::Format(
+    sources.glsl3 = StringUtil::format(
         R"(
         #define RADIUS %.1f
 
@@ -169,7 +169,7 @@ void ComputeTest::createComputeBGPipeline() {
     CC_LOG_INFO("BG work group size: %dx%d", BG_GROUP_SIZE_X, BG_GROUP_SIZE_Y);
 
     ShaderSources<ComputeShaderSource> sources;
-    sources.glsl4 = StringUtil::Format(
+    sources.glsl4 = StringUtil::format(
         R"(
         layout(local_size_x = %d, local_size_y = %d, local_size_z = 1) in;
 
@@ -185,7 +185,7 @@ void ComputeTest::createComputeBGPipeline() {
             imageStore(background, ivec2(gl_GlobalInvocationID.xy), vec4(col, 1.0));
         })",
         BG_GROUP_SIZE_X, BG_GROUP_SIZE_Y);
-    sources.glsl3 = StringUtil::Format(
+    sources.glsl3 = StringUtil::format(
         R"(
         layout(local_size_x = %d, local_size_y = %d, local_size_z = 1) in;
 
