@@ -53,11 +53,6 @@ struct FrameRate {
     float timeAcc  = 0.f;
 };
 
-template <typename T, size_t Size>
-char (*countofHelper(T (&_Array)[Size]))[Size];
-
-#define COUNTOF(array) (sizeof(*countofHelper(array)) + 0)
-
 #define DEFINE_CREATE_METHOD(className)                \
     static TestBaseI *create(const WindowInfo &info) { \
         TestBaseI *test = CC_NEW(className(info));     \
