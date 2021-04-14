@@ -1,21 +1,22 @@
 #include "ScriptTest.h"
 
+#include "base/threading/Semaphore.h"
 #include "bindings/jswrapper/SeApi.h"
-#include "base/threading/ConditionVariable.h"
 
 #define SEPARATE_RENDER_THREAD 1
 
 namespace {
-se::Value       sharedBuffer;
-cc::gfx::Color *pClearColor{nullptr};
-cc::ConditionVariable cv;
+se::Value             sharedBuffer;
+cc::gfx::Color *      pClearColor{nullptr};
+std::atomic<bool>     shouldStop{false};
+cc::Semaphore         sem;
 } // namespace
 
 namespace cc {
 
 void ScriptTest::onDestroy() {
-    _shouldStop = true;
-    cv.wait();
+    shouldStop.store(true, std::memory_order_release);
+    sem.wait();
 }
 
 bool ScriptTest::onInit() {
@@ -29,10 +30,10 @@ bool ScriptTest::onInit() {
 
 #if SEPARATE_RENDER_THREAD
     std::thread renderThread([this]() {
-        while (!_shouldStop) {
+        while (!shouldStop) {
             renderThreadTick();
         }
-        cv.signal();
+        sem.signal();
     });
     renderThread.detach();
 #endif

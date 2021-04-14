@@ -14,9 +14,6 @@ public:
     void onTick() override;
     void onDestroy() override;
     void renderThreadTick();
-
-private:
-    bool _shouldStop{false};
 };
 
 } // namespace cc
