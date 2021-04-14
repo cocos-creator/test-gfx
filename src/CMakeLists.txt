@@ -12,13 +12,7 @@ if(VS)
     cocos_mark_multi_resources(cc_common_res RES_TO "Resources" FOLDERS ${GAME_RES_FOLDER})
 endif()
 set(APP_UI_RES
-    "${GAME_RES_FOLDER}/uv_checker_01.jpg"
-    "${GAME_RES_FOLDER}/uv_checker_02.jpg"
-    "${GAME_RES_FOLDER}/stencil.jpg"
-    "${GAME_RES_FOLDER}/background.png"
-    "${GAME_RES_FOLDER}/sprite0.png"
-    "${GAME_RES_FOLDER}/gl-matrix-min.js"
-    "${GAME_RES_FOLDER}/main.js"
+    "${GAME_RES_FOLDER}/*"
 )
 
 # add test cases

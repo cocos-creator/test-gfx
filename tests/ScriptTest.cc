@@ -9,20 +9,20 @@ namespace {
 se::Value             sharedBuffer;
 cc::gfx::Color *      pClearColor{nullptr};
 std::atomic<bool>     shouldStop{false};
-cc::Semaphore         sem;
+cc::Semaphore         sem{0};
 } // namespace
 
 namespace cc {
 
 void ScriptTest::onDestroy() {
-    shouldStop.store(true, std::memory_order_release);
+    shouldStop.store(true, std::memory_order_relaxed);
     sem.wait();
 }
 
 bool ScriptTest::onInit() {
     se::AutoHandleScope scope;
     se::ScriptEngine::getInstance()->runScript("gl-matrix-min.js");
-    se::ScriptEngine::getInstance()->runScript("main.js");
+    se::ScriptEngine::getInstance()->runScript("simple.js");
 
     size_t size{0u};
     se::ScriptEngine::getInstance()->getGlobalObject()->getProperty("sharedBuffer", &sharedBuffer);
@@ -30,7 +30,7 @@ bool ScriptTest::onInit() {
 
 #if SEPARATE_RENDER_THREAD
     std::thread renderThread([this]() {
-        while (!shouldStop) {
+        while (!shouldStop.load(std::memory_order_relaxed)) {
             renderThreadTick();
         }
         sem.signal();

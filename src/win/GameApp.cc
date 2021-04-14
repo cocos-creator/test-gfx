@@ -114,8 +114,6 @@ void GameApp::initialize() {
 }
 
 void GameApp::destroy() {
-    TestBaseI::destroyGlobal();
-
     // Fix the display settings if leaving full screen mode.
     if (_fullScreen) {
         ChangeDisplaySettings(NULL, 0);
@@ -169,6 +167,7 @@ LRESULT CALLBACK GameApp::MessageHandler(HWND hWnd, DWORD msg, WPARAM wParam, LP
         // WM_CLOSE is sent when the user presses the 'X' button in the
         // caption bar menu.
         case WM_CLOSE:
+            TestBaseI::destroyGlobal();
             _running = false;
             _paused = true;
             break;
