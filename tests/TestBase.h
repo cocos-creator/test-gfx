@@ -10,7 +10,7 @@
 namespace cc {
 
 typedef struct WindowInfo {
-    intptr_t  windowHandle;
+    intptr_t  windowHandle = 0;
     gfx::Rect screen;
     int       physicalWidth;
     int       physicalHeight;

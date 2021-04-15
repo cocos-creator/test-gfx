@@ -5,6 +5,8 @@
 
 #include <android/log.h>
 #include <time.h>
+#include <cocos/bindings/event/EventDispatcher.h>
+#include <cocos/bindings/event/CustomEventTypes.h>
 
 #define LOG_TAG "main"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
@@ -31,18 +33,13 @@ namespace
 
     WindowInfo g_windowInfo;
 
-    void destroyTests()
-    {
-        TestBaseI::destroyGlobal();
-    }
-
     void engineHandleCmd(struct android_app* app, int32_t cmd)
     {
         struct SavedState* state = (struct SavedState*)app->userData;
         switch (cmd)
         {
             case APP_CMD_INIT_WINDOW:
-                if (state->app->window)
+                if (state->app->window && !g_windowInfo.windowHandle)
                 {
                     g_windowInfo.windowHandle = (intptr_t)state->app->window;
                     g_windowInfo.physicalWidth = g_windowInfo.screen.width = ANativeWindow_getWidth(app->window);
@@ -51,11 +48,19 @@ namespace
 
                     TestBaseI::setWindowInfo(g_windowInfo);
                     TestBaseI::nextTest();
+                } else {
+                    CustomEvent event;
+                    event.name = EVENT_RECREATE_WINDOW;
+                    event.args->ptrVal = state->app->window;
+                    cc::EventDispatcher::dispatchCustomEvent(event);
                 }
-
                 break;
             case APP_CMD_TERM_WINDOW:
-                destroyTests();
+                {
+                    CustomEvent event;
+                    event.name = EVENT_DESTROY_WINDOW;
+                    EventDispatcher::dispatchCustomEvent(event);
+                }
                 state->animating = 0;
                 break;
             case APP_CMD_GAINED_FOCUS:
@@ -126,6 +131,7 @@ void android_main(struct android_app* state) {
 
         if (state->destroyRequested != 0)
         {
+            TestBaseI::destroyGlobal();
             return;
         }
 
