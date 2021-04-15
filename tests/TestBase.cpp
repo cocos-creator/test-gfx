@@ -3,7 +3,6 @@
 #include "tests/BasicTextureTest.h"
 #include "tests/BasicTriangleTest.h"
 #include "tests/BlendTest.h"
-#include "tests/BunnyTest.h"
 #include "tests/ClearScreenTest.h"
 #include "tests/ComputeTest.h"
 #include "tests/DepthTest.h"
@@ -12,6 +11,7 @@
 #include "tests/ScriptTest.h"
 #include "tests/StencilTest.h"
 #include "tests/StressTest.h"
+#include "tests/SubpassTest.h"
 
 #include "cocos/base/AutoreleasePool.h"
 #include "cocos/bindings/auto/jsb_gfx_auto.h"
@@ -22,6 +22,9 @@
 #include "cocos/bindings/manual/jsb_classtype.h"
 #include "cocos/bindings/manual/jsb_gfx_manual.h"
 #include "cocos/bindings/manual/jsb_global_init.h"
+
+#define TINYOBJLOADER_IMPLEMENTATION
+#include "tiny_obj_loader.h"
 
 #define DEFAULT_MATRIX_MATH
 
@@ -45,6 +48,7 @@ gfx::Framebuffer *TestBaseI::_fbo                   = nullptr;
 gfx::RenderPass * TestBaseI::_renderPass            = nullptr;
 
 std::vector<TestBaseI::createFunc> TestBaseI::_tests = {
+    SubpassTest::create,
     ComputeTest::create,
     ScriptTest::create,
     FrameGraphTest::create,
@@ -54,7 +58,6 @@ std::vector<TestBaseI::createFunc> TestBaseI::_tests = {
     DepthTexture::create,
     BlendTest::create,
     ParticleTest::create,
-    BunnyTest::create,
 // Need to fix lib jpeg on iOS
 #if CC_PLATFORM != CC_PLATFORM_MAC_IOS
     BasicTexture::create,
@@ -67,6 +70,10 @@ FrameRate                                       TestBaseI::deviceThread;
 std::vector<gfx::CommandBuffer *>               TestBaseI::_commandBuffers;
 std::unordered_map<uint, gfx::GlobalBarrier *>  TestBaseI::_globalBarrierMap;
 std::unordered_map<uint, gfx::TextureBarrier *> TestBaseI::_textureBarrierMap;
+
+framegraph::FrameGraph TestBaseI::fg;
+framegraph::Texture    TestBaseI::fgBackBuffer;
+framegraph::Texture    TestBaseI::fgDepthStencilBackBuffer;
 
 TestBaseI::TestBaseI(const WindowInfo &info) {
     if (!_device) {
@@ -103,14 +110,15 @@ TestBaseI::TestBaseI(const WindowInfo &info) {
 
         se->start();
 
-        gfx::DeviceInfo dev_info;
-        dev_info.windowHandle = info.windowHandle;
-        dev_info.width        = info.screen.width;
-        dev_info.height       = info.screen.height;
-        dev_info.nativeWidth  = info.physicalWidth;
-        dev_info.nativeHeight = info.physicalHeight;
+        gfx::DeviceInfo deviceInfo;
+        deviceInfo.isAntiAlias  = true;
+        deviceInfo.windowHandle = info.windowHandle;
+        deviceInfo.width        = info.screen.width;
+        deviceInfo.height       = info.screen.height;
+        deviceInfo.nativeWidth  = info.physicalWidth;
+        deviceInfo.nativeHeight = info.physicalHeight;
 
-        _device = gfx::DeviceManager::create(dev_info);
+        _device = gfx::DeviceManager::create(deviceInfo);
     }
 
     if (!_renderPass) {
@@ -148,6 +156,7 @@ void TestBaseI::destroyGlobal() {
     CC_SAFE_DESTROY(_test);
     CC_SAFE_DESTROY(_fbo);
     CC_SAFE_DESTROY(_renderPass);
+    fg.gc(0);
 
     for (auto textureBarrier : _textureBarrierMap) {
         CC_SAFE_DELETE(textureBarrier.second);
@@ -281,15 +290,15 @@ void TestBaseI::createOrthographic(float left, float right, float bottom, float 
     float dx = (left + right) / (left - right);
     float dy = (bottom + top) / (bottom - top) * signY;
 
-    dst->m[0]                          = x * preTransform[0];
-    dst->m[1]                          = x * preTransform[1];
-    dst->m[4]                          = y * preTransform[2];
-    dst->m[5]                          = y * preTransform[3];
-    dst->m[10]                         = (1.0f - minZ) / (ZNear - ZFar);
-    dst->m[12]                         = dx * preTransform[0] + dy * preTransform[2];
-    dst->m[13]                         = dx * preTransform[1] + dy * preTransform[3];
-    dst->m[14]                         = (ZNear - minZ * ZFar) / (ZNear - ZFar);
-    dst->m[15]                         = 1.0f;
+    dst->m[0]  = x * preTransform[0];
+    dst->m[1]  = x * preTransform[1];
+    dst->m[4]  = y * preTransform[2];
+    dst->m[5]  = y * preTransform[3];
+    dst->m[10] = (1.0f - minZ) / (ZNear - ZFar);
+    dst->m[12] = dx * preTransform[0] + dy * preTransform[2];
+    dst->m[13] = dx * preTransform[1] + dy * preTransform[3];
+    dst->m[14] = (ZNear - minZ * ZFar) / (ZNear - ZFar);
+    dst->m[15] = 1.0f;
 #endif
 }
 
@@ -383,6 +392,40 @@ uint TestBaseI::getUBOSize(uint size) {
 uint TestBaseI::getAlignedUBOStride(gfx::Device *device, uint stride) {
     uint alignment = device->getCapabilities().uboOffsetAlignment;
     return (stride + alignment - 1) / alignment * alignment;
+}
+
+void TestBaseI::createUberBuffer(gfx::Device *device, const vector<uint> &sizes, gfx::Buffer **pBuffer,
+                                 vector<gfx::Buffer *> *pBufferViews, vector<uint> *pBufferViewOffsets) {
+    pBufferViewOffsets->assign(sizes.size() + 1, 0);
+    for (uint i = 0u; i < sizes.size(); ++i) {
+        uint alignedSize              = i == sizes.size() - 1 ? sizes[i] : getAlignedUBOStride(device, sizes[i]);
+        pBufferViewOffsets->at(i + 1) = pBufferViewOffsets->at(i) + alignedSize;
+    }
+    *pBuffer = device->createBuffer({
+        gfx::BufferUsage::UNIFORM,
+        gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
+        TestBaseI::getUBOSize(pBufferViewOffsets->back()),
+    });
+    for (uint i = 0u; i < sizes.size(); ++i) {
+        pBufferViews->push_back(device->createBuffer({
+            *pBuffer,
+            pBufferViewOffsets->at(i),
+            sizes[i],
+        }));
+    }
+}
+
+tinyobj::ObjReader TestBaseI::loadOBJ(String path) {
+    String objFile = FileUtils::getInstance()->getStringFromFile("bunny.obj");
+    String mtlFile;
+
+    tinyobj::ObjReader       obj;
+    tinyobj::ObjReaderConfig config;
+    config.vertex_color = false;
+    obj.ParseFromString(objFile, mtlFile, config);
+    CCASSERT(obj.Valid(), "file failed to load");
+
+    return obj;
 }
 
 gfx::GlobalBarrier *TestBaseI::getGlobalBarrier(const gfx::GlobalBarrierInfo &info) {

@@ -31,11 +31,6 @@ private:
     gfx::PipelineState *      _pipelineState       = nullptr;
     gfx::InputAssembler *     _inputAssembler      = nullptr;
     gfx::Buffer *             _indexBuffer         = nullptr;
-
-    framegraph::FrameGraph  fg;
-
-    framegraph::Texture _backBuffer;
-    framegraph::Texture _depthStencilBackBuffer;
 };
 
 } // namespace cc

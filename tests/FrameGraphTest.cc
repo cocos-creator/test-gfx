@@ -367,8 +367,8 @@ void FrameGraphTest::onTick() {
 
     fg.reset();
 
-    fg.getBlackboard().put(backBufferName, fg.importExternal(backBufferName, _backBuffer));
-    fg.getBlackboard().put(depthStencilBackBufferName, fg.importExternal(depthStencilBackBufferName, _depthStencilBackBuffer));
+    fg.getBlackboard().put(backBufferName, fg.importExternal(backBufferName, fgBackBuffer));
+    fg.getBlackboard().put(depthStencilBackBufferName, fg.importExternal(depthStencilBackBufferName, fgDepthStencilBackBuffer));
 
     fg.addPass<DrawData>(100, leftName, drawSetupFactory(0), drawExecFactory);
     fg.addPass<DrawData>(200, rightName, drawSetupFactory(1), drawExecFactory);

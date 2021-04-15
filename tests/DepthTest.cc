@@ -1,5 +1,5 @@
 #include "DepthTest.h"
-#include "BunnyData.h"
+#include "tiny_obj_loader.h"
 
 namespace cc {
 
@@ -14,7 +14,6 @@ struct BigTriangle : public cc::Object {
     }
 
     void createShader() {
-
         ShaderSources<StandardShaderSource> sources;
         sources.glsl4 = {
             R"(
@@ -249,7 +248,6 @@ struct Bunny : public cc::Object {
     ~Bunny() {}
 
     void createShader() {
-
         ShaderSources<StandardShaderSource> sources;
         sources.glsl4 = {
             R"(
@@ -339,23 +337,32 @@ struct Bunny : public cc::Object {
     }
 
     void createBuffers() {
+        auto obj = TestBaseI::loadOBJ("bunny.obj");
+
         // vertex buffer
-        vertexBuffer = device->createBuffer({
+        const auto &positions = obj.GetAttrib().vertices;
+        vertexBuffer          = device->createBuffer({
             gfx::BufferUsage::VERTEX,
             gfx::MemoryUsage::DEVICE,
-            sizeof(bunny_positions),
+            static_cast<uint>(positions.size() * sizeof(float)),
             3 * sizeof(float),
         });
-        vertexBuffer->update((void *)&bunny_positions[0][0], sizeof(bunny_positions));
+        vertexBuffer->update(positions.data(), positions.size() * sizeof(float));
 
         // index buffer
-        indexBuffer = device->createBuffer({
+        const auto &     indicesInfo = obj.GetShapes()[0].mesh.indices;
+        vector<uint16_t> indices;
+        indices.reserve(indicesInfo.size());
+        std::transform(indicesInfo.begin(), indicesInfo.end(), std::back_inserter(indices),
+                       [](auto &&info) { return (uint16_t)info.vertex_index; });
+
+        indexBuffer         = device->createBuffer({
             gfx::BufferUsage::INDEX,
             gfx::MemoryUsage::DEVICE,
-            sizeof(bunny_cells),
-            sizeof(unsigned short),
+            static_cast<uint>(indices.size() * sizeof(uint16_t)),
+            sizeof(uint16_t),
         });
-        indexBuffer->update((void *)&bunny_cells[0], sizeof(bunny_cells));
+        indexBuffer->update(indices.data(), indices.size() * sizeof(uint16_t));
 
         // uniform buffer
         // create uniform buffer
@@ -512,19 +519,20 @@ bool DepthTexture::onInit() {
 void DepthTexture::onTick() {
     uint globalBarrierIdx = _frameCount ? 1 : 0;
 
-    _eye.set(30.f * std::cos(_time), 20.f, 30.f * std::sin(_time));
-    _center.set(0, 2.5f, 0);
+    static constexpr float cameraDistance = 8.f;
+    _eye.set(cameraDistance * std::cos(_time), cameraDistance * 0.5f, cameraDistance * std::sin(_time));
+    _center.set(0, 0.5f, 0);
     _up.set(0, 1.f, 0);
     Mat4::createLookAt(_eye, _center, _up, &_bunnyMatrices[1]);
     gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize();
-    TestBaseI::createPerspective(45.f, 1.0f * orientedSize.width / orientedSize.height, 1.f, 100.f, &_bunnyMatrices[2], true);
+    TestBaseI::createPerspective(45.f, 1.0f * orientedSize.width / orientedSize.height, 1.f, 10.f, &_bunnyMatrices[2], true);
 
     gfx::Color clearColor = {1.0, 0, 0, 1.0f};
 
     _device->acquire();
 
     for (uint i = 0; i < Bunny::BUNNY_NUM; i++) {
-        _bunnyMatrices[0].m[12] = i % 2 ? -5.f : 5.f;
+        _bunnyMatrices[0].m[12] = i % 2 ? -1.5f : 1.5f;
         bunny->mvpUniformBuffer[i]->update(_bunnyMatrices, sizeof(_bunnyMatrices));
     }
     gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};

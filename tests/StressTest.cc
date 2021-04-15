@@ -517,6 +517,10 @@ void StressTest::recordRenderPass(uint passIndex) {
 }
 #endif
 
+void StressTest::onSpacePressed() {
+    toggleMultithread();
+}
+
 void StressTest::onTick() {
     // simulate heavy logic operation
     std::this_thread::sleep_for(std::chrono::milliseconds(MAIN_THREAD_SLEEP));

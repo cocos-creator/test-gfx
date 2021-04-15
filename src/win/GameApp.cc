@@ -173,7 +173,7 @@ LRESULT CALLBACK GameApp::MessageHandler(HWND hWnd, DWORD msg, WPARAM wParam, LP
             break;
         case WM_KEYDOWN:
             if (wParam == VK_SPACE) {
-                TestBaseI::toggleMultithread();
+                TestBaseI::spacePressed();
             }
             break;
         case WM_LBUTTONUP:

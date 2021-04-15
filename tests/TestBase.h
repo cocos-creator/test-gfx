@@ -1,4 +1,5 @@
 #pragma once
+
 #include "base/CoreStd.h"
 #include "math/Mat4.h"
 #include "math/Vec4.h"
@@ -6,6 +7,10 @@
 #include "renderer/frame-graph/FrameGraph.h"
 #include "renderer/gfx-base/GFXDef.h"
 #include "renderer/gfx-base/GFXDevice.h"
+
+namespace tinyobj {
+class ObjReader;
+}
 
 namespace cc {
 
@@ -42,6 +47,36 @@ struct ShaderSources {
     T glsl4;
     T glsl3;
     T glsl1;
+
+    ShaderSources<T> operator+(const T &b) const {
+        ShaderSources<T> res;
+        res.glsl4 = glsl4 + b;
+        res.glsl3 = glsl3 + b;
+        res.glsl1 = glsl1 + b;
+        return res;
+    }
+
+    ShaderSources<T> &operator+=(const T &b) {
+        glsl4 += b;
+        glsl3 += b;
+        glsl1 += b;
+        return *this;
+    }
+
+    ShaderSources<T> operator+(const ShaderSources<T>& b) const {
+        ShaderSources<T> res;
+        res.glsl4 = glsl4 + b.glsl4;
+        res.glsl3 = glsl3 + b.glsl3;
+        res.glsl1 = glsl1 + b.glsl1;
+        return res;
+    }
+
+    ShaderSources<T>& operator+=(const ShaderSources<T>& b) {
+        glsl4 += b.glsl4;
+        glsl3 += b.glsl3;
+        glsl1 += b.glsl1;
+        return *this;
+    }
 };
 
 struct FrameRate {
@@ -79,6 +114,7 @@ public:
         if (_test) _test->resize(width, height);
     }
     static void setWindowInfo(const WindowInfo &info) { _windowInfo = info; }
+    static void spacePressed() { _test->onSpacePressed(); }
 
     static void nextTest(bool backward = false);
     static void destroyGlobal();
@@ -99,8 +135,11 @@ public:
     static uint                 getUBOSize(uint size);
     static uint                 getMipmapLevelCounts(uint width, uint height);
     static uint                 getAlignedUBOStride(gfx::Device *device, uint stride);
+    static tinyobj::ObjReader   loadOBJ(String path);
     static gfx::GlobalBarrier * getGlobalBarrier(const gfx::GlobalBarrierInfo &info);
     static gfx::TextureBarrier *getTextureBarrier(const gfx::TextureBarrierInfo &info);
+    static void                 createUberBuffer(gfx::Device *device, const vector<uint> &sizes, gfx::Buffer **pBuffer,
+                                                 vector<gfx::Buffer *> *pBufferViews, vector<uint> *pBufferViewOffsets);
 
     template <typename T>
     static T &getAppropriateShaderSource(ShaderSources<T> &sources) {
@@ -174,6 +213,12 @@ protected:
 
     static std::unordered_map<uint, gfx::GlobalBarrier *>  _globalBarrierMap;
     static std::unordered_map<uint, gfx::TextureBarrier *> _textureBarrierMap;
+
+    static framegraph::FrameGraph fg;
+    static framegraph::Texture    fgBackBuffer;
+    static framegraph::Texture    fgDepthStencilBackBuffer;
+
+    virtual void                  onSpacePressed() {}
 
     std::vector<gfx::GlobalBarrier *> _globalBarriers;
 

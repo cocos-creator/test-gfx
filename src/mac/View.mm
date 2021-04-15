@@ -96,7 +96,7 @@ namespace
 
 - (void)keyUp:(NSEvent *)event {
     if (event.keyCode == 49) { // space
-        cc::TestBaseI::toggleMultithread();
+        cc::TestBaseI::spacePressed();
     }
 }
 

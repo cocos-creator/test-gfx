@@ -7,14 +7,14 @@ set(GFX_TESTCASE_HEADER
     ${COCOS_ROOT_PATH}/tests/BasicTextureTest.h
     ${COCOS_ROOT_PATH}/tests/DepthTest.h
     ${COCOS_ROOT_PATH}/tests/StencilTest.h
-    ${COCOS_ROOT_PATH}/tests/BunnyData.h
     ${COCOS_ROOT_PATH}/tests/BlendTest.h
     ${COCOS_ROOT_PATH}/tests/ParticleTest.h
-    ${COCOS_ROOT_PATH}/tests/BunnyTest.h
     ${COCOS_ROOT_PATH}/tests/StressTest.h
     ${COCOS_ROOT_PATH}/tests/ComputeTest.h
     ${COCOS_ROOT_PATH}/tests/FrameGraphTest.h
     ${COCOS_ROOT_PATH}/tests/ScriptTest.h
+    ${COCOS_ROOT_PATH}/tests/SubpassTest.h
+    ${COCOS_ROOT_PATH}/tests/tiny_obj_loader.h
 )
 
 set(GFX_TESTCASE_SOURCE
@@ -26,9 +26,9 @@ set(GFX_TESTCASE_SOURCE
     ${COCOS_ROOT_PATH}/tests/StencilTest.cc
     ${COCOS_ROOT_PATH}/tests/BlendTest.cc
     ${COCOS_ROOT_PATH}/tests/ParticleTest.cc
-    ${COCOS_ROOT_PATH}/tests/BunnyTest.cc
     ${COCOS_ROOT_PATH}/tests/StressTest.cc
     ${COCOS_ROOT_PATH}/tests/ComputeTest.cc
     ${COCOS_ROOT_PATH}/tests/FrameGraphTest.cc
     ${COCOS_ROOT_PATH}/tests/ScriptTest.cc
+    ${COCOS_ROOT_PATH}/tests/SubpassTest.cc
 )

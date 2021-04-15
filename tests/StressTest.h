@@ -10,13 +10,14 @@ public:
     StressTest(const WindowInfo &info) : TestBaseI(info){};
     ~StressTest() = default;
 
-public:
     bool onInit() override;
     void onTick() override;
     void onDestroy() override;
 
-private:
+protected:
     static const gfx::Color clearColors[];
+
+    void onSpacePressed() override;
 
     void createShader();
     void createVertexBuffer();
