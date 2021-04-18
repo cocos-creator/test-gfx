@@ -63,7 +63,7 @@ struct ShaderSources {
         return *this;
     }
 
-    ShaderSources<T> operator+(const ShaderSources<T>& b) const {
+    ShaderSources<T> operator+(const ShaderSources<T> &b) const {
         ShaderSources<T> res;
         res.glsl4 = glsl4 + b.glsl4;
         res.glsl3 = glsl3 + b.glsl3;
@@ -71,7 +71,7 @@ struct ShaderSources {
         return res;
     }
 
-    ShaderSources<T>& operator+=(const ShaderSources<T>& b) {
+    ShaderSources<T> &operator+=(const ShaderSources<T> &b) {
         glsl4 += b.glsl4;
         glsl3 += b.glsl3;
         glsl1 += b.glsl1;
@@ -90,10 +90,10 @@ struct FrameRate {
 
 #define DEFINE_CREATE_METHOD(className)                \
     static TestBaseI *create(const WindowInfo &info) { \
-        TestBaseI *test = CC_NEW(className(info));     \
-        if (test->initialize())                        \
-            return test;                               \
-        CC_SAFE_DESTROY(test);                         \
+        TestBaseI *instance = CC_NEW(className(info)); \
+        if (instance->initialize())                    \
+            return instance;                           \
+        CC_SAFE_DESTROY(instance);                     \
         return nullptr;                                \
     }
 
@@ -105,17 +105,22 @@ public:
     using createFunc = TestBaseI *(*)(const WindowInfo &info);
 
     static void lookupTime(FrameRate *statistics = &hostThread) {
-        statistics->curTime  = std::chrono::steady_clock::now();
-        statistics->dt       = float(std::chrono::duration_cast<std::chrono::nanoseconds>(statistics->curTime - statistics->prevTime).count()) / NANOSECONDS_PER_SECOND;
-        statistics->prevTime = statistics->curTime;
-
-        if (statistics->timeAcc != 0.F) {
-            statistics->timeAcc = statistics->dt;
+        if (!statistics->frameAcc) {
+            statistics->prevTime = std::chrono::steady_clock::now();
         } else {
-            statistics->timeAcc = statistics->timeAcc * 0.95F + statistics->dt * 0.05F;
+            statistics->curTime  = std::chrono::steady_clock::now();
+            auto time            = std::chrono::duration_cast<std::chrono::nanoseconds>(statistics->curTime - statistics->prevTime);
+            statistics->dt       = static_cast<float>(time.count()) / NANOSECONDS_PER_SECOND;
+            statistics->prevTime = statistics->curTime;
+
+            if (statistics->timeAcc == 0.F) {
+                statistics->timeAcc = statistics->dt;
+            } else {
+                statistics->timeAcc = statistics->timeAcc * 0.95F + statistics->dt * 0.05F;
+            }
         }
 
-        statistics->frameAcc++;
+        ++statistics->frameAcc;
     }
     static void printTime(const FrameRate &statistics = hostThread, const String &prefix = "Host thread") {
         if (statistics.frameAcc % 6 == 0) {
@@ -144,9 +149,9 @@ public:
     static void                 tickScript();
     static unsigned char *      rgb2rgba(Image *img);
     static gfx::Texture *       createTextureWithFile(const gfx::TextureInfo &partialInfo, const std::string &imageFile);
-    static void                 modifyProjectionBasedOnDevice(Mat4 *projection, bool isOffscreen = false);
-    static void                 createOrthographic(float left, float right, float bottom, float top, float near, float zFar, Mat4 *dst, bool isOffscreen = false);
-    static void                 createPerspective(float fov, float aspect, float near, float zFar, Mat4 *dst, bool isOffscreen = false);
+    static void                 modifyProjectionBasedOnDevice(Mat4 *projection);
+    static void                 createOrthographic(float left, float right, float bottom, float top, float near, float zFar, Mat4 *dst);
+    static void                 createPerspective(float fov, float aspect, float near, float zFar, Mat4 *dst);
     static gfx::Extent          getOrientedSurfaceSize();
     static gfx::Viewport        getViewportBasedOnDevice(const Vec4 &relativeArea);
     static uint                 getUBOSize(uint size);
@@ -234,7 +239,7 @@ protected:
     static framegraph::Texture    fgBackBuffer;
     static framegraph::Texture    fgDepthStencilBackBuffer;
 
-    virtual void                  onSpacePressed() {}
+    virtual void onSpacePressed() {}
 
     std::vector<gfx::GlobalBarrier *> _globalBarriers;
 

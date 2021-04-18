@@ -11,9 +11,8 @@ set(GAME_RES_FOLDER "${CMAKE_CURRENT_SOURCE_DIR}/Resources")
 if(VS)
     cocos_mark_multi_resources(cc_common_res RES_TO "Resources" FOLDERS ${GAME_RES_FOLDER})
 endif()
-set(APP_UI_RES
-    "${GAME_RES_FOLDER}/*"
-)
+
+file(GLOB_RECURSE APP_UI_RES ${GAME_RES_FOLDER}/*)
 
 # add test cases
 set(USE_SE_V8 ON)

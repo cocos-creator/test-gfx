@@ -13,6 +13,7 @@ set(GFX_TESTCASE_HEADER
     ${COCOS_ROOT_PATH}/tests/ComputeTest.h
     ${COCOS_ROOT_PATH}/tests/FrameGraphTest.h
     ${COCOS_ROOT_PATH}/tests/ScriptTest.h
+    ${COCOS_ROOT_PATH}/tests/DeferredTest.h
     ${COCOS_ROOT_PATH}/tests/SubpassTest.h
     ${COCOS_ROOT_PATH}/tests/tiny_obj_loader.h
 )
@@ -30,5 +31,6 @@ set(GFX_TESTCASE_SOURCE
     ${COCOS_ROOT_PATH}/tests/ComputeTest.cc
     ${COCOS_ROOT_PATH}/tests/FrameGraphTest.cc
     ${COCOS_ROOT_PATH}/tests/ScriptTest.cc
+    ${COCOS_ROOT_PATH}/tests/DeferredTest.cc
     ${COCOS_ROOT_PATH}/tests/SubpassTest.cc
 )

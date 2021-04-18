@@ -12,7 +12,6 @@ public:
 
     bool onInit() override;
     void onTick() override;
-    void onDestroy() override;
 
 protected:
     void onSpacePressed() override;
@@ -23,44 +22,45 @@ protected:
     void createInputAssembler();
     void createPipelineState();
 
-    gfx::Shader *             _shaderForward        = nullptr;
-    gfx::Shader *             _shaderGBuffer        = nullptr;
-    gfx::Buffer *             _vertexPositionBuffer = nullptr;
-    gfx::Buffer *             _vertexNormalBuffer   = nullptr;
-    gfx::Buffer *             _indexBuffer          = nullptr;
-    gfx::DescriptorSet *      _descriptorSet        = nullptr;
-    gfx::DescriptorSetLayout *_descriptorSetLayout  = nullptr;
-    gfx::PipelineLayout *     _pipelineLayout       = nullptr;
-    gfx::InputAssembler *     _inputAssembler       = nullptr;
-    gfx::PipelineState *      _pipelineState        = nullptr;
+    std::unique_ptr<gfx::Shader>              _shaderForward        = nullptr;
+    std::unique_ptr<gfx::Shader>              _shaderGBuffer        = nullptr;
+    std::unique_ptr<gfx::Buffer>              _vertexPositionBuffer = nullptr;
+    std::unique_ptr<gfx::Buffer>              _vertexNormalBuffer   = nullptr;
+    std::unique_ptr<gfx::Buffer>              _indexBuffer          = nullptr;
+    std::unique_ptr<gfx::DescriptorSet>       _descriptorSet        = nullptr;
+    std::unique_ptr<gfx::DescriptorSetLayout> _descriptorSetLayout  = nullptr;
+    std::unique_ptr<gfx::PipelineLayout>      _pipelineLayout       = nullptr;
+    std::unique_ptr<gfx::InputAssembler>      _inputAssembler       = nullptr;
+    std::unique_ptr<gfx::PipelineState>       _pipelineState        = nullptr;
 
-    gfx::Buffer *         _rootUBO = nullptr;
-    vector<gfx::Buffer *> _bufferViews;
-    vector<uint>          _bufferViewOffsets;
-    vector<float>         _rootBuffer;
+    std::unique_ptr<gfx::Buffer>         _rootUBO = nullptr;
+    vector<std::unique_ptr<gfx::Buffer>> _bufferViews;
+    vector<uint>                         _bufferViewOffsets;
+    vector<float>                        _rootBuffer;
 
     Mat4 _worldMatrix;
     Mat4 _projectionMatrix;
 
-    gfx::Sampler *_sampler = nullptr;
+    std::unique_ptr<gfx::Sampler> _sampler = nullptr;
 
-    vector<gfx::Texture *> _deferredGBuffers;
-    gfx::Texture *         _deferredGBufferDepthTexture  = nullptr;
-    gfx::RenderPass *      _deferredGBufferRenderPass    = nullptr;
-    gfx::Framebuffer *     _deferredGBufferFramebuffer   = nullptr;
-    gfx::PipelineState *   _deferredGBufferPipelineState = nullptr;
+    vector<std::unique_ptr<gfx::Texture>> _deferredGBuffers;
+    std::unique_ptr<gfx::Texture>         _deferredGBufferDepthTexture  = nullptr;
+    std::unique_ptr<gfx::RenderPass>      _deferredGBufferRenderPass    = nullptr;
+    std::unique_ptr<gfx::Framebuffer>     _deferredGBufferFramebuffer   = nullptr;
+    std::unique_ptr<gfx::PipelineState>   _deferredGBufferPipelineState = nullptr;
 
-    gfx::Shader *             _deferredShader              = nullptr;
-    gfx::Buffer *             _deferredVB                  = nullptr;
-    gfx::InputAssembler *     _deferredInputAssembler      = nullptr;
-    gfx::DescriptorSetLayout *_deferredDescriptorSetLayout = nullptr;
-    gfx::PipelineLayout *     _deferredPipelineLayout      = nullptr;
-    gfx::PipelineState *      _deferredPipelineState       = nullptr;
-    gfx::DescriptorSet *      _deferredDescriptorSet       = nullptr;
+    std::unique_ptr<gfx::Texture>             _deferredOutputTexture       = nullptr;
+    std::unique_ptr<gfx::Shader>              _deferredShader              = nullptr;
+    std::unique_ptr<gfx::Buffer>              _deferredVB                  = nullptr;
+    std::unique_ptr<gfx::InputAssembler>      _deferredInputAssembler      = nullptr;
+    std::unique_ptr<gfx::DescriptorSetLayout> _deferredDescriptorSetLayout = nullptr;
+    std::unique_ptr<gfx::PipelineLayout>      _deferredPipelineLayout      = nullptr;
+    std::unique_ptr<gfx::PipelineState>       _deferredPipelineState       = nullptr;
+    std::unique_ptr<gfx::DescriptorSet>       _deferredDescriptorSet       = nullptr;
 
     gfx::ColorList _clearColors;
 
-    bool _useDeferred = false;
+    bool _useDeferred = true;
 };
 
 } // namespace cc

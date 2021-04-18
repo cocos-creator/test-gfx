@@ -1,5 +1,4 @@
-#include "SubpassTest.h"
-#include <cmath>
+#include "DeferredTest.h"
 #include "tiny_obj_loader.h"
 
 namespace cc {
@@ -14,7 +13,46 @@ enum class Binding : uint8_t {
     MVP,
 };
 
-bool SubpassTest::onInit() {
+void DeferredTest::onDestroy() {
+    CC_SAFE_DESTROY(_shaderForward)
+    CC_SAFE_DESTROY(_shaderGBuffer)
+    CC_SAFE_DESTROY(_vertexPositionBuffer)
+    CC_SAFE_DESTROY(_vertexNormalBuffer)
+    CC_SAFE_DESTROY(_indexBuffer)
+    CC_SAFE_DESTROY(_inputAssembler)
+    CC_SAFE_DESTROY(_descriptorSet)
+    CC_SAFE_DESTROY(_descriptorSetLayout)
+    CC_SAFE_DESTROY(_pipelineLayout)
+    CC_SAFE_DESTROY(_pipelineState)
+
+    for (auto *bufferView : _bufferViews) {
+        CC_DESTROY(bufferView)
+    }
+    _bufferViews.clear();
+    CC_SAFE_DESTROY(_rootUBO)
+
+    CC_SAFE_DESTROY(_sampler)
+
+    for (auto *gbuffer : _deferredGBuffers) {
+        CC_DESTROY(gbuffer)
+    }
+    _deferredGBuffers.clear();
+    CC_SAFE_DESTROY(_deferredGBufferDepthTexture)
+    CC_SAFE_DESTROY(_deferredGBufferFramebuffer)
+    CC_SAFE_DESTROY(_deferredGBufferRenderPass)
+    CC_SAFE_DESTROY(_deferredGBufferPipelineState)
+
+    CC_SAFE_DESTROY(_deferredRenderPass)
+    CC_SAFE_DESTROY(_deferredShader)
+    CC_SAFE_DESTROY(_deferredVB)
+    CC_SAFE_DESTROY(_deferredDescriptorSet)
+    CC_SAFE_DESTROY(_deferredDescriptorSetLayout)
+    CC_SAFE_DESTROY(_deferredPipelineLayout)
+    CC_SAFE_DESTROY(_deferredInputAssembler)
+    CC_SAFE_DESTROY(_deferredPipelineState)
+}
+
+bool DeferredTest::onInit() {
     createShader();
     createBuffers();
     createInputAssembler();
@@ -153,38 +191,9 @@ gfx::UniformBlock cameraUBOInfo{
     },
     1,
 };
-
-String declPLSExtension = R"(
-    #ifdef GL_EXT_shader_pixel_local_storage
-        #extension GL_EXT_shader_pixel_local_storage: enable
-        #define USE_PLS 1
-    #else
-        #define USE_PLS 0
-    #endif
-)";
-
-String declPLSData(gfx::MemoryAccess access = gfx::MemoryAccessBit::READ_WRITE) {
-    String prefix;
-    switch (access) {
-        case gfx::MemoryAccess::READ_ONLY: prefix = "_in"; break;
-        case gfx::MemoryAccess::WRITE_ONLY: prefix = "_out"; break;
-        default: break;
-    }
-    return StringUtil::format(
-        R"(
-            // The guaranteed minimum available PLS size is 16 bytes
-            layout(rgba8) __pixel_local%sEXT FragColor {
-                vec4 gbuffer0;
-                vec4 gbuffer1;
-                vec4 gbuffer2;
-                vec4 gbuffer3;
-            };
-        )",
-        prefix.c_str());
-}
 } // namespace
 
-void SubpassTest::createShader() {
+void DeferredTest::createShader() {
     String                vertMain = R"(
         void main () {
             vec4 pos = u_model * vec4(a_position, 1.0);
@@ -309,25 +318,19 @@ void SubpassTest::createShader() {
             o_color3 = vec4(s.emissive, s.occlusion);
         }
     )";
-    gbufferFrag.glsl3 = declPLSExtension + gbufferFrag.glsl3;
     gbufferFrag.glsl3 += R"(
-        #if USE_PLS
-    )" + declPLSData(gfx::MemoryAccessBit::WRITE_ONLY);
-    gbufferFrag.glsl3 += R"(
-        #else
-            layout(location = 0) out vec4 gbuffer0;
-            layout(location = 1) out vec4 gbuffer1;
-            layout(location = 2) out vec4 gbuffer2;
-            layout(location = 3) out vec4 gbuffer3;
-        #endif
+        layout(location = 0) out vec4 o_color0;
+        layout(location = 1) out vec4 o_color1;
+        layout(location = 2) out vec4 o_color2;
+        layout(location = 3) out vec4 o_color3;
 
         void main () {
             StandardSurface s; surf(s);
 
-            gbuffer0 = s.albedo;
-            gbuffer1 = vec4(s.position, s.roughness);
-            gbuffer2 = vec4(s.normal, s.metallic);
-            gbuffer3 = vec4(s.emissive, s.occlusion);
+            o_color0 = s.albedo;
+            o_color1 = vec4(s.position, s.roughness);
+            o_color2 = vec4(s.normal, s.metallic);
+            o_color3 = vec4(s.emissive, s.occlusion);
         }
     )";
     gbufferFrag.glsl1 = R"(
@@ -381,96 +384,56 @@ void SubpassTest::createShader() {
     shaderInfo.stages     = std::move(shaderStageList);
     shaderInfo.attributes = std::move(attributeList);
     shaderInfo.blocks     = std::move(uniformBlockList);
-    _shaderForward.reset(device->createShader(shaderInfo));
+    _shaderForward        = device->createShader(shaderInfo);
 
     shaderInfo.name             = "Standard GBuffer";
     shaderInfo.stages[1].source = getAppropriateShaderSource(gbufferFrag);
-    _shaderGBuffer.reset(device->createShader(shaderInfo));
+    _shaderGBuffer              = device->createShader(shaderInfo);
 }
 
-void SubpassTest::createDeferredResources() {
+void DeferredTest::createDeferredResources() {
     gfx::SamplerInfo samplerInfo;
-    _sampler.reset(device->createSampler(samplerInfo));
+    _sampler = device->createSampler(samplerInfo);
 
     gfx::RenderPassInfo rpInfo;
-    rpInfo.colorAttachments.emplace_back();
-    rpInfo.colorAttachments.back().format         = device->getColorFormat();
-    rpInfo.colorAttachments.back().loadOp         = gfx::LoadOp::DISCARD;
-    rpInfo.colorAttachments.back().endAccesses[0] = gfx::AccessType::TRANSFER_READ;
-
-    _deferredOutputTexture.reset(device->createTexture({
-        gfx::TextureType::TEX2D,
-        gfx::TextureUsageBit::TRANSFER_SRC | gfx::TextureUsageBit::COLOR_ATTACHMENT,
-        device->getColorFormat(),
-        device->getWidth(),
-        device->getHeight(),
-    }));
-
     for (uint i = 0; i < 4; ++i) {
         // RGBA8 is suffice for albedo, emission & occlusion
         gfx::Format format = i % 3 ? gfx::Format::RGBA16F : gfx::Format::RGBA8;
-        _deferredGBuffers.emplace_back(device->createTexture({
+        _deferredGBuffers.push_back(device->createTexture({
             gfx::TextureType::TEX2D,
-            gfx::TextureUsageBit::INPUT_ATTACHMENT | gfx::TextureUsageBit::COLOR_ATTACHMENT,
+            gfx::TextureUsageBit::SAMPLED | gfx::TextureUsageBit::COLOR_ATTACHMENT,
             format,
             device->getWidth(),
             device->getHeight(),
         }));
         rpInfo.colorAttachments.emplace_back();
         rpInfo.colorAttachments.back().format         = format;
-        rpInfo.colorAttachments.back().endAccesses[0] = gfx::AccessType::FRAGMENT_SHADER_READ_COLOR_INPUT_ATTACHMENT;
+        rpInfo.colorAttachments.back().endAccesses[0] = gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE;
     }
-
-    _deferredGBufferDepthTexture.reset(device->createTexture({
+    _deferredGBufferDepthTexture         = device->createTexture({
         gfx::TextureType::TEX2D,
         gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT,
         device->getDepthStencilFormat(),
         device->getWidth(),
         device->getHeight(),
-    }));
-
+    });
     rpInfo.depthStencilAttachment.format = device->getDepthStencilFormat();
 
-    rpInfo.subpasses.resize(2);
-    rpInfo.subpasses[0].colors = {1, 2, 3, 4};
-    rpInfo.subpasses[1].colors = {0};
-    rpInfo.subpasses[1].inputs = {1, 2, 3, 4};
-
-    rpInfo.dependencies.push_back({
-        0,
-        1,
-        {gfx::AccessType::COLOR_ATTACHMENT_WRITE},
-        {gfx::AccessType::FRAGMENT_SHADER_READ_COLOR_INPUT_ATTACHMENT},
+    _deferredGBufferRenderPass  = device->createRenderPass(rpInfo);
+    _deferredGBufferFramebuffer = device->createFramebuffer({
+        _deferredGBufferRenderPass,
+        _deferredGBuffers,
+        _deferredGBufferDepthTexture,
     });
-
-    rpInfo.dependencies.push_back({
-        1,
-        gfx::SUBPASS_EXTERNAL,
-        {gfx::AccessType::COLOR_ATTACHMENT_WRITE},
-        {gfx::AccessType::TRANSFER_READ},
-    });
-
-    _deferredGBufferRenderPass.reset(device->createRenderPass(rpInfo));
-    _deferredGBufferFramebuffer.reset(device->createFramebuffer({
-        _deferredGBufferRenderPass.get(),
-        {
-            _deferredOutputTexture.get(),
-            _deferredGBuffers[0].get(),
-            _deferredGBuffers[1].get(),
-            _deferredGBuffers[2].get(),
-            _deferredGBuffers[3].get(),
-        },
-        _deferredGBufferDepthTexture.get(),
-    }));
 
     gfx::PipelineStateInfo gbufferPSOInfo;
     gbufferPSOInfo.primitive      = gfx::PrimitiveMode::TRIANGLE_LIST;
-    gbufferPSOInfo.shader         = _shaderGBuffer.get();
+    gbufferPSOInfo.shader         = _shaderGBuffer;
     gbufferPSOInfo.inputState     = {_inputAssembler->getAttributes()};
-    gbufferPSOInfo.renderPass     = _deferredGBufferRenderPass.get();
-    gbufferPSOInfo.pipelineLayout = _pipelineLayout.get();
+    gbufferPSOInfo.renderPass     = _deferredGBufferRenderPass;
+    gbufferPSOInfo.pipelineLayout = _pipelineLayout;
     gbufferPSOInfo.blendState.targets.resize(4);
-    _deferredGBufferPipelineState.reset(device->createPipelineState(gbufferPSOInfo));
+    _deferredGBufferPipelineState = device->createPipelineState(gbufferPSOInfo);
 
     ShaderSources<String> vert = {
         R"(
@@ -513,24 +476,19 @@ void SubpassTest::createDeferredResources() {
             precision highp float;
             layout(location = 0) in vec2 v_texCoord;
 
-            layout(input_attachment_index = 0, set = 0, binding = 1) uniform subpassInput gbuffer1;
-            layout(input_attachment_index = 1, set = 0, binding = 2) uniform subpassInput gbuffer2;
-            layout(input_attachment_index = 2, set = 0, binding = 3) uniform subpassInput gbuffer3;
-            layout(input_attachment_index = 3, set = 0, binding = 4) uniform subpassInput gbuffer4;
+            layout(set = 0, binding = 1) uniform sampler2D gbuffer1;
+            layout(set = 0, binding = 2) uniform sampler2D gbuffer2;
+            layout(set = 0, binding = 3) uniform sampler2D gbuffer3;
+            layout(set = 0, binding = 4) uniform sampler2D gbuffer4;
         )",
-        declPLSExtension + R"(
+        R"(
             precision highp float;
             in vec2 v_texCoord;
 
-            #if USE_PLS
-        )" + declPLSData(gfx::MemoryAccessBit::READ_ONLY) +
-            R"(
-            #else
-                uniform sampler2D gbuffer1;
-                uniform sampler2D gbuffer2;
-                uniform sampler2D gbuffer3;
-                uniform sampler2D gbuffer4;
-            #endif
+            uniform sampler2D gbuffer1;
+            uniform sampler2D gbuffer2;
+            uniform sampler2D gbuffer3;
+            uniform sampler2D gbuffer4;
         )",
         R"(
             precision highp float;
@@ -547,10 +505,10 @@ void SubpassTest::createDeferredResources() {
         layout(location = 0) out vec4 o_color;
         void main() {
 
-            vec4 g1 = subpassLoad(gbuffer1);
-            vec4 g2 = subpassLoad(gbuffer2);
-            vec4 g3 = subpassLoad(gbuffer3);
-            vec4 g4 = subpassLoad(gbuffer4);
+            vec4 g1 = texture(gbuffer1, v_texCoord);
+            vec4 g2 = texture(gbuffer2, v_texCoord);
+            vec4 g3 = texture(gbuffer3, v_texCoord);
+            vec4 g4 = texture(gbuffer4, v_texCoord);
 
             StandardSurface s;
             s.albedo = g1;
@@ -568,21 +526,12 @@ void SubpassTest::createDeferredResources() {
         out vec4 o_color;
         void main() {
 
+            vec4 g1 = texture(gbuffer1, v_texCoord);
+            vec4 g2 = texture(gbuffer2, v_texCoord);
+            vec4 g3 = texture(gbuffer3, v_texCoord);
+            vec4 g4 = texture(gbuffer4, v_texCoord);
+
             StandardSurface s;
-
-            #if USE_PLS
-                // [PVRVFrame driver bug] Don't use PLS data inside vector constructors
-                vec4 g1 = gbuffer0;
-                vec4 g2 = gbuffer1;
-                vec4 g3 = gbuffer2;
-                vec4 g4 = gbuffer3;
-            #else
-                vec4 g1 = texture(gbuffer1, v_texCoord);
-                vec4 g2 = texture(gbuffer2, v_texCoord);
-                vec4 g3 = texture(gbuffer3, v_texCoord);
-                vec4 g4 = texture(gbuffer4, v_texCoord);
-            #endif
-
             s.albedo = g1;
             s.position = g2.xyz;
             s.roughness = g2.w;
@@ -626,87 +575,97 @@ void SubpassTest::createDeferredResources() {
 
     shaderInfo.blocks.push_back(cameraUBOInfo);
 
-    shaderInfo.subpassInputs.push_back({0, 1, "gbuffer1", 1});
-    shaderInfo.subpassInputs.push_back({0, 2, "gbuffer2", 1});
-    shaderInfo.subpassInputs.push_back({0, 3, "gbuffer3", 1});
-    shaderInfo.subpassInputs.push_back({0, 4, "gbuffer4", 1});
+    shaderInfo.samplerTextures.push_back({0, 1, "gbuffer1", gfx::Type::SAMPLER2D, 1});
+    shaderInfo.samplerTextures.push_back({0, 2, "gbuffer2", gfx::Type::SAMPLER2D, 1});
+    shaderInfo.samplerTextures.push_back({0, 3, "gbuffer3", gfx::Type::SAMPLER2D, 1});
+    shaderInfo.samplerTextures.push_back({0, 4, "gbuffer4", gfx::Type::SAMPLER2D, 1});
 
-    _deferredShader.reset(device->createShader(shaderInfo));
+    _deferredShader = device->createShader(shaderInfo);
 
     vector<float> vb{
         -1.F, -1.F, 0.F, 0.F,
         -1.F, 1.F, 0.F, 1.F,
         1.F, -1.F, 1.F, 0.F,
         1.F, 1.F, 1.F, 1.F};
-    _deferredVB.reset(device->createBuffer({
+    _deferredVB = device->createBuffer({
         gfx::BufferUsage::VERTEX,
         gfx::MemoryUsage::DEVICE,
         static_cast<uint>(vb.size() * sizeof(float)),
         4 * sizeof(float),
-    }));
+    });
     _deferredVB->update(vb.data(), vb.size() * sizeof(float));
 
     gfx::InputAssemblerInfo iaInfo;
     iaInfo.attributes = shaderInfo.attributes;
-    iaInfo.vertexBuffers.emplace_back(_deferredVB.get());
-    _deferredInputAssembler.reset(device->createInputAssembler(iaInfo));
+    iaInfo.vertexBuffers.emplace_back(_deferredVB);
+    _deferredInputAssembler = device->createInputAssembler(iaInfo);
 
     gfx::DescriptorSetLayoutInfo dslInfo;
     dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::FRAGMENT});
-    dslInfo.bindings.push_back({1, gfx::DescriptorType::INPUT_ATTACHMENT, 1, gfx::ShaderStageFlagBit::FRAGMENT});
-    dslInfo.bindings.push_back({2, gfx::DescriptorType::INPUT_ATTACHMENT, 1, gfx::ShaderStageFlagBit::FRAGMENT});
-    dslInfo.bindings.push_back({3, gfx::DescriptorType::INPUT_ATTACHMENT, 1, gfx::ShaderStageFlagBit::FRAGMENT});
-    dslInfo.bindings.push_back({4, gfx::DescriptorType::INPUT_ATTACHMENT, 1, gfx::ShaderStageFlagBit::FRAGMENT});
-    _deferredDescriptorSetLayout.reset(device->createDescriptorSetLayout(dslInfo));
+    dslInfo.bindings.push_back({1, gfx::DescriptorType::SAMPLER_TEXTURE, 1, gfx::ShaderStageFlagBit::FRAGMENT});
+    dslInfo.bindings.push_back({2, gfx::DescriptorType::SAMPLER_TEXTURE, 1, gfx::ShaderStageFlagBit::FRAGMENT});
+    dslInfo.bindings.push_back({3, gfx::DescriptorType::SAMPLER_TEXTURE, 1, gfx::ShaderStageFlagBit::FRAGMENT});
+    dslInfo.bindings.push_back({4, gfx::DescriptorType::SAMPLER_TEXTURE, 1, gfx::ShaderStageFlagBit::FRAGMENT});
+    _deferredDescriptorSetLayout = device->createDescriptorSetLayout(dslInfo);
 
-    _deferredPipelineLayout.reset(device->createPipelineLayout({{_deferredDescriptorSetLayout.get()}}));
+    _deferredPipelineLayout = device->createPipelineLayout({{_deferredDescriptorSetLayout}});
 
-    _deferredDescriptorSet.reset(device->createDescriptorSet({_deferredDescriptorSetLayout.get()}));
+    _deferredDescriptorSet = device->createDescriptorSet({_deferredDescriptorSetLayout});
 
-    _deferredDescriptorSet->bindBuffer(static_cast<uint>(Binding::CAMERA), _bufferViews[2].get());
-    _deferredDescriptorSet->bindTexture(1, _deferredGBuffers[0].get());
-    _deferredDescriptorSet->bindTexture(2, _deferredGBuffers[1].get());
-    _deferredDescriptorSet->bindTexture(3, _deferredGBuffers[2].get());
-    _deferredDescriptorSet->bindTexture(4, _deferredGBuffers[3].get());
-    _deferredDescriptorSet->bindSampler(1, _sampler.get());
-    _deferredDescriptorSet->bindSampler(2, _sampler.get());
-    _deferredDescriptorSet->bindSampler(3, _sampler.get());
-    _deferredDescriptorSet->bindSampler(4, _sampler.get());
+    _deferredDescriptorSet->bindBuffer(static_cast<uint>(Binding::CAMERA), _bufferViews[2]);
+    _deferredDescriptorSet->bindTexture(1, _deferredGBuffers[0]);
+    _deferredDescriptorSet->bindTexture(2, _deferredGBuffers[1]);
+    _deferredDescriptorSet->bindTexture(3, _deferredGBuffers[2]);
+    _deferredDescriptorSet->bindTexture(4, _deferredGBuffers[3]);
+    _deferredDescriptorSet->bindSampler(1, _sampler);
+    _deferredDescriptorSet->bindSampler(2, _sampler);
+    _deferredDescriptorSet->bindSampler(3, _sampler);
+    _deferredDescriptorSet->bindSampler(4, _sampler);
     _deferredDescriptorSet->update();
 
     gfx::PipelineStateInfo pipelineStateInfo;
     pipelineStateInfo.primitive                    = gfx::PrimitiveMode::TRIANGLE_STRIP;
-    pipelineStateInfo.shader                       = _deferredShader.get();
+    pipelineStateInfo.shader                       = _deferredShader;
     pipelineStateInfo.inputState                   = {_deferredInputAssembler->getAttributes()};
-    pipelineStateInfo.pipelineLayout               = _deferredPipelineLayout.get();
-    pipelineStateInfo.renderPass                   = _deferredGBufferRenderPass.get();
-    pipelineStateInfo.subpass                      = 1;
+    pipelineStateInfo.renderPass                   = fbo->getRenderPass();
+    pipelineStateInfo.pipelineLayout               = _deferredPipelineLayout;
     pipelineStateInfo.depthStencilState.depthTest  = false;
     pipelineStateInfo.depthStencilState.depthWrite = false;
     pipelineStateInfo.rasterizerState.cullMode     = gfx::CullMode::NONE;
-    _deferredPipelineState.reset(device->createPipelineState(pipelineStateInfo));
+    _deferredPipelineState                         = device->createPipelineState(pipelineStateInfo);
+
+    gfx::RenderPassInfo deferredRPInfo;
+    deferredRPInfo.colorAttachments.emplace_back();
+    deferredRPInfo.colorAttachments.back().format        = device->getColorFormat();
+    deferredRPInfo.colorAttachments.back().loadOp        = gfx::LoadOp::DISCARD;
+    deferredRPInfo.depthStencilAttachment.format         = device->getDepthStencilFormat();
+    deferredRPInfo.depthStencilAttachment.depthLoadOp    = gfx::LoadOp::DISCARD;
+    deferredRPInfo.depthStencilAttachment.depthStoreOp   = gfx::StoreOp::DISCARD;
+    deferredRPInfo.depthStencilAttachment.stencilLoadOp  = gfx::LoadOp::DISCARD;
+    deferredRPInfo.depthStencilAttachment.stencilStoreOp = gfx::StoreOp::DISCARD;
+    _deferredRenderPass                                  = device->createRenderPass(deferredRPInfo);
 }
 
-void SubpassTest::createBuffers() {
+void DeferredTest::createBuffers() {
     auto obj = loadOBJ("bunny.obj");
 
     // vertex buffer
     const auto &positions = obj.GetAttrib().vertices;
-    _vertexPositionBuffer.reset(device->createBuffer({
+    _vertexPositionBuffer = device->createBuffer({
         gfx::BufferUsage::VERTEX,
         gfx::MemoryUsage::DEVICE,
         static_cast<uint>(positions.size() * sizeof(float)),
         3 * sizeof(float),
-    }));
+    });
     _vertexPositionBuffer->update(positions.data(), positions.size() * sizeof(float));
 
     const auto &normals = obj.GetAttrib().normals;
-    _vertexNormalBuffer.reset(device->createBuffer({
+    _vertexNormalBuffer = device->createBuffer({
         gfx::BufferUsage::VERTEX,
         gfx::MemoryUsage::DEVICE,
         static_cast<uint>(normals.size() * sizeof(float)),
         3 * sizeof(float),
-    }));
+    });
     _vertexNormalBuffer->update(normals.data(), normals.size() * sizeof(float));
 
     // index buffer
@@ -716,28 +675,22 @@ void SubpassTest::createBuffers() {
     std::transform(indicesInfo.begin(), indicesInfo.end(), std::back_inserter(indices),
                    [](auto &&info) { return static_cast<uint16_t>(info.vertex_index); });
 
-    _indexBuffer.reset(device->createBuffer({
+    _indexBuffer = device->createBuffer({
         gfx::BufferUsage::INDEX,
         gfx::MemoryUsage::DEVICE,
         static_cast<uint>(indices.size() * sizeof(uint16_t)),
         sizeof(uint16_t),
-    }));
+    });
     _indexBuffer->update(indices.data(), indices.size() * sizeof(uint16_t));
 
-    vector<uint>          sizes{3 * sizeof(Mat4), sizeof(Vec4), 5 * sizeof(Vec4)};
-    gfx::Buffer *         rootUBO = nullptr;
-    vector<gfx::Buffer *> bufferViews;
-    createUberBuffer(sizes, &rootUBO, &bufferViews, &_bufferViewOffsets);
-    _rootUBO.reset(rootUBO);
-    for (auto *bufferView : bufferViews) {
-        _bufferViews.emplace_back(bufferView);
-    }
+    vector<uint> sizes{3 * sizeof(Mat4), sizeof(Vec4), 5 * sizeof(Vec4)};
+    createUberBuffer(sizes, &_rootUBO, &_bufferViews, &_bufferViewOffsets);
     _rootBuffer.resize(_bufferViewOffsets.back() / sizeof(float));
 
     constexpr float cameraDistance = 5.F;
 
     Vec4 cameraPos{cameraDistance, cameraDistance * 0.5F, cameraDistance * 0.3F, 0.F};
-    Vec4 color{252 / 255.F, 23 / 255.F, 3 / 255.F, 1.0F};
+    Vec4 color{252 / 255.F, 93 / 255.F, 93 / 255.F, 1.0F};
     Vec4 lightDir{0.F, -2.F, -1.F, 0.F};
     Vec4 lightColor{1.F, 1.F, 1.F, 1.7F};
     Vec4 skyColor{.2F, .5F, .8F, .5F};
@@ -756,39 +709,39 @@ void SubpassTest::createBuffers() {
     std::copy(&groundColor.x, &groundColor.x + 4, &_rootBuffer[_bufferViewOffsets[2] / sizeof(float) + 16]);
 }
 
-void SubpassTest::createInputAssembler() {
+void DeferredTest::createInputAssembler() {
     gfx::InputAssemblerInfo inputAssemblerInfo;
     inputAssemblerInfo.attributes.push_back({"a_position", gfx::Format::RGB32F, false, 0, false});
     inputAssemblerInfo.attributes.push_back({"a_normal", gfx::Format::RGB32F, false, 1, false});
-    inputAssemblerInfo.vertexBuffers.emplace_back(_vertexPositionBuffer.get());
-    inputAssemblerInfo.vertexBuffers.emplace_back(_vertexNormalBuffer.get());
-    inputAssemblerInfo.indexBuffer = _indexBuffer.get();
-    _inputAssembler.reset(device->createInputAssembler(inputAssemblerInfo));
+    inputAssemblerInfo.vertexBuffers.emplace_back(_vertexPositionBuffer);
+    inputAssemblerInfo.vertexBuffers.emplace_back(_vertexNormalBuffer);
+    inputAssemblerInfo.indexBuffer = _indexBuffer;
+    _inputAssembler                = device->createInputAssembler(inputAssemblerInfo);
 }
 
-void SubpassTest::createPipelineState() {
+void DeferredTest::createPipelineState() {
     gfx::DescriptorSetLayoutInfo dslInfo;
     dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::FRAGMENT});
     dslInfo.bindings.push_back({1, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::FRAGMENT});
     dslInfo.bindings.push_back({2, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX});
-    _descriptorSetLayout.reset(device->createDescriptorSetLayout(dslInfo));
+    _descriptorSetLayout = device->createDescriptorSetLayout(dslInfo);
 
-    _pipelineLayout.reset(device->createPipelineLayout({{_descriptorSetLayout.get()}}));
+    _pipelineLayout = device->createPipelineLayout({{_descriptorSetLayout}});
 
-    _descriptorSet.reset(device->createDescriptorSet({_descriptorSetLayout.get()}));
+    _descriptorSet = device->createDescriptorSet({_descriptorSetLayout});
 
-    _descriptorSet->bindBuffer(static_cast<uint>(Binding::MVP), _bufferViews[0].get());
-    _descriptorSet->bindBuffer(static_cast<uint>(Binding::COLOR), _bufferViews[1].get());
-    _descriptorSet->bindBuffer(static_cast<uint>(Binding::CAMERA), _bufferViews[2].get());
+    _descriptorSet->bindBuffer(static_cast<uint>(Binding::MVP), _bufferViews[0]);
+    _descriptorSet->bindBuffer(static_cast<uint>(Binding::COLOR), _bufferViews[1]);
+    _descriptorSet->bindBuffer(static_cast<uint>(Binding::CAMERA), _bufferViews[2]);
     _descriptorSet->update();
 
     gfx::PipelineStateInfo pipelineStateInfo;
     pipelineStateInfo.primitive      = gfx::PrimitiveMode::TRIANGLE_LIST;
-    pipelineStateInfo.shader         = _shaderForward.get();
+    pipelineStateInfo.shader         = _shaderForward;
     pipelineStateInfo.inputState     = {_inputAssembler->getAttributes()};
     pipelineStateInfo.renderPass     = fbo->getRenderPass();
-    pipelineStateInfo.pipelineLayout = _pipelineLayout.get();
-    _pipelineState.reset(device->createPipelineState(pipelineStateInfo));
+    pipelineStateInfo.pipelineLayout = _pipelineLayout;
+    _pipelineState                   = device->createPipelineState(pipelineStateInfo);
 
     _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
         {
@@ -812,33 +765,16 @@ void SubpassTest::createPipelineState() {
         },
     }));
 
-    _textureBarriers.push_back(TestBaseI::getTextureBarrier({
-        {},
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-    }));
-
-    _textureBarriers.push_back(TestBaseI::getTextureBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::PRESENT,
-        },
-    }));
-
-    _clearColors.assign(5, {0, 0, 0, 1});
+    _clearColors.assign(4, {0, 0, 0, 1});
 }
 
-void SubpassTest::onSpacePressed() {
+void DeferredTest::onSpacePressed() {
     _useDeferred = !_useDeferred;
     CC_LOG_INFO("Shading mode switched to: %s", _useDeferred ? "Deferred" : "Forward");
 }
 
-void SubpassTest::onTick() {
-    uint          globalBarrierIdx = _frameCount ? 1 : 0;
-    gfx::Texture *backBuffer       = nullptr;
+void DeferredTest::onTick() {
+    uint globalBarrierIdx = _frameCount ? 1 : 0;
     printTime();
 
     gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize();
@@ -862,40 +798,33 @@ void SubpassTest::onTick() {
 
     if (_useDeferred) {
         for (uint i = 0U; i < REPEAT; ++i) {
-            commandBuffer->beginRenderPass(_deferredGBufferRenderPass.get(), _deferredGBufferFramebuffer.get(), renderArea, _clearColors.data(), 1.0F, 0);
+            commandBuffer->beginRenderPass(_deferredGBufferRenderPass, _deferredGBufferFramebuffer,
+                                           renderArea, _clearColors.data(), 1.0F, 0);
 
-            commandBuffer->bindInputAssembler(_inputAssembler.get());
-            commandBuffer->bindPipelineState(_deferredGBufferPipelineState.get());
-            commandBuffer->bindDescriptorSet(0, _descriptorSet.get());
-            commandBuffer->draw(_inputAssembler.get());
-
-            commandBuffer->nextSubpass();
-
-            commandBuffer->bindInputAssembler(_deferredInputAssembler.get());
-            commandBuffer->bindPipelineState(_deferredPipelineState.get());
-            commandBuffer->bindDescriptorSet(0, _deferredDescriptorSet.get());
-            commandBuffer->draw(_deferredInputAssembler.get());
+            commandBuffer->bindInputAssembler(_inputAssembler);
+            commandBuffer->bindPipelineState(_deferredGBufferPipelineState);
+            commandBuffer->bindDescriptorSet(0, _descriptorSet);
+            commandBuffer->draw(_inputAssembler);
 
             commandBuffer->endRenderPass();
 
-            commandBuffer->pipelineBarrier(nullptr, &_textureBarriers[0], &backBuffer, 1);
+            commandBuffer->beginRenderPass(_deferredRenderPass, fbo, renderArea, _clearColors.data(),
+                                           1.0F, 0);
 
-            gfx::TextureBlit region;
-            region.srcExtent.width  = device->getWidth();
-            region.srcExtent.height = device->getHeight();
-            region.dstExtent.width  = device->getWidth();
-            region.dstExtent.height = device->getHeight();
-            commandBuffer->blitTexture(_deferredOutputTexture.get(), nullptr, &region, 1, gfx::Filter::POINT);
+            commandBuffer->bindInputAssembler(_deferredInputAssembler);
+            commandBuffer->bindPipelineState(_deferredPipelineState);
+            commandBuffer->bindDescriptorSet(0, _deferredDescriptorSet);
+            commandBuffer->draw(_deferredInputAssembler);
 
-            commandBuffer->pipelineBarrier(nullptr, &_textureBarriers[1], &backBuffer, 1);
+            commandBuffer->endRenderPass();
         }
     } else {
         commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, _clearColors.data(), 1.0F, 0);
 
-        commandBuffer->bindInputAssembler(_inputAssembler.get());
-        commandBuffer->bindPipelineState(_pipelineState.get());
-        commandBuffer->bindDescriptorSet(0, _descriptorSet.get());
-        commandBuffer->draw(_inputAssembler.get());
+        commandBuffer->bindInputAssembler(_inputAssembler);
+        commandBuffer->bindPipelineState(_pipelineState);
+        commandBuffer->bindDescriptorSet(0, _descriptorSet);
+        commandBuffer->draw(_inputAssembler);
 
         commandBuffer->endRenderPass();
     }

@@ -13,6 +13,7 @@
 #include "tests/StencilTest.h"
 #include "tests/StressTest.h"
 #include "tests/SubpassTest.h"
+#include "tests/DeferredTest.h"
 
 #include "cocos/base/AutoreleasePool.h"
 #include "cocos/bindings/auto/jsb_gfx_auto.h"
@@ -49,6 +50,7 @@ gfx::RenderPass * TestBaseI::renderPass             = nullptr;
 
 std::vector<TestBaseI::createFunc> TestBaseI::tests = {
     SubpassTest::create,
+    DeferredTest::create,
     ComputeTest::create,
     ScriptTest::create,
     FrameGraphTest::create,
@@ -111,7 +113,7 @@ TestBaseI::TestBaseI(const WindowInfo &info) {
         se->start();
 
         gfx::DeviceInfo deviceInfo;
-        deviceInfo.isAntiAlias  = true;
+        // deviceInfo.isAntiAlias  = true;
         deviceInfo.windowHandle = info.windowHandle;
         deviceInfo.width        = info.screen.width;
         deviceInfo.height       = info.screen.height;
@@ -245,7 +247,7 @@ gfx::Texture *TestBaseI::createTextureWithFile(const gfx::TextureInfo &partialIn
     textureInfo.width  = img->getWidth();
     textureInfo.height = img->getHeight();
     textureInfo.format = gfx::Format::RGBA8;
-    if (textureInfo.flags & gfx::TextureFlagBit::GEN_MIPMAP) {
+    if (hasFlag(textureInfo.flags, gfx::TextureFlagBit::GEN_MIPMAP)) {
         textureInfo.levelCount = TestBaseI::getMipmapLevelCounts(textureInfo.width, textureInfo.height);
     }
     auto *texture = device->createTexture(textureInfo);
@@ -258,9 +260,9 @@ gfx::Texture *TestBaseI::createTextureWithFile(const gfx::TextureInfo &partialIn
     return texture;
 }
 
-void TestBaseI::modifyProjectionBasedOnDevice(Mat4 *projection, bool isOffscreen) {
+void TestBaseI::modifyProjectionBasedOnDevice(Mat4 *projection) {
     float minZ        = device->getCapabilities().clipSpaceMinZ;
-    float signY       = device->getCapabilities().screenSpaceSignY * (isOffscreen ? device->getCapabilities().UVSpaceSignY : 1);
+    float signY       = device->getCapabilities().clipSpaceSignY;
     auto  orientation = static_cast<float>(device->getSurfaceTransform());
 
     Mat4 trans;
@@ -281,13 +283,13 @@ constexpr float preTransforms[4][4] = {
 };
 #endif
 
-void TestBaseI::createOrthographic(float left, float right, float bottom, float top, float zNear, float zFar, Mat4 *dst, bool isOffscreen) {
+void TestBaseI::createOrthographic(float left, float right, float bottom, float top, float zNear, float zFar, Mat4 *dst) {
 #ifdef DEFAULT_MATRIX_MATH
     Mat4::createOrthographic(left, right, bottom, top, zNear, zFar, dst);
-    TestBaseI::modifyProjectionBasedOnDevice(dst, isOffscreen);
+    TestBaseI::modifyProjectionBasedOnDevice(dst);
 #else
     float                 minZ         = device->getCapabilities().clipSpaceMinZ;
-    float                 signY        = device->getCapabilities().screenSpaceSignY * (isOffscreen ? device->getCapabilities().UVSpaceSignY : 1);
+    float                 signY        = device->getCapabilities().clipSpaceSignY;
     gfx::SurfaceTransform orientation  = device->getSurfaceTransform();
     const float *         preTransform = preTransforms[(uint)orientation];
 
@@ -310,13 +312,13 @@ void TestBaseI::createOrthographic(float left, float right, float bottom, float 
 #endif
 }
 
-void TestBaseI::createPerspective(float fov, float aspect, float zNear, float zFar, Mat4 *dst, bool isOffscreen) {
+void TestBaseI::createPerspective(float fov, float aspect, float zNear, float zFar, Mat4 *dst) {
 #ifdef DEFAULT_MATRIX_MATH
     Mat4::createPerspective(MATH_DEG_TO_RAD(fov), aspect, zNear, zFar, dst);
-    TestBaseI::modifyProjectionBasedOnDevice(dst, isOffscreen);
+    TestBaseI::modifyProjectionBasedOnDevice(dst);
 #else
     float                 minZ         = device->getCapabilities().clipSpaceMinZ;
-    float                 signY        = device->getCapabilities().screenSpaceSignY * (isOffscreen ? device->getCapabilities().UVSpaceSignY : 1);
+    float                 signY        = device->getCapabilities().clipSpaceSignY;
     gfx::SurfaceTransform orientation  = device->getSurfaceTransform();
     const float *         preTransform = preTransforms[(uint)orientation];
 
@@ -431,7 +433,7 @@ tinyobj::ObjReader TestBaseI::loadOBJ(const String & /*path*/) {
     tinyobj::ObjReaderConfig config;
     config.vertex_color = false;
     obj.ParseFromString(objFile, mtlFile, config);
-    CCASSERT(obj.Valid(), "file failed to load")
+    CCASSERT(obj.Valid(), "file failed to load");
 
     return obj;
 }

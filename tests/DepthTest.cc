@@ -525,7 +525,7 @@ void DepthTexture::onTick() {
     _up.set(0, 1.f, 0);
     Mat4::createLookAt(_eye, _center, _up, &_bunnyMatrices[1]);
     gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize();
-    TestBaseI::createPerspective(45.f, 1.0f * orientedSize.width / orientedSize.height, 1.f, 10.f, &_bunnyMatrices[2], true);
+    TestBaseI::createPerspective(45.f, 1.0f * orientedSize.width / orientedSize.height, 1.f, 10.f, &_bunnyMatrices[2]);
 
     gfx::Color clearColor = {1.0, 0, 0, 1.0f};
 
