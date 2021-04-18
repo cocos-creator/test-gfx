@@ -38,7 +38,6 @@ void SubpassTest::onDestroy() {
     CC_SAFE_DESTROY(_deferredGBufferRenderPass)
     CC_SAFE_DESTROY(_deferredGBufferPipelineState)
 
-    CC_SAFE_DESTROY(_deferredRenderPass)
     CC_SAFE_DESTROY(_deferredShader)
     CC_SAFE_DESTROY(_deferredVB)
     CC_SAFE_DESTROY(_deferredDescriptorSet)
@@ -382,31 +381,52 @@ void SubpassTest::createDeferredResources() {
     _sampler = _device->createSampler(samplerInfo);
 
     gfx::RenderPassInfo rpInfo;
+    rpInfo.colorAttachments.emplace_back();
+    rpInfo.colorAttachments.back().format = _device->getColorFormat();
+    rpInfo.colorAttachments.back().loadOp = gfx::LoadOp::DISCARD;
+
     for (uint i = 0; i < 4; ++i) {
+        gfx::Format format = i ? gfx::Format::RGBA16F : gfx::Format::RGBA8; // RGBA8 is suffice for albedo
         _deferredGBuffers.push_back(_device->createTexture({
             gfx::TextureType::TEX2D,
-            gfx::TextureUsageBit::SAMPLED | gfx::TextureUsageBit::COLOR_ATTACHMENT,
-            gfx::Format::RGBA16F,
+            gfx::TextureUsageBit::INPUT_ATTACHMENT | gfx::TextureUsageBit::COLOR_ATTACHMENT,
+            format,
             _device->getWidth(),
             _device->getHeight(),
         }));
         rpInfo.colorAttachments.emplace_back();
-        rpInfo.colorAttachments.back().format         = gfx::Format::RGBA16F;
-        rpInfo.colorAttachments.back().endAccesses[0] = gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE;
+        rpInfo.colorAttachments.back().format         = format;
+        rpInfo.colorAttachments.back().endAccesses[0] = gfx::AccessType::FRAGMENT_SHADER_READ_COLOR_INPUT_ATTACHMENT;
     }
-    _deferredGBufferDepthTexture         = _device->createTexture({
+
+    _deferredGBufferDepthTexture = _device->createTexture({
         gfx::TextureType::TEX2D,
         gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT,
         _device->getDepthStencilFormat(),
         _device->getWidth(),
         _device->getHeight(),
     });
+
     rpInfo.depthStencilAttachment.format = _device->getDepthStencilFormat();
+
+    rpInfo.subpasses.resize(2);
+    rpInfo.subpasses[0].colors       = {1, 2, 3, 4};
+    rpInfo.subpasses[0].depthStencil = 5;
+    rpInfo.subpasses[1].colors       = {0};
+    rpInfo.subpasses[1].inputs       = {1, 2, 3, 4};
+    rpInfo.subpasses[1].depthStencil = 5;
+
+    rpInfo.dependencies.push_back({
+        0,
+        1,
+        {gfx::AccessType::COLOR_ATTACHMENT_WRITE},
+        {gfx::AccessType::FRAGMENT_SHADER_READ_COLOR_INPUT_ATTACHMENT},
+    });
 
     _deferredGBufferRenderPass  = _device->createRenderPass(rpInfo);
     _deferredGBufferFramebuffer = _device->createFramebuffer({
         _deferredGBufferRenderPass,
-        _deferredGBuffers,
+        {nullptr, _deferredGBuffers[0], _deferredGBuffers[1], _deferredGBuffers[2], _deferredGBuffers[3]},
         _deferredGBufferDepthTexture,
     });
 
@@ -460,10 +480,10 @@ void SubpassTest::createDeferredResources() {
             precision highp float;
             layout(location = 0) in vec2 v_texCoord;
 
-            layout(set = 0, binding = 1) uniform sampler2D gbuffer1;
-            layout(set = 0, binding = 2) uniform sampler2D gbuffer2;
-            layout(set = 0, binding = 3) uniform sampler2D gbuffer3;
-            layout(set = 0, binding = 4) uniform sampler2D gbuffer4;
+            layout(input_attachment_index = 0, set = 0, binding = 1) uniform subpassInput gbuffer1;
+            layout(input_attachment_index = 1, set = 0, binding = 2) uniform subpassInput gbuffer2;
+            layout(input_attachment_index = 2, set = 0, binding = 3) uniform subpassInput gbuffer3;
+            layout(input_attachment_index = 3, set = 0, binding = 4) uniform subpassInput gbuffer4;
         )",
         R"(
             precision highp float;
@@ -489,10 +509,10 @@ void SubpassTest::createDeferredResources() {
         layout(location = 0) out vec4 o_color;
         void main() {
 
-            vec4 g1 = texture(gbuffer1, v_texCoord);
-            vec4 g2 = texture(gbuffer2, v_texCoord);
-            vec4 g3 = texture(gbuffer3, v_texCoord);
-            vec4 g4 = texture(gbuffer4, v_texCoord);
+            vec4 g1 = subpassLoad(gbuffer1);
+            vec4 g2 = subpassLoad(gbuffer2);
+            vec4 g3 = subpassLoad(gbuffer3);
+            vec4 g4 = subpassLoad(gbuffer4);
 
             StandardSurface s;
             s.albedo = g1;
@@ -559,10 +579,10 @@ void SubpassTest::createDeferredResources() {
 
     shaderInfo.blocks.push_back(cameraUBOInfo);
 
-    shaderInfo.samplerTextures.push_back({0, 1, "gbuffer1", gfx::Type::SAMPLER2D, 1});
-    shaderInfo.samplerTextures.push_back({0, 2, "gbuffer2", gfx::Type::SAMPLER2D, 1});
-    shaderInfo.samplerTextures.push_back({0, 3, "gbuffer3", gfx::Type::SAMPLER2D, 1});
-    shaderInfo.samplerTextures.push_back({0, 4, "gbuffer4", gfx::Type::SAMPLER2D, 1});
+    shaderInfo.subpassInputs.push_back({0, 1, "gbuffer1", 1});
+    shaderInfo.subpassInputs.push_back({0, 2, "gbuffer2", 1});
+    shaderInfo.subpassInputs.push_back({0, 3, "gbuffer3", 1});
+    shaderInfo.subpassInputs.push_back({0, 4, "gbuffer4", 1});
 
     _deferredShader = _device->createShader(shaderInfo);
 
@@ -587,10 +607,10 @@ void SubpassTest::createDeferredResources() {
 
     gfx::DescriptorSetLayoutInfo dslInfo;
     dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::FRAGMENT});
-    dslInfo.bindings.push_back({1, gfx::DescriptorType::SAMPLER_TEXTURE, 1, gfx::ShaderStageFlagBit::FRAGMENT});
-    dslInfo.bindings.push_back({2, gfx::DescriptorType::SAMPLER_TEXTURE, 1, gfx::ShaderStageFlagBit::FRAGMENT});
-    dslInfo.bindings.push_back({3, gfx::DescriptorType::SAMPLER_TEXTURE, 1, gfx::ShaderStageFlagBit::FRAGMENT});
-    dslInfo.bindings.push_back({4, gfx::DescriptorType::SAMPLER_TEXTURE, 1, gfx::ShaderStageFlagBit::FRAGMENT});
+    dslInfo.bindings.push_back({1, gfx::DescriptorType::INPUT_ATTACHMENT, 1, gfx::ShaderStageFlagBit::FRAGMENT});
+    dslInfo.bindings.push_back({2, gfx::DescriptorType::INPUT_ATTACHMENT, 1, gfx::ShaderStageFlagBit::FRAGMENT});
+    dslInfo.bindings.push_back({3, gfx::DescriptorType::INPUT_ATTACHMENT, 1, gfx::ShaderStageFlagBit::FRAGMENT});
+    dslInfo.bindings.push_back({4, gfx::DescriptorType::INPUT_ATTACHMENT, 1, gfx::ShaderStageFlagBit::FRAGMENT});
     _deferredDescriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
 
     _deferredPipelineLayout = _device->createPipelineLayout({{_deferredDescriptorSetLayout}});
@@ -612,22 +632,12 @@ void SubpassTest::createDeferredResources() {
     pipelineStateInfo.primitive                    = gfx::PrimitiveMode::TRIANGLE_STRIP;
     pipelineStateInfo.shader                       = _deferredShader;
     pipelineStateInfo.inputState                   = {_deferredInputAssembler->getAttributes()};
-    pipelineStateInfo.renderPass                   = _fbo->getRenderPass();
     pipelineStateInfo.pipelineLayout               = _deferredPipelineLayout;
+    pipelineStateInfo.renderPass                   = _deferredGBufferRenderPass;
+    pipelineStateInfo.subpass                      = 1;
     pipelineStateInfo.depthStencilState.depthTest  = false;
     pipelineStateInfo.depthStencilState.depthWrite = false;
     _deferredPipelineState                         = _device->createPipelineState(pipelineStateInfo);
-
-    gfx::RenderPassInfo deferredRPInfo;
-    deferredRPInfo.colorAttachments.emplace_back();
-    deferredRPInfo.colorAttachments.back().format        = _device->getColorFormat();
-    deferredRPInfo.colorAttachments.back().loadOp        = gfx::LoadOp::DISCARD;
-    deferredRPInfo.depthStencilAttachment.format         = _device->getDepthStencilFormat();
-    deferredRPInfo.depthStencilAttachment.depthLoadOp    = gfx::LoadOp::DISCARD;
-    deferredRPInfo.depthStencilAttachment.depthStoreOp   = gfx::StoreOp::DISCARD;
-    deferredRPInfo.depthStencilAttachment.stencilLoadOp  = gfx::LoadOp::DISCARD;
-    deferredRPInfo.depthStencilAttachment.stencilStoreOp = gfx::StoreOp::DISCARD;
-    _deferredRenderPass                                  = _device->createRenderPass(deferredRPInfo);
 }
 
 void SubpassTest::createBuffers() {
@@ -744,6 +754,10 @@ void SubpassTest::createPipelineState() {
             gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
         },
     }));
+
+    _clearColors.assign(5, {0, 0, 0, 1});
+
+    _useDeferred = true;
 }
 
 void SubpassTest::onSpacePressed() {
@@ -761,8 +775,6 @@ void SubpassTest::onTick() {
     std::copy(_worldMatrix.m, _worldMatrix.m + 16, &_rootBuffer[0]);
     std::copy(_projectionMatrix.m, _projectionMatrix.m + 16, &_rootBuffer[32]);
 
-    static const gfx::ColorList CLEAR_COLOR = {{0, 0, 0, 1}, {0, 0, 0, 1}, {0, 0, 0, 1}, {0, 0, 0, 1}};
-
     _device->acquire();
 
     _rootUBO->update(_rootBuffer.data(), _rootBuffer.size() * sizeof(float));
@@ -776,16 +788,14 @@ void SubpassTest::onTick() {
     }
 
     if (_useDeferred) {
-        commandBuffer->beginRenderPass(_deferredGBufferRenderPass, _deferredGBufferFramebuffer, renderArea, CLEAR_COLOR.data(), 1.0F, 0);
+        commandBuffer->beginRenderPass(_deferredGBufferRenderPass, _deferredGBufferFramebuffer, renderArea, _clearColors.data(), 1.0F, 0);
 
         commandBuffer->bindInputAssembler(_inputAssembler);
         commandBuffer->bindPipelineState(_deferredGBufferPipelineState);
         commandBuffer->bindDescriptorSet(0, _descriptorSet);
         commandBuffer->draw(_inputAssembler);
 
-        commandBuffer->endRenderPass();
-
-        commandBuffer->beginRenderPass(_deferredRenderPass, _fbo, renderArea, CLEAR_COLOR.data(), 1.0F, 0);
+        commandBuffer->nextSubpass();
 
         commandBuffer->bindInputAssembler(_deferredInputAssembler);
         commandBuffer->bindPipelineState(_deferredPipelineState);
@@ -794,7 +804,7 @@ void SubpassTest::onTick() {
 
         commandBuffer->endRenderPass();
     } else {
-        commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, CLEAR_COLOR.data(), 1.0F, 0);
+        commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, _clearColors.data(), 1.0F, 0);
 
         commandBuffer->bindInputAssembler(_inputAssembler);
         commandBuffer->bindPipelineState(_pipelineState);
