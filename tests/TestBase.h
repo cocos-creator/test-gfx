@@ -14,12 +14,12 @@ class ObjReader;
 
 namespace cc {
 
-typedef struct WindowInfo {
+using WindowInfo = struct WindowInfo {
     intptr_t  windowHandle = 0;
     gfx::Rect screen;
     int       physicalWidth;
     int       physicalHeight;
-} WindowInfo;
+};
 
 struct Framebuffer {
     gfx::RenderPass * renderPass      = nullptr;
@@ -28,10 +28,10 @@ struct Framebuffer {
     gfx::Framebuffer *framebuffer     = nullptr;
 
     ~Framebuffer() {
-        CC_SAFE_DESTROY(framebuffer);
-        CC_SAFE_DESTROY(depthStencilTex);
-        CC_SAFE_DESTROY(colorTex);
-        CC_SAFE_DESTROY(renderPass);
+        CC_SAFE_DESTROY(framebuffer)
+        CC_SAFE_DESTROY(depthStencilTex)
+        CC_SAFE_DESTROY(colorTex)
+        CC_SAFE_DESTROY(renderPass)
     }
 };
 
@@ -84,8 +84,8 @@ struct FrameRate {
     std::chrono::steady_clock::time_point curTime;
     float                                 dt{0};
 
-    uint  frameAcc = 0u;
-    float timeAcc  = 0.f;
+    uint  frameAcc = 0U;
+    float timeAcc  = 0.F;
 };
 
 #define DEFINE_CREATE_METHOD(className)                \
@@ -99,22 +99,39 @@ struct FrameRate {
 
 class TestBaseI : public cc::Object {
 public:
-    TestBaseI(const WindowInfo &info);
-    virtual ~TestBaseI() = default;
+    explicit TestBaseI(const WindowInfo &info);
+    ~TestBaseI() override = default;
 
     using createFunc = TestBaseI *(*)(const WindowInfo &info);
 
-    static void lookupTime(FrameRate &statistics = hostThread) {
-        statistics.curTime  = std::chrono::steady_clock::now();
-        statistics.dt       = float(std::chrono::duration_cast<std::chrono::nanoseconds>(statistics.curTime - statistics.prevTime).count()) / NANOSECONDS_PER_SECOND;
-        statistics.prevTime = statistics.curTime;
+    static void lookupTime(FrameRate *statistics = &hostThread) {
+        statistics->curTime  = std::chrono::steady_clock::now();
+        statistics->dt       = float(std::chrono::duration_cast<std::chrono::nanoseconds>(statistics->curTime - statistics->prevTime).count()) / NANOSECONDS_PER_SECOND;
+        statistics->prevTime = statistics->curTime;
+
+        if (statistics->timeAcc != 0.F) {
+            statistics->timeAcc = statistics->dt;
+        } else {
+            statistics->timeAcc = statistics->timeAcc * 0.95F + statistics->dt * 0.05F;
+        }
+
+        statistics->frameAcc++;
     }
-    static gfx::Device *getDevice() { return _device; }
+    static void printTime(const FrameRate &statistics = hostThread, const String &prefix = "Host thread") {
+        if (statistics.frameAcc % 6 == 0) {
+            CC_LOG_INFO("%s: frame %d, avg: %.2fms (~%ld FPS)",
+                        prefix.c_str(),
+                        statistics.frameAcc,
+                        statistics.timeAcc * 1000.F,
+                        lround(1.F / statistics.timeAcc));
+        }
+    }
+    static gfx::Device *getDevice() { return device; }
     static void         resizeGlobal(uint width, uint height) {
-        if (_test) _test->resize(width, height);
+        if (test) test->resize(width, height);
     }
-    static void setWindowInfo(const WindowInfo &info) { _windowInfo = info; }
-    static void spacePressed() { _test->onSpacePressed(); }
+    static void setWindowInfo(const WindowInfo &info) { windowInfo = info; }
+    static void spacePressed() { test->onSpacePressed(); }
 
     static void nextTest(bool backward = false);
     static void destroyGlobal();
@@ -122,28 +139,28 @@ public:
     static void onTouchEnd();
     static void update();
 
-    static void                 evalString(std::string code);
-    static void                 runScript(std::string file);
+    static void                 evalString(const std::string &code);
+    static void                 runScript(const std::string &file);
     static void                 tickScript();
-    static unsigned char *      RGB2RGBA(Image *img);
-    static gfx::Texture *       createTextureWithFile(gfx::Device *device, gfx::TextureInfo &textureInfo, std::string imageFile);
-    static void                 modifyProjectionBasedOnDevice(Mat4 &projection, bool isOffscreen = false);
-    static void                 createOrthographic(float left, float right, float bottom, float top, float near, float ZFar, Mat4 *dst, bool isOffscreen = false);
-    static void                 createPerspective(float fov, float aspect, float near, float ZFar, Mat4 *dst, bool isOffscreen = false);
+    static unsigned char *      rgb2rgba(Image *img);
+    static gfx::Texture *       createTextureWithFile(const gfx::TextureInfo &partialInfo, const std::string &imageFile);
+    static void                 modifyProjectionBasedOnDevice(Mat4 *projection, bool isOffscreen = false);
+    static void                 createOrthographic(float left, float right, float bottom, float top, float near, float zFar, Mat4 *dst, bool isOffscreen = false);
+    static void                 createPerspective(float fov, float aspect, float near, float zFar, Mat4 *dst, bool isOffscreen = false);
     static gfx::Extent          getOrientedSurfaceSize();
     static gfx::Viewport        getViewportBasedOnDevice(const Vec4 &relativeArea);
     static uint                 getUBOSize(uint size);
     static uint                 getMipmapLevelCounts(uint width, uint height);
-    static uint                 getAlignedUBOStride(gfx::Device *device, uint stride);
-    static tinyobj::ObjReader   loadOBJ(String path);
+    static uint                 getAlignedUBOStride(uint stride);
+    static tinyobj::ObjReader   loadOBJ(const String &path);
     static gfx::GlobalBarrier * getGlobalBarrier(const gfx::GlobalBarrierInfo &info);
     static gfx::TextureBarrier *getTextureBarrier(const gfx::TextureBarrierInfo &info);
-    static void                 createUberBuffer(gfx::Device *device, const vector<uint> &sizes, gfx::Buffer **pBuffer,
+    static void                 createUberBuffer(const vector<uint> &sizes, gfx::Buffer **pBuffer,
                                                  vector<gfx::Buffer *> *pBufferViews, vector<uint> *pBufferViewOffsets);
 
     template <typename T>
     static T &getAppropriateShaderSource(ShaderSources<T> &sources) {
-        switch (_device->getGfxAPI()) {
+        switch (device->getGfxAPI()) {
             case gfx::API::GLES2:
                 return sources.glsl1;
             case gfx::API::GLES3:
@@ -162,7 +179,6 @@ public:
     static const bool MANUAL_BARRIER;
 
     static const uint NANOSECONDS_PER_SECOND;
-    static const uint NANOSECONDS_60FPS;
 
     virtual bool onInit() { return true; }
     virtual void onTick() {}
@@ -186,33 +202,33 @@ public:
     CC_INLINE void resize(uint width, uint height) {
         onResize(width, height);
 
-        _device->resize(width, height);
+        device->resize(width, height);
     }
 
     CC_INLINE void destroy() {
         onDestroy();
 
-        for (auto texture : _textures) {
-            CC_SAFE_DESTROY(texture);
+        for (auto *texture : _textures) {
+            CC_SAFE_DESTROY(texture)
         }
         _textures.clear();
     }
 
 protected:
-    static WindowInfo              _windowInfo;
-    static int                     _curTestIndex;
-    static std::vector<createFunc> _tests;
-    static TestBaseI *             _test;
-    static int                     _nextDirection;
+    static WindowInfo              windowInfo;
+    static int                     curTestIndex;
+    static std::vector<createFunc> tests;
+    static TestBaseI *             test;
+    static int                     nextDirection;
 
-    static gfx::Device *                     _device;
-    static gfx::Framebuffer *                _fbo;
-    static std::vector<gfx::CommandBuffer *> _commandBuffers;
+    static gfx::Device *                     device;
+    static gfx::Framebuffer *                fbo;
+    static std::vector<gfx::CommandBuffer *> commandBuffers;
 
-    static gfx::RenderPass *_renderPass;
+    static gfx::RenderPass *renderPass;
 
-    static std::unordered_map<uint, gfx::GlobalBarrier *>  _globalBarrierMap;
-    static std::unordered_map<uint, gfx::TextureBarrier *> _textureBarrierMap;
+    static std::unordered_map<uint, gfx::GlobalBarrier *>  globalBarrierMap;
+    static std::unordered_map<uint, gfx::TextureBarrier *> textureBarrierMap;
 
     static framegraph::FrameGraph fg;
     static framegraph::Texture    fgBackBuffer;
@@ -225,8 +241,8 @@ protected:
     std::vector<gfx::Texture *>        _textures;
     std::vector<gfx::TextureBarrier *> _textureBarriers;
 
-    float _time       = 0.f;
-    uint  _frameCount = 0u;
+    float _time       = 0.F;
+    uint  _frameCount = 0U;
 };
 
 } // namespace cc

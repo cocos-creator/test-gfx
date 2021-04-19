@@ -5,7 +5,7 @@ namespace cc {
 
 namespace {
 struct BigTriangle : public cc::Object {
-    BigTriangle(gfx::Device *_device, gfx::Framebuffer *_fbo) : fbo(_fbo), device(_device) {
+    BigTriangle(gfx::Device *device, gfx::Framebuffer *fbo) : fbo(fbo), device(device) {
         createShader();
         createBuffers();
         createSampler();
@@ -238,11 +238,11 @@ struct BigTriangle : public cc::Object {
 };
 
 struct Bunny : public cc::Object {
-    Bunny(gfx::Device *_device, gfx::Framebuffer *_fbo) : device(_device) {
+    Bunny(gfx::Device *device, gfx::Framebuffer *fbo) : device(device) {
         createShader();
         createBuffers();
         createInputAssembler();
-        createPipeline(_fbo);
+        createPipeline(fbo);
     }
 
     ~Bunny() {}
@@ -384,7 +384,7 @@ struct Bunny : public cc::Object {
         inputAssembler                 = device->createInputAssembler(inputAssemblerInfo);
     }
 
-    void createPipeline(gfx::Framebuffer *_fbo) {
+    void createPipeline(gfx::Framebuffer *fbo) {
         gfx::DescriptorSetLayoutInfo dslInfo;
         dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX});
         descriptorSetLayout = device->createDescriptorSetLayout(dslInfo);
@@ -402,7 +402,7 @@ struct Bunny : public cc::Object {
         pipelineInfo.primitive                    = gfx::PrimitiveMode::TRIANGLE_LIST;
         pipelineInfo.shader                       = shader;
         pipelineInfo.inputState                   = {inputAssembler->getAttributes()};
-        pipelineInfo.renderPass                   = _fbo->getRenderPass();
+        pipelineInfo.renderPass                   = fbo->getRenderPass();
         pipelineInfo.depthStencilState.depthTest  = true;
         pipelineInfo.depthStencilState.depthWrite = true;
         pipelineInfo.depthStencilState.depthFunc  = gfx::ComparisonFunc::LESS;
@@ -468,26 +468,26 @@ bool DepthTexture::onInit() {
     gfx::RenderPassInfo renderPassInfo;
 
     gfx::DepthStencilAttachment &depthStencilAttachment = renderPassInfo.depthStencilAttachment;
-    depthStencilAttachment.format                       = _device->getDepthStencilFormat();
+    depthStencilAttachment.format                       = device->getDepthStencilFormat();
     depthStencilAttachment.endAccesses                  = {gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE};
 
-    _bunnyFBO->renderPass = _device->createRenderPass(renderPassInfo);
+    _bunnyFBO->renderPass = device->createRenderPass(renderPassInfo);
 
     gfx::TextureInfo depthStecnilTexInfo;
     depthStecnilTexInfo.type   = gfx::TextureType::TEX2D;
     depthStecnilTexInfo.usage  = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT | gfx::TextureUsageBit::SAMPLED;
-    depthStecnilTexInfo.format = _device->getDepthStencilFormat();
-    depthStecnilTexInfo.width  = _device->getWidth();
-    depthStecnilTexInfo.height = _device->getHeight();
-    _bunnyFBO->depthStencilTex = _device->createTexture(depthStecnilTexInfo);
+    depthStecnilTexInfo.format = device->getDepthStencilFormat();
+    depthStecnilTexInfo.width  = device->getWidth();
+    depthStecnilTexInfo.height = device->getHeight();
+    _bunnyFBO->depthStencilTex = device->createTexture(depthStecnilTexInfo);
 
     gfx::FramebufferInfo fboInfo;
     fboInfo.renderPass          = _bunnyFBO->renderPass;
     fboInfo.depthStencilTexture = _bunnyFBO->depthStencilTex;
-    _bunnyFBO->framebuffer      = _device->createFramebuffer(fboInfo);
+    _bunnyFBO->framebuffer      = device->createFramebuffer(fboInfo);
 
-    bunny = CC_NEW(Bunny(_device, _bunnyFBO->framebuffer));
-    bg    = CC_NEW(BigTriangle(_device, _fbo));
+    bunny = CC_NEW(Bunny(device, _bunnyFBO->framebuffer));
+    bg    = CC_NEW(BigTriangle(device, fbo));
 
     bg->descriptorSet->bindTexture(1, _bunnyFBO->depthStencilTex);
     bg->descriptorSet->update();
@@ -529,15 +529,15 @@ void DepthTexture::onTick() {
 
     gfx::Color clearColor = {1.0, 0, 0, 1.0f};
 
-    _device->acquire();
+    device->acquire();
 
     for (uint i = 0; i < Bunny::BUNNY_NUM; i++) {
         _bunnyMatrices[0].m[12] = i % 2 ? -1.5f : 1.5f;
         bunny->mvpUniformBuffer[i]->update(_bunnyMatrices, sizeof(_bunnyMatrices));
     }
-    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
+    gfx::Rect renderArea = {0, 0, device->getWidth(), device->getHeight()};
 
-    auto commandBuffer = _commandBuffers[0];
+    auto commandBuffer = commandBuffers[0];
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER)
@@ -554,7 +554,7 @@ void DepthTexture::onTick() {
     commandBuffer->endRenderPass();
 
     // render bg
-    commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
+    commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0f, 0);
     commandBuffer->bindInputAssembler(bg->inputAssembler);
     commandBuffer->bindPipelineState(bg->pipelineState);
     commandBuffer->bindDescriptorSet(0, bg->descriptorSet);
@@ -563,9 +563,9 @@ void DepthTexture::onTick() {
 
     commandBuffer->end();
 
-    _device->flushCommands(_commandBuffers);
-    _device->getQueue()->submit(_commandBuffers);
-    _device->present();
+    device->flushCommands(commandBuffers);
+    device->getQueue()->submit(commandBuffers);
+    device->present();
 }
 
 } // namespace cc

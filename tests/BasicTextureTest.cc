@@ -135,7 +135,7 @@ void BasicTexture::createShader() {
     shaderInfo.attributes      = std::move(attributeList);
     shaderInfo.blocks          = std::move(uniformBlockList);
     shaderInfo.samplerTextures = std::move(sampler);
-    _shader                    = _device->createShader(shaderInfo);
+    _shader                    = device->createShader(shaderInfo);
 }
 
 void BasicTexture::createVertexBuffer() {
@@ -149,7 +149,7 @@ void BasicTexture::createVertexBuffer() {
                           left, top, 0.f, 0.f,
                           left, bottom, 0.f, 1.f};
 
-    _vertexBuffer = _device->createBuffer({
+    _vertexBuffer = device->createBuffer({
         gfx::BufferUsage::VERTEX,
         gfx::MemoryUsage::DEVICE,
         sizeof(vertexData),
@@ -157,7 +157,7 @@ void BasicTexture::createVertexBuffer() {
     });
     _vertexBuffer->update(vertexData, sizeof(vertexData));
 
-    _uniformBuffer = _device->createBuffer({
+    _uniformBuffer = device->createBuffer({
         gfx::BufferUsage::UNIFORM,
         gfx::MemoryUsage::DEVICE,
         TestBaseI::getUBOSize(sizeof(Mat4)),
@@ -170,7 +170,7 @@ void BasicTexture::createInputAssembler() {
     inputAssemblerInfo.attributes.emplace_back(gfx::Attribute{"a_position", gfx::Format::RG32F, false, 0, false});
     inputAssemblerInfo.attributes.emplace_back(gfx::Attribute{"a_texCoord", gfx::Format::RG32F, false, 0, false});
     inputAssemblerInfo.vertexBuffers.emplace_back(_vertexBuffer);
-    _inputAssembler = _device->createInputAssembler(inputAssemblerInfo);
+    _inputAssembler = device->createInputAssembler(inputAssemblerInfo);
 }
 
 void BasicTexture::createTexture() {
@@ -179,23 +179,23 @@ void BasicTexture::createTexture() {
     textureInfo.format = gfx::Format::RGBA8;
 
     _textures.resize(2);
-    _textures[0] = TestBaseI::createTextureWithFile(_device, textureInfo, "uv_checker_01.jpg");
-    _textures[1] = TestBaseI::createTextureWithFile(_device, textureInfo, "uv_checker_02.jpg");
+    _textures[0] = TestBaseI::createTextureWithFile(textureInfo, "uv_checker_01.jpg");
+    _textures[1] = TestBaseI::createTextureWithFile(textureInfo, "uv_checker_02.jpg");
 
     //create sampler
     gfx::SamplerInfo samplerInfo;
-    _sampler = _device->createSampler(samplerInfo);
+    _sampler = device->createSampler(samplerInfo);
 }
 
 void BasicTexture::createPipeline() {
     gfx::DescriptorSetLayoutInfo dslInfo;
     dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX});
     dslInfo.bindings.push_back({1, gfx::DescriptorType::SAMPLER_TEXTURE, 2, gfx::ShaderStageFlagBit::FRAGMENT});
-    _descriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
+    _descriptorSetLayout = device->createDescriptorSetLayout(dslInfo);
 
-    _pipelineLayout = _device->createPipelineLayout({{_descriptorSetLayout}});
+    _pipelineLayout = device->createPipelineLayout({{_descriptorSetLayout}});
 
-    _descriptorSet = _device->createDescriptorSet({_descriptorSetLayout});
+    _descriptorSet = device->createDescriptorSet({_descriptorSetLayout});
 
     _descriptorSet->bindBuffer(0, _uniformBuffer);
     _descriptorSet->bindSampler(1, _sampler);
@@ -208,10 +208,10 @@ void BasicTexture::createPipeline() {
     pipelineInfo.primitive      = gfx::PrimitiveMode::TRIANGLE_LIST;
     pipelineInfo.shader         = _shader;
     pipelineInfo.inputState     = {_inputAssembler->getAttributes()};
-    pipelineInfo.renderPass     = _fbo->getRenderPass();
+    pipelineInfo.renderPass     = fbo->getRenderPass();
     pipelineInfo.pipelineLayout = _pipelineLayout;
 
-    _pipelineState = _device->createPipelineState(pipelineInfo);
+    _pipelineState = device->createPipelineState(pipelineInfo);
 
     _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
         {
@@ -255,18 +255,18 @@ void BasicTexture::onTick() {
     Mat4 mvpMatrix;
     TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &mvpMatrix);
 
-    _device->acquire();
+    device->acquire();
 
     _uniformBuffer->update(&mvpMatrix, sizeof(mvpMatrix));
-    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
+    gfx::Rect renderArea = {0, 0, device->getWidth(), device->getHeight()};
 
-    auto commandBuffer = _commandBuffers[0];
+    auto commandBuffer = commandBuffers[0];
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER)
         commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx], _textureBarriers.data(), _textures.data(), textureBarriers);
 
-    commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
+    commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0f, 0);
     commandBuffer->bindInputAssembler(_inputAssembler);
     commandBuffer->bindPipelineState(_pipelineState);
     commandBuffer->bindDescriptorSet(0, _descriptorSet);
@@ -274,9 +274,9 @@ void BasicTexture::onTick() {
     commandBuffer->endRenderPass();
     commandBuffer->end();
 
-    _device->flushCommands(_commandBuffers);
-    _device->getQueue()->submit(_commandBuffers);
-    _device->present();
+    device->flushCommands(commandBuffers);
+    device->getQueue()->submit(commandBuffers);
+    device->present();
 }
 
 } // namespace cc

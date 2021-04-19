@@ -115,7 +115,7 @@ void BasicTriangle::createShader() {
     shaderInfo.stages     = std::move(shaderStageList);
     shaderInfo.attributes = std::move(attributeList);
     shaderInfo.blocks     = std::move(uniformBlockList);
-    _shader               = _device->createShader(shaderInfo);
+    _shader               = device->createShader(shaderInfo);
 }
 
 void BasicTriangle::createVertexBuffer() {
@@ -133,7 +133,7 @@ void BasicTriangle::createVertexBuffer() {
         gfx::BufferFlagBit::NONE,
     };
 
-    _vertexBuffer = _device->createBuffer(vertexBufferInfo);
+    _vertexBuffer = device->createBuffer(vertexBufferInfo);
     _vertexBuffer->update(vertexData, sizeof(vertexData));
 
     gfx::BufferInfo uniformBufferInfo = {
@@ -141,14 +141,14 @@ void BasicTriangle::createVertexBuffer() {
         gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
         TestBaseI::getUBOSize(sizeof(gfx::Color)),
     };
-    _uniformBuffer = _device->createBuffer(uniformBufferInfo);
+    _uniformBuffer = device->createBuffer(uniformBufferInfo);
 
     gfx::BufferInfo uniformBufferMVPInfo = {
         gfx::BufferUsage::UNIFORM,
         gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
         TestBaseI::getUBOSize(sizeof(Mat4)),
     };
-    _uniformBufferMVP = _device->createBuffer(uniformBufferMVPInfo);
+    _uniformBufferMVP = device->createBuffer(uniformBufferMVPInfo);
 
     unsigned short  indices[]       = {1, 3, 0, 1, 2, 3, 2, 4, 3};
     gfx::BufferInfo indexBufferInfo = {
@@ -157,7 +157,7 @@ void BasicTriangle::createVertexBuffer() {
         sizeof(indices),
         sizeof(unsigned short),
     };
-    _indexBuffer = _device->createBuffer(indexBufferInfo);
+    _indexBuffer = device->createBuffer(indexBufferInfo);
     _indexBuffer->update(indices, sizeof(indices));
 
     gfx::DrawInfo drawInfo;
@@ -170,7 +170,7 @@ void BasicTriangle::createVertexBuffer() {
         sizeof(gfx::DrawInfo),
         sizeof(gfx::DrawInfo),
     };
-    _indirectBuffer = _device->createBuffer(indirectBufferInfo);
+    _indirectBuffer = device->createBuffer(indirectBufferInfo);
     _indirectBuffer->update(&drawInfo, sizeof(gfx::DrawInfo));
 }
 
@@ -181,18 +181,18 @@ void BasicTriangle::createInputAssembler() {
     inputAssemblerInfo.vertexBuffers.emplace_back(_vertexBuffer);
     inputAssemblerInfo.indexBuffer    = _indexBuffer;
     inputAssemblerInfo.indirectBuffer = _indirectBuffer;
-    _inputAssembler                   = _device->createInputAssembler(inputAssemblerInfo);
+    _inputAssembler                   = device->createInputAssembler(inputAssemblerInfo);
 }
 
 void BasicTriangle::createPipeline() {
     gfx::DescriptorSetLayoutInfo dslInfo;
     dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::FRAGMENT});
     dslInfo.bindings.push_back({1, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX});
-    _descriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
+    _descriptorSetLayout = device->createDescriptorSetLayout(dslInfo);
 
-    _pipelineLayout = _device->createPipelineLayout({{_descriptorSetLayout}});
+    _pipelineLayout = device->createPipelineLayout({{_descriptorSetLayout}});
 
-    _descriptorSet = _device->createDescriptorSet({_descriptorSetLayout});
+    _descriptorSet = device->createDescriptorSet({_descriptorSetLayout});
 
     _descriptorSet->bindBuffer(0, _uniformBuffer);
     _descriptorSet->bindBuffer(1, _uniformBufferMVP);
@@ -202,10 +202,10 @@ void BasicTriangle::createPipeline() {
     pipelineInfo.primitive      = gfx::PrimitiveMode::TRIANGLE_LIST;
     pipelineInfo.shader         = _shader;
     pipelineInfo.inputState     = {_inputAssembler->getAttributes()};
-    pipelineInfo.renderPass     = _fbo->getRenderPass();
+    pipelineInfo.renderPass     = fbo->getRenderPass();
     pipelineInfo.pipelineLayout = _pipelineLayout;
 
-    _pipelineState = _device->createPipelineState(pipelineInfo);
+    _pipelineState = device->createPipelineState(pipelineInfo);
 
     _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
         {
@@ -245,20 +245,20 @@ void BasicTriangle::onTick() {
     Mat4 MVP;
     TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &MVP);
 
-    _device->acquire();
+    device->acquire();
 
     _uniformBuffer->update(&uniformColor, sizeof(uniformColor));
     _uniformBufferMVP->update(MVP.m, sizeof(Mat4));
 
-    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
+    gfx::Rect renderArea = {0, 0, device->getWidth(), device->getHeight()};
 
-    auto commandBuffer = _commandBuffers[0];
+    auto commandBuffer = commandBuffers[0];
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER)
         commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx]);
 
-    commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
+    commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0f, 0);
     commandBuffer->bindInputAssembler(_inputAssembler);
     commandBuffer->bindPipelineState(_pipelineState);
     commandBuffer->bindDescriptorSet(0, _descriptorSet);
@@ -266,9 +266,9 @@ void BasicTriangle::onTick() {
     commandBuffer->endRenderPass();
     commandBuffer->end();
 
-    _device->flushCommands(_commandBuffers);
-    _device->getQueue()->submit(_commandBuffers);
-    _device->present();
+    device->flushCommands(commandBuffers);
+    device->getQueue()->submit(commandBuffers);
+    device->present();
 }
 
 } // namespace cc

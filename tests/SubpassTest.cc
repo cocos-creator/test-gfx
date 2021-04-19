@@ -1,4 +1,5 @@
 #include "SubpassTest.h"
+#include <cmath>
 #include "tiny_obj_loader.h"
 
 namespace cc {
@@ -369,45 +370,45 @@ void SubpassTest::createShader() {
     shaderInfo.stages     = std::move(shaderStageList);
     shaderInfo.attributes = std::move(attributeList);
     shaderInfo.blocks     = std::move(uniformBlockList);
-    _shaderForward        = _device->createShader(shaderInfo);
+    _shaderForward        = device->createShader(shaderInfo);
 
     shaderInfo.name             = "Standard GBuffer";
     shaderInfo.stages[1].source = getAppropriateShaderSource(gbufferFrag);
-    _shaderGBuffer              = _device->createShader(shaderInfo);
+    _shaderGBuffer              = device->createShader(shaderInfo);
 }
 
 void SubpassTest::createDeferredResources() {
     gfx::SamplerInfo samplerInfo;
-    _sampler = _device->createSampler(samplerInfo);
+    _sampler = device->createSampler(samplerInfo);
 
     gfx::RenderPassInfo rpInfo;
     rpInfo.colorAttachments.emplace_back();
-    rpInfo.colorAttachments.back().format = _device->getColorFormat();
+    rpInfo.colorAttachments.back().format = device->getColorFormat();
     rpInfo.colorAttachments.back().loadOp = gfx::LoadOp::DISCARD;
 
     for (uint i = 0; i < 4; ++i) {
         gfx::Format format = i ? gfx::Format::RGBA16F : gfx::Format::RGBA8; // RGBA8 is suffice for albedo
-        _deferredGBuffers.push_back(_device->createTexture({
+        _deferredGBuffers.push_back(device->createTexture({
             gfx::TextureType::TEX2D,
             gfx::TextureUsageBit::INPUT_ATTACHMENT | gfx::TextureUsageBit::COLOR_ATTACHMENT,
             format,
-            _device->getWidth(),
-            _device->getHeight(),
+            device->getWidth(),
+            device->getHeight(),
         }));
         rpInfo.colorAttachments.emplace_back();
         rpInfo.colorAttachments.back().format         = format;
         rpInfo.colorAttachments.back().endAccesses[0] = gfx::AccessType::FRAGMENT_SHADER_READ_COLOR_INPUT_ATTACHMENT;
     }
 
-    _deferredGBufferDepthTexture = _device->createTexture({
+    _deferredGBufferDepthTexture = device->createTexture({
         gfx::TextureType::TEX2D,
         gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT,
-        _device->getDepthStencilFormat(),
-        _device->getWidth(),
-        _device->getHeight(),
+        device->getDepthStencilFormat(),
+        device->getWidth(),
+        device->getHeight(),
     });
 
-    rpInfo.depthStencilAttachment.format = _device->getDepthStencilFormat();
+    rpInfo.depthStencilAttachment.format = device->getDepthStencilFormat();
 
     rpInfo.subpasses.resize(2);
     rpInfo.subpasses[0].colors       = {1, 2, 3, 4};
@@ -423,8 +424,8 @@ void SubpassTest::createDeferredResources() {
         {gfx::AccessType::FRAGMENT_SHADER_READ_COLOR_INPUT_ATTACHMENT},
     });
 
-    _deferredGBufferRenderPass  = _device->createRenderPass(rpInfo);
-    _deferredGBufferFramebuffer = _device->createFramebuffer({
+    _deferredGBufferRenderPass  = device->createRenderPass(rpInfo);
+    _deferredGBufferFramebuffer = device->createFramebuffer({
         _deferredGBufferRenderPass,
         {nullptr, _deferredGBuffers[0], _deferredGBuffers[1], _deferredGBuffers[2], _deferredGBuffers[3]},
         _deferredGBufferDepthTexture,
@@ -437,7 +438,7 @@ void SubpassTest::createDeferredResources() {
     gbufferPSOInfo.renderPass     = _deferredGBufferRenderPass;
     gbufferPSOInfo.pipelineLayout = _pipelineLayout;
     gbufferPSOInfo.blendState.targets.resize(4);
-    _deferredGBufferPipelineState = _device->createPipelineState(gbufferPSOInfo);
+    _deferredGBufferPipelineState = device->createPipelineState(gbufferPSOInfo);
 
     ShaderSources<String> vert = {
         R"(
@@ -489,10 +490,22 @@ void SubpassTest::createDeferredResources() {
             precision highp float;
             in vec2 v_texCoord;
 
-            uniform sampler2D gbuffer1;
-            uniform sampler2D gbuffer2;
-            uniform sampler2D gbuffer3;
-            uniform sampler2D gbuffer4;
+            #ifdef GL_EXT_pixel_local_storage
+                layout(rg16f) __pixel_local_inEXT FragColor {
+                    layout(rgba8) vec4 gbuffer0;
+                    vec2 gbuffer1_a;
+                    vec2 gbuffer1_b;
+                    vec2 gbuffer2_a;
+                    vec2 gbuffer2_b;
+                    vec2 gbuffer3_a;
+                    vec2 gbuffer3_b;
+                }
+            #else
+                uniform sampler2D gbuffer1;
+                uniform sampler2D gbuffer2;
+                uniform sampler2D gbuffer3;
+                uniform sampler2D gbuffer4;
+            #endif
         )",
         R"(
             precision highp float;
@@ -584,15 +597,15 @@ void SubpassTest::createDeferredResources() {
     shaderInfo.subpassInputs.push_back({0, 3, "gbuffer3", 1});
     shaderInfo.subpassInputs.push_back({0, 4, "gbuffer4", 1});
 
-    _deferredShader = _device->createShader(shaderInfo);
+    _deferredShader = device->createShader(shaderInfo);
 
-    float         ySign = _device->getCapabilities().screenSpaceSignY;
+    float         ySign = device->getCapabilities().screenSpaceSignY;
     vector<float> vb{
         -1.F, -1.F * ySign, 0.F, 1.F,
         1.F, -1.F * ySign, 1.F, 1.F,
         -1.F, 1.F * ySign, 0.F, 0.F,
         1.F, 1.F * ySign, 1.F, 0.F};
-    _deferredVB = _device->createBuffer({
+    _deferredVB = device->createBuffer({
         gfx::BufferUsage::VERTEX,
         gfx::MemoryUsage::DEVICE,
         static_cast<uint>(vb.size() * sizeof(float)),
@@ -603,7 +616,7 @@ void SubpassTest::createDeferredResources() {
     gfx::InputAssemblerInfo iaInfo;
     iaInfo.attributes = shaderInfo.attributes;
     iaInfo.vertexBuffers.emplace_back(_deferredVB);
-    _deferredInputAssembler = _device->createInputAssembler(iaInfo);
+    _deferredInputAssembler = device->createInputAssembler(iaInfo);
 
     gfx::DescriptorSetLayoutInfo dslInfo;
     dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::FRAGMENT});
@@ -611,11 +624,11 @@ void SubpassTest::createDeferredResources() {
     dslInfo.bindings.push_back({2, gfx::DescriptorType::INPUT_ATTACHMENT, 1, gfx::ShaderStageFlagBit::FRAGMENT});
     dslInfo.bindings.push_back({3, gfx::DescriptorType::INPUT_ATTACHMENT, 1, gfx::ShaderStageFlagBit::FRAGMENT});
     dslInfo.bindings.push_back({4, gfx::DescriptorType::INPUT_ATTACHMENT, 1, gfx::ShaderStageFlagBit::FRAGMENT});
-    _deferredDescriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
+    _deferredDescriptorSetLayout = device->createDescriptorSetLayout(dslInfo);
 
-    _deferredPipelineLayout = _device->createPipelineLayout({{_deferredDescriptorSetLayout}});
+    _deferredPipelineLayout = device->createPipelineLayout({{_deferredDescriptorSetLayout}});
 
-    _deferredDescriptorSet = _device->createDescriptorSet({_deferredDescriptorSetLayout});
+    _deferredDescriptorSet = device->createDescriptorSet({_deferredDescriptorSetLayout});
 
     _deferredDescriptorSet->bindBuffer(static_cast<uint>(Binding::CAMERA), _bufferViews[2]);
     _deferredDescriptorSet->bindTexture(1, _deferredGBuffers[0]);
@@ -637,7 +650,7 @@ void SubpassTest::createDeferredResources() {
     pipelineStateInfo.subpass                      = 1;
     pipelineStateInfo.depthStencilState.depthTest  = false;
     pipelineStateInfo.depthStencilState.depthWrite = false;
-    _deferredPipelineState                         = _device->createPipelineState(pipelineStateInfo);
+    _deferredPipelineState                         = device->createPipelineState(pipelineStateInfo);
 }
 
 void SubpassTest::createBuffers() {
@@ -645,7 +658,7 @@ void SubpassTest::createBuffers() {
 
     // vertex buffer
     const auto &positions = obj.GetAttrib().vertices;
-    _vertexPositionBuffer = _device->createBuffer({
+    _vertexPositionBuffer = device->createBuffer({
         gfx::BufferUsage::VERTEX,
         gfx::MemoryUsage::DEVICE,
         static_cast<uint>(positions.size() * sizeof(float)),
@@ -654,7 +667,7 @@ void SubpassTest::createBuffers() {
     _vertexPositionBuffer->update(positions.data(), positions.size() * sizeof(float));
 
     const auto &normals = obj.GetAttrib().normals;
-    _vertexNormalBuffer = _device->createBuffer({
+    _vertexNormalBuffer = device->createBuffer({
         gfx::BufferUsage::VERTEX,
         gfx::MemoryUsage::DEVICE,
         static_cast<uint>(normals.size() * sizeof(float)),
@@ -669,7 +682,7 @@ void SubpassTest::createBuffers() {
     std::transform(indicesInfo.begin(), indicesInfo.end(), std::back_inserter(indices),
                    [](auto &&info) { return static_cast<uint16_t>(info.vertex_index); });
 
-    _indexBuffer = _device->createBuffer({
+    _indexBuffer = device->createBuffer({
         gfx::BufferUsage::INDEX,
         gfx::MemoryUsage::DEVICE,
         static_cast<uint>(indices.size() * sizeof(uint16_t)),
@@ -678,7 +691,7 @@ void SubpassTest::createBuffers() {
     _indexBuffer->update(indices.data(), indices.size() * sizeof(uint16_t));
 
     vector<uint> sizes{3 * sizeof(Mat4), sizeof(Vec4), 3 * sizeof(Vec4)};
-    createUberBuffer(_device, sizes, &_rootUBO, &_bufferViews, &_bufferViewOffsets);
+    createUberBuffer(sizes, &_rootUBO, &_bufferViews, &_bufferViewOffsets);
     _rootBuffer.resize(_bufferViewOffsets.back() / sizeof(float));
 
     constexpr float cameraDistance = 5.F;
@@ -706,7 +719,7 @@ void SubpassTest::createInputAssembler() {
     inputAssemblerInfo.vertexBuffers.emplace_back(_vertexPositionBuffer);
     inputAssemblerInfo.vertexBuffers.emplace_back(_vertexNormalBuffer);
     inputAssemblerInfo.indexBuffer = _indexBuffer;
-    _inputAssembler                = _device->createInputAssembler(inputAssemblerInfo);
+    _inputAssembler                = device->createInputAssembler(inputAssemblerInfo);
 }
 
 void SubpassTest::createPipelineState() {
@@ -714,11 +727,11 @@ void SubpassTest::createPipelineState() {
     dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::FRAGMENT});
     dslInfo.bindings.push_back({1, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::FRAGMENT});
     dslInfo.bindings.push_back({2, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX});
-    _descriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
+    _descriptorSetLayout = device->createDescriptorSetLayout(dslInfo);
 
-    _pipelineLayout = _device->createPipelineLayout({{_descriptorSetLayout}});
+    _pipelineLayout = device->createPipelineLayout({{_descriptorSetLayout}});
 
-    _descriptorSet = _device->createDescriptorSet({_descriptorSetLayout});
+    _descriptorSet = device->createDescriptorSet({_descriptorSetLayout});
 
     _descriptorSet->bindBuffer(static_cast<uint>(Binding::MVP), _bufferViews[0]);
     _descriptorSet->bindBuffer(static_cast<uint>(Binding::COLOR), _bufferViews[1]);
@@ -729,9 +742,9 @@ void SubpassTest::createPipelineState() {
     pipelineStateInfo.primitive      = gfx::PrimitiveMode::TRIANGLE_LIST;
     pipelineStateInfo.shader         = _shaderForward;
     pipelineStateInfo.inputState     = {_inputAssembler->getAttributes()};
-    pipelineStateInfo.renderPass     = _fbo->getRenderPass();
+    pipelineStateInfo.renderPass     = fbo->getRenderPass();
     pipelineStateInfo.pipelineLayout = _pipelineLayout;
-    _pipelineState                   = _device->createPipelineState(pipelineStateInfo);
+    _pipelineState                   = device->createPipelineState(pipelineStateInfo);
 
     _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
         {
@@ -767,6 +780,7 @@ void SubpassTest::onSpacePressed() {
 
 void SubpassTest::onTick() {
     uint globalBarrierIdx = _frameCount ? 1 : 0;
+    printTime();
 
     gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize();
     Mat4::createRotationY(_time, &_worldMatrix);
@@ -775,12 +789,12 @@ void SubpassTest::onTick() {
     std::copy(_worldMatrix.m, _worldMatrix.m + 16, &_rootBuffer[0]);
     std::copy(_projectionMatrix.m, _projectionMatrix.m + 16, &_rootBuffer[32]);
 
-    _device->acquire();
+    device->acquire();
 
     _rootUBO->update(_rootBuffer.data(), _rootBuffer.size() * sizeof(float));
-    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
+    gfx::Rect renderArea = {0, 0, device->getWidth(), device->getHeight()};
 
-    auto *commandBuffer = _commandBuffers[0];
+    auto *commandBuffer = commandBuffers[0];
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER) {
@@ -804,7 +818,7 @@ void SubpassTest::onTick() {
 
         commandBuffer->endRenderPass();
     } else {
-        commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, _clearColors.data(), 1.0F, 0);
+        commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, _clearColors.data(), 1.0F, 0);
 
         commandBuffer->bindInputAssembler(_inputAssembler);
         commandBuffer->bindPipelineState(_pipelineState);
@@ -816,9 +830,9 @@ void SubpassTest::onTick() {
 
     commandBuffer->end();
 
-    _device->flushCommands(_commandBuffers);
-    _device->getQueue()->submit(_commandBuffers);
-    _device->present();
+    device->flushCommands(commandBuffers);
+    device->getQueue()->submit(commandBuffers);
+    device->present();
 }
 
 } // namespace cc

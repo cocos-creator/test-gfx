@@ -114,7 +114,7 @@ void FrameGraphTest::createShader() {
     shaderInfo.stages     = std::move(shaderStageList);
     shaderInfo.attributes = std::move(attributeList);
     shaderInfo.blocks     = std::move(uniformBlockList);
-    _shader               = _device->createShader(shaderInfo);
+    _shader               = device->createShader(shaderInfo);
 }
 
 void FrameGraphTest::createVertexBuffer() {
@@ -132,7 +132,7 @@ void FrameGraphTest::createVertexBuffer() {
         gfx::BufferFlagBit::NONE,
     };
 
-    _vertexBuffer = _device->createBuffer(vertexBufferInfo);
+    _vertexBuffer = device->createBuffer(vertexBufferInfo);
     _vertexBuffer->update(vertexData, sizeof(vertexData));
 
     gfx::BufferInfo uniformBufferInfo = {
@@ -140,14 +140,14 @@ void FrameGraphTest::createVertexBuffer() {
         gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
         TestBaseI::getUBOSize(sizeof(gfx::Color)),
     };
-    _uniformBuffer = _device->createBuffer(uniformBufferInfo);
+    _uniformBuffer = device->createBuffer(uniformBufferInfo);
 
     gfx::BufferInfo uniformBufferMVPInfo = {
         gfx::BufferUsage::UNIFORM,
         gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
         TestBaseI::getUBOSize(sizeof(Mat4)),
     };
-    _uniformBufferMVP = _device->createBuffer(uniformBufferMVPInfo);
+    _uniformBufferMVP = device->createBuffer(uniformBufferMVPInfo);
 
     unsigned short  indices[]       = {1, 3, 0, 1, 2, 3, 2, 4, 3};
     gfx::BufferInfo indexBufferInfo = {
@@ -156,7 +156,7 @@ void FrameGraphTest::createVertexBuffer() {
         sizeof(indices),
         sizeof(unsigned short),
     };
-    _indexBuffer = _device->createBuffer(indexBufferInfo);
+    _indexBuffer = device->createBuffer(indexBufferInfo);
     _indexBuffer->update(indices, sizeof(indices));
 }
 
@@ -166,18 +166,18 @@ void FrameGraphTest::createInputAssembler() {
     inputAssemblerInfo.attributes.emplace_back(std::move(position));
     inputAssemblerInfo.vertexBuffers.emplace_back(_vertexBuffer);
     inputAssemblerInfo.indexBuffer = _indexBuffer;
-    _inputAssembler                = _device->createInputAssembler(inputAssemblerInfo);
+    _inputAssembler                = device->createInputAssembler(inputAssemblerInfo);
 }
 
 void FrameGraphTest::createPipeline() {
     gfx::DescriptorSetLayoutInfo dslInfo;
     dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::FRAGMENT});
     dslInfo.bindings.push_back({1, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX});
-    _descriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
+    _descriptorSetLayout = device->createDescriptorSetLayout(dslInfo);
 
-    _pipelineLayout = _device->createPipelineLayout({{_descriptorSetLayout}});
+    _pipelineLayout = device->createPipelineLayout({{_descriptorSetLayout}});
 
-    _descriptorSet = _device->createDescriptorSet({_descriptorSetLayout});
+    _descriptorSet = device->createDescriptorSet({_descriptorSetLayout});
 
     _descriptorSet->bindBuffer(0, _uniformBuffer);
     _descriptorSet->bindBuffer(1, _uniformBufferMVP);
@@ -187,10 +187,10 @@ void FrameGraphTest::createPipeline() {
     pipelineInfo.primitive      = gfx::PrimitiveMode::TRIANGLE_LIST;
     pipelineInfo.shader         = _shader;
     pipelineInfo.inputState     = {_inputAssembler->getAttributes()};
-    pipelineInfo.renderPass     = _fbo->getRenderPass();
+    pipelineInfo.renderPass     = fbo->getRenderPass();
     pipelineInfo.pipelineLayout = _pipelineLayout;
 
-    _pipelineState = _device->createPipelineState(pipelineInfo);
+    _pipelineState = device->createPipelineState(pipelineInfo);
 
     _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
         {
@@ -246,12 +246,12 @@ void FrameGraphTest::onTick() {
     Mat4 MVP;
     TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &MVP);
 
-    _device->acquire();
+    device->acquire();
 
     _uniformBuffer->update(&uniformColor, sizeof(uniformColor));
     _uniformBufferMVP->update(MVP.m, sizeof(Mat4));
 
-    auto commandBuffer = _commandBuffers[0];
+    auto commandBuffer = commandBuffers[0];
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER)
@@ -284,10 +284,10 @@ void FrameGraphTest::onTick() {
                 colorAttachmentInfo.beginAccesses = {gfx::AccessType::TRANSFER_READ};
             } else {
                 framegraph::Texture::Descriptor colorTexInfo;
-                colorTexInfo.format = _device->getColorFormat();
+                colorTexInfo.format = device->getColorFormat();
                 colorTexInfo.usage  = gfx::TextureUsageBit::COLOR_ATTACHMENT | gfx::TextureUsageBit::TRANSFER_SRC;
-                colorTexInfo.width  = _device->getWidth();
-                colorTexInfo.height = _device->getHeight();
+                colorTexInfo.width  = device->getWidth();
+                colorTexInfo.height = device->getHeight();
                 builder.create(data.colorTex, colorTexName, colorTexInfo);
             }
 
@@ -309,19 +309,19 @@ void FrameGraphTest::onTick() {
                 depthStencilAttachmentInfo.beginAccesses = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
             } else {
                 framegraph::Texture::Descriptor depthStencilTexInfo;
-                depthStencilTexInfo.format = _device->getDepthStencilFormat();
+                depthStencilTexInfo.format = device->getDepthStencilFormat();
                 depthStencilTexInfo.usage  = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT;
-                depthStencilTexInfo.width  = _device->getWidth();
-                depthStencilTexInfo.height = _device->getHeight();
+                depthStencilTexInfo.width  = device->getWidth();
+                depthStencilTexInfo.height = device->getHeight();
                 builder.create(data.depthStencilTex, depthStencilTexName, depthStencilTexInfo);
             }
 
             data.depthStencilTex = builder.write(data.depthStencilTex, depthStencilAttachmentInfo);
             builder.writeToBlackboard(depthStencilTexName, data.depthStencilTex);
 
-            int           xOff = second * _device->getWidth() / 2;
-            gfx::Viewport vp   = {xOff, 0, _device->getWidth() / 2, _device->getHeight(), 0, 1};
-            gfx::Rect     rect = {xOff, 0, _device->getWidth() / 2, _device->getHeight()};
+            int           xOff = second * device->getWidth() / 2;
+            gfx::Viewport vp   = {xOff, 0, device->getWidth() / 2, device->getHeight(), 0, 1};
+            gfx::Rect     rect = {xOff, 0, device->getWidth() / 2, device->getHeight()};
             builder.setViewport(vp, rect);
         };
     };
@@ -356,10 +356,10 @@ void FrameGraphTest::onTick() {
         commandBuffer->pipelineBarrier(nullptr, &_textureBarriers[0], &output, 1);
 
         gfx::TextureBlit region;
-        region.srcExtent.width  = _device->getWidth();
-        region.srcExtent.height = _device->getHeight();
-        region.dstExtent.width  = _device->getWidth();
-        region.dstExtent.height = _device->getHeight();
+        region.srcExtent.width  = device->getWidth();
+        region.srcExtent.height = device->getHeight();
+        region.dstExtent.width  = device->getWidth();
+        region.dstExtent.height = device->getHeight();
         commandBuffer->blitTexture(input, nullptr, &region, 1, gfx::Filter::POINT);
 
         commandBuffer->pipelineBarrier(nullptr, &_textureBarriers[1], &output, 1);
@@ -385,9 +385,9 @@ void FrameGraphTest::onTick() {
     ////////////////////////////////////////////////////////
 
     commandBuffer->end();
-    _device->flushCommands(_commandBuffers);
-    _device->getQueue()->submit(_commandBuffers);
-    _device->present();
+    device->flushCommands(commandBuffers);
+    device->getQueue()->submit(commandBuffers);
+    device->present();
 }
 
 } // namespace cc

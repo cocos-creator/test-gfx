@@ -13,7 +13,7 @@ enum {
 };
 
 struct Quad : public cc::Object {
-    Quad(gfx::Device *_device, gfx::Framebuffer *_fbo) : device(_device), fbo(_fbo) {
+    Quad(gfx::Device *device, gfx::Framebuffer *fbo) : device(device), fbo(fbo) {
         createShader();
         createVertexBuffer();
         createInputAssembler();
@@ -174,7 +174,7 @@ struct Quad : public cc::Object {
         indexBuffer->update(indices, sizeof(indices));
 
         // dynamic uniform buffer
-        uboStride = TestBaseI::getAlignedUBOStride(device, sizeof(Mat4) * 2);
+        uboStride = TestBaseI::getAlignedUBOStride(sizeof(Mat4) * 2);
         models.resize(uboStride * TOTAL_BLEND / sizeof(float), 0);
 
         uniformBuffer     = device->createBuffer({
@@ -208,7 +208,7 @@ struct Quad : public cc::Object {
         gfx::TextureInfo textureInfo;
         textureInfo.usage  = gfx::TextureUsage::SAMPLED | gfx::TextureUsage::TRANSFER_DST;
         textureInfo.format = gfx::Format::RGBA8;
-        texture            = TestBaseI::createTextureWithFile(device, textureInfo, "sprite0.png");
+        texture            = TestBaseI::createTextureWithFile(textureInfo, "sprite0.png");
 
         // create sampler
         gfx::SamplerInfo samplerInfo;
@@ -337,7 +337,7 @@ struct Quad : public cc::Object {
 };
 
 struct BigTriangle : public cc::Object {
-    BigTriangle(gfx::Device *_device, gfx::Framebuffer *_fbo) : device(_device), fbo(_fbo) {
+    BigTriangle(gfx::Device *device, gfx::Framebuffer *fbo) : device(device), fbo(fbo) {
         createShader();
         createVertexBuffer();
         createInputAssembler();
@@ -501,7 +501,7 @@ struct BigTriangle : public cc::Object {
         textureInfo.usage  = gfx::TextureUsage::SAMPLED | gfx::TextureUsage::TRANSFER_DST;
         textureInfo.format = gfx::Format::RGBA8;
         textureInfo.flags  = gfx::TextureFlagBit::GEN_MIPMAP;
-        texture            = TestBaseI::createTextureWithFile(device, textureInfo, "background.png");
+        texture            = TestBaseI::createTextureWithFile(textureInfo, "background.png");
 
         // create sampler
         gfx::SamplerInfo samplerInfo;
@@ -571,8 +571,8 @@ void BlendTest::onDestroy() {
 }
 
 bool BlendTest::onInit() {
-    bigTriangle = CC_NEW(BigTriangle(_device, _fbo));
-    quad        = CC_NEW(Quad(_device, _fbo));
+    bigTriangle = CC_NEW(BigTriangle(device, fbo));
+    quad        = CC_NEW(Quad(device, fbo));
 
     _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
         {
@@ -617,10 +617,10 @@ void BlendTest::onTick() {
     uint globalBarrierIdx = _frameCount ? 1 : 0;
     uint textureBarriers  = _frameCount ? 0 : _textureBarriers.size();
 
-    _device->acquire();
+    device->acquire();
 
     gfx::Extent orientedSize  = TestBaseI::getOrientedSurfaceSize();
-    bool        matricesDirty = renderArea.width != orientedSize.width || renderArea.height != orientedSize.height || _device->getSurfaceTransform() != orientation;
+    bool        matricesDirty = renderArea.width != orientedSize.width || renderArea.height != orientedSize.height || device->getSurfaceTransform() != orientation;
 
     if (matricesDirty) {
         Mat4 model;
@@ -639,12 +639,12 @@ void BlendTest::onTick() {
             offsetY += 5.f + size;
         }
         // render area is not oriented
-        renderArea.width  = _device->getWidth();
-        renderArea.height = _device->getHeight();
-        orientation       = _device->getSurfaceTransform();
+        renderArea.width  = device->getWidth();
+        renderArea.height = device->getHeight();
+        orientation       = device->getSurfaceTransform();
     }
 
-    auto commandBuffer = _commandBuffers[0];
+    auto commandBuffer = commandBuffers[0];
     commandBuffer->begin();
 
     commandBuffer->updateBuffer(bigTriangle->timeBuffer, &_time, sizeof(_time));
@@ -655,7 +655,7 @@ void BlendTest::onTick() {
     if (TestBaseI::MANUAL_BARRIER)
         commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx], _textureBarriers.data(), _textures.data(), textureBarriers);
 
-    commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
+    commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0f, 0);
     // draw background
     commandBuffer->bindInputAssembler(bigTriangle->inputAssembler);
     commandBuffer->bindPipelineState(bigTriangle->pipelineState);
@@ -692,9 +692,9 @@ void BlendTest::onTick() {
     commandBuffer->endRenderPass();
     commandBuffer->end();
 
-    _device->flushCommands(_commandBuffers);
-    _device->getQueue()->submit(_commandBuffers);
-    _device->present();
+    device->flushCommands(commandBuffers);
+    device->getQueue()->submit(commandBuffers);
+    device->present();
 }
 
 } // namespace cc

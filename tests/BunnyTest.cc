@@ -146,12 +146,12 @@ void BunnyTest::createShader() {
     shaderInfo.stages     = std::move(shaderStageList);
     shaderInfo.attributes = std::move(attributeList);
     shaderInfo.blocks     = std::move(uniformBlockList);
-    _shader               = _device->createShader(shaderInfo);
+    _shader               = device->createShader(shaderInfo);
 }
 
 void BunnyTest::createBuffers() {
     // vertex buffer
-    _vertexBuffer = _device->createBuffer({
+    _vertexBuffer = device->createBuffer({
         gfx::BufferUsage::VERTEX,
         gfx::MemoryUsage::DEVICE,
         sizeof(bunny_positions),
@@ -160,7 +160,7 @@ void BunnyTest::createBuffers() {
     _vertexBuffer->update((void *)&bunny_positions[0][0], sizeof(bunny_positions));
 
     // index buffer
-    _indexBuffer = _device->createBuffer({
+    _indexBuffer = device->createBuffer({
         gfx::BufferUsage::INDEX,
         gfx::MemoryUsage::DEVICE,
         sizeof(bunny_cells),
@@ -169,9 +169,9 @@ void BunnyTest::createBuffers() {
     _indexBuffer->update((void *)&bunny_cells[0], sizeof(bunny_cells));
 
     // root UBO
-    uint offset = TestBaseI::getAlignedUBOStride(_device, 3 * sizeof(Mat4));
+    uint offset = TestBaseI::getAlignedUBOStride(3 * sizeof(Mat4));
     uint size   = offset + 4 * sizeof(float);
-    _rootUBO    = _device->createBuffer({
+    _rootUBO    = device->createBuffer({
         gfx::BufferUsage::UNIFORM,
         gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
         TestBaseI::getUBOSize(size),
@@ -179,13 +179,13 @@ void BunnyTest::createBuffers() {
     _rootBuffer.resize(size / sizeof(float));
 
     // mvp matrix uniform
-    _mvpMatrix = _device->createBuffer({
+    _mvpMatrix = device->createBuffer({
         _rootUBO,
         0,
         3 * sizeof(Mat4),
     });
     // color uniform
-    _color = _device->createBuffer({
+    _color = device->createBuffer({
         _rootUBO,
         offset,
         4 * sizeof(float),
@@ -204,18 +204,18 @@ void BunnyTest::createInputAssembler() {
     inputAssemblerInfo.attributes.emplace_back(std::move(position));
     inputAssemblerInfo.vertexBuffers.emplace_back(_vertexBuffer);
     inputAssemblerInfo.indexBuffer = _indexBuffer;
-    _inputAssembler                = _device->createInputAssembler(inputAssemblerInfo);
+    _inputAssembler                = device->createInputAssembler(inputAssemblerInfo);
 }
 
 void BunnyTest::createPipelineState() {
     gfx::DescriptorSetLayoutInfo dslInfo;
     dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX});
     dslInfo.bindings.push_back({1, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::FRAGMENT});
-    _descriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
+    _descriptorSetLayout = device->createDescriptorSetLayout(dslInfo);
 
-    _pipelineLayout = _device->createPipelineLayout({{_descriptorSetLayout}});
+    _pipelineLayout = device->createPipelineLayout({{_descriptorSetLayout}});
 
-    _descriptorSet = _device->createDescriptorSet({_descriptorSetLayout});
+    _descriptorSet = device->createDescriptorSet({_descriptorSetLayout});
 
     _descriptorSet->bindBuffer(static_cast<uint>(Binding::MVP), _mvpMatrix);
     _descriptorSet->bindBuffer(static_cast<uint>(Binding::COLOR), _color);
@@ -225,12 +225,12 @@ void BunnyTest::createPipelineState() {
     pipelineStateInfo.primitive                    = gfx::PrimitiveMode::TRIANGLE_LIST;
     pipelineStateInfo.shader                       = _shader;
     pipelineStateInfo.inputState                   = {_inputAssembler->getAttributes()};
-    pipelineStateInfo.renderPass                   = _fbo->getRenderPass();
+    pipelineStateInfo.renderPass                   = fbo->getRenderPass();
     pipelineStateInfo.depthStencilState.depthTest  = true;
     pipelineStateInfo.depthStencilState.depthWrite = true;
     pipelineStateInfo.depthStencilState.depthFunc  = gfx::ComparisonFunc::LESS;
     pipelineStateInfo.pipelineLayout               = _pipelineLayout;
-    _pipelineState                                 = _device->createPipelineState(pipelineStateInfo);
+    _pipelineState                                 = device->createPipelineState(pipelineStateInfo);
 
     _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
         {
@@ -279,18 +279,18 @@ void BunnyTest::onTick() {
 
     gfx::Color clearColor = {0.0f, 0, 0, 1.0f};
 
-    _device->acquire();
+    device->acquire();
 
     _rootUBO->update(_rootBuffer.data(), _rootBuffer.size() * sizeof(float));
-    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
+    gfx::Rect renderArea = {0, 0, device->getWidth(), device->getHeight()};
 
-    auto commandBuffer = _commandBuffers[0];
+    auto commandBuffer = commandBuffers[0];
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER)
         commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx]);
 
-    commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
+    commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0f, 0);
 
     commandBuffer->bindInputAssembler(_inputAssembler);
     commandBuffer->bindPipelineState(_pipelineState);
@@ -300,9 +300,9 @@ void BunnyTest::onTick() {
     commandBuffer->endRenderPass();
     commandBuffer->end();
 
-    _device->flushCommands(_commandBuffers);
-    _device->getQueue()->submit(_commandBuffers);
-    _device->present();
+    device->flushCommands(commandBuffers);
+    device->getQueue()->submit(commandBuffers);
+    device->present();
 }
 
 } // namespace cc

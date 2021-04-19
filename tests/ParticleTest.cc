@@ -228,12 +228,12 @@ void ParticleTest::createShader() {
     shaderInfo.attributes      = std::move(attributeList);
     shaderInfo.blocks          = std::move(uniformBlockList);
     shaderInfo.samplerTextures = std::move(sampler);
-    _shader                    = _device->createShader(shaderInfo);
+    _shader                    = device->createShader(shaderInfo);
 }
 
 void ParticleTest::createVertexBuffer() {
     // vertex buffer: _vbufferArray[MAX_QUAD_COUNT][4][VERTEX_STRIDE];
-    _vertexBuffer = _device->createBuffer({
+    _vertexBuffer = device->createBuffer({
         gfx::BufferUsage::VERTEX,
         gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
         sizeof(_vbufferArray),
@@ -252,7 +252,7 @@ void ParticleTest::createVertexBuffer() {
         p[dst++]           = baseIndex + 2;
         p[dst++]           = baseIndex + 3;
     }
-    _indexBuffer = _device->createBuffer({
+    _indexBuffer = device->createBuffer({
         gfx::BufferUsage::INDEX,
         gfx::MemoryUsage::DEVICE,
         sizeof(_ibufferArray),
@@ -266,7 +266,7 @@ void ParticleTest::createVertexBuffer() {
         _particles[i].life     = cc::random(1.0f, 10.0f);
     }
 
-    _uniformBuffer = _device->createBuffer({
+    _uniformBuffer = device->createBuffer({
         gfx::BufferUsage::UNIFORM,
         gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
         TestBaseI::getUBOSize(3 * sizeof(Mat4)),
@@ -284,7 +284,7 @@ void ParticleTest::createInputAssembler() {
     inputAssemblerInfo.attributes.emplace_back(std::move(color));
     inputAssemblerInfo.vertexBuffers.emplace_back(_vertexBuffer);
     inputAssemblerInfo.indexBuffer = _indexBuffer;
-    _inputAssembler                = _device->createInputAssembler(inputAssemblerInfo);
+    _inputAssembler                = device->createInputAssembler(inputAssemblerInfo);
 }
 
 void ParticleTest::createTexture() {
@@ -305,7 +305,7 @@ void ParticleTest::createTexture() {
     textureInfo.height     = LINE_HEIGHT;
     textureInfo.flags      = gfx::TextureFlagBit::GEN_MIPMAP;
     textureInfo.levelCount = TestBaseI::getMipmapLevelCounts(textureInfo.width, textureInfo.height);
-    _textures.push_back(_device->createTexture(textureInfo));
+    _textures.push_back(device->createTexture(textureInfo));
 
     gfx::BufferTextureCopy textureRegion;
     textureRegion.buffTexHeight    = 0;
@@ -317,7 +317,7 @@ void ParticleTest::createTexture() {
     regions.push_back(std::move(textureRegion));
 
     gfx::BufferDataList imageBuffer = {imageData};
-    _device->copyBuffersToTexture(imageBuffer, _textures[0], regions);
+    device->copyBuffersToTexture(imageBuffer, _textures[0], regions);
     CC_SAFE_FREE(imageData);
 
     // create sampler
@@ -325,18 +325,18 @@ void ParticleTest::createTexture() {
     samplerInfo.addressU  = gfx::Address::WRAP;
     samplerInfo.addressV  = gfx::Address::WRAP;
     samplerInfo.mipFilter = gfx::Filter::LINEAR;
-    _sampler              = _device->createSampler(samplerInfo);
+    _sampler              = device->createSampler(samplerInfo);
 }
 
 void ParticleTest::createPipeline() {
     gfx::DescriptorSetLayoutInfo dslInfo;
     dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX});
     dslInfo.bindings.push_back({1, gfx::DescriptorType::SAMPLER_TEXTURE, 1, gfx::ShaderStageFlagBit::FRAGMENT});
-    _descriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
+    _descriptorSetLayout = device->createDescriptorSetLayout(dslInfo);
 
-    _pipelineLayout = _device->createPipelineLayout({{_descriptorSetLayout}});
+    _pipelineLayout = device->createPipelineLayout({{_descriptorSetLayout}});
 
-    _descriptorSet = _device->createDescriptorSet({_descriptorSetLayout});
+    _descriptorSet = device->createDescriptorSet({_descriptorSetLayout});
 
     _descriptorSet->bindBuffer(0, _uniformBuffer);
     _descriptorSet->bindSampler(1, _sampler);
@@ -347,7 +347,7 @@ void ParticleTest::createPipeline() {
     pipelineInfo.primitive                           = gfx::PrimitiveMode::TRIANGLE_LIST;
     pipelineInfo.shader                              = _shader;
     pipelineInfo.inputState                          = {_inputAssembler->getAttributes()};
-    pipelineInfo.renderPass                          = _fbo->getRenderPass();
+    pipelineInfo.renderPass                          = fbo->getRenderPass();
     pipelineInfo.blendState.targets[0].blend         = true;
     pipelineInfo.blendState.targets[0].blendEq       = gfx::BlendOp::ADD;
     pipelineInfo.blendState.targets[0].blendAlphaEq  = gfx::BlendOp::ADD;
@@ -357,7 +357,7 @@ void ParticleTest::createPipeline() {
     pipelineInfo.blendState.targets[0].blendDstAlpha = gfx::BlendFactor::ONE;
     pipelineInfo.pipelineLayout                      = _pipelineLayout;
 
-    _pipelineState = _device->createPipelineState(pipelineInfo);
+    _pipelineState = device->createPipelineState(pipelineInfo);
 
     _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
         {
@@ -435,19 +435,19 @@ void ParticleTest::onTick() {
     gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize();
     TestBaseI::createPerspective(60.0f, 1.0f * orientedSize.width / orientedSize.height, 0.01f, 1000.0f, &_matrices[2]);
 
-    _device->acquire();
+    device->acquire();
 
     _uniformBuffer->update(_matrices, sizeof(_matrices));
     _vertexBuffer->update(_vbufferArray, sizeof(_vbufferArray));
-    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
+    gfx::Rect renderArea = {0, 0, device->getWidth(), device->getHeight()};
 
-    auto commandBuffer = _commandBuffers[0];
+    auto commandBuffer = commandBuffers[0];
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER)
         commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx], _textureBarriers.data(), _textures.data(), textureBarriers);
 
-    commandBuffer->beginRenderPass(_fbo->getRenderPass(), _fbo, renderArea, &clearColor, 1.0f, 0);
+    commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0f, 0);
     commandBuffer->bindInputAssembler(_inputAssembler);
     commandBuffer->bindPipelineState(_pipelineState);
     commandBuffer->bindDescriptorSet(0, _descriptorSet);
@@ -455,9 +455,9 @@ void ParticleTest::onTick() {
     commandBuffer->endRenderPass();
     commandBuffer->end();
 
-    _device->flushCommands(_commandBuffers);
-    _device->getQueue()->submit(_commandBuffers);
-    _device->present();
+    device->flushCommands(commandBuffers);
+    device->getQueue()->submit(commandBuffers);
+    device->present();
 }
 
 } // namespace cc

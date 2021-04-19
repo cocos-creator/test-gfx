@@ -51,7 +51,7 @@ bool ComputeTest::onInit() {
 }
 
 void ComputeTest::createComputeVBPipeline() {
-    _compStorageBuffer = _device->createBuffer({
+    _compStorageBuffer = device->createBuffer({
         gfx::BufferUsage::STORAGE | gfx::BufferUsage::VERTEX,
         gfx::MemoryUsage::DEVICE,
         VERTEX_COUNT * 2 * sizeof(Vec4),
@@ -67,7 +67,7 @@ void ComputeTest::createComputeVBPipeline() {
     }
     _compStorageBuffer->update(buffer.data(), buffer.size() * sizeof(Vec4));
 
-    if (!_device->hasFeature(gfx::Feature::COMPUTE_SHADER)) return;
+    if (!device->hasFeature(gfx::Feature::COMPUTE_SHADER)) return;
 
     ShaderSources<ComputeShaderSource> sources;
     sources.glsl4 = StringUtil::format(
@@ -121,9 +121,9 @@ void ComputeTest::createComputeVBPipeline() {
     shaderInfo.stages  = {{gfx::ShaderStageFlagBit::COMPUTE, TestBaseI::getAppropriateShaderSource(sources)}};
     shaderInfo.blocks  = {{0, 0, "Constants", {{"time", gfx::Type::FLOAT, 1}, {"vertexCount", gfx::Type::FLOAT, 1}}, 1}};
     shaderInfo.buffers = {{0, 1, "DestBuffer", 1, gfx::MemoryAccessBit::WRITE_ONLY}};
-    _compShader        = _device->createShader(shaderInfo);
+    _compShader        = device->createShader(shaderInfo);
 
-    _compConstantsBuffer = _device->createBuffer({
+    _compConstantsBuffer = device->createBuffer({
         gfx::BufferUsage::UNIFORM,
         gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
         TestBaseI::getUBOSize(sizeof(Vec4)),
@@ -132,11 +132,11 @@ void ComputeTest::createComputeVBPipeline() {
     gfx::DescriptorSetLayoutInfo dslInfo;
     dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::COMPUTE});
     dslInfo.bindings.push_back({1, gfx::DescriptorType::STORAGE_BUFFER, 1, gfx::ShaderStageFlagBit::COMPUTE});
-    _compDescriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
+    _compDescriptorSetLayout = device->createDescriptorSetLayout(dslInfo);
 
-    _compPipelineLayout = _device->createPipelineLayout({{_compDescriptorSetLayout}});
+    _compPipelineLayout = device->createPipelineLayout({{_compDescriptorSetLayout}});
 
-    _compDescriptorSet = _device->createDescriptorSet({_compDescriptorSetLayout});
+    _compDescriptorSet = device->createDescriptorSet({_compDescriptorSetLayout});
 
     _compDescriptorSet->bindBuffer(0, _compConstantsBuffer);
     _compDescriptorSet->bindBuffer(1, _compStorageBuffer);
@@ -147,11 +147,11 @@ void ComputeTest::createComputeVBPipeline() {
     pipelineInfo.pipelineLayout = _compPipelineLayout;
     pipelineInfo.bindPoint      = gfx::PipelineBindPoint::COMPUTE;
 
-    _compPipelineState = _device->createPipelineState(pipelineInfo);
+    _compPipelineState = device->createPipelineState(pipelineInfo);
 }
 
 void ComputeTest::createComputeBGPipeline() {
-    _textures.push_back(_device->createTexture({
+    _textures.push_back(device->createTexture({
         gfx::TextureType::TEX2D,
         gfx::TextureUsage::STORAGE | gfx::TextureUsage::TRANSFER_SRC,
         gfx::Format::RGBA8,
@@ -162,9 +162,9 @@ void ComputeTest::createComputeBGPipeline() {
 
     _textures.push_back(nullptr);
 
-    if (!_device->hasFeature(gfx::Feature::COMPUTE_SHADER)) return;
+    if (!device->hasFeature(gfx::Feature::COMPUTE_SHADER)) return;
 
-    uint maxInvocations = _device->getCapabilities().maxComputeWorkGroupInvocations;
+    uint maxInvocations = device->getCapabilities().maxComputeWorkGroupInvocations;
     BG_GROUP_SIZE_X = BG_GROUP_SIZE_Y = (uint)sqrt(maxInvocations);
     CC_LOG_INFO("BG work group size: %dx%d", BG_GROUP_SIZE_X, BG_GROUP_SIZE_Y);
 
@@ -208,16 +208,16 @@ void ComputeTest::createComputeBGPipeline() {
     shaderInfo.stages = {{gfx::ShaderStageFlagBit::COMPUTE, TestBaseI::getAppropriateShaderSource(sources)}};
     shaderInfo.blocks = {{0, 0, "Constants", {{"time", gfx::Type::FLOAT, 1}, {"vertexCount", gfx::Type::FLOAT, 1}, {"texSize", gfx::Type::FLOAT2, 1}}, 1}};
     shaderInfo.images = {{0, 1, "background", gfx::Type::IMAGE2D, 1, gfx::MemoryAccessBit::WRITE_ONLY}};
-    _compBGShader     = _device->createShader(shaderInfo);
+    _compBGShader     = device->createShader(shaderInfo);
 
     gfx::DescriptorSetLayoutInfo dslInfo;
     dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::COMPUTE});
     dslInfo.bindings.push_back({1, gfx::DescriptorType::STORAGE_IMAGE, 1, gfx::ShaderStageFlagBit::COMPUTE});
-    _compBGDescriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
+    _compBGDescriptorSetLayout = device->createDescriptorSetLayout(dslInfo);
 
-    _compBGPipelineLayout = _device->createPipelineLayout({{_compBGDescriptorSetLayout}});
+    _compBGPipelineLayout = device->createPipelineLayout({{_compBGDescriptorSetLayout}});
 
-    _compBGDescriptorSet = _device->createDescriptorSet({_compBGDescriptorSetLayout});
+    _compBGDescriptorSet = device->createDescriptorSet({_compBGDescriptorSetLayout});
 
     _compBGDescriptorSet->bindBuffer(0, _compConstantsBuffer);
     _compBGDescriptorSet->bindTexture(1, _textures[0]);
@@ -228,7 +228,7 @@ void ComputeTest::createComputeBGPipeline() {
     pipelineInfo.pipelineLayout = _compBGPipelineLayout;
     pipelineInfo.bindPoint      = gfx::PipelineBindPoint::COMPUTE;
 
-    _compBGPipelineState = _device->createPipelineState(pipelineInfo);
+    _compBGPipelineState = device->createPipelineState(pipelineInfo);
 }
 
 void ComputeTest::createShader() {
@@ -331,7 +331,7 @@ void ComputeTest::createShader() {
     shaderInfo.stages     = std::move(shaderStageList);
     shaderInfo.attributes = std::move(attributeList);
     shaderInfo.blocks     = std::move(uniformBlockList);
-    _shader               = _device->createShader(shaderInfo);
+    _shader               = device->createShader(shaderInfo);
 }
 
 void ComputeTest::createUniformBuffer() {
@@ -340,7 +340,7 @@ void ComputeTest::createUniformBuffer() {
         gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
         TestBaseI::getUBOSize(sizeof(Mat4)),
     };
-    _uniformBufferMVP = _device->createBuffer(uniformBufferMVPInfo);
+    _uniformBufferMVP = device->createBuffer(uniformBufferMVPInfo);
 }
 
 void ComputeTest::createInputAssembler() {
@@ -348,17 +348,17 @@ void ComputeTest::createInputAssembler() {
     inputAssemblerInfo.attributes.emplace_back(gfx::Attribute{"a_position", gfx::Format::RGBA32F, false, 0, false});
     inputAssemblerInfo.attributes.emplace_back(gfx::Attribute{"a_color", gfx::Format::RGBA32F, false, 0, false});
     inputAssemblerInfo.vertexBuffers.emplace_back(_compStorageBuffer);
-    _inputAssembler = _device->createInputAssembler(inputAssemblerInfo);
+    _inputAssembler = device->createInputAssembler(inputAssemblerInfo);
 }
 
 void ComputeTest::createPipeline() {
     gfx::DescriptorSetLayoutInfo dslInfo;
     dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX});
-    _descriptorSetLayout = _device->createDescriptorSetLayout(dslInfo);
+    _descriptorSetLayout = device->createDescriptorSetLayout(dslInfo);
 
-    _pipelineLayout = _device->createPipelineLayout({{_descriptorSetLayout}});
+    _pipelineLayout = device->createPipelineLayout({{_descriptorSetLayout}});
 
-    _descriptorSet = _device->createDescriptorSet({_descriptorSetLayout});
+    _descriptorSet = device->createDescriptorSet({_descriptorSetLayout});
 
     _descriptorSet->bindBuffer(0, _uniformBufferMVP);
     _descriptorSet->update();
@@ -367,22 +367,22 @@ void ComputeTest::createPipeline() {
     pipelineInfo.primitive      = gfx::PrimitiveMode::LINE_LIST;
     pipelineInfo.shader         = _shader;
     pipelineInfo.inputState     = {_inputAssembler->getAttributes()};
-    pipelineInfo.renderPass     = _fbo->getRenderPass();
+    pipelineInfo.renderPass     = fbo->getRenderPass();
     pipelineInfo.pipelineLayout = _pipelineLayout;
 
-    _pipelineState = _device->createPipelineState(pipelineInfo);
+    _pipelineState = device->createPipelineState(pipelineInfo);
 
     gfx::RenderPassInfo  renderPassInfo;
     gfx::ColorAttachment colorAttachment;
-    colorAttachment.format        = _device->getColorFormat();
+    colorAttachment.format        = device->getColorFormat();
     colorAttachment.loadOp        = gfx::LoadOp::LOAD;
     colorAttachment.beginAccesses = {gfx::AccessType::TRANSFER_WRITE};
     renderPassInfo.colorAttachments.emplace_back(colorAttachment);
 
     gfx::DepthStencilAttachment &depthStencilAttachment = renderPassInfo.depthStencilAttachment;
-    depthStencilAttachment.format                       = _device->getDepthStencilFormat();
+    depthStencilAttachment.format                       = device->getDepthStencilFormat();
 
-    _renderPassLoad = _device->createRenderPass(renderPassInfo);
+    _renderPassLoad = device->createRenderPass(renderPassInfo);
 
     _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
         {
@@ -454,37 +454,37 @@ void ComputeTest::onTick() {
     Mat4 MVP;
     TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &MVP);
 
-    _device->acquire();
+    device->acquire();
 
     if (_compConstantsBuffer) _compConstantsBuffer->update(&constants, sizeof(constants));
     _uniformBufferMVP->update(MVP.m, sizeof(MVP.m));
 
-    gfx::Rect renderArea = {0, 0, _device->getWidth(), _device->getHeight()};
+    gfx::Rect renderArea = {0, 0, device->getWidth(), device->getHeight()};
 
     gfx::TextureBlit blit;
     blit.srcExtent.width  = BG_WIDTH;
     blit.srcExtent.height = BG_HEIGHT;
 #if CC_PLATFORM == CC_PLATFORM_WINDOWS
     // TODO: somehow the back buffer on windows is using MSAA by default?
-    if (_device->getGfxAPI() == gfx::API::GLES3) {
+    if (device->getGfxAPI() == gfx::API::GLES3) {
         blit.dstExtent.width  = BG_WIDTH;
         blit.dstExtent.height = BG_HEIGHT;
     } else {
-        blit.dstExtent.width  = _device->getWidth();
-        blit.dstExtent.height = _device->getHeight();
+        blit.dstExtent.width  = device->getWidth();
+        blit.dstExtent.height = device->getHeight();
     }
 #else
-    blit.dstExtent.width  = _device->getWidth();
-    blit.dstExtent.height = _device->getHeight();
+    blit.dstExtent.width  = device->getWidth();
+    blit.dstExtent.height = device->getHeight();
 #endif
 
-    auto commandBuffer = _commandBuffers[0];
+    auto commandBuffer = commandBuffers[0];
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER)
         commandBuffer->pipelineBarrier(_globalBarriers[0]);
 
-    if (_device->hasFeature(gfx::Feature::COMPUTE_SHADER)) {
+    if (device->hasFeature(gfx::Feature::COMPUTE_SHADER)) {
         commandBuffer->pipelineBarrier(_globalBarriers[1], _textureBarriers.data(), _textures.data(), 1);
 
         commandBuffer->bindPipelineState(_compPipelineState);
@@ -501,7 +501,7 @@ void ComputeTest::onTick() {
 #endif
     }
 
-    commandBuffer->beginRenderPass(_renderPassLoad, _fbo, renderArea, &clearColor, 1.0f, 0);
+    commandBuffer->beginRenderPass(_renderPassLoad, fbo, renderArea, &clearColor, 1.0f, 0);
     commandBuffer->bindInputAssembler(_inputAssembler);
     commandBuffer->bindPipelineState(_pipelineState);
     commandBuffer->bindDescriptorSet(0, _descriptorSet);
@@ -510,9 +510,9 @@ void ComputeTest::onTick() {
 
     commandBuffer->end();
 
-    _device->flushCommands(_commandBuffers);
-    _device->getQueue()->submit(_commandBuffers);
-    _device->present();
+    device->flushCommands(commandBuffers);
+    device->getQueue()->submit(commandBuffers);
+    device->present();
 }
 
 } // namespace cc
