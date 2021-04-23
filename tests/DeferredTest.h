@@ -50,12 +50,14 @@ protected:
     gfx::Framebuffer *     _deferredGBufferFramebuffer   = nullptr;
     gfx::PipelineState *   _deferredGBufferPipelineState = nullptr;
 
+    gfx::Texture *            _deferredOutputTexture       = nullptr;
     gfx::Shader *             _deferredShader              = nullptr;
     gfx::Buffer *             _deferredVB                  = nullptr;
     gfx::InputAssembler *     _deferredInputAssembler      = nullptr;
     gfx::DescriptorSetLayout *_deferredDescriptorSetLayout = nullptr;
     gfx::PipelineLayout *     _deferredPipelineLayout      = nullptr;
     gfx::RenderPass *         _deferredRenderPass          = nullptr;
+    gfx::Framebuffer *        _deferredFramebuffer         = nullptr;
     gfx::PipelineState *      _deferredPipelineState       = nullptr;
     gfx::DescriptorSet *      _deferredDescriptorSet       = nullptr;
 

@@ -15,8 +15,6 @@ endif()
 file(GLOB_RECURSE APP_UI_RES ${GAME_RES_FOLDER}/*)
 
 # add test cases
-set(USE_SE_V8 ON)
-set(USE_V8_DEBUGGER ON)
 include(${PROJECT_SOURCE_DIR}/tests/CMakeLists.txt)
 
 set(ENGINE_BASE_LIBS

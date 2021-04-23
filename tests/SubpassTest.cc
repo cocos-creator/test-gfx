@@ -5,7 +5,7 @@
 namespace cc {
 
 namespace {
-constexpr uint REPEAT = 1U;
+constexpr uint REPEAT = 20U;
 }
 
 enum class Binding : uint8_t {
@@ -154,12 +154,19 @@ gfx::UniformBlock cameraUBOInfo{
     1,
 };
 
-String declPLSExtension = R"(
-    #ifdef GL_EXT_shader_pixel_local_storage
-        #extension GL_EXT_shader_pixel_local_storage: enable
-        #define USE_PLS 1
+String declExtensions = R"(
+    #ifdef GL_EXT_shader_framebuffer_fetch
+    #   extension GL_EXT_shader_framebuffer_fetch: enable
+    #   define USE_FBF 1
+    #   define USE_PLS 0
     #else
-        #define USE_PLS 0
+    #   define USE_FBF 0
+    #   if __VERSION__ > 100 && defined(GL_EXT_shader_pixel_local_storage)
+    #       extension GL_EXT_shader_pixel_local_storage: enable
+    #       define USE_PLS 1
+    #   else
+    #       define USE_PLS 0
+    #   endif
     #endif
 )";
 
@@ -309,7 +316,7 @@ void SubpassTest::createShader() {
             o_color3 = vec4(s.emissive, s.occlusion);
         }
     )";
-    gbufferFrag.glsl3 = declPLSExtension + gbufferFrag.glsl3;
+    gbufferFrag.glsl3 = declExtensions + gbufferFrag.glsl3;
     gbufferFrag.glsl3 += R"(
         #if USE_PLS
     )" + declPLSData(gfx::MemoryAccessBit::WRITE_ONLY);
@@ -331,7 +338,9 @@ void SubpassTest::createShader() {
         }
     )";
     gbufferFrag.glsl1 = R"(
-        #extension GL_EXT_draw_buffers: require
+        #ifdef GL_EXT_draw_buffers
+            #extension GL_EXT_draw_buffers: enable
+        #endif
     )" + gbufferFrag.glsl1;
     gbufferFrag.glsl1 += R"(
         void main () {
@@ -391,20 +400,7 @@ void SubpassTest::createShader() {
 void SubpassTest::createDeferredResources() {
     gfx::SamplerInfo samplerInfo;
     _sampler.reset(device->createSampler(samplerInfo));
-
     gfx::RenderPassInfo rpInfo;
-    rpInfo.colorAttachments.emplace_back();
-    rpInfo.colorAttachments.back().format         = device->getColorFormat();
-    rpInfo.colorAttachments.back().loadOp         = gfx::LoadOp::DISCARD;
-    rpInfo.colorAttachments.back().endAccesses[0] = gfx::AccessType::TRANSFER_READ;
-
-    _deferredOutputTexture.reset(device->createTexture({
-        gfx::TextureType::TEX2D,
-        gfx::TextureUsageBit::TRANSFER_SRC | gfx::TextureUsageBit::COLOR_ATTACHMENT,
-        device->getColorFormat(),
-        device->getWidth(),
-        device->getHeight(),
-    }));
 
     for (uint i = 0; i < 4; ++i) {
         // RGBA8 is suffice for albedo, emission & occlusion
@@ -421,6 +417,24 @@ void SubpassTest::createDeferredResources() {
         rpInfo.colorAttachments.back().endAccesses[0] = gfx::AccessType::FRAGMENT_SHADER_READ_COLOR_INPUT_ATTACHMENT;
     }
 
+    rpInfo.colorAttachments.emplace_back();
+    rpInfo.colorAttachments.back().format         = device->getColorFormat();
+    rpInfo.colorAttachments.back().loadOp         = gfx::LoadOp::DISCARD;
+    rpInfo.colorAttachments.back().endAccesses[0] = gfx::AccessType::TRANSFER_READ;
+
+    // can't enable PLS on the default FBO so we have to do a blit pass
+    _deferredOutputTexture.reset(device->createTexture({
+        gfx::TextureType::TEX2D,
+        gfx::TextureUsageBit::TRANSFER_SRC | gfx::TextureUsageBit::COLOR_ATTACHMENT,
+        device->getColorFormat(),
+        device->getWidth(),
+        device->getHeight(),
+    }));
+
+    rpInfo.depthStencilAttachment.format         = device->getDepthStencilFormat();
+    rpInfo.depthStencilAttachment.depthStoreOp   = gfx::StoreOp::DISCARD;
+    rpInfo.depthStencilAttachment.stencilStoreOp = gfx::StoreOp::DISCARD;
+
     _deferredGBufferDepthTexture.reset(device->createTexture({
         gfx::TextureType::TEX2D,
         gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT,
@@ -429,12 +443,10 @@ void SubpassTest::createDeferredResources() {
         device->getHeight(),
     }));
 
-    rpInfo.depthStencilAttachment.format = device->getDepthStencilFormat();
-
     rpInfo.subpasses.resize(2);
-    rpInfo.subpasses[0].colors = {1, 2, 3, 4};
-    rpInfo.subpasses[1].colors = {0};
-    rpInfo.subpasses[1].inputs = {1, 2, 3, 4};
+    rpInfo.subpasses[0].colors = {0, 1, 2, 3};
+    rpInfo.subpasses[1].colors = {4};
+    rpInfo.subpasses[1].inputs = {0, 1, 2, 3};
 
     rpInfo.dependencies.push_back({
         0,
@@ -454,11 +466,11 @@ void SubpassTest::createDeferredResources() {
     _deferredGBufferFramebuffer.reset(device->createFramebuffer({
         _deferredGBufferRenderPass.get(),
         {
-            _deferredOutputTexture.get(),
             _deferredGBuffers[0].get(),
             _deferredGBuffers[1].get(),
             _deferredGBuffers[2].get(),
             _deferredGBuffers[3].get(),
+            _deferredOutputTexture.get(),
         },
         _deferredGBufferDepthTexture.get(),
     }));
@@ -513,33 +525,49 @@ void SubpassTest::createDeferredResources() {
             precision highp float;
             layout(location = 0) in vec2 v_texCoord;
 
-            layout(input_attachment_index = 0, set = 0, binding = 1) uniform subpassInput gbuffer1;
-            layout(input_attachment_index = 1, set = 0, binding = 2) uniform subpassInput gbuffer2;
-            layout(input_attachment_index = 2, set = 0, binding = 3) uniform subpassInput gbuffer3;
-            layout(input_attachment_index = 3, set = 0, binding = 4) uniform subpassInput gbuffer4;
+            layout(input_attachment_index = 0, set = 0, binding = 1) uniform subpassInput gbuffer0;
+            layout(input_attachment_index = 1, set = 0, binding = 2) uniform subpassInput gbuffer1;
+            layout(input_attachment_index = 2, set = 0, binding = 3) uniform subpassInput gbuffer2;
+            layout(input_attachment_index = 3, set = 0, binding = 4) uniform subpassInput gbuffer3;
         )",
-        declPLSExtension + R"(
+        declExtensions + R"(
             precision highp float;
             in vec2 v_texCoord;
 
-            #if USE_PLS
+            #if USE_FBF
+                layout(location = 0) inout vec4 gbuffer0;
+                layout(location = 1) inout vec4 gbuffer1;
+                layout(location = 2) inout vec4 gbuffer2;
+                layout(location = 3) inout vec4 gbuffer3;
+                layout(location = 4) out vec4 o_color;
+            #elif USE_PLS
         )" + declPLSData(gfx::MemoryAccessBit::READ_ONLY) +
             R"(
+                layout(location = 0) out vec4 o_color;
             #else
+                uniform sampler2D gbuffer0;
                 uniform sampler2D gbuffer1;
                 uniform sampler2D gbuffer2;
                 uniform sampler2D gbuffer3;
-                uniform sampler2D gbuffer4;
+                layout(location = 0) out vec4 o_color;
             #endif
         )",
-        R"(
+        declExtensions + R"(
+            #if USE_FBF
+            #   ifdef GL_EXT_draw_buffers
+            #       extension GL_EXT_draw_buffers: enable
+            #   endif
+            #endif
+
             precision highp float;
             varying vec2 v_texCoord;
 
-            uniform sampler2D gbuffer1;
-            uniform sampler2D gbuffer2;
-            uniform sampler2D gbuffer3;
-            uniform sampler2D gbuffer4;
+            #if !USE_FBF
+                uniform sampler2D gbuffer0;
+                uniform sampler2D gbuffer1;
+                uniform sampler2D gbuffer2;
+                uniform sampler2D gbuffer3;
+            #endif
         )",
     };
     frag += cameraUBO + standardStruct + standardShading;
@@ -547,10 +575,10 @@ void SubpassTest::createDeferredResources() {
         layout(location = 0) out vec4 o_color;
         void main() {
 
-            vec4 g1 = subpassLoad(gbuffer1);
-            vec4 g2 = subpassLoad(gbuffer2);
-            vec4 g3 = subpassLoad(gbuffer3);
-            vec4 g4 = subpassLoad(gbuffer4);
+            vec4 g1 = subpassLoad(gbuffer0);
+            vec4 g2 = subpassLoad(gbuffer1);
+            vec4 g3 = subpassLoad(gbuffer2);
+            vec4 g4 = subpassLoad(gbuffer3);
 
             StandardSurface s;
             s.albedo = g1;
@@ -565,24 +593,22 @@ void SubpassTest::createDeferredResources() {
         }
     )";
     frag.glsl3 += R"(
-        out vec4 o_color;
         void main() {
 
-            StandardSurface s;
-
-            #if USE_PLS
+            #if USE_PLS || USE_FBF
                 // [PVRVFrame driver bug] Don't use PLS data inside vector constructors
                 vec4 g1 = gbuffer0;
                 vec4 g2 = gbuffer1;
                 vec4 g3 = gbuffer2;
                 vec4 g4 = gbuffer3;
             #else
-                vec4 g1 = texture(gbuffer1, v_texCoord);
-                vec4 g2 = texture(gbuffer2, v_texCoord);
-                vec4 g3 = texture(gbuffer3, v_texCoord);
-                vec4 g4 = texture(gbuffer4, v_texCoord);
+                vec4 g1 = texture(gbuffer0, v_texCoord);
+                vec4 g2 = texture(gbuffer1, v_texCoord);
+                vec4 g3 = texture(gbuffer2, v_texCoord);
+                vec4 g4 = texture(gbuffer3, v_texCoord);
             #endif
 
+            StandardSurface s;
             s.albedo = g1;
             s.position = g2.xyz;
             s.roughness = g2.w;
@@ -597,10 +623,17 @@ void SubpassTest::createDeferredResources() {
     frag.glsl1 += R"(
         void main() {
 
-            vec4 g1 = texture2D(gbuffer1, v_texCoord);
-            vec4 g2 = texture2D(gbuffer2, v_texCoord);
-            vec4 g3 = texture2D(gbuffer3, v_texCoord);
-            vec4 g4 = texture2D(gbuffer4, v_texCoord);
+            #if USE_FBF
+                vec4 g1 = gl_LastFragData[0];
+                vec4 g2 = gl_LastFragData[1];
+                vec4 g3 = gl_LastFragData[2];
+                vec4 g4 = gl_LastFragData[3];
+            #else
+                vec4 g1 = texture2D(gbuffer0, v_texCoord);
+                vec4 g2 = texture2D(gbuffer1, v_texCoord);
+                vec4 g3 = texture2D(gbuffer2, v_texCoord);
+                vec4 g4 = texture2D(gbuffer3, v_texCoord);
+            #endif
 
             StandardSurface s;
             s.albedo = g1;
@@ -611,7 +644,11 @@ void SubpassTest::createDeferredResources() {
             s.emissive = g4.xyz;
             s.occlusion = g4.w;
 
-            gl_FragColor = CCStandardShadingBase(s);
+            #if USE_FBF
+                gl_FragData[4] = CCStandardShadingBase(s);
+            #else
+                gl_FragColor = CCStandardShadingBase(s);
+            #endif
         }
     )";
 
@@ -626,10 +663,10 @@ void SubpassTest::createDeferredResources() {
 
     shaderInfo.blocks.push_back(cameraUBOInfo);
 
-    shaderInfo.subpassInputs.push_back({0, 1, "gbuffer1", 1});
-    shaderInfo.subpassInputs.push_back({0, 2, "gbuffer2", 1});
-    shaderInfo.subpassInputs.push_back({0, 3, "gbuffer3", 1});
-    shaderInfo.subpassInputs.push_back({0, 4, "gbuffer4", 1});
+    shaderInfo.subpassInputs.push_back({0, 1, "gbuffer0", 1});
+    shaderInfo.subpassInputs.push_back({0, 2, "gbuffer1", 1});
+    shaderInfo.subpassInputs.push_back({0, 3, "gbuffer2", 1});
+    shaderInfo.subpassInputs.push_back({0, 4, "gbuffer3", 1});
 
     _deferredShader.reset(device->createShader(shaderInfo));
 

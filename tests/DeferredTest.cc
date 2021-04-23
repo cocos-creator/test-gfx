@@ -4,7 +4,7 @@
 namespace cc {
 
 namespace {
-constexpr uint REPEAT = 1U;
+constexpr uint REPEAT = 20U;
 }
 
 enum class Binding : uint8_t {
@@ -42,7 +42,9 @@ void DeferredTest::onDestroy() {
     CC_SAFE_DESTROY(_deferredGBufferRenderPass)
     CC_SAFE_DESTROY(_deferredGBufferPipelineState)
 
+    CC_SAFE_DESTROY(_deferredOutputTexture)
     CC_SAFE_DESTROY(_deferredRenderPass)
+    CC_SAFE_DESTROY(_deferredFramebuffer)
     CC_SAFE_DESTROY(_deferredShader)
     CC_SAFE_DESTROY(_deferredVB)
     CC_SAFE_DESTROY(_deferredDescriptorSet)
@@ -334,7 +336,9 @@ void DeferredTest::createShader() {
         }
     )";
     gbufferFrag.glsl1 = R"(
-        #extension GL_EXT_draw_buffers: require
+        #ifdef GL_EXT_draw_buffers
+            #extension GL_EXT_draw_buffers: enable
+        #endif
     )" + gbufferFrag.glsl1;
     gbufferFrag.glsl1 += R"(
         void main () {
@@ -410,14 +414,18 @@ void DeferredTest::createDeferredResources() {
         rpInfo.colorAttachments.back().format         = format;
         rpInfo.colorAttachments.back().endAccesses[0] = gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE;
     }
-    _deferredGBufferDepthTexture         = device->createTexture({
+
+    _deferredGBufferDepthTexture = device->createTexture({
         gfx::TextureType::TEX2D,
         gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT,
         device->getDepthStencilFormat(),
         device->getWidth(),
         device->getHeight(),
     });
-    rpInfo.depthStencilAttachment.format = device->getDepthStencilFormat();
+
+    rpInfo.depthStencilAttachment.format         = device->getDepthStencilFormat();
+    rpInfo.depthStencilAttachment.depthStoreOp   = gfx::StoreOp::DISCARD;
+    rpInfo.depthStencilAttachment.stencilStoreOp = gfx::StoreOp::DISCARD;
 
     _deferredGBufferRenderPass  = device->createRenderPass(rpInfo);
     _deferredGBufferFramebuffer = device->createFramebuffer({
@@ -634,16 +642,31 @@ void DeferredTest::createDeferredResources() {
     pipelineStateInfo.rasterizerState.cullMode     = gfx::CullMode::NONE;
     _deferredPipelineState                         = device->createPipelineState(pipelineStateInfo);
 
+    _deferredOutputTexture = device->createTexture({
+        gfx::TextureType::TEX2D,
+        gfx::TextureUsageBit::TRANSFER_SRC | gfx::TextureUsageBit::COLOR_ATTACHMENT,
+        device->getColorFormat(),
+        device->getWidth(),
+        device->getHeight(),
+    });
+
     gfx::RenderPassInfo deferredRPInfo;
     deferredRPInfo.colorAttachments.emplace_back();
-    deferredRPInfo.colorAttachments.back().format        = device->getColorFormat();
-    deferredRPInfo.colorAttachments.back().loadOp        = gfx::LoadOp::DISCARD;
-    deferredRPInfo.depthStencilAttachment.format         = device->getDepthStencilFormat();
-    deferredRPInfo.depthStencilAttachment.depthLoadOp    = gfx::LoadOp::DISCARD;
-    deferredRPInfo.depthStencilAttachment.depthStoreOp   = gfx::StoreOp::DISCARD;
-    deferredRPInfo.depthStencilAttachment.stencilLoadOp  = gfx::LoadOp::DISCARD;
-    deferredRPInfo.depthStencilAttachment.stencilStoreOp = gfx::StoreOp::DISCARD;
-    _deferredRenderPass                                  = device->createRenderPass(deferredRPInfo);
+    deferredRPInfo.colorAttachments.back().format         = device->getColorFormat();
+    deferredRPInfo.colorAttachments.back().loadOp         = gfx::LoadOp::DISCARD;
+    deferredRPInfo.colorAttachments.back().endAccesses[0] = gfx::AccessType::TRANSFER_READ;
+    deferredRPInfo.depthStencilAttachment.format          = device->getDepthStencilFormat();
+    deferredRPInfo.depthStencilAttachment.depthLoadOp     = gfx::LoadOp::DISCARD;
+    deferredRPInfo.depthStencilAttachment.stencilLoadOp   = gfx::LoadOp::DISCARD;
+    deferredRPInfo.depthStencilAttachment.depthStoreOp    = gfx::StoreOp::DISCARD;
+    deferredRPInfo.depthStencilAttachment.stencilStoreOp  = gfx::StoreOp::DISCARD;
+    _deferredRenderPass                                   = device->createRenderPass(deferredRPInfo);
+
+    _deferredFramebuffer = device->createFramebuffer({
+        _deferredRenderPass,
+        {_deferredOutputTexture},
+        _deferredGBufferDepthTexture,
+    });
 }
 
 void DeferredTest::createBuffers() {
@@ -765,6 +788,22 @@ void DeferredTest::createPipelineState() {
         },
     }));
 
+    _textureBarriers.push_back(TestBaseI::getTextureBarrier({
+        {},
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+    }));
+
+    _textureBarriers.push_back(TestBaseI::getTextureBarrier({
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+        {
+            gfx::AccessType::PRESENT,
+        },
+    }));
+
     _clearColors.assign(4, {0, 0, 0, 1});
 }
 
@@ -774,7 +813,8 @@ void DeferredTest::onSpacePressed() {
 }
 
 void DeferredTest::onTick() {
-    uint globalBarrierIdx = _frameCount ? 1 : 0;
+    uint          globalBarrierIdx = _frameCount ? 1 : 0;
+    gfx::Texture *backBuffer       = nullptr;
     printTime();
 
     gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize();
@@ -808,7 +848,7 @@ void DeferredTest::onTick() {
 
             commandBuffer->endRenderPass();
 
-            commandBuffer->beginRenderPass(_deferredRenderPass, fbo, renderArea, _clearColors.data(),
+            commandBuffer->beginRenderPass(_deferredRenderPass, _deferredFramebuffer, renderArea, _clearColors.data(),
                                            1.0F, 0);
 
             commandBuffer->bindInputAssembler(_deferredInputAssembler);
@@ -817,6 +857,17 @@ void DeferredTest::onTick() {
             commandBuffer->draw(_deferredInputAssembler);
 
             commandBuffer->endRenderPass();
+
+            commandBuffer->pipelineBarrier(nullptr, &_textureBarriers[0], &backBuffer, 1);
+
+            gfx::TextureBlit region;
+            region.srcExtent.width  = device->getWidth();
+            region.srcExtent.height = device->getHeight();
+            region.dstExtent.width  = device->getWidth();
+            region.dstExtent.height = device->getHeight();
+            commandBuffer->blitTexture(_deferredOutputTexture, nullptr, &region, 1, gfx::Filter::POINT);
+
+            commandBuffer->pipelineBarrier(nullptr, &_textureBarriers[1], &backBuffer, 1);
         }
     } else {
         commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, _clearColors.data(), 1.0F, 0);

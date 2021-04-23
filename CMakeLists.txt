@@ -177,7 +177,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(COCOS_ROOT_PATH "${PROJECT_SOURCE_DIR}")
-get_filename_component(COCOS_2dx_LITE_PATH "${COCOS_ROOT_PATH}/../cocos2d-x-lite" ABSOLUTE)
+get_filename_component(COCOS_2dx_LITE_PATH "${COCOS_ROOT_PATH}/../engine-native" ABSOLUTE)
 set(COCOS_SRC_PATH "${COCOS_2dx_LITE_PATH}/cocos")
 set(COCOS_BUILD_PATH "${PROJECT_BINARY_DIR}")
 set(COCOS_EXTERNAL_PATH "${COCOS_2dx_LITE_PATH}/external")
@@ -221,6 +221,9 @@ foreach(TARGET ${COCOS_EXTERNAL_TARGETS})
 endforeach()
 
 set(USE_SE_V8 ON)
+set(USE_V8_DEBUGGER ON)
+add_definitions("-DUSE_JOB_SYSTEM_TASKFLOW")
+
 include(${COCOS_EXTERNAL_PATH}/CMakeLists.txt)
 list(REMOVE_ITEM CC_EXTERNAL_LIBS "glfw3")
 
