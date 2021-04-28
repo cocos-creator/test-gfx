@@ -88,15 +88,9 @@ target_link_libraries(${TARGET_NAME}
 )
 
 if(LINUX OR WINDOWS)
-  set(bin_dir ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR})
-  add_custom_target(copy_resource ALL
-      COMMAND ${CMAKE_COMMAND} -E echo "Copying resources to ${bin_dir}"
-      COMMAND ${CMAKE_COMMAND} -E make_directory ${bin_dir}/Resources
-      COMMAND robocopy "${GAME_RES_FOLDER}/" "${bin_dir}/Resources/" /MIR || (exit 0)
-      COMMAND ${CMAKE_COMMAND} -E echo "Copying resources done!"
-  )
-  add_dependencies(${TARGET_NAME} copy_resource)
-  set_target_properties(copy_resource PROPERTIES FOLDER Utils)
+  set(COCOS2DX_ROOT_PATH ${COCOS_EXTERNAL_PATH})
+  cocos_def_copy_resource_target(${TARGET_NAME})
+  cocos_copy_target_res(${TARGET_NAME} LINK_TO "${COCOS_BUILD_PATH}/${CMAKE_CFG_INTDIR}/Resources" FOLDERS ${GAME_RES_FOLDER})
 endif()
 
 if(MSVC)
