@@ -363,26 +363,26 @@ gfx::Viewport TestBaseI::getViewportBasedOnDevice(const Vec4 &relativeArea) {
 
     switch (device->getSurfaceTransform()) {
         case gfx::SurfaceTransform::ROTATE_90:
-            viewport.left   = uint((1.F - y - h) * size.width);
-            viewport.top    = uint(x * size.height);
+            viewport.left   = int((1.F - y - h) * size.width);
+            viewport.top    = int(x * size.height);
             viewport.width  = uint(h * size.width);
             viewport.height = uint(w * size.height);
             break;
         case gfx::SurfaceTransform::ROTATE_180:
-            viewport.left   = uint((1.F - x - w) * size.width);
-            viewport.top    = uint((1.F - y - h) * size.height);
+            viewport.left   = int((1.F - x - w) * size.width);
+            viewport.top    = int((1.F - y - h) * size.height);
             viewport.width  = uint(w * size.width);
             viewport.height = uint(h * size.height);
             break;
         case gfx::SurfaceTransform::ROTATE_270:
-            viewport.left   = uint(y * size.width);
-            viewport.top    = uint((1.F - x - w) * size.height);
+            viewport.left   = int(y * size.width);
+            viewport.top    = int((1.F - x - w) * size.height);
             viewport.width  = uint(h * size.width);
             viewport.height = uint(w * size.height);
             break;
         case gfx::SurfaceTransform::IDENTITY:
-            viewport.left   = uint(x * size.width);
-            viewport.top    = uint(y * size.height);
+            viewport.left   = int(x * size.width);
+            viewport.top    = int(y * size.height);
             viewport.width  = uint(w * size.width);
             viewport.height = uint(h * size.height);
             break;
