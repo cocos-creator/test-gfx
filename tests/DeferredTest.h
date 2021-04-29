@@ -50,7 +50,6 @@ protected:
     gfx::Framebuffer *     _deferredGBufferFramebuffer   = nullptr;
     gfx::PipelineState *   _deferredGBufferPipelineState = nullptr;
 
-    gfx::Texture *            _deferredOutputTexture       = nullptr;
     gfx::Shader *             _deferredShader              = nullptr;
     gfx::Buffer *             _deferredVB                  = nullptr;
     gfx::InputAssembler *     _deferredInputAssembler      = nullptr;

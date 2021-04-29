@@ -49,7 +49,6 @@ protected:
     std::unique_ptr<gfx::Framebuffer>     _deferredGBufferFramebuffer   = nullptr;
     std::unique_ptr<gfx::PipelineState>   _deferredGBufferPipelineState = nullptr;
 
-    std::unique_ptr<gfx::Texture>             _deferredOutputTexture       = nullptr;
     std::unique_ptr<gfx::Shader>              _deferredShader              = nullptr;
     std::unique_ptr<gfx::Buffer>              _deferredVB                  = nullptr;
     std::unique_ptr<gfx::InputAssembler>      _deferredInputAssembler      = nullptr;

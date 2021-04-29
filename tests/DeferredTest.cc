@@ -4,7 +4,7 @@
 namespace cc {
 
 namespace {
-constexpr uint REPEAT = 20U;
+constexpr uint REPEAT = 1U;
 }
 
 enum class Binding : uint8_t {
@@ -42,7 +42,6 @@ void DeferredTest::onDestroy() {
     CC_SAFE_DESTROY(_deferredGBufferRenderPass)
     CC_SAFE_DESTROY(_deferredGBufferPipelineState)
 
-    CC_SAFE_DESTROY(_deferredOutputTexture)
     CC_SAFE_DESTROY(_deferredRenderPass)
     CC_SAFE_DESTROY(_deferredFramebuffer)
     CC_SAFE_DESTROY(_deferredShader)
@@ -402,13 +401,20 @@ void DeferredTest::createDeferredResources() {
     gfx::RenderPassInfo rpInfo;
     for (uint i = 0; i < 4; ++i) {
         // RGBA8 is suffice for albedo, emission & occlusion
-        gfx::Format format = i % 3 ? gfx::Format::RGBA16F : gfx::Format::RGBA8;
+        gfx::Format       format = i % 3 ? gfx::Format::RGBA16F : gfx::Format::RGBA8;
+        gfx::TextureUsage usage  = gfx::TextureUsageBit::SAMPLED | gfx::TextureUsageBit::COLOR_ATTACHMENT;
+        gfx::TextureFlags flags  = gfx::TextureFlagBit::NONE;
+        if (i == 3) { // use the emission buffer as output
+            usage |= gfx::TextureUsageBit::TRANSFER_SRC;
+            flags |= gfx::TextureFlagBit::GENERAL_LAYOUT;
+        }
         _deferredGBuffers.push_back(device->createTexture({
             gfx::TextureType::TEX2D,
-            gfx::TextureUsageBit::SAMPLED | gfx::TextureUsageBit::COLOR_ATTACHMENT,
+            usage,
             format,
             device->getWidth(),
             device->getHeight(),
+            flags,
         }));
         rpInfo.colorAttachments.emplace_back();
         rpInfo.colorAttachments.back().format         = format;
@@ -642,29 +648,23 @@ void DeferredTest::createDeferredResources() {
     pipelineStateInfo.rasterizerState.cullMode     = gfx::CullMode::NONE;
     _deferredPipelineState                         = device->createPipelineState(pipelineStateInfo);
 
-    _deferredOutputTexture = device->createTexture({
-        gfx::TextureType::TEX2D,
-        gfx::TextureUsageBit::TRANSFER_SRC | gfx::TextureUsageBit::COLOR_ATTACHMENT,
-        device->getColorFormat(),
-        device->getWidth(),
-        device->getHeight(),
-    });
-
     gfx::RenderPassInfo deferredRPInfo;
     deferredRPInfo.colorAttachments.emplace_back();
-    deferredRPInfo.colorAttachments.back().format         = device->getColorFormat();
-    deferredRPInfo.colorAttachments.back().loadOp         = gfx::LoadOp::DISCARD;
+    deferredRPInfo.colorAttachments.back().format = gfx::Format::RGBA8;
+    deferredRPInfo.colorAttachments.back().beginAccesses.push_back(gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE);
     deferredRPInfo.colorAttachments.back().endAccesses[0] = gfx::AccessType::TRANSFER_READ;
+    deferredRPInfo.colorAttachments.back().isGeneralLayout = true;
     deferredRPInfo.depthStencilAttachment.format          = device->getDepthStencilFormat();
     deferredRPInfo.depthStencilAttachment.depthLoadOp     = gfx::LoadOp::DISCARD;
     deferredRPInfo.depthStencilAttachment.stencilLoadOp   = gfx::LoadOp::DISCARD;
     deferredRPInfo.depthStencilAttachment.depthStoreOp    = gfx::StoreOp::DISCARD;
     deferredRPInfo.depthStencilAttachment.stencilStoreOp  = gfx::StoreOp::DISCARD;
-    _deferredRenderPass                                   = device->createRenderPass(deferredRPInfo);
+    deferredRPInfo.depthStencilAttachment.beginAccesses.push_back(gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE);
+    _deferredRenderPass = device->createRenderPass(deferredRPInfo);
 
     _deferredFramebuffer = device->createFramebuffer({
         _deferredRenderPass,
-        {_deferredOutputTexture},
+        {_deferredGBuffers[3]},
         _deferredGBufferDepthTexture,
     });
 }
@@ -865,7 +865,7 @@ void DeferredTest::onTick() {
             region.srcExtent.height = device->getHeight();
             region.dstExtent.width  = device->getWidth();
             region.dstExtent.height = device->getHeight();
-            commandBuffer->blitTexture(_deferredOutputTexture, nullptr, &region, 1, gfx::Filter::POINT);
+            commandBuffer->blitTexture(_deferredGBuffers[3], nullptr, &region, 1, gfx::Filter::POINT);
 
             commandBuffer->pipelineBarrier(nullptr, &_textureBarriers[1], &backBuffer, 1);
         }
