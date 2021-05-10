@@ -9,7 +9,7 @@
 #include "tests/DepthTest.h"
 #include "tests/FrameGraphTest.h"
 #include "tests/ParticleTest.h"
-#include "tests/ScriptTest.h"
+#include "tests/ScriptTest/ScriptTest.h"
 #include "tests/StencilTest.h"
 #include "tests/StressTest.h"
 #include "tests/SubpassTest.h"
@@ -49,10 +49,10 @@ gfx::Framebuffer *TestBaseI::fbo                    = nullptr;
 gfx::RenderPass * TestBaseI::renderPass             = nullptr;
 
 std::vector<TestBaseI::createFunc> TestBaseI::tests = {
+    ScriptTest::create,
     SubpassTest::create,
     DeferredTest::create,
     ComputeTest::create,
-    ScriptTest::create,
     FrameGraphTest::create,
     StressTest::create,
     ClearScreen::create,

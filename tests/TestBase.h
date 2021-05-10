@@ -100,7 +100,6 @@ struct FrameRate {
 class TestBaseI : public cc::Object {
 public:
     explicit TestBaseI(const WindowInfo &info);
-    ~TestBaseI() override = default;
 
     using createFunc = TestBaseI *(*)(const WindowInfo &info);
 

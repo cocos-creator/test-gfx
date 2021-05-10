@@ -1,15 +1,5 @@
 #include "GameApp.h"
-#include "base/Macros.h"
 #include "platform/FileUtils.h"
-#include "tests/BasicTextureTest.h"
-#include "tests/BasicTriangleTest.h"
-#include "tests/BlendTest.h"
-#include "tests/BunnyTest.h"
-#include "tests/ClearScreenTest.h"
-#include "tests/DepthTest.h"
-#include "tests/ParticleTest.h"
-#include "tests/StencilTest.h"
-#include "tests/StressTest.h"
 
 namespace cc {
 

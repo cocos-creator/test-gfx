@@ -2,6 +2,7 @@
 
 #include "base/threading/Semaphore.h"
 #include "bindings/jswrapper/SeApi.h"
+#include "jsb_transform_auto.h"
 
 #define SEPARATE_RENDER_THREAD 1
 
@@ -15,21 +16,26 @@ cc::Semaphore         sem{0};
 namespace cc {
 
 void ScriptTest::onDestroy() {
+#if SEPARATE_RENDER_THREAD
     shouldStop.store(true, std::memory_order_relaxed);
     sem.wait();
+#endif
 }
 
 bool ScriptTest::onInit() {
     se::AutoHandleScope scope;
+    register_all_transform(se::ScriptEngine::getInstance()->getGlobalObject());
+
     se::ScriptEngine::getInstance()->runScript("gl-matrix-min.js");
     se::ScriptEngine::getInstance()->runScript("simple.js");
 
-    size_t size{0u};
-    se::ScriptEngine::getInstance()->getGlobalObject()->getProperty("sharedBuffer", &sharedBuffer);
-    sharedBuffer.toObject()->getTypedArrayData((uint8_t **)&pClearColor, &size);
+    // size_t size{0U};
+    // se::ScriptEngine::getInstance()->getGlobalObject()->getProperty("sharedBuffer", &sharedBuffer);
+    // sharedBuffer.toObject()->getTypedArrayData(reinterpret_cast<uint8_t **>(&pClearColor), &size);
+    pClearColor = CC_NEW(gfx::Color);
 
 #if SEPARATE_RENDER_THREAD
-    std::thread renderThread([this]() {
+    std::thread renderThread([]() {
         while (!shouldStop.load(std::memory_order_relaxed)) {
             renderThreadTick();
         }
@@ -54,9 +60,9 @@ void ScriptTest::renderThreadTick() {
 
     gfx::Rect renderArea = {0, 0, device->getWidth(), device->getHeight()};
 
-    auto commandBuffer = commandBuffers[0];
+    auto *commandBuffer = commandBuffers[0];
     commandBuffer->begin();
-    commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, pClearColor, 1.0f, 0);
+    commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, pClearColor, 1.0F, 0);
     commandBuffer->endRenderPass();
     commandBuffer->end();
 

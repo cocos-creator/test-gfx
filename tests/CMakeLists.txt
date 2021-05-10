@@ -1,36 +1,13 @@
-set(GFX_TESTCASE_HEADER
-    ${COCOS_SRC_PATH}/renderer/GFXDeviceManager.h
 
-    ${COCOS_ROOT_PATH}/tests/TestBase.h
-    ${COCOS_ROOT_PATH}/tests/ClearScreenTest.h
-    ${COCOS_ROOT_PATH}/tests/BasicTriangleTest.h
-    ${COCOS_ROOT_PATH}/tests/BasicTextureTest.h
-    ${COCOS_ROOT_PATH}/tests/DepthTest.h
-    ${COCOS_ROOT_PATH}/tests/StencilTest.h
-    ${COCOS_ROOT_PATH}/tests/BlendTest.h
-    ${COCOS_ROOT_PATH}/tests/ParticleTest.h
-    ${COCOS_ROOT_PATH}/tests/StressTest.h
-    ${COCOS_ROOT_PATH}/tests/ComputeTest.h
-    ${COCOS_ROOT_PATH}/tests/FrameGraphTest.h
-    ${COCOS_ROOT_PATH}/tests/ScriptTest.h
-    ${COCOS_ROOT_PATH}/tests/DeferredTest.h
-    ${COCOS_ROOT_PATH}/tests/SubpassTest.h
-    ${COCOS_ROOT_PATH}/tests/tiny_obj_loader.h
+file(GLOB_RECURSE GFX_TESTCASE_HEADER
+    ${COCOS_ROOT_PATH}/tests/*.h
 )
 
-set(GFX_TESTCASE_SOURCE
-    ${COCOS_ROOT_PATH}/tests/TestBase.cpp
-    ${COCOS_ROOT_PATH}/tests/ClearScreenTest.cc
-    ${COCOS_ROOT_PATH}/tests/BasicTriangleTest.cc
-    ${COCOS_ROOT_PATH}/tests/BasicTextureTest.cc
-    ${COCOS_ROOT_PATH}/tests/DepthTest.cc
-    ${COCOS_ROOT_PATH}/tests/StencilTest.cc
-    ${COCOS_ROOT_PATH}/tests/BlendTest.cc
-    ${COCOS_ROOT_PATH}/tests/ParticleTest.cc
-    ${COCOS_ROOT_PATH}/tests/StressTest.cc
-    ${COCOS_ROOT_PATH}/tests/ComputeTest.cc
-    ${COCOS_ROOT_PATH}/tests/FrameGraphTest.cc
-    ${COCOS_ROOT_PATH}/tests/ScriptTest.cc
-    ${COCOS_ROOT_PATH}/tests/DeferredTest.cc
-    ${COCOS_ROOT_PATH}/tests/SubpassTest.cc
+file(GLOB_RECURSE GFX_TESTCASE_SOURCE
+    ${COCOS_ROOT_PATH}/tests/*.cc
+    ${COCOS_ROOT_PATH}/tests/*.cpp
+)
+
+list(APPEND GFX_TESTCASE_HEADER
+    ${COCOS_SRC_PATH}/renderer/GFXDeviceManager.h
 )
