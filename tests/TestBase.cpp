@@ -270,7 +270,7 @@ void TestBaseI::modifyProjectionBasedOnDevice(Mat4 *projection) {
     Mat4 rot;
     Mat4::createTranslation(0.0F, 0.0F, 1.0F + minZ, &trans);
     Mat4::createScale(1.0F, signY, 0.5F - 0.5F * minZ, &scale);
-    Mat4::createRotationZ(orientation * MATH_PIOVER2, &rot);
+    Mat4::createRotationZ(orientation * math::PI_DIV2, &rot);
     *projection = rot * scale * trans * (*projection);
 }
 

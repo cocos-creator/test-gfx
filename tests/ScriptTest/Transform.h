@@ -3,9 +3,7 @@
 #include "base/TypeDef.h"
 #include "base/memory/Memory.h"
 
-#include "enoki/fwd.h"
-#include "enoki/matrix.h"
-#include "enoki/quaternion.h"
+#include "Math.h"
 
 namespace cc {
 
@@ -20,100 +18,75 @@ enum class TransformFlagBit : uint32_t {
 };
 CC_ENUM_OPERATORS(TransformFlagBit);
 
-template <typename Value>
 class Transform {
+    ENOKI_CALL_SUPPORT_FRIEND()
 public:
-    using Scalar         = enoki::scalar_t<Value>;
-
-    using Vec3           = enoki::Array<Value, 3>;
-    using Quat           = enoki::Quaternion<Value>;
-    using Mat3           = enoki::Matrix<Value, 3>;
-    using Mat4           = enoki::Matrix<Value, 4>;
-    using TransformFlags = enoki::uint32_array_t<Value>;
+    Transform() = default;
 
     void setParent(Transform *value);
     void setPosition(float x, float y, float z);
     void setRotation(float angleX, float angleY, float angleZ);
     void setScale(float x, float y, float z);
 
-    inline const Vec3 &getPosition() { return _lpos; }
-    inline const Quat &getRotation() { return _lrot; }
-    inline const Vec3 &getScale() { return _lscale; }
+    inline const vmath::Vec3F &getPosition() { return _lpos; }
+    inline const vmath::QuatF &getRotation() { return _lrot; }
+    inline const vmath::Vec3F &getScale() { return _lscale; }
 
-    inline const Vec3 &getWorldPosition() {
-        updateWorldTransform();
-        return _pos;
-    }
-    inline const Quat &getWorldRotation() {
-        updateWorldTransform();
-        return _rot;
-    }
-    inline const Vec3 &getWorldScale() {
-        updateWorldTransform();
-        return _scale;
-    }
-    inline const Mat4 &getWorldMatrix() {
-        updateWorldTransform();
-        return _mat;
-    }
+    inline const vmath::Vec3F &getWorldPosition();
+    inline const vmath::QuatF &getWorldRotation();
+    inline const vmath::Vec3F &getWorldScale();
+    inline const vmath::Mat4F &getWorldMatrix();
 
 private:
+    void invalidateChildren(TransformFlagBit dirtyFlags);
     void updateWorldTransform();
-    void invalidateChildren(TransformFlags dirtyFlags);
 
-    Vec3 _lpos;
-    Quat _lrot;
-    Vec3 _lscale{1, 1, 1};
+    vmath::Vec3F _lpos = vmath::zero<vmath::Vec3F>();
+    vmath::QuatF _lrot = vmath::identity<vmath::QuatF>();
+    vmath::Vec3F _lscale{1.F, 1.F, 1.F};
 
-    TransformFlags _dirtyFlags;
-    Vec3           _pos;
-    Quat           _rot;
-    Vec3           _scale{1, 1, 1};
-    Mat4           _mat;
+    TransformFlagBit _dirtyFlags{TransformFlagBit::NONE};
+    vmath::Vec3F     _pos = vmath::zero<vmath::Vec3F>();
+    vmath::QuatF     _rot = vmath::identity<vmath::QuatF>();
+    vmath::Vec3F     _scale{1.F, 1.F, 1.F};
+    vmath::Mat4F     _mat = vmath::identity<vmath::Mat4F>();
 
-    vector<Transform<Scalar> *> _children;
-    Transform<Scalar> *         _parent;
-
-    // NOLINTNEXTLINE(google-explicit-constructor)
-    ENOKI_STRUCT(Transform, _lpos, _lrot, _lscale, _dirtyFlags, _pos, _rot, _scale, _mat, _children, _parent)
+    Transform *         _parent{nullptr};
+    vector<Transform *> _children;
 };
 
-template <typename Value>
-void Transform<Value>::setParent(Transform<Value> *value) {
+const vmath::Vec3F &Transform::getWorldPosition() {
+    updateWorldTransform();
+    return _pos;
 }
 
-template <typename Value>
-void Transform<Value>::setPosition(float x, float y, float z) {
-    _lpos.x() = x;
-    _lpos.y() = y;
-    _lpos.z() = z;
+const vmath::QuatF &Transform::getWorldRotation() {
+    updateWorldTransform();
+    return _rot;
 }
 
-template <typename Value>
-void Transform<Value>::setRotation(float angleX, float angleY, float angleZ) {
+const vmath::Vec3F &Transform::getWorldScale() {
+    updateWorldTransform();
+    return _scale;
 }
 
-template <typename Value>
-void Transform<Value>::setScale(float x, float y, float z) {
-    _lscale[0] = x;
-    _lscale[1] = y;
-    _lscale[2] = z;
+const vmath::Mat4F &Transform::getWorldMatrix() {
+    updateWorldTransform();
+    return _mat;
 }
-
-template <typename Value>
-void Transform<Value>::updateWorldTransform() {
-}
-
-template <typename Value>
-void Transform<Value>::invalidateChildren(TransformFlags dirtyFlags) {
-}
-
-using FloatP     = enoki::Packet<float, 16>;
-using FloatX     = enoki::DynamicArray<FloatP>;
-using TransformF = Transform<float>;
-using TransformP = Transform<FloatP>;
-using TransformX = Transform<FloatX>;
 
 } // namespace cc
 
-ENOKI_STRUCT_SUPPORT(cc::Transform, _lpos, _lrot, _lscale, _dirtyFlags, _pos, _rot, _scale, _mat, _children, _parent)
+ENOKI_CALL_SUPPORT_BEGIN(cc::Transform)
+ENOKI_CALL_SUPPORT_METHOD(setParent)
+ENOKI_CALL_SUPPORT_METHOD(setPosition)
+ENOKI_CALL_SUPPORT_METHOD(setRotation)
+ENOKI_CALL_SUPPORT_METHOD(setScale)
+ENOKI_CALL_SUPPORT_GETTER(getPosition, _lpos)
+ENOKI_CALL_SUPPORT_GETTER(getRotation, _lrot)
+ENOKI_CALL_SUPPORT_GETTER(getScale, _lscale)
+ENOKI_CALL_SUPPORT_METHOD(getWorldPosition)
+ENOKI_CALL_SUPPORT_METHOD(getWorldRotation)
+ENOKI_CALL_SUPPORT_METHOD(getWorldScale)
+ENOKI_CALL_SUPPORT_METHOD(getWorldMatrix)
+ENOKI_CALL_SUPPORT_END(cc::Transform)

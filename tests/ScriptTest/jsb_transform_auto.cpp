@@ -1,4 +1,3 @@
-
 #include "../gfx-test-case/tests/ScriptTest/jsb_transform_auto.h"
 #include "cocos/bindings/manual/jsb_conversions.h"
 #include "cocos/bindings/manual/jsb_global.h"
@@ -16,13 +15,13 @@ se::Class* __jsb_cc_Transform_class = nullptr;
 
 static bool js_transform_Transform_setParent(se::State& s)
 {
-    auto* cobj = SE_THIS_OBJECT<cc::TransformF>(s);
+    auto* cobj = SE_THIS_OBJECT<cc::Transform>(s);
     SE_PRECONDITION2(cobj, false, "js_transform_Transform_setParent : Invalid Native Object");
     const auto& args = s.args();
     size_t argc = args.size();
     CC_UNUSED bool ok = true;
     if (argc == 1) {
-        HolderType<cc::TransformF*, false> arg0 = {};
+        HolderType<cc::Transform*, false> arg0 = {};
         ok &= sevalue_to_native(args[0], &arg0, s.thisObject());
         SE_PRECONDITION2(ok, false, "js_transform_Transform_setParent : Error processing arguments");
         cobj->setParent(arg0.value());
@@ -35,7 +34,7 @@ SE_BIND_FUNC(js_transform_Transform_setParent)
 
 static bool js_transform_Transform_setPosition(se::State& s)
 {
-    auto* cobj = SE_THIS_OBJECT<cc::TransformF>(s);
+    auto* cobj = SE_THIS_OBJECT<cc::Transform>(s);
     SE_PRECONDITION2(cobj, false, "js_transform_Transform_setPosition : Invalid Native Object");
     const auto& args = s.args();
     size_t argc = args.size();
@@ -58,7 +57,7 @@ SE_BIND_FUNC(js_transform_Transform_setPosition)
 
 static bool js_transform_Transform_setRotation(se::State& s)
 {
-    auto* cobj = SE_THIS_OBJECT<cc::TransformF>(s);
+    auto* cobj = SE_THIS_OBJECT<cc::Transform>(s);
     SE_PRECONDITION2(cobj, false, "js_transform_Transform_setRotation : Invalid Native Object");
     const auto& args = s.args();
     size_t argc = args.size();
@@ -81,7 +80,7 @@ SE_BIND_FUNC(js_transform_Transform_setRotation)
 
 static bool js_transform_Transform_setScale(se::State& s)
 {
-    auto* cobj = SE_THIS_OBJECT<cc::TransformF>(s);
+    auto* cobj = SE_THIS_OBJECT<cc::Transform>(s);
     SE_PRECONDITION2(cobj, false, "js_transform_Transform_setScale : Invalid Native Object");
     const auto& args = s.args();
     size_t argc = args.size();
@@ -102,15 +101,27 @@ static bool js_transform_Transform_setScale(se::State& s)
 }
 SE_BIND_FUNC(js_transform_Transform_setScale)
 
+SE_DECLARE_FINALIZE_FUNC(js_cc_Transform_finalize)
+
+static bool js_transform_Transform_constructor(se::State& s) // constructor.c
+{
+    cc::Transform* cobj = JSB_ALLOC(cc::Transform);
+    s.thisObject()->setPrivateData(cobj);
+    se::NonRefNativePtrCreatedByCtorMap::emplace(cobj);
+    return true;
+}
+SE_BIND_CTOR(js_transform_Transform_constructor, __jsb_cc_Transform_class, js_cc_Transform_finalize)
+
+
 
 
 static bool js_cc_Transform_finalize(se::State& s)
 {
-    auto iter = se::NonRefNativePtrCreatedByCtorMap::find(SE_THIS_OBJECT<cc::TransformF>(s));
+    auto iter = se::NonRefNativePtrCreatedByCtorMap::find(SE_THIS_OBJECT<cc::Transform>(s));
     if (iter != se::NonRefNativePtrCreatedByCtorMap::end())
     {
         se::NonRefNativePtrCreatedByCtorMap::erase(iter);
-        auto* cobj = SE_THIS_OBJECT<cc::TransformF>(s);
+        auto* cobj = SE_THIS_OBJECT<cc::Transform>(s);
         JSB_FREE(cobj);
     }
     return true;
@@ -119,7 +130,7 @@ SE_BIND_FINALIZE_FUNC(js_cc_Transform_finalize)
 
 bool js_register_transform_Transform(se::Object* obj)
 {
-    auto* cls = se::Class::create("Transform", obj, nullptr, nullptr);
+    auto* cls = se::Class::create("Transform", obj, nullptr, _SE(js_transform_Transform_constructor));
 
     cls->defineFunction("setParent", _SE(js_transform_Transform_setParent));
     cls->defineFunction("setPosition", _SE(js_transform_Transform_setPosition));
@@ -127,7 +138,7 @@ bool js_register_transform_Transform(se::Object* obj)
     cls->defineFunction("setScale", _SE(js_transform_Transform_setScale));
     cls->defineFinalizeFunction(_SE(js_cc_Transform_finalize));
     cls->install();
-    JSBClassType::registerClass<cc::TransformF>(cls);
+    JSBClassType::registerClass<cc::Transform>(cls);
 
     __jsb_cc_Transform_proto = cls->getProto();
     __jsb_cc_Transform_class = cls;
@@ -150,3 +161,4 @@ bool register_all_transform(se::Object* obj)
     js_register_transform_Transform(ns);
     return true;
 }
+

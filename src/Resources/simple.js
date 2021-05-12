@@ -1,27 +1,27 @@
 // node gl-matrix-min.js simple.js
 const { mat3, mat4, vec3, quat } = glMatrix;
 
-const array_a = [];
-const qt_1 = quat.create();
-const m3_1 = mat3.create();
-const m3_2 = mat3.create();
+const tempVector = [];
+const tempQuat = quat.create();
+const tempMat3a = mat3.create();
+const tempMat3b = mat3.create();
 
-const TransformBit = {
+const TransformFlagBit = {
     NONE: 0,
     POSITION: (1 << 0),
     ROTATION: (1 << 1),
     SCALE: (1 << 2),
 };
-TransformBit.RS = TransformBit.ROTATION | TransformBit.SCALE;
-TransformBit.TRS = TransformBit.POSITION | TransformBit.ROTATION | TransformBit.SCALE;
-TransformBit.TRS_MASK = ~TransformBit.TRS;
+TransformFlagBit.RS = TransformFlagBit.ROTATION | TransformFlagBit.SCALE;
+TransformFlagBit.TRS = TransformFlagBit.POSITION | TransformFlagBit.ROTATION | TransformFlagBit.SCALE;
+TransformFlagBit.TRS_MASK = ~TransformFlagBit.TRS;
 
 class Transform {
     _lpos = vec3.create();
     _lrot = quat.create();
     _lscale = vec3.set(vec3.create(), 1, 1, 1);
 
-    _dirtyFlags = TransformBit.NONE;
+    _dirtyFlags = TransformFlagBit.NONE;
     _pos = vec3.create();
     _rot = quat.create();
     _scale = vec3.set(vec3.create(), 1, 1, 1);
@@ -42,22 +42,22 @@ class Transform {
         const idx = value._children.indexOf(this);
         if (idx < 0) value._children.push(this);
 
-        this._invalidateChildren(TransformBit.TRS);
+        this._invalidateChildren(TransformFlagBit.TRS);
     }
 
     setPosition (x, y, z) {
         vec3.set(this._lpos, x, y, z);
-        this._invalidateChildren(TransformBit.POSITION);
+        this._invalidateChildren(TransformFlagBit.POSITION);
     }
 
     setRotation (angleX, angleY, angleZ) {
         quat.fromEuler(this._lrot, angleX, angleY, angleZ);
-        this._invalidateChildren(TransformBit.ROTATION);
+        this._invalidateChildren(TransformFlagBit.ROTATION);
     }
 
     setScale (x, y, z) {
         vec3.set(this._lscale, x, y, z);
-        this._invalidateChildren(TransformBit.SCALE);
+        this._invalidateChildren(TransformFlagBit.SCALE);
     }
 
     getPosition () {
@@ -95,7 +95,7 @@ class Transform {
     _invalidateChildren (dirtyFlags) {
         if ((this._dirtyFlags & dirtyFlags) === dirtyFlags) { return; }
         this._dirtyFlags |= dirtyFlags;
-        const newDirtyBit = dirtyFlags | TransformBit.POSITION;
+        const newDirtyBit = dirtyFlags | TransformFlagBit.POSITION;
         const len = this._children.length;
         for (let i = 0; i < len; ++i) {
             this._children[i]._invalidateChildren(newDirtyBit);
@@ -107,53 +107,53 @@ class Transform {
         let cur = this;
         let i = 0;
         while (cur && cur._dirtyFlags) {
-            array_a[i++] = cur;
+            tempVector[i++] = cur;
             cur = cur._parent;
         }
         let child = this;
         let dirtyBits = 0;
 
         while (i) {
-            child = array_a[--i];
+            child = tempVector[--i];
             dirtyBits |= child._dirtyFlags;
             if (cur) {
-                if (dirtyBits & TransformBit.POSITION) {
+                if (dirtyBits & TransformFlagBit.POSITION) {
                     vec3.transformMat4(child._pos, child._lpos, cur._mat);
                     child._mat[12] = child._pos[0];
                     child._mat[13] = child._pos[1];
                     child._mat[14] = child._pos[2];
                 }
-                if (dirtyBits & TransformBit.RS) {
+                if (dirtyBits & TransformFlagBit.RS) {
                     mat4.fromRotationTranslationScale(child._mat, child._lrot, child._lpos, child._lscale);
                     mat4.multiply(child._mat, cur._mat, child._mat);
-                    if (dirtyBits & TransformBit.ROTATION) {
+                    if (dirtyBits & TransformFlagBit.ROTATION) {
                         quat.multiply(child._rot, cur._rot, child._lrot);
                     }
-                    mat3.fromQuat(m3_1, quat.conjugate(qt_1, child._rot));
-                    mat3.multiply(m3_1, m3_1, mat3.fromMat4(m3_2, child._mat));
-                    child._scale[0] = m3_1[0];
-                    child._scale[1] = m3_1[4];
-                    child._scale[2] = m3_1[8];
+                    mat3.fromQuat(tempMat3a, quat.conjugate(tempQuat, child._rot));
+                    mat3.multiply(tempMat3a, tempMat3a, mat3.fromMat4(tempMat3b, child._mat));
+                    child._scale[0] = tempMat3a[0];
+                    child._scale[1] = tempMat3a[4];
+                    child._scale[2] = tempMat3a[8];
                 }
             } else {
-                if (dirtyBits & TransformBit.POSITION) {
+                if (dirtyBits & TransformFlagBit.POSITION) {
                     vec3.copy(child._pos, child._lpos);
                     child._mat[12] = child._pos[0];
                     child._mat[13] = child._pos[1];
                     child._mat[14] = child._pos[2];
                 }
-                if (dirtyBits & TransformBit.RS) {
-                    if (dirtyBits & TransformBit.ROTATION) {
+                if (dirtyBits & TransformFlagBit.RS) {
+                    if (dirtyBits & TransformFlagBit.ROTATION) {
                         quat.copy(child._rot, child._lrot);
                     }
-                    if (dirtyBits & TransformBit.SCALE) {
+                    if (dirtyBits & TransformFlagBit.SCALE) {
                         vec3.copy(child._scale, child._lscale);
                         mat4.fromRotationTranslationScale(child._mat, child._rot, child._pos, child._scale);
                     }
                 }
             }
 
-            child._dirtyFlags = TransformBit.NONE;
+            child._dirtyFlags = TransformFlagBit.NONE;
             cur = child;
         }
     }
