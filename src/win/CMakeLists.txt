@@ -87,6 +87,10 @@ target_link_libraries(${TARGET_NAME}
   ${CC_EXTERNAL_LIBS}
 )
 
+target_compile_definitions(${TARGET_NAME}
+  PUBLIC _USE_MATH_DEFINES
+)
+
 if(LINUX OR WINDOWS)
   set(COCOS2DX_ROOT_PATH ${COCOS_EXTERNAL_PATH})
   cocos_def_copy_resource_target(${TARGET_NAME})

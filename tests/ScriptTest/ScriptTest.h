@@ -12,7 +12,6 @@ public:
     bool onInit() override;
     void onTick() override;
     void onDestroy() override;
-    static void renderThreadTick();
 };
 
 } // namespace cc

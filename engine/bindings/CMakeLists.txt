@@ -22,6 +22,11 @@ set(GENERAL_FILES
   ${COCOS_SRC_PATH}/bindings/manual/jsb_global_init.h
   ${COCOS_SRC_PATH}/bindings/manual/jsb_platform.h
 
+  ${COCOS_SRC_PATH}/bindings/auto/jsb_gfx_auto.cpp
+  ${COCOS_SRC_PATH}/bindings/auto/jsb_gfx_auto.h
+  ${COCOS_SRC_PATH}/bindings/manual/jsb_gfx_manual.cpp
+  ${COCOS_SRC_PATH}/bindings/manual/jsb_gfx_manual.h
+
   ${COCOS_SRC_PATH}/bindings/dop/BufferPool.cpp
   ${COCOS_SRC_PATH}/bindings/dop/BufferPool.h
   ${COCOS_SRC_PATH}/bindings/dop/ObjectPool.cpp

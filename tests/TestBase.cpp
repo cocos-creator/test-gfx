@@ -1,11 +1,21 @@
 #include "TestBase.h"
 
-#include "gfx-base/GFXDef-common.h"
+#include "base/AutoreleasePool.h"
+#include "base/threading/MessageQueue.h"
+#include "platform/FileUtils.h"
+
+#include "gfx-agent/DeviceAgent.h"
+
+#include "bindings/jswrapper/SeApi.h"
+#include "bindings/manual/jsb_classtype.h"
+#include "bindings/manual/jsb_global_init.h"
+
 #include "tests/BasicTextureTest.h"
 #include "tests/BasicTriangleTest.h"
 #include "tests/BlendTest.h"
 #include "tests/ClearScreenTest.h"
 #include "tests/ComputeTest.h"
+#include "tests/DeferredTest.h"
 #include "tests/DepthTest.h"
 #include "tests/FrameGraphTest.h"
 #include "tests/ParticleTest.h"
@@ -13,17 +23,6 @@
 #include "tests/StencilTest.h"
 #include "tests/StressTest.h"
 #include "tests/SubpassTest.h"
-#include "tests/DeferredTest.h"
-
-#include "cocos/base/AutoreleasePool.h"
-#include "cocos/bindings/auto/jsb_gfx_auto.h"
-#include "cocos/bindings/dop/jsb_dop.h"
-#include "cocos/bindings/event/CustomEventTypes.h"
-#include "cocos/bindings/event/EventDispatcher.h"
-#include "cocos/bindings/jswrapper/SeApi.h"
-#include "cocos/bindings/manual/jsb_classtype.h"
-#include "cocos/bindings/manual/jsb_gfx_manual.h"
-#include "cocos/bindings/manual/jsb_global_init.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
@@ -33,7 +32,7 @@
 //#undef CC_USE_VULKAN
 //#undef CC_USE_GLES3
 //#undef CC_USE_GLES2
-#include "renderer/GFXDeviceManager.h"
+#include "GFXDeviceManager.h"
 
 namespace cc {
 
@@ -48,7 +47,7 @@ gfx::Device *     TestBaseI::device                 = nullptr;
 gfx::Framebuffer *TestBaseI::fbo                    = nullptr;
 gfx::RenderPass * TestBaseI::renderPass             = nullptr;
 
-std::vector<TestBaseI::createFunc> TestBaseI::tests = {
+vector<TestBaseI::createFunc> TestBaseI::tests = {
     ScriptTest::create,
     SubpassTest::create,
     DeferredTest::create,
@@ -67,11 +66,11 @@ std::vector<TestBaseI::createFunc> TestBaseI::tests = {
 #endif // CC_PLATFORM != CC_PLATFORM_MAC_IOS
 };
 
-FrameRate                                       TestBaseI::hostThread;
-FrameRate                                       TestBaseI::deviceThread;
-std::vector<gfx::CommandBuffer *>               TestBaseI::commandBuffers;
-std::unordered_map<uint, gfx::GlobalBarrier *>  TestBaseI::globalBarrierMap;
-std::unordered_map<uint, gfx::TextureBarrier *> TestBaseI::textureBarrierMap;
+FrameRate                                  TestBaseI::hostThread;
+FrameRate                                  TestBaseI::deviceThread;
+vector<gfx::CommandBuffer *>               TestBaseI::commandBuffers;
+unordered_map<uint, gfx::GlobalBarrier *>  TestBaseI::globalBarrierMap;
+unordered_map<uint, gfx::TextureBarrier *> TestBaseI::textureBarrierMap;
 
 framegraph::FrameGraph TestBaseI::fg;
 framegraph::Texture    TestBaseI::fgBackBuffer;
@@ -95,20 +94,6 @@ TestBaseI::TestBaseI(const WindowInfo &info) {
             // Send exception information to server like Tencent Bugly.
             CC_LOG_ERROR("\nUncaught Exception:\n - location :  %s\n - msg : %s\n - detail : \n      %s\n", location, message, stack);
         });
-
-        se->addBeforeInitHook([]() {
-            JSBClassType::init();
-        });
-
-        se->addBeforeCleanupHook([se]() {
-            se->garbageCollect();
-        });
-
-        se->addAfterCleanupHook([]() {
-            JSBClassType::destroy();
-        });
-
-        se->addRegisterCallback(register_all_dop_bindings);
 
         se->start();
 
@@ -160,6 +145,11 @@ void TestBaseI::destroyGlobal() {
     CC_SAFE_DESTROY(renderPass)
     framegraph::FrameGraph::gc(0);
 
+    se::ScriptEngine::destroyInstance();
+
+    auto *agent = gfx::DeviceAgent::getInstance();
+    if (agent) agent->getMessageQueue()->finishWriting(true);
+
     for (auto textureBarrier : textureBarrierMap) {
         CC_SAFE_DELETE(textureBarrier.second)
     }
@@ -169,8 +159,6 @@ void TestBaseI::destroyGlobal() {
         CC_SAFE_DELETE(globalBarrier.second)
     }
     globalBarrierMap.clear();
-
-    se::ScriptEngine::getInstance()->cleanup();
 
     CC_SAFE_DESTROY(device)
 }
@@ -198,8 +186,9 @@ void TestBaseI::onTouchEnd() {
 void TestBaseI::update() {
     if (nextDirection) {
         CC_SAFE_DESTROY(test)
-        if (nextDirection < 0) curTestIndex += tests.size();
-        curTestIndex  = (curTestIndex + nextDirection) % static_cast<int>(tests.size());
+        static auto testCount = static_cast<int>(tests.size());
+        if (nextDirection < 0) curTestIndex += testCount;
+        curTestIndex  = (curTestIndex + nextDirection) % testCount;
         test          = tests[curTestIndex](windowInfo);
         nextDirection = 0;
     }
@@ -208,14 +197,26 @@ void TestBaseI::update() {
     }
 }
 
-void TestBaseI::evalString(const std::string &code) {
+void TestBaseI::evalString(const String &code) {
     se::AutoHandleScope hs;
     se::ScriptEngine::getInstance()->evalString(code.c_str());
 }
 
-void TestBaseI::runScript(const std::string &file) {
+void TestBaseI::runScript(const String &file) {
     se::AutoHandleScope hs;
     se::ScriptEngine::getInstance()->runScript(file);
+}
+
+void TestBaseI::scriptEngineGC() {
+    se::AutoHandleScope hs;
+
+    se::ScriptEngine::getInstance()->addAfterCleanupHook([]() {
+        JSBClassType::cleanup();
+    });
+    se::ScriptEngine::getInstance()->init(); // cleanup & restart
+
+    cc::EventDispatcher::destroy();
+    cc::EventDispatcher::init();
 }
 
 unsigned char *TestBaseI::rgb2rgba(Image *img) {
@@ -231,7 +232,7 @@ unsigned char *TestBaseI::rgb2rgba(Image *img) {
     return dstData;
 }
 
-gfx::Texture *TestBaseI::createTextureWithFile(const gfx::TextureInfo &partialInfo, const std::string &imageFile) {
+gfx::Texture *TestBaseI::createTextureWithFile(const gfx::TextureInfo &partialInfo, const String &imageFile) {
     auto *img = new cc::Image();
     img->autorelease();
     if (!img->initWithImageFile(imageFile)) return nullptr;
@@ -244,9 +245,9 @@ gfx::Texture *TestBaseI::createTextureWithFile(const gfx::TextureInfo &partialIn
     }
 
     gfx::TextureInfo textureInfo = partialInfo;
-    textureInfo.width  = img->getWidth();
-    textureInfo.height = img->getHeight();
-    textureInfo.format = gfx::Format::RGBA8;
+    textureInfo.width            = img->getWidth();
+    textureInfo.height           = img->getHeight();
+    textureInfo.format           = gfx::Format::RGBA8;
     if (hasFlag(textureInfo.flags, gfx::TextureFlagBit::GEN_MIPMAP)) {
         textureInfo.levelCount = TestBaseI::getMipmapLevelCounts(textureInfo.width, textureInfo.height);
     }
@@ -358,33 +359,35 @@ gfx::Viewport TestBaseI::getViewportBasedOnDevice(const Vec4 &relativeArea) {
     float w = relativeArea.z;
     float h = relativeArea.w;
 
-    gfx::Extent   size{device->getWidth(), device->getHeight()};
     gfx::Viewport viewport;
+
+    auto deviceWidth  = static_cast<float>(device->getWidth());
+    auto deviceHeight = static_cast<float>(device->getHeight());
 
     switch (device->getSurfaceTransform()) {
         case gfx::SurfaceTransform::ROTATE_90:
-            viewport.left   = int((1.F - y - h) * size.width);
-            viewport.top    = int(x * size.height);
-            viewport.width  = uint(h * size.width);
-            viewport.height = uint(w * size.height);
+            viewport.left   = static_cast<int>((1.F - y - h) * deviceWidth);
+            viewport.top    = static_cast<int>(x * deviceHeight);
+            viewport.width  = static_cast<uint>(h * deviceWidth);
+            viewport.height = static_cast<uint>(w * deviceHeight);
             break;
         case gfx::SurfaceTransform::ROTATE_180:
-            viewport.left   = int((1.F - x - w) * size.width);
-            viewport.top    = int((1.F - y - h) * size.height);
-            viewport.width  = uint(w * size.width);
-            viewport.height = uint(h * size.height);
+            viewport.left   = static_cast<int>((1.F - x - w) * deviceWidth);
+            viewport.top    = static_cast<int>((1.F - y - h) * deviceHeight);
+            viewport.width  = static_cast<uint>(w * deviceWidth);
+            viewport.height = static_cast<uint>(h * deviceHeight);
             break;
         case gfx::SurfaceTransform::ROTATE_270:
-            viewport.left   = int(y * size.width);
-            viewport.top    = int((1.F - x - w) * size.height);
-            viewport.width  = uint(h * size.width);
-            viewport.height = uint(w * size.height);
+            viewport.left   = static_cast<int>(y * deviceWidth);
+            viewport.top    = static_cast<int>((1.F - x - w) * deviceHeight);
+            viewport.width  = static_cast<uint>(h * deviceWidth);
+            viewport.height = static_cast<uint>(w * deviceHeight);
             break;
         case gfx::SurfaceTransform::IDENTITY:
-            viewport.left   = int(x * size.width);
-            viewport.top    = int(y * size.height);
-            viewport.width  = uint(w * size.width);
-            viewport.height = uint(h * size.height);
+            viewport.left   = static_cast<int>(x * deviceWidth);
+            viewport.top    = static_cast<int>(y * deviceHeight);
+            viewport.width  = static_cast<uint>(w * deviceWidth);
+            viewport.height = static_cast<uint>(h * deviceHeight);
             break;
     }
 

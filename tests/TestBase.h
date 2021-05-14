@@ -143,11 +143,12 @@ public:
     static void onTouchEnd();
     static void update();
 
-    static void                 evalString(const std::string &code);
-    static void                 runScript(const std::string &file);
+    static void                 evalString(const String &code);
+    static void                 runScript(const String &file);
     static void                 tickScript();
+    static void                 scriptEngineGC();
     static unsigned char *      rgb2rgba(Image *img);
-    static gfx::Texture *       createTextureWithFile(const gfx::TextureInfo &partialInfo, const std::string &imageFile);
+    static gfx::Texture *       createTextureWithFile(const gfx::TextureInfo &partialInfo, const String &imageFile);
     static void                 modifyProjectionBasedOnDevice(Mat4 *projection);
     static void                 createOrthographic(float left, float right, float bottom, float top, float near, float zFar, Mat4 *dst);
     static void                 createPerspective(float fov, float aspect, float near, float zFar, Mat4 *dst);
@@ -221,18 +222,18 @@ public:
 protected:
     static WindowInfo              windowInfo;
     static int                     curTestIndex;
-    static std::vector<createFunc> tests;
+    static vector<createFunc> tests;
     static TestBaseI *             test;
     static int                     nextDirection;
 
     static gfx::Device *                     device;
     static gfx::Framebuffer *                fbo;
-    static std::vector<gfx::CommandBuffer *> commandBuffers;
+    static vector<gfx::CommandBuffer *> commandBuffers;
 
     static gfx::RenderPass *renderPass;
 
-    static std::unordered_map<uint, gfx::GlobalBarrier *>  globalBarrierMap;
-    static std::unordered_map<uint, gfx::TextureBarrier *> textureBarrierMap;
+    static unordered_map<uint, gfx::GlobalBarrier *>  globalBarrierMap;
+    static unordered_map<uint, gfx::TextureBarrier *> textureBarrierMap;
 
     static framegraph::FrameGraph fg;
     static framegraph::Texture    fgBackBuffer;
@@ -240,13 +241,15 @@ protected:
 
     virtual void onSpacePressed() {}
 
-    std::vector<gfx::GlobalBarrier *> _globalBarriers;
+    vector<gfx::GlobalBarrier *> _globalBarriers;
 
-    std::vector<gfx::Texture *>        _textures;
-    std::vector<gfx::TextureBarrier *> _textureBarriers;
+    vector<gfx::Texture *>        _textures;
+    vector<gfx::TextureBarrier *> _textureBarriers;
 
     float _time       = 0.F;
     uint  _frameCount = 0U;
+
+    friend class Root;
 };
 
 } // namespace cc
