@@ -69,6 +69,20 @@ protected:
     vector<Transform *> _children;
 };
 
+CC_VMATH_CALL_SUPPORT_BEGIN_1(cc, Transform)
+CC_VMATH_CALL_SUPPORT_METHOD(setParent)
+CC_VMATH_CALL_SUPPORT_METHOD(setPosition)
+CC_VMATH_CALL_SUPPORT_METHOD(setRotation)
+CC_VMATH_CALL_SUPPORT_METHOD(setScale)
+CC_VMATH_CALL_SUPPORT_GETTER(getPosition, _lpos)
+CC_VMATH_CALL_SUPPORT_GETTER(getRotation, _lrot)
+CC_VMATH_CALL_SUPPORT_GETTER(getScale, _lscale)
+CC_VMATH_CALL_SUPPORT_METHOD(getWorldPosition)
+CC_VMATH_CALL_SUPPORT_METHOD(getWorldRotation)
+CC_VMATH_CALL_SUPPORT_METHOD(getWorldScale)
+CC_VMATH_CALL_SUPPORT_METHOD(getWorldMatrix)
+CC_VMATH_CALL_SUPPORT_END_1(cc, Transform)
+
 const vmath::Vec3F &Transform::getWorldPosition() const {
     updateWorldTransform();
     return _pos;
@@ -89,6 +103,28 @@ const vmath::Mat4F &Transform::getWorldMatrix() const {
     return _mat;
 }
 
+template <typename Value>
+struct ModelT {
+    using Packet = ModelT<vmath::FloatP>;
+
+    using TransformPtr = vmath::replace_scalar_t<Value, const Transform *>;
+    using Vec4         = vmath::Vec4<Value>;
+    using Bool         = vmath::mask_t<Value>;
+
+    TransformPtr transform{nullptr};
+    Vec4         color{1.F, 1.F, 1.F, 1.F};
+    Bool         enabled{true};
+
+    // NOLINTNEXTLINE(google-explicit-constructor) false positive when involving __VA_ARGS__
+    CC_VMATH_STRUCT(ModelT, transform, color, enabled)
+};
+
+CC_VMATH_STRUCT_SUPPORT_1(cc, ModelT, transform, color, enabled)
+
+using ModelF = ModelT<float>;
+using ModelP = ModelT<vmath::FloatP>;
+using ModelX = ModelT<vmath::FloatX>;
+
 class Model {
 public:
     Model()                       = default;
@@ -100,31 +136,18 @@ public:
 
     virtual void setColor(float r, float g, float b, float a);
     virtual void setTransform(const Transform *transform);
-
-    inline const vmath::Vec4F &getColor() const { return _color; }
-    inline const Transform *   getTransform() const { return _transform; }
+    virtual void setEnabled(bool enabled);
 
 protected:
-    const Transform *_transform{nullptr};
-    vmath::Vec4F     _color{1.F, 1.F, 1.F, 1.F};
-
-    // fix-functioned resources just for test purposes
-    static gfx::Shader *                shader;
-    static gfx::Buffer *                vertexBuffer;
-    static gfx::Buffer *                uniformBuffer;
-    static gfx::Buffer *                uniformBufferView;
-    static gfx::DescriptorSet *         descriptorSet;
-    static gfx::DescriptorSetLayout *   descriptorSetLayout;
-    static gfx::PipelineLayout *        pipelineLayout;
-    static gfx::PipelineState *         pipelineState;
-    static gfx::InputAssembler *        inputAssembler;
-    static vector<gfx::GlobalBarrier *> globalBarriers;
-
     friend class Root;
+
+    uint _idx{0U};
 };
 
 class Root {
 public:
+    static Root *getInstance() { return instance; }
+
     virtual ~Root();
     Root(const Root &) noexcept = delete;
     Root(Root &&) noexcept      = delete;
@@ -141,6 +164,8 @@ public:
     virtual Model *createModel();
     virtual void   destroyModel(Model *model);
 
+    inline decltype(auto) getModel(uint idx) { return vmath::slice(_models, idx); }
+
 protected:
     static Root *instance;
 
@@ -148,28 +173,11 @@ protected:
 
     Root();
 
-    vector<Model *> _models;
+    ModelX          _models;
+    vector<Model *> _modelViews;
 };
 
-} // namespace cc
-
-CC_VMATH_CALL_SUPPORT_BEGIN(cc::Transform)
-CC_VMATH_CALL_SUPPORT_METHOD(setParent)
-CC_VMATH_CALL_SUPPORT_METHOD(setPosition)
-CC_VMATH_CALL_SUPPORT_METHOD(setRotation)
-CC_VMATH_CALL_SUPPORT_METHOD(setScale)
-CC_VMATH_CALL_SUPPORT_GETTER(getPosition, _lpos)
-CC_VMATH_CALL_SUPPORT_GETTER(getRotation, _lrot)
-CC_VMATH_CALL_SUPPORT_GETTER(getScale, _lscale)
-CC_VMATH_CALL_SUPPORT_METHOD(getWorldPosition)
-CC_VMATH_CALL_SUPPORT_METHOD(getWorldRotation)
-CC_VMATH_CALL_SUPPORT_METHOD(getWorldScale)
-CC_VMATH_CALL_SUPPORT_METHOD(getWorldMatrix)
-CC_VMATH_CALL_SUPPORT_END(cc::Transform)
-
 ///////////////////// Agent /////////////////////
-
-namespace cc {
 
 class LinearAllocatorPool;
 constexpr uint MAX_CPU_FRAME_AHEAD = 1U;
@@ -193,6 +201,7 @@ public:
 
     void setColor(float r, float g, float b, float a) override;
     void setTransform(const Transform *transform) override;
+    void setEnabled(bool enabled) override;
 };
 
 class RootAgent : public Agent<Root> {
@@ -214,6 +223,7 @@ public:
     inline LinearAllocatorPool *getMainAllocator() const { return _allocatorPools[_currentIndex]; }
 
     Model *createModel() override;
+    void destroyModel(Model *model) override;
 
 protected:
     static RootAgent *instance;

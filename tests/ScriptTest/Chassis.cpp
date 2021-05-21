@@ -1,4 +1,5 @@
 #include "Chassis.h"
+#include "tests/ScriptTest/Math.h"
 
 namespace cc {
 
@@ -124,24 +125,36 @@ void Transform::updateWorldTransform() const {
 }
 
 void Model::setColor(float r, float g, float b, float a) {
-    _color.x() = r;
-    _color.y() = g;
-    _color.z() = b;
-    _color.w() = a;
+    auto &&model    = Root::getInstance()->getModel(_idx);
+    model.color.x() = r;
+    model.color.y() = g;
+    model.color.z() = b;
+    model.color.w() = a;
 }
 
 void Model::setTransform(const Transform *transform) {
-    _transform = transform;
+    auto &&model    = Root::getInstance()->getModel(_idx);
+    model.transform = transform;
+}
+
+void Model::setEnabled(bool enabled) {
+    auto &&model  = Root::getInstance()->getModel(_idx);
+    model.enabled = enabled;
 }
 
 Root *Root::instance = nullptr;
 
 Root::Root() {
-    instance = this;
+    if (!instance) {
+        instance = this;
+    }
+    vmath::setSlices(_models, vmath::FloatP::Size);
 }
 
 Root::~Root() {
-    instance = nullptr;
+    if (instance == this) {
+        instance = nullptr;
+    }
 }
 
 Transform *Root::createTransform() {
@@ -149,14 +162,26 @@ Transform *Root::createTransform() {
 }
 
 Model *Root::createModel() {
+    if (_modelViews.size() >= vmath::slices(_models)) {
+        vmath::setSlices(_models, _modelViews.size() * 2);
+    }
     auto *res = CC_NEW(Model);
-    _models.push_back(res);
+    res->_idx = _modelViews.size();
+    _modelViews.push_back(res);
     return res;
 }
 
 void Root::destroyModel(Model *model) {
+    Model *last = _modelViews.back();
+    _modelViews.pop_back();
+
+    vmath::slice(_models, model->_idx) = vmath::slice(_models, last->_idx);
+    vmath::slice(_models, last->_idx)  = ModelF{};
+
+    last->_idx               = model->_idx;
+    _modelViews[model->_idx] = last;
+
     CC_SAFE_DELETE(model);
-    _models.erase(std::remove(_models.begin(), _models.end(), model), _models.end());
 }
 
 ///////////////////// Agent /////////////////////
@@ -229,14 +254,8 @@ void TransformAgent::setScale(float x, float y, float z) {
         });
 }
 
-ModelAgent::~ModelAgent() {
-    ENQUEUE_MESSAGE_1(
-        RootAgent::getInstance()->getMessageQueue(), ModelDestruct,
-        actor, getActor(),
-        {
-            CC_SAFE_DELETE(actor);
-        });
-}
+// Model is owned by root
+ModelAgent::~ModelAgent() = default;
 
 void ModelAgent::setColor(float r, float g, float b, float a) {
     ENQUEUE_MESSAGE_5(
@@ -255,6 +274,16 @@ void ModelAgent::setTransform(const Transform *transform) {
         transform, static_cast<const TransformAgent *>(transform)->getActor(),
         {
             actor->setTransform(transform);
+        });
+}
+
+void ModelAgent::setEnabled(bool enabled) {
+    ENQUEUE_MESSAGE_2(
+        RootAgent::getInstance()->getMessageQueue(), ModelSetEnabled,
+        actor, getActor(),
+        enabled, enabled,
+        {
+            actor->setEnabled(enabled);
         });
 }
 
@@ -338,9 +367,20 @@ Transform *RootAgent::createTransform() {
 }
 
 Model *RootAgent::createModel() {
-    Model *res = CC_NEW(ModelAgent(_actor->createModel()));
-    _models.push_back(res);
-    return res;
+    auto *actor = _actor->createModel();
+    return CC_NEW(ModelAgent(actor));
+}
+
+void RootAgent::destroyModel(Model *model) {
+    ENQUEUE_MESSAGE_2(
+        _mainMessageQueue, RootDestroyModel,
+        actor, getActor(),
+        model, static_cast<ModelAgent *>(model)->getActor(),
+        {
+            actor->destroyModel(model);
+        });
+
+    CC_SAFE_DELETE(model);
 }
 
 } // namespace cc

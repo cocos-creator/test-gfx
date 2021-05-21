@@ -27,6 +27,7 @@ bool register_all_chassis(se::Object* obj);
 
 JSB_REGISTER_OBJECT_TYPE(cc::Model);
 SE_DECLARE_FUNC(js_chassis_Model_setColor);
+SE_DECLARE_FUNC(js_chassis_Model_setEnabled);
 SE_DECLARE_FUNC(js_chassis_Model_setTransform);
 SE_DECLARE_FUNC(js_chassis_Model_Model);
 
@@ -41,8 +42,10 @@ SE_DECLARE_FUNC(js_chassis_Root_createModel);
 SE_DECLARE_FUNC(js_chassis_Root_createTransform);
 SE_DECLARE_FUNC(js_chassis_Root_destroy);
 SE_DECLARE_FUNC(js_chassis_Root_destroyModel);
+SE_DECLARE_FUNC(js_chassis_Root_getModel);
 SE_DECLARE_FUNC(js_chassis_Root_initialize);
 SE_DECLARE_FUNC(js_chassis_Root_render);
+SE_DECLARE_FUNC(js_chassis_Root_getInstance);
 
 extern se::Object* __jsb_cc_RootManager_proto;
 extern se::Class* __jsb_cc_RootManager_class;

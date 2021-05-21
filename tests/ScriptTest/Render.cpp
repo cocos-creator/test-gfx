@@ -6,21 +6,23 @@
 
 namespace cc {
 
-gfx::Shader *                Model::shader{nullptr};
-gfx::Buffer *                Model::vertexBuffer{nullptr};
-gfx::Buffer *                Model::uniformBuffer{nullptr};
-gfx::Buffer *                Model::uniformBufferView{nullptr};
-gfx::DescriptorSet *         Model::descriptorSet{nullptr};
-gfx::DescriptorSetLayout *   Model::descriptorSetLayout{nullptr};
-gfx::PipelineLayout *        Model::pipelineLayout{nullptr};
-gfx::PipelineState *         Model::pipelineState{nullptr};
-gfx::InputAssembler *        Model::inputAssembler{nullptr};
-vector<gfx::GlobalBarrier *> Model::globalBarriers;
-
 namespace {
-vector<float> uniformBufferData;
-uint          uboStride     = 0U;
-uint          modelCapacity = 8U;
+// fix-functioned resources just for test purposes
+gfx::Shader *                shader{nullptr};
+gfx::Buffer *                vertexBuffer{nullptr};
+gfx::Buffer *                uniformBufferGlobal{nullptr};
+gfx::Buffer *                uniformBuffer{nullptr};
+gfx::Buffer *                uniformBufferView{nullptr};
+gfx::DescriptorSet *         descriptorSet{nullptr};
+gfx::DescriptorSetLayout *   descriptorSetLayout{nullptr};
+gfx::PipelineLayout *        pipelineLayout{nullptr};
+gfx::PipelineState *         pipelineState{nullptr};
+gfx::InputAssembler *        inputAssembler{nullptr};
+vector<gfx::GlobalBarrier *> globalBarriers;
+vector<float>                uniformBufferData;
+uint                         uboStride     = 0U;
+uint                         modelCapacity = vmath::FloatP::Size;
+vmath::IndexP                index;
 } // namespace
 
 void Root::initialize() {
@@ -34,6 +36,8 @@ void Root::initialize() {
             layout(set = 0, binding = 0) uniform Constants {
                 vec4 u_color;
                 mat4 u_worldView;
+            };
+            layout(set = 0, binding = 1) uniform Global {
                 mat4 u_project;
             };
 
@@ -46,7 +50,6 @@ void Root::initialize() {
             layout(set = 0, binding = 0) uniform Constants {
                 vec4 u_color;
                 mat4 u_worldView;
-                mat4 u_project;
             };
             layout(location = 0) out vec4 o_color;
 
@@ -62,6 +65,8 @@ void Root::initialize() {
             layout(std140) uniform Constants {
                 vec4 u_color;
                 mat4 u_worldView;
+            };
+            layout(std140) uniform Global {
                 mat4 u_project;
             };
 
@@ -74,7 +79,6 @@ void Root::initialize() {
             layout(std140) uniform Constants {
                 vec4 u_color;
                 mat4 u_worldView;
-                mat4 u_project;
             };
 
             out vec4 o_color;
@@ -125,6 +129,14 @@ void Root::initialize() {
             {
                 {"u_color", gfx::Type::FLOAT4, 1},
                 {"u_worldView", gfx::Type::MAT4, 1},
+            },
+            1,
+        },
+        {
+            0,
+            1,
+            "Global",
+            {
                 {"u_project", gfx::Type::MAT4, 1},
             },
             1,
@@ -137,7 +149,7 @@ void Root::initialize() {
     shaderInfo.stages     = std::move(shaderStageList);
     shaderInfo.attributes = std::move(attributeList);
     shaderInfo.blocks     = std::move(uniformBlockList);
-    Model::shader         = device->createShader(shaderInfo);
+    shader                = device->createShader(shaderInfo);
 
     float vertexData[] = {-0.02F, -0.04F,
                           0.02F, -0.04F,
@@ -151,11 +163,12 @@ void Root::initialize() {
         gfx::BufferFlagBit::NONE,
     };
 
-    Model::vertexBuffer = device->createBuffer(vertexBufferInfo);
-    Model::vertexBuffer->update(vertexData, sizeof(vertexData));
+    vertexBuffer = device->createBuffer(vertexBufferInfo);
+    vertexBuffer->update(vertexData, sizeof(vertexData));
 
-    constexpr uint memberCount = 4 + 16 + 16;
-    uboStride                  = TestBaseI::getAlignedUBOStride(sizeof(float) * memberCount);
+    constexpr uint memberCount = 4 + 16;
+
+    uboStride = TestBaseI::getAlignedUBOStride(sizeof(float) * memberCount);
 
     uniformBufferData.resize(uboStride * modelCapacity / sizeof(float));
 
@@ -164,20 +177,31 @@ void Root::initialize() {
         gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
         uboStride * modelCapacity,
     };
-    Model::uniformBuffer = device->createBuffer(uniformBufferInfo);
+    uniformBuffer = device->createBuffer(uniformBufferInfo);
+
+    gfx::BufferInfo uniformBufferGlobalInfo = {
+        gfx::BufferUsage::UNIFORM,
+        gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
+        sizeof(float) * 16,
+    };
+    uniformBufferGlobal = device->createBuffer(uniformBufferGlobalInfo);
+
+    Mat4 projection;
+    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &projection);
+    uniformBufferGlobal->update(projection.m, sizeof(projection));
 
     gfx::BufferViewInfo uniformBufferViewInfo = {
-        Model::uniformBuffer,
+        uniformBuffer,
         0U,
         sizeof(float) * memberCount,
     };
-    Model::uniformBufferView = device->createBuffer(uniformBufferViewInfo);
+    uniformBufferView = device->createBuffer(uniformBufferViewInfo);
 
     gfx::Attribute          position{"a_position", gfx::Format::RG32F, false, 0, false};
     gfx::InputAssemblerInfo inputAssemblerInfo;
     inputAssemblerInfo.attributes.emplace_back(std::move(position));
-    inputAssemblerInfo.vertexBuffers.emplace_back(Model::vertexBuffer);
-    Model::inputAssembler = device->createInputAssembler(inputAssemblerInfo);
+    inputAssemblerInfo.vertexBuffers.emplace_back(vertexBuffer);
+    inputAssembler = device->createInputAssembler(inputAssemblerInfo);
 
     gfx::DescriptorSetLayoutInfo dslInfo;
     dslInfo.bindings.push_back({
@@ -186,25 +210,32 @@ void Root::initialize() {
         1,
         gfx::ShaderStageFlagBit::VERTEX | gfx::ShaderStageFlagBit::FRAGMENT,
     });
-    Model::descriptorSetLayout = device->createDescriptorSetLayout(dslInfo);
+    dslInfo.bindings.push_back({
+        1,
+        gfx::DescriptorType::UNIFORM_BUFFER,
+        1,
+        gfx::ShaderStageFlagBit::VERTEX,
+    });
+    descriptorSetLayout = device->createDescriptorSetLayout(dslInfo);
 
-    Model::pipelineLayout = device->createPipelineLayout({{Model::descriptorSetLayout}});
+    pipelineLayout = device->createPipelineLayout({{descriptorSetLayout}});
 
-    Model::descriptorSet = device->createDescriptorSet({Model::descriptorSetLayout});
+    descriptorSet = device->createDescriptorSet({descriptorSetLayout});
 
-    Model::descriptorSet->bindBuffer(0, Model::uniformBufferView);
-    Model::descriptorSet->update();
+    descriptorSet->bindBuffer(0, uniformBufferView);
+    descriptorSet->bindBuffer(1, uniformBufferGlobal);
+    descriptorSet->update();
 
     gfx::PipelineStateInfo pipelineInfo;
     pipelineInfo.primitive      = gfx::PrimitiveMode::TRIANGLE_LIST;
-    pipelineInfo.shader         = Model::shader;
-    pipelineInfo.inputState     = {Model::inputAssembler->getAttributes()};
+    pipelineInfo.shader         = shader;
+    pipelineInfo.inputState     = {inputAssembler->getAttributes()};
     pipelineInfo.renderPass     = TestBaseI::fbo->getRenderPass();
-    pipelineInfo.pipelineLayout = Model::pipelineLayout;
+    pipelineInfo.pipelineLayout = pipelineLayout;
 
-    Model::pipelineState = device->createPipelineState(pipelineInfo);
+    pipelineState = device->createPipelineState(pipelineInfo);
 
-    Model::globalBarriers.push_back(TestBaseI::getGlobalBarrier({
+    globalBarriers.push_back(TestBaseI::getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -214,45 +245,61 @@ void Root::initialize() {
             gfx::AccessType::VERTEX_BUFFER,
         },
     }));
+
+    auto max = static_cast<int>((vmath::IndexP::Size - 1) * uboStride / sizeof(float));
+    index = vmath::linspace<vmath::IndexP>(0, max);
 }
 
 void Root::destroy() {
-    CC_SAFE_DESTROY(Model::vertexBuffer);
-    CC_SAFE_DESTROY(Model::inputAssembler);
-    CC_SAFE_DESTROY(Model::uniformBuffer);
-    CC_SAFE_DESTROY(Model::uniformBufferView);
-    CC_SAFE_DESTROY(Model::shader);
-    CC_SAFE_DESTROY(Model::descriptorSet);
-    CC_SAFE_DESTROY(Model::descriptorSetLayout);
-    CC_SAFE_DESTROY(Model::pipelineLayout);
-    CC_SAFE_DESTROY(Model::pipelineState);
-    Model::globalBarriers.clear();
+    CC_SAFE_DESTROY(vertexBuffer);
+    CC_SAFE_DESTROY(inputAssembler);
+    CC_SAFE_DESTROY(uniformBufferGlobal);
+    CC_SAFE_DESTROY(uniformBuffer);
+    CC_SAFE_DESTROY(uniformBufferView);
+    CC_SAFE_DESTROY(shader);
+    CC_SAFE_DESTROY(descriptorSet);
+    CC_SAFE_DESTROY(descriptorSetLayout);
+    CC_SAFE_DESTROY(pipelineLayout);
+    CC_SAFE_DESTROY(pipelineState);
+    globalBarriers.clear();
 }
 
 void Root::render() {
     gfx::Device *device     = gfx::Device::getInstance();
     gfx::Color   clearColor = {0, 0, 0, 1.F};
 
-    Mat4 projection;
-    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &projection);
+    size_t modelCount = _modelViews.size();
 
-    if (_models.size() > modelCapacity) {
-        modelCapacity = utils::nextPOT(_models.size());
-        Model::uniformBuffer->resize(modelCapacity * uboStride);
+    if (modelCount > modelCapacity) {
+        modelCapacity = utils::nextPOT(modelCount);
+        uniformBuffer->resize(modelCapacity * uboStride);
         uniformBufferData.resize(modelCapacity * uboStride / sizeof(float));
     }
 
-    for (uint i = 0U; i < _models.size(); ++i) {
-        auto *model = _models[i];
-        vmath::store(&uniformBufferData[i * uboStride / sizeof(float)], model->getColor());
-        vmath::store(&uniformBufferData[i * uboStride / sizeof(float) + 4], model->getTransform()->getWorldMatrix());
-        memcpy(&uniformBufferData[i * uboStride / sizeof(float) + 20], &projection.m, sizeof(float) * 16);
+    /* vectorized version */
+    uint lengthPerPacket = uboStride / sizeof(float) * vmath::FloatP::Size;
+    for (size_t i = 0; i < packets(_models); ++i) {
+        auto &&model = packet(_models, i);
+        vmath::scatter(&uniformBufferData[i * lengthPerPacket + 0], model.color.x(), index);
+        vmath::scatter(&uniformBufferData[i * lengthPerPacket + 1], model.color.y(), index);
+        vmath::scatter(&uniformBufferData[i * lengthPerPacket + 2], model.color.z(), index);
+        vmath::scatter(&uniformBufferData[i * lengthPerPacket + 3], model.color.w(), index);
     }
+    /* scalar version */
+    for (uint i = 0U; i < modelCount; ++i) {
+        auto model = vmath::slice(_models, i);
+        // uniformBufferData[i * uboStride / sizeof(float) + 0] = model.color.x();
+        // uniformBufferData[i * uboStride / sizeof(float) + 1] = model.color.y();
+        // uniformBufferData[i * uboStride / sizeof(float) + 2] = model.color.z();
+        // uniformBufferData[i * uboStride / sizeof(float) + 3] = model.color.w();
+        vmath::store(&uniformBufferData[i * uboStride / sizeof(float) + 4], model.transform->getWorldMatrix());
+    }
+    /* */
 
     device->acquire();
 
-    if (!_models.empty()) {
-        Model::uniformBuffer->update(uniformBufferData.data(), _models.size() * uboStride);
+    if (modelCount) {
+        uniformBuffer->update(uniformBufferData.data(), modelCount * uboStride);
     }
 
     gfx::Rect renderArea = {0, 0, device->getWidth(), device->getHeight()};
@@ -261,21 +308,22 @@ void Root::render() {
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER) {
-        commandBuffer->pipelineBarrier(Model::globalBarriers[0]);
+        commandBuffer->pipelineBarrier(globalBarriers[0]);
     }
 
     commandBuffer->beginRenderPass(TestBaseI::fbo->getRenderPass(), TestBaseI::fbo, renderArea, &clearColor, 1.F, 0);
 
-    if (!_models.empty()) {
-        commandBuffer->bindPipelineState(Model::pipelineState);
-        commandBuffer->bindInputAssembler(Model::inputAssembler);
+    if (modelCount) {
+        commandBuffer->bindPipelineState(pipelineState);
+        commandBuffer->bindInputAssembler(inputAssembler);
     }
 
     uint dynamicOffset = 0U;
-    for (uint i = 0U; i < _models.size(); ++i) {
+    for (uint i = 0U; i < modelCount; ++i) {
+        if (!vmath::slice(_models, i).enabled) continue;
         dynamicOffset = i * uboStride;
-        commandBuffer->bindDescriptorSet(0, Model::descriptorSet, 1, &dynamicOffset);
-        commandBuffer->draw(Model::inputAssembler);
+        commandBuffer->bindDescriptorSet(0, descriptorSet, 1, &dynamicOffset);
+        commandBuffer->draw(inputAssembler);
     }
 
     commandBuffer->endRenderPass();

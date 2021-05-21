@@ -194,6 +194,25 @@ static bool js_chassis_Model_setColor(se::State& s)
 }
 SE_BIND_FUNC(js_chassis_Model_setColor)
 
+static bool js_chassis_Model_setEnabled(se::State& s)
+{
+    auto* cobj = SE_THIS_OBJECT<cc::Model>(s);
+    SE_PRECONDITION2(cobj, false, "js_chassis_Model_setEnabled : Invalid Native Object");
+    const auto& args = s.args();
+    size_t argc = args.size();
+    CC_UNUSED bool ok = true;
+    if (argc == 1) {
+        HolderType<bool, false> arg0 = {};
+        ok &= sevalue_to_native(args[0], &arg0, s.thisObject());
+        SE_PRECONDITION2(ok, false, "js_chassis_Model_setEnabled : Error processing arguments");
+        cobj->setEnabled(arg0.value());
+        return true;
+    }
+    SE_REPORT_ERROR("wrong number of arguments: %d, was expecting %d", (int)argc, 1);
+    return false;
+}
+SE_BIND_FUNC(js_chassis_Model_setEnabled)
+
 static bool js_chassis_Model_setTransform(se::State& s)
 {
     auto* cobj = SE_THIS_OBJECT<cc::Model>(s);
@@ -245,6 +264,7 @@ bool js_register_chassis_Model(se::Object* obj)
     auto* cls = se::Class::create("Model", obj, nullptr, _SE(js_chassis_Model_constructor));
 
     cls->defineFunction("setColor", _SE(js_chassis_Model_setColor));
+    cls->defineFunction("setEnabled", _SE(js_chassis_Model_setEnabled));
     cls->defineFunction("setTransform", _SE(js_chassis_Model_setTransform));
     cls->defineFinalizeFunction(_SE(js_cc_Model_finalize));
     cls->install();
@@ -333,6 +353,28 @@ static bool js_chassis_Root_destroyModel(se::State& s)
 }
 SE_BIND_FUNC(js_chassis_Root_destroyModel)
 
+static bool js_chassis_Root_getModel(se::State& s)
+{
+    auto* cobj = SE_THIS_OBJECT<cc::Root>(s);
+    SE_PRECONDITION2(cobj, false, "js_chassis_Root_getModel : Invalid Native Object");
+    const auto& args = s.args();
+    size_t argc = args.size();
+    CC_UNUSED bool ok = true;
+    if (argc == 1) {
+        HolderType<unsigned int, false> arg0 = {};
+        ok &= sevalue_to_native(args[0], &arg0, s.thisObject());
+        SE_PRECONDITION2(ok, false, "js_chassis_Root_getModel : Error processing arguments");
+        cc::ModelT<float &> result = cobj->getModel(arg0.value());
+        ok &= nativevalue_to_se(result, s.rval(), nullptr /*ctx*/);
+        SE_PRECONDITION2(ok, false, "js_chassis_Root_getModel : Error processing arguments");
+        SE_HOLD_RETURN_VALUE(result, s.thisObject(), s.rval());
+        return true;
+    }
+    SE_REPORT_ERROR("wrong number of arguments: %d, was expecting %d", (int)argc, 1);
+    return false;
+}
+SE_BIND_FUNC(js_chassis_Root_getModel)
+
 static bool js_chassis_Root_initialize(se::State& s)
 {
     auto* cobj = SE_THIS_OBJECT<cc::Root>(s);
@@ -363,6 +405,23 @@ static bool js_chassis_Root_render(se::State& s)
 }
 SE_BIND_FUNC(js_chassis_Root_render)
 
+static bool js_chassis_Root_getInstance(se::State& s)
+{
+    const auto& args = s.args();
+    size_t argc = args.size();
+    CC_UNUSED bool ok = true;
+    if (argc == 0) {
+        cc::Root* result = cc::Root::getInstance();
+        ok &= nativevalue_to_se(result, s.rval(), nullptr /*ctx*/);
+        SE_PRECONDITION2(ok, false, "js_chassis_Root_getInstance : Error processing arguments");
+        SE_HOLD_RETURN_VALUE(result, s.thisObject(), s.rval());
+        return true;
+    }
+    SE_REPORT_ERROR("wrong number of arguments: %d, was expecting %d", (int)argc, 0);
+    return false;
+}
+SE_BIND_FUNC(js_chassis_Root_getInstance)
+
 
 
 static bool js_cc_Root_finalize(se::State& s)
@@ -386,8 +445,10 @@ bool js_register_chassis_Root(se::Object* obj)
     cls->defineFunction("createTransform", _SE(js_chassis_Root_createTransform));
     cls->defineFunction("destroy", _SE(js_chassis_Root_destroy));
     cls->defineFunction("destroyModel", _SE(js_chassis_Root_destroyModel));
+    cls->defineFunction("getModel", _SE(js_chassis_Root_getModel));
     cls->defineFunction("initialize", _SE(js_chassis_Root_initialize));
     cls->defineFunction("render", _SE(js_chassis_Root_render));
+    cls->defineStaticFunction("getInstance", _SE(js_chassis_Root_getInstance));
     cls->defineFinalizeFunction(_SE(js_cc_Root_finalize));
     cls->install();
     JSBClassType::registerClass<cc::Root>(cls);
