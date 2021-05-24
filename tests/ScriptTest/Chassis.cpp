@@ -383,4 +383,6 @@ void RootAgent::destroyModel(Model *model) {
     CC_SAFE_DELETE(model);
 }
 
+Root *RootManager::instance{nullptr};
+
 } // namespace cc

@@ -31,74 +31,74 @@ const chassis = (() => {
         _parent = null;
         _children = [];
 
-        setParent (value) {
-            if (this._parent === value) return;
+        setParent(value) {
+            if (this._parent === value) { return; }
 
             if (this._parent) {
                 const idx = this._parent._children.indexOf(this);
-                if (idx >= 0) this._parent._children.splice(idx, 1);
+                if (idx >= 0) { this._parent._children.splice(idx, 1); }
             }
             this._parent = value;
 
             const idx = value._children.indexOf(this);
-            if (idx < 0) value._children.push(this);
+            if (idx < 0) { value._children.push(this); }
 
             this._invalidateChildren(TransformFlagBit.TRS);
         }
 
-        setPosition (x, y, z) {
+        setPosition(x, y, z) {
             vec3.set(this._lpos, x, y, z);
             this._invalidateChildren(TransformFlagBit.POSITION);
         }
 
-        setRotation (q) {
+        setRotation(q) {
             quat.copy(this._lrot, q);
             this._invalidateChildren(TransformFlagBit.ROTATION);
         }
 
-        setRotationFromEuler (angleX, angleY, angleZ) {
+        setRotationFromEuler(angleX, angleY, angleZ) {
             quat.fromEuler(this._lrot, angleX, angleY, angleZ, 'yzx');
             this._invalidateChildren(TransformFlagBit.ROTATION);
         }
 
-        setScale (x, y, z) {
+        setScale(x, y, z) {
             vec3.set(this._lscale, x, y, z);
             this._invalidateChildren(TransformFlagBit.SCALE);
         }
 
-        getPosition () {
+        getPosition() {
             return this._lpos;
         }
 
-        getRotation () {
+        getRotation() {
             return this._lrot;
         }
 
-        getScale () {
+        getScale() {
             return this._lscale;
         }
 
-        getWorldPosition () {
+        getWorldPosition() {
             this._updateWorldTransform();
             return this._pos;
         }
 
-        getWorldRotation () {
+        getWorldRotation() {
             this._updateWorldTransform();
             return this._rot;
         }
 
-        getWorldScale () {
+        getWorldScale() {
             this._updateWorldTransform();
             return this._scale;
         }
 
-        getWorldMatrix () {
+        getWorldMatrix() {
             this._updateWorldTransform();
             return this._mat;
         }
 
-        _invalidateChildren (dirtyFlags) {
+        _invalidateChildren(dirtyFlags) {
             if ((this._dirtyFlags & dirtyFlags) === dirtyFlags) { return; }
             this._dirtyFlags |= dirtyFlags;
             const newDirtyBit = dirtyFlags | TransformFlagBit.POSITION;
@@ -108,7 +108,7 @@ const chassis = (() => {
             }
         }
 
-        _updateWorldTransform () {
+        _updateWorldTransform() {
             if (!this._dirtyFlags) { return; }
             let cur = this;
             let i = 0;
@@ -169,19 +169,19 @@ const chassis = (() => {
         _transform = null;
         _color = vec4.set(vec4.create(), 1, 1, 1, 1);
 
-        setTransform (transform) {
+        setTransform(transform) {
             this._transform = transform;
         }
 
-        setColor (r, g, b, a) {
+        setColor(r, g, b, a) {
             vec4.set(this._color, r, g, b, a);
         }
 
-        getTransform () {
+        getTransform() {
             return this._transform;
         }
 
-        getColor () {
+        getColor() {
             return this._color;
         }
     }
@@ -190,57 +190,57 @@ const chassis = (() => {
         _models = [];
 
         // web implementation omitted
-        initialize () {}
-        destroy () {}
-        render () {}
+        initialize() {}
+        destroy() {}
+        render() {}
 
-        createTransform () {
+        createTransform() {
             return new Transform();
         }
 
-        createModel () {
+        createModel() {
             const res = new Model();
             this._models.push(res);
             return res;
         }
 
-        destroyModel (model) {
+        destroyModel(model) {
             const idx = this._models.indexOf(model);
-            if (idx >= 0) this._models.splice(idx, 1);
+            if (idx >= 0) { this._models.splice(idx, 1); }
         }
     }
 
-    ///////////////////// Agent /////////////////////
+    // ====================== Agent ======================
 
     class TransformAgent extends Transform {
         _actor = null;
 
-        constructor (actor) {
+        constructor(actor) {
             super();
             this._actor = actor;
         }
 
-        setParent (value) {
+        setParent(value) {
             super.setParent(value);
             this._actor.setParent(value._actor);
         }
 
-        setPosition (x, y, z) {
+        setPosition(x, y, z) {
             super.setPosition(x, y, z);
             this._actor.setPosition(x, y, z);
         }
 
-        setRotation (q) {
+        setRotation(q) {
             super.setRotation(q);
             this._actor.setRotation(q);
         }
 
-        setRotationFromEuler (angleX, angleY, angleZ) {
+        setRotationFromEuler(angleX, angleY, angleZ) {
             super.setRotationFromEuler(angleX, angleY, angleZ);
             this._actor.setRotationFromEuler(angleX, angleY, angleZ);
         }
 
-        setScale (x, y, z) {
+        setScale(x, y, z) {
             super.setScale(x, y, z);
             this._actor.setScale(x, y, z);
         }
@@ -249,17 +249,17 @@ const chassis = (() => {
     class ModelAgent extends Model {
         _actor = null;
 
-        constructor (actor) {
+        constructor(actor) {
             super();
             this._actor = actor;
         }
 
-        setTransform (transform) {
+        setTransform(transform) {
             super.setTransform(transform);
             this._actor.setTransform(transform._actor);
         }
 
-        setColor (r, g, b, a) {
+        setColor(r, g, b, a) {
             super.setColor(r, g, b, a);
             this._actor.setColor(r, g, b, a);
         }
@@ -268,38 +268,38 @@ const chassis = (() => {
     class RootAgent extends Root {
         _actor = null;
 
-        constructor (actor) {
+        constructor(actor) {
             super();
             this._actor = actor;
         }
 
-        initialize () {
+        initialize() {
             // don't invoke super method here
             this._actor.initialize();
         }
 
-        destroy () {
+        destroy() {
             // don't invoke super method here
             this._actor.destroy();
         }
 
-        render () {
+        render() {
             // don't invoke super method here
             this._actor.render();
         }
 
-        createTransform () {
+        createTransform() {
             const actor = this._actor.createTransform();
             return new TransformAgent(actor);
         }
 
-        createModel () {
+        createModel() {
             const res = new ModelAgent(this._actor.createModel());
             this._models.push(res);
             return res;
         }
 
-        destroyModel (model) {
+        destroyModel(model) {
             super.destroyModel(model);
             this._actor.destroyModel(model);
         }
@@ -307,6 +307,7 @@ const chassis = (() => {
 
     const chassis = { root: JSB ? new RootAgent(jsb.RootManager.create()) : new Root() };
 
-    if (JSB) return chassis;
-    else module.exports = chassis;
+    if (JSB) { return chassis; }
+    else { module.exports = chassis; return null; }
+
 })();

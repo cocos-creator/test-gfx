@@ -248,12 +248,17 @@ public:
 
         root->initialize();
 
+        instance = root;
+
         return root;
     }
 
     static void destroy() {
-        CC_SAFE_DESTROY(Root::instance);
+        CC_SAFE_DESTROY(instance);
     }
+
+private:
+    static Root *instance;
 };
 
 } // namespace cc
