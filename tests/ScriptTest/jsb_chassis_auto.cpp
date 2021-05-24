@@ -234,12 +234,32 @@ SE_BIND_FUNC(js_chassis_Model_setTransform)
 
 SE_DECLARE_FINALIZE_FUNC(js_cc_Model_finalize)
 
-static bool js_chassis_Model_constructor(se::State& s) // constructor.c
+static bool js_chassis_Model_constructor(se::State& s)  // constructor_overloaded.c
 {
-    cc::Model* cobj = JSB_ALLOC(cc::Model);
-    s.thisObject()->setPrivateData(cobj);
-    se::NonRefNativePtrCreatedByCtorMap::emplace(cobj);
-    return true;
+    CC_UNUSED bool ok = true;
+    const auto& args = s.args();
+    size_t argc = args.size();
+    do {
+        if (argc == 1) {
+            HolderType<unsigned int, false> arg0 = {};
+            ok &= sevalue_to_native(args[0], &arg0, s.thisObject());
+            if (!ok) { ok = true; break; }
+            cc::Model* cobj = JSB_ALLOC(cc::Model, arg0.value());
+            s.thisObject()->setPrivateData(cobj);
+            se::NonRefNativePtrCreatedByCtorMap::emplace(cobj);
+            return true;
+        }
+    } while(false);
+    do {
+        if (argc == 0) {
+            cc::Model* cobj = JSB_ALLOC(cc::Model);
+            s.thisObject()->setPrivateData(cobj);
+            se::NonRefNativePtrCreatedByCtorMap::emplace(cobj);
+            return true;
+        }
+    } while(false);
+    SE_REPORT_ERROR("wrong number of arguments: %d", (int)argc);
+    return false;
 }
 SE_BIND_CTOR(js_chassis_Model_constructor, __jsb_cc_Model_class, js_cc_Model_finalize)
 
@@ -334,47 +354,6 @@ static bool js_chassis_Root_destroy(se::State& s)
 }
 SE_BIND_FUNC(js_chassis_Root_destroy)
 
-static bool js_chassis_Root_destroyModel(se::State& s)
-{
-    auto* cobj = SE_THIS_OBJECT<cc::Root>(s);
-    SE_PRECONDITION2(cobj, false, "js_chassis_Root_destroyModel : Invalid Native Object");
-    const auto& args = s.args();
-    size_t argc = args.size();
-    CC_UNUSED bool ok = true;
-    if (argc == 1) {
-        HolderType<cc::Model*, false> arg0 = {};
-        ok &= sevalue_to_native(args[0], &arg0, s.thisObject());
-        SE_PRECONDITION2(ok, false, "js_chassis_Root_destroyModel : Error processing arguments");
-        cobj->destroyModel(arg0.value());
-        return true;
-    }
-    SE_REPORT_ERROR("wrong number of arguments: %d, was expecting %d", (int)argc, 1);
-    return false;
-}
-SE_BIND_FUNC(js_chassis_Root_destroyModel)
-
-static bool js_chassis_Root_getModel(se::State& s)
-{
-    auto* cobj = SE_THIS_OBJECT<cc::Root>(s);
-    SE_PRECONDITION2(cobj, false, "js_chassis_Root_getModel : Invalid Native Object");
-    const auto& args = s.args();
-    size_t argc = args.size();
-    CC_UNUSED bool ok = true;
-    if (argc == 1) {
-        HolderType<unsigned int, false> arg0 = {};
-        ok &= sevalue_to_native(args[0], &arg0, s.thisObject());
-        SE_PRECONDITION2(ok, false, "js_chassis_Root_getModel : Error processing arguments");
-        cc::ModelT<float &> result = cobj->getModel(arg0.value());
-        ok &= nativevalue_to_se(result, s.rval(), nullptr /*ctx*/);
-        SE_PRECONDITION2(ok, false, "js_chassis_Root_getModel : Error processing arguments");
-        SE_HOLD_RETURN_VALUE(result, s.thisObject(), s.rval());
-        return true;
-    }
-    SE_REPORT_ERROR("wrong number of arguments: %d, was expecting %d", (int)argc, 1);
-    return false;
-}
-SE_BIND_FUNC(js_chassis_Root_getModel)
-
 static bool js_chassis_Root_initialize(se::State& s)
 {
     auto* cobj = SE_THIS_OBJECT<cc::Root>(s);
@@ -444,8 +423,6 @@ bool js_register_chassis_Root(se::Object* obj)
     cls->defineFunction("createModel", _SE(js_chassis_Root_createModel));
     cls->defineFunction("createTransform", _SE(js_chassis_Root_createTransform));
     cls->defineFunction("destroy", _SE(js_chassis_Root_destroy));
-    cls->defineFunction("destroyModel", _SE(js_chassis_Root_destroyModel));
-    cls->defineFunction("getModel", _SE(js_chassis_Root_getModel));
     cls->defineFunction("initialize", _SE(js_chassis_Root_initialize));
     cls->defineFunction("render", _SE(js_chassis_Root_render));
     cls->defineStaticFunction("getInstance", _SE(js_chassis_Root_getInstance));

@@ -66,6 +66,10 @@ template <typename T>
 using scalar_t = enoki::scalar_t<T>;
 template <typename T, bool CopyFlags = true>
 using mask_t = enoki::mask_t<T, CopyFlags>;
+template <typename T, bool CopyFlags = true>
+using uint_array_t = enoki::uint_array_t<T, CopyFlags>;
+template <typename T, bool CopyFlags = true>
+using float_array_t = enoki::float_array_t<T, CopyFlags>;
 template <typename T, typename Value, bool CopyFlags = true>
 using replace_scalar_t = enoki::replace_scalar_t<T, Value, CopyFlags>;
 

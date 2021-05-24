@@ -301,7 +301,7 @@ const chassis = (() => {
 
         destroyModel(model) {
             super.destroyModel(model);
-            this._actor.destroyModel(model);
+            // actor is destroyed through GC
         }
     }
 

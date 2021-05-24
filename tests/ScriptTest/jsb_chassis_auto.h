@@ -41,8 +41,6 @@ JSB_REGISTER_OBJECT_TYPE(cc::Root);
 SE_DECLARE_FUNC(js_chassis_Root_createModel);
 SE_DECLARE_FUNC(js_chassis_Root_createTransform);
 SE_DECLARE_FUNC(js_chassis_Root_destroy);
-SE_DECLARE_FUNC(js_chassis_Root_destroyModel);
-SE_DECLARE_FUNC(js_chassis_Root_getModel);
 SE_DECLARE_FUNC(js_chassis_Root_initialize);
 SE_DECLARE_FUNC(js_chassis_Root_render);
 SE_DECLARE_FUNC(js_chassis_Root_getInstance);

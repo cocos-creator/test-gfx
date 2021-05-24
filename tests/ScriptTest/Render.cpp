@@ -268,7 +268,7 @@ void Root::render() {
     gfx::Device *device     = gfx::Device::getInstance();
     gfx::Color   clearColor = {0, 0, 0, 1.F};
 
-    size_t modelCount = _modelViews.size();
+    size_t modelCount = Model::views.size();
 
     if (modelCount > modelCapacity) {
         modelCapacity = utils::nextPOT(modelCount);
@@ -278,8 +278,8 @@ void Root::render() {
 
     /* vectorized version */
     uint lengthPerPacket = uboStride / sizeof(float) * vmath::FloatP::Size;
-    for (size_t i = 0; i < packets(_models); ++i) {
-        auto &&model = packet(_models, i);
+    for (size_t i = 0; i < packets(Model::buffer); ++i) {
+        auto &&model = packet(Model::buffer, i);
         vmath::scatter(&uniformBufferData[i * lengthPerPacket + 0], model.color.x(), index);
         vmath::scatter(&uniformBufferData[i * lengthPerPacket + 1], model.color.y(), index);
         vmath::scatter(&uniformBufferData[i * lengthPerPacket + 2], model.color.z(), index);
@@ -287,7 +287,7 @@ void Root::render() {
     }
     /* scalar version */
     for (uint i = 0U; i < modelCount; ++i) {
-        auto model = vmath::slice(_models, i);
+        auto model = vmath::slice(Model::buffer, i);
         // uniformBufferData[i * uboStride / sizeof(float) + 0] = model.color.x();
         // uniformBufferData[i * uboStride / sizeof(float) + 1] = model.color.y();
         // uniformBufferData[i * uboStride / sizeof(float) + 2] = model.color.z();
@@ -320,7 +320,7 @@ void Root::render() {
 
     uint dynamicOffset = 0U;
     for (uint i = 0U; i < modelCount; ++i) {
-        if (!vmath::slice(_models, i).enabled) continue;
+        if (!vmath::slice(Model::buffer, i).enabled) continue;
         dynamicOffset = i * uboStride;
         commandBuffer->bindDescriptorSet(0, descriptorSet, 1, &dynamicOffset);
         commandBuffer->draw(inputAssembler);

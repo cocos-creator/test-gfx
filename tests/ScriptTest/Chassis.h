@@ -50,8 +50,6 @@ public:
     inline const vmath::Mat4F &getWorldMatrix() const;
 
 protected:
-    CC_VMATH_CALL_SUPPORT_FRIEND()
-
     void invalidateChildren(TransformFlagBit dirtyFlags);
     void updateWorldTransform() const;
 
@@ -68,20 +66,6 @@ protected:
     Transform *         _parent{nullptr};
     vector<Transform *> _children;
 };
-
-CC_VMATH_CALL_SUPPORT_BEGIN_1(cc, Transform)
-CC_VMATH_CALL_SUPPORT_METHOD(setParent)
-CC_VMATH_CALL_SUPPORT_METHOD(setPosition)
-CC_VMATH_CALL_SUPPORT_METHOD(setRotation)
-CC_VMATH_CALL_SUPPORT_METHOD(setScale)
-CC_VMATH_CALL_SUPPORT_GETTER(getPosition, _lpos)
-CC_VMATH_CALL_SUPPORT_GETTER(getRotation, _lrot)
-CC_VMATH_CALL_SUPPORT_GETTER(getScale, _lscale)
-CC_VMATH_CALL_SUPPORT_METHOD(getWorldPosition)
-CC_VMATH_CALL_SUPPORT_METHOD(getWorldRotation)
-CC_VMATH_CALL_SUPPORT_METHOD(getWorldScale)
-CC_VMATH_CALL_SUPPORT_METHOD(getWorldMatrix)
-CC_VMATH_CALL_SUPPORT_END_1(cc, Transform)
 
 const vmath::Vec3F &Transform::getWorldPosition() const {
     updateWorldTransform();
@@ -127,20 +111,23 @@ using ModelX = ModelT<vmath::FloatX>;
 
 class Model {
 public:
-    Model()                       = default;
-    virtual ~Model()              = default;
+    Model() = default;
+    virtual ~Model();
     Model(const Model &) noexcept = delete;
     Model(Model &&) noexcept      = delete;
     Model &operator=(const Model &) noexcept = delete;
     Model &operator=(Model &&) noexcept = delete;
 
+    explicit Model(uint idx) : _idx(idx) {}
+
     virtual void setColor(float r, float g, float b, float a);
     virtual void setTransform(const Transform *transform);
     virtual void setEnabled(bool enabled);
 
-protected:
-    friend class Root;
+    static ModelX buffer;
+    static vector<Model *> views;
 
+protected:
     uint _idx{0U};
 };
 
@@ -160,21 +147,13 @@ public:
     virtual void render();
 
     virtual Transform *createTransform();
-
-    virtual Model *createModel();
-    virtual void   destroyModel(Model *model);
-
-    inline decltype(auto) getModel(uint idx) { return vmath::slice(_models, idx); }
+    virtual Model *    createModel();
 
 protected:
     static Root *instance;
-
     friend class RootManager;
 
     Root();
-
-    ModelX          _models;
-    vector<Model *> _modelViews;
 };
 
 ///////////////////// Agent /////////////////////
@@ -216,14 +195,12 @@ public:
     void render() override;
 
     Transform *createTransform() override;
+    Model *    createModel() override;
 
     void setMultithreaded(bool multithreaded);
 
     inline MessageQueue *       getMessageQueue() const { return _mainMessageQueue; }
     inline LinearAllocatorPool *getMainAllocator() const { return _allocatorPools[_currentIndex]; }
-
-    Model *createModel() override;
-    void destroyModel(Model *model) override;
 
 protected:
     static RootAgent *instance;
