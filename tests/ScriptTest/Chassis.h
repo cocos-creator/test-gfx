@@ -27,8 +27,6 @@ CC_ENUM_OPERATORS(TransformFlagBit);
 
 template <typename Value>
 struct TransformT {
-    static constexpr size_t MAX_CHILDREN_COUNT = 256;
-
     using Packet = TransformT<vmath::FloatP>;
 
     using Vec3 = vmath::Vec3<Value>;
@@ -37,7 +35,6 @@ struct TransformT {
 
     using TransformFlags = vmath::replace_scalar_t<Value, TransformFlagBit>;
     using Index          = vmath::replace_scalar_t<Value, vmath::Index>;
-    using IndexX         = vmath::Array<Index, MAX_CHILDREN_COUNT>;
 
     Vec3 lpos = vmath::zero<Vec3>();
     Quat lrot = vmath::identity<Quat>();
@@ -49,15 +46,14 @@ struct TransformT {
     Vec3           scale{1.F, 1.F, 1.F};
     Mat4           mat = vmath::identity<Mat4>();
 
-    Index  parent{-1};
-    Index  childrenCount{0};
-    IndexX children{-1};
+    Index parent{-1};
+    Index childrenCount{0};
 
     // NOLINTNEXTLINE(google-explicit-constructor) false positive when involving __VA_ARGS__
-    CC_VMATH_STRUCT(TransformT, lpos, lrot, lscale, dirtyFlags, pos, rot, scale, mat, parent, childrenCount, children)
+    CC_VMATH_STRUCT(TransformT, lpos, lrot, lscale, dirtyFlags, pos, rot, scale, mat, parent, childrenCount)
 };
 
-CC_VMATH_STRUCT_SUPPORT_1(cc, TransformT, lpos, lrot, lscale, dirtyFlags, pos, rot, scale, mat, parent, childrenCount, children)
+CC_VMATH_STRUCT_SUPPORT_1(cc, TransformT, lpos, lrot, lscale, dirtyFlags, pos, rot, scale, mat, parent, childrenCount)
 
 using TransformF = TransformT<float>;
 using TransformP = TransformT<vmath::FloatP>;
@@ -76,7 +72,7 @@ public:
     Transform &operator=(const Transform &) noexcept = delete;
     Transform &operator=(Transform &&) noexcept = delete;
 
-    explicit Transform(vmath::Index idx) : _idx(idx) {}
+    explicit Transform(vmath::Index idx);
 
     virtual void setParent(Transform *value);
     virtual void setPosition(float x, float y, float z);
@@ -84,9 +80,10 @@ public:
     virtual void setRotationFromEuler(float angleX, float angleY, float angleZ);
     virtual void setScale(float x, float y, float z);
 
-    static TransformX   buffer;
-    static PtrX         views;
-    static vmath::Index viewCount;
+    static TransformX            buffer;
+    static vector<vmath::IndexX> childrenBuffers;
+    static PtrX                  views;
+    static vmath::Index          viewCount;
 
     void         updateWorldTransform() const;
     vmath::Index getIdx() const { return _idx; }

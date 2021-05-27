@@ -3,14 +3,22 @@
 
 namespace cc {
 
-TransformX      Transform::buffer;
-Transform::PtrX Transform::views;
-vmath::Index    Transform::viewCount{0};
+TransformX            Transform::buffer;
+vector<vmath::IndexX> Transform::childrenBuffers;
+Transform::PtrX       Transform::views;
+vmath::Index          Transform::viewCount{0};
+
+Transform::Transform(vmath::Index idx) : _idx(idx) {
+    auto &&children = childrenBuffers[_idx];
+    if (vmath::slices(children) < 8) {
+        vmath::setSlices(children, 8);
+    }
+}
 
 Transform::~Transform() {
     if (vmath::slice(views, _idx) != this) return;
 
-    Transform *last                  = vmath::slice(views, viewCount--);
+    Transform *last                  = vmath::slice(views, --viewCount);
     vmath::slice(buffer, last->_idx) = TransformF{};
 
     if (this != last) {
@@ -26,10 +34,13 @@ void Transform::setParent(Transform *value) {
     if ((!value && transform.parent < 0) || (transform.parent == value->_idx)) return;
 
     if (transform.parent >= 0) {
-        auto &&     parent = vmath::slice(buffer, transform.parent);
-        const auto *end    = std::remove(parent.children.begin(), parent.children.end(), _idx);
-        CCASSERT(end == parent.children.end() - 1, "Mismatching parent/children?");
-        --parent.childrenCount;
+        auto &&parent   = vmath::slice(buffer, transform.parent);
+        auto &&children = childrenBuffers[transform.parent];
+        for (size_t i = 0; i < parent.childrenCount; ++i) {
+            if (vmath::slice(children, i) != _idx) continue;
+            vmath::slice(children, i) = vmath::slice(children, --parent.childrenCount);
+            break;
+        }
     }
 
     transform.parent = value ? value->_idx : -1;
@@ -38,8 +49,11 @@ void Transform::setParent(Transform *value) {
     if (!value) return;
 
     auto &&newParent = vmath::slice(buffer, value->_idx);
-    CCASSERT(std::find(newParent.children.begin(), newParent.children.end(), _idx) == newParent.children.end(), "Mismatching parent/children?");
-    newParent.children[newParent.childrenCount++] = _idx;
+    auto &&children  = childrenBuffers[value->_idx];
+    if (vmath::slices(children) <= newParent.childrenCount) {
+        vmath::setSlices<true>(children, newParent.childrenCount * 2);
+    }
+    children[newParent.childrenCount++] = _idx;
 }
 
 void Transform::setPosition(float x, float y, float z) {
@@ -80,6 +94,7 @@ void Transform::setScale(float x, float y, float z) {
 
 void Transform::invalidateChildren(TransformFlagBit dirtyFlags) const {
     auto &&transform = vmath::slice(buffer, _idx);
+    auto &&children  = childrenBuffers[_idx];
 
     if (hasAllFlags(transform.dirtyFlags, dirtyFlags)) {
         return;
@@ -89,30 +104,31 @@ void Transform::invalidateChildren(TransformFlagBit dirtyFlags) const {
     TransformFlagBit newDirtyBits = dirtyFlags | TransformFlagBit::POSITION;
 
     for (size_t i = 0; i < transform.childrenCount; ++i) {
-        vmath::slice(views, transform.children[i])->invalidateChildren(newDirtyBits);
+        views[children[i]]->invalidateChildren(newDirtyBits);
     }
 }
 
 namespace {
-TransformF::IndexX tempArray;
+vector<vmath::Index> tempArray;
 }
 
 void Transform::updateWorldTransform() const {
-    if (vmath::slice(buffer.dirtyFlags, _idx) == TransformFlagBit::NONE) {
+    if (buffer.dirtyFlags[_idx] == TransformFlagBit::NONE) {
         return;
     }
 
     vmath::Index curIdx = _idx;
 
-    size_t i = 0U;
-    while (curIdx >= 0 && vmath::slice(buffer.dirtyFlags, curIdx) != TransformFlagBit::NONE) {
-        tempArray[i++] = curIdx;
+    tempArray.clear();
+    while (curIdx >= 0 && buffer.dirtyFlags[curIdx] != TransformFlagBit::NONE) {
+        tempArray.push_back(curIdx);
 
-        curIdx = vmath::slice(buffer.parent, curIdx);
+        curIdx = buffer.parent[curIdx];
     }
 
     TransformFlagBit dirtyBits = TransformFlagBit::NONE;
 
+    size_t i = tempArray.size();
     while (i) {
         vmath::Index childIdx = tempArray[--i];
         auto &&      child    = vmath::slice(buffer, childIdx);
@@ -167,7 +183,7 @@ vmath::Index Model::viewCount{0};
 Model::~Model() {
     if (vmath::slice(views, _idx) != this) return;
 
-    Model *last                      = vmath::slice(views, viewCount--);
+    Model *last                      = vmath::slice(views, --viewCount);
     vmath::slice(buffer, last->_idx) = ModelF{};
 
     if (this != last) {
@@ -208,18 +224,20 @@ Root::Root() {
     vmath::setSlices(Model::buffer, 256);
     vmath::setSlices(Model::views, 256);
     vmath::setSlices(Transform::buffer, 256);
+    Transform::childrenBuffers.resize(256);
     vmath::setSlices(Transform::views, 256);
 
     for (size_t i = 0; i < vmath::packets(Model::buffer); ++i) {
-        vmath::packet(Model::buffer, i) = ModelP{};
-        vmath::packet(Model::views, i)  = Model::PtrP{};
+        vmath::packet(Model::buffer, i)     = ModelP{};
+        vmath::packet(Model::views, i)      = Model::PtrP{};
         vmath::packet(Transform::buffer, i) = TransformP{};
         vmath::packet(Transform::views, i)  = Transform::PtrP{};
     }
 }
 
 Root::~Root() {
-    CCASSERT(Model::views.empty(), "Resources leaked");
+    CCASSERT(Transform::viewCount == 0, "Resources leaked");
+    CCASSERT(Model::viewCount == 0, "Resources leaked");
 
     if (instance == this) {
         instance = nullptr;
@@ -229,6 +247,7 @@ Root::~Root() {
 Transform *Root::createTransform() {
     if (Transform::viewCount >= vmath::slices(Transform::views)) {
         vmath::setSlices<true>(Transform::views, Transform::viewCount * 2);
+        Transform::childrenBuffers.resize(Transform::viewCount * 2);
         vmath::setSlices<true>(Transform::buffer, Transform::viewCount * 2);
     }
     auto *res = CC_NEW(Transform(Transform::viewCount));
