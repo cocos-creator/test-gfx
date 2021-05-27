@@ -247,7 +247,7 @@ void Root::initialize() {
     }));
 
     auto max = static_cast<int>((vmath::IndexP::Size - 1) * uboStride / sizeof(float));
-    index = vmath::linspace<vmath::IndexP>(0, max);
+    index    = vmath::linspace<vmath::IndexP>(0, max);
 }
 
 void Root::destroy() {
@@ -276,25 +276,20 @@ void Root::render() {
         uniformBufferData.resize(modelCapacity * uboStride / sizeof(float));
     }
 
-    /* vectorized version */
     uint lengthPerPacket = uboStride / sizeof(float) * vmath::FloatP::Size;
-    for (size_t i = 0; i < packets(Model::buffer); ++i) {
-        auto &&model = packet(Model::buffer, i);
-        vmath::scatter(&uniformBufferData[i * lengthPerPacket + 0], model.color.x(), index);
-        vmath::scatter(&uniformBufferData[i * lengthPerPacket + 1], model.color.y(), index);
-        vmath::scatter(&uniformBufferData[i * lengthPerPacket + 2], model.color.z(), index);
-        vmath::scatter(&uniformBufferData[i * lengthPerPacket + 3], model.color.w(), index);
+    for (size_t i = 0; i < vmath::packets(Model::buffer); ++i) {
+        float *pDst  = &uniformBufferData[i * lengthPerPacket];
+        auto &&model = vmath::packet(Model::buffer, i);
+        vmath::scatter(pDst + 0, model.color.x(), index, model.enabled);
+        vmath::scatter(pDst + 1, model.color.y(), index, model.enabled);
+        vmath::scatter(pDst + 2, model.color.z(), index, model.enabled);
+        vmath::scatter(pDst + 3, model.color.w(), index, model.enabled);
+        for (size_t j = 0; j < model.transform.size(); ++j) {
+            Transform::views[model.transform[j]]->updateWorldTransform();
+            TransformF::Mat4 mat = vmath::slice(Transform::buffer.mat, model.transform[j]);
+            vmath::store(pDst + 4, vmath::transpose(mat));
+        }
     }
-    /* scalar version */
-    for (uint i = 0U; i < modelCount; ++i) {
-        auto model = vmath::slice(Model::buffer, i);
-        // uniformBufferData[i * uboStride / sizeof(float) + 0] = model.color.x();
-        // uniformBufferData[i * uboStride / sizeof(float) + 1] = model.color.y();
-        // uniformBufferData[i * uboStride / sizeof(float) + 2] = model.color.z();
-        // uniformBufferData[i * uboStride / sizeof(float) + 3] = model.color.w();
-        vmath::store(&uniformBufferData[i * uboStride / sizeof(float) + 4], model.transform->getWorldMatrix());
-    }
-    /* */
 
     device->acquire();
 

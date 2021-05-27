@@ -3,146 +3,183 @@
 
 namespace cc {
 
+TransformX      Transform::buffer;
+Transform::PtrX Transform::views;
+vmath::Index    Transform::viewCount{0};
+
+Transform::~Transform() {
+    if (vmath::slice(views, _idx) != this) return;
+
+    Transform *last                  = vmath::slice(views, viewCount--);
+    vmath::slice(buffer, last->_idx) = TransformF{};
+
+    if (this != last) {
+        vmath::slice(buffer, _idx) = vmath::slice(buffer, last->_idx);
+        vmath::slice(views, _idx)  = last;
+        last->_idx                 = _idx;
+    }
+}
+
 void Transform::setParent(Transform *value) {
-    if (_parent == value) return;
+    auto &&transform = vmath::slice(buffer, _idx);
 
-    if (_parent) {
-        _parent->_children.erase(
-            std::remove(_parent->_children.begin(), _parent->_children.end(), this),
-            _parent->_children.end());
-    }
-    _parent = value;
+    if ((!value && transform.parent < 0) || (transform.parent == value->_idx)) return;
 
-    if (std::find(value->_children.begin(), value->_children.end(), this) == value->_children.end()) {
-        value->_children.push_back(this);
+    if (transform.parent >= 0) {
+        auto &&     parent = vmath::slice(buffer, transform.parent);
+        const auto *end    = std::remove(parent.children.begin(), parent.children.end(), _idx);
+        CCASSERT(end == parent.children.end() - 1, "Mismatching parent/children?");
+        --parent.childrenCount;
     }
 
+    transform.parent = value ? value->_idx : -1;
     invalidateChildren(TransformFlagBit::TRS);
+
+    if (!value) return;
+
+    auto &&newParent = vmath::slice(buffer, value->_idx);
+    CCASSERT(std::find(newParent.children.begin(), newParent.children.end(), _idx) == newParent.children.end(), "Mismatching parent/children?");
+    newParent.children[newParent.childrenCount++] = _idx;
 }
 
 void Transform::setPosition(float x, float y, float z) {
-    _lpos.x() = x;
-    _lpos.y() = y;
-    _lpos.z() = z;
+    auto &&transform = vmath::slice(buffer, _idx);
+
+    transform.lpos.x() = x;
+    transform.lpos.y() = y;
+    transform.lpos.z() = z;
 
     invalidateChildren(TransformFlagBit::POSITION);
 }
 
 void Transform::setRotation(const float *q) {
-    _lrot = vmath::load<vmath::QuatF>(q);
+    auto &&transform = vmath::slice(buffer, _idx);
+
+    transform.lrot = vmath::load<vmath::QuatF>(q);
 
     invalidateChildren(TransformFlagBit::ROTATION);
 }
 
 void Transform::setRotationFromEuler(float angleX, float angleY, float angleZ) {
-    _lrot = vmath::quatFromEuler(vmath::Vec3F{angleX, angleY, angleZ});
+    auto &&transform = vmath::slice(buffer, _idx);
+
+    transform.lrot = vmath::quatFromEuler(vmath::Vec3F{angleX, angleY, angleZ});
 
     invalidateChildren(TransformFlagBit::ROTATION);
 }
 
 void Transform::setScale(float x, float y, float z) {
-    _lscale.x() = x;
-    _lscale.y() = y;
-    _lscale.z() = z;
+    auto &&transform = vmath::slice(buffer, _idx);
+
+    transform.lscale.x() = x;
+    transform.lscale.y() = y;
+    transform.lscale.z() = z;
 
     invalidateChildren(TransformFlagBit::SCALE);
 }
 
-void Transform::invalidateChildren(TransformFlagBit dirtyFlags) {
-    if ((_dirtyFlags & dirtyFlags) == dirtyFlags) {
+void Transform::invalidateChildren(TransformFlagBit dirtyFlags) const {
+    auto &&transform = vmath::slice(buffer, _idx);
+
+    if (hasAllFlags(transform.dirtyFlags, dirtyFlags)) {
         return;
     }
 
-    _dirtyFlags |= dirtyFlags;
-    TransformFlagBit newDirtyBit = dirtyFlags | TransformFlagBit::POSITION;
+    transform.dirtyFlags |= dirtyFlags;
+    TransformFlagBit newDirtyBits = dirtyFlags | TransformFlagBit::POSITION;
 
-    for (auto &child : _children) {
-        child->invalidateChildren(newDirtyBit);
+    for (size_t i = 0; i < transform.childrenCount; ++i) {
+        vmath::slice(views, transform.children[i])->invalidateChildren(newDirtyBits);
     }
 }
 
 namespace {
-vector<const Transform *> tempArray;
-} // namespace
+TransformF::IndexX tempArray;
+}
 
 void Transform::updateWorldTransform() const {
-    if (_dirtyFlags == TransformFlagBit::NONE) {
+    if (vmath::slice(buffer.dirtyFlags, _idx) == TransformFlagBit::NONE) {
         return;
     }
 
-    const Transform *cur = this;
-    tempArray.clear();
-    while (cur && cur->_dirtyFlags != TransformFlagBit::NONE) {
-        tempArray.push_back(cur);
-        cur = cur->_parent;
+    vmath::Index curIdx = _idx;
+
+    size_t i = 0U;
+    while (curIdx >= 0 && vmath::slice(buffer.dirtyFlags, curIdx) != TransformFlagBit::NONE) {
+        tempArray[i++] = curIdx;
+
+        curIdx = vmath::slice(buffer.parent, curIdx);
     }
-    const Transform *child     = this;
+
     TransformFlagBit dirtyBits = TransformFlagBit::NONE;
 
-    size_t i = tempArray.size();
     while (i) {
-        child = tempArray[--i];
-        dirtyBits |= child->_dirtyFlags;
-        if (cur) {
+        vmath::Index childIdx = tempArray[--i];
+        auto &&      child    = vmath::slice(buffer, childIdx);
+        dirtyBits |= child.dirtyFlags;
+        if (curIdx >= 0) {
+            auto &&cur = vmath::slice(buffer, curIdx);
             if (hasFlag(dirtyBits, TransformFlagBit::POSITION)) {
-                child->_pos       = vmath::vec3TransformMat4(child->_lpos, cur->_mat);
-                child->_mat[3][0] = child->_pos[0];
-                child->_mat[3][1] = child->_pos[1];
-                child->_mat[3][2] = child->_pos[2];
+                child.pos       = vmath::vec3TransformMat4(child.lpos, cur.mat);
+                child.mat[3][0] = child.pos[0];
+                child.mat[3][1] = child.pos[1];
+                child.mat[3][2] = child.pos[2];
             }
             if (hasAnyFlags(dirtyBits, TransformFlagBit::RS)) {
-                child->_mat = vmath::mat4FromRTS(child->_lrot, child->_lpos, child->_lscale);
-                child->_mat = cur->_mat * child->_mat;
+                child.mat = vmath::mat4FromRTS(child.lrot, child.lpos, child.lscale);
+                child.mat = cur.mat * child.mat;
                 if (hasFlag(dirtyBits, TransformFlagBit::ROTATION)) {
-                    child->_rot = cur->_rot * child->_lrot;
+                    child.rot = cur.rot * child.lrot;
                 }
-                auto tempMat4    = vmath::mat4FromQuat(vmath::conjugate(child->_rot)) * child->_mat;
-                child->_scale[0] = tempMat4[0][0];
-                child->_scale[1] = tempMat4[1][1];
-                child->_scale[2] = tempMat4[2][2];
+                auto tempMat4  = vmath::mat4FromQuat(vmath::conjugate(child.rot)) * child.mat;
+                child.scale[0] = tempMat4[0][0];
+                child.scale[1] = tempMat4[1][1];
+                child.scale[2] = tempMat4[2][2];
             }
         } else {
             if (hasFlag(dirtyBits, TransformFlagBit::POSITION)) {
-                child->_pos       = child->_lpos;
-                child->_mat[3][0] = child->_pos[0];
-                child->_mat[3][1] = child->_pos[1];
-                child->_mat[3][2] = child->_pos[2];
+                child.pos       = child.lpos;
+                child.mat[3][0] = child.pos[0];
+                child.mat[3][1] = child.pos[1];
+                child.mat[3][2] = child.pos[2];
             }
             if (hasAnyFlags(dirtyBits, TransformFlagBit::RS)) {
                 if (hasFlag(dirtyBits, TransformFlagBit::ROTATION)) {
-                    child->_rot = child->_lrot;
+                    child.rot = child.lrot;
                 }
                 if (hasFlag(dirtyBits, TransformFlagBit::SCALE)) {
-                    child->_scale = child->_lscale;
+                    child.scale = child.lscale;
                 }
-                child->_mat = vmath::mat4FromRTS(child->_rot, child->_pos, child->_scale);
+                child.mat = vmath::mat4FromRTS(child.rot, child.pos, child.scale);
             }
         }
 
-        child->_dirtyFlags = TransformFlagBit::NONE;
-        cur                = child;
+        child.dirtyFlags = TransformFlagBit::NONE;
+
+        curIdx = childIdx;
     }
 }
 
-ModelX          Model::buffer;
-vector<Model *> Model::views;
+ModelX       Model::buffer;
+Model::PtrX  Model::views;
+vmath::Index Model::viewCount{0};
 
 Model::~Model() {
-    if (views[_idx] != this) return;
+    if (vmath::slice(views, _idx) != this) return;
 
-    Model *last = views.back();
-    views.pop_back();
+    Model *last                      = vmath::slice(views, viewCount--);
     vmath::slice(buffer, last->_idx) = ModelF{};
 
     if (this != last) {
         vmath::slice(buffer, _idx) = vmath::slice(buffer, last->_idx);
-        views[_idx]                = last;
+        vmath::slice(views, _idx)  = last;
         last->_idx                 = _idx;
     }
 }
 
 void Model::setColor(float r, float g, float b, float a) {
-    auto &&model    = vmath::slice(buffer, _idx);
+    auto &&model = vmath::slice(buffer, _idx);
+
     model.color.x() = r;
     model.color.y() = g;
     model.color.z() = b;
@@ -150,12 +187,14 @@ void Model::setColor(float r, float g, float b, float a) {
 }
 
 void Model::setTransform(const Transform *transform) {
-    auto &&model    = vmath::slice(buffer, _idx);
-    model.transform = transform;
+    auto &&model = vmath::slice(buffer, _idx);
+
+    model.transform = transform->getIdx();
 }
 
 void Model::setEnabled(bool enabled) {
-    auto &&model  = vmath::slice(buffer, _idx);
+    auto &&model = vmath::slice(buffer, _idx);
+
     model.enabled = enabled;
 }
 
@@ -165,7 +204,18 @@ Root::Root() {
     if (!instance) {
         instance = this;
     }
-    vmath::setSlices(Model::buffer, vmath::FloatP::Size);
+
+    vmath::setSlices(Model::buffer, 256);
+    vmath::setSlices(Model::views, 256);
+    vmath::setSlices(Transform::buffer, 256);
+    vmath::setSlices(Transform::views, 256);
+
+    for (size_t i = 0; i < vmath::packets(Model::buffer); ++i) {
+        vmath::packet(Model::buffer, i) = ModelP{};
+        vmath::packet(Model::views, i)  = Model::PtrP{};
+        vmath::packet(Transform::buffer, i) = TransformP{};
+        vmath::packet(Transform::views, i)  = Transform::PtrP{};
+    }
 }
 
 Root::~Root() {
@@ -177,15 +227,24 @@ Root::~Root() {
 }
 
 Transform *Root::createTransform() {
-    return CC_NEW(Transform);
+    if (Transform::viewCount >= vmath::slices(Transform::views)) {
+        vmath::setSlices<true>(Transform::views, Transform::viewCount * 2);
+        vmath::setSlices<true>(Transform::buffer, Transform::viewCount * 2);
+    }
+    auto *res = CC_NEW(Transform(Transform::viewCount));
+
+    vmath::slice(Transform::views, Transform::viewCount++) = res;
+    return res;
 }
 
 Model *Root::createModel() {
-    if (Model::views.size() >= vmath::slices(Model::buffer)) {
-        vmath::setSlices(Model::buffer, Model::views.size() * 2);
+    if (Model::viewCount >= vmath::slices(Model::views)) {
+        vmath::setSlices<true>(Model::views, Model::viewCount * 2);
+        vmath::setSlices<true>(Model::buffer, Model::viewCount * 2);
     }
-    auto *res = CC_NEW(Model(Model::views.size()));
-    Model::views.push_back(res);
+    auto *res = CC_NEW(Model(Model::viewCount));
+
+    vmath::slice(Model::views, Model::viewCount++) = res;
     return res;
 }
 

@@ -39,15 +39,11 @@ ENOKI_INLINE Matrix<E, 4> rts_to_matrix(const Quaternion<T> &q_, const Array<T, 
     Vector row1(xy + zw, 1.f - (xx + zz), yz - xw);
     Vector row2(xz - yw, yz + xw, 1.f - (xx + yy));
 
-    row0 *= s;
-    row1 *= s;
-    row2 *= s;
-
     return Matrix<E, 4>(
-        row0.x(), row0.y(), row0.z(), v.x(),
-        row1.x(), row1.y(), row1.z(), v.y(),
-        row2.x(), row2.y(), row2.z(), v.z(),
-        0.f, 0.f, 0.f, 1.f
+        concat(row0 * s, v.x()),
+        concat(row1 * s, v.y()),
+        concat(row2 * s, v.z()),
+        Array<E, 4>{0.f, 0.f, 0.f, 1.f}
     );
 }
 

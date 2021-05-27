@@ -25,14 +25,58 @@ enum class TransformFlagBit : uint32_t {
 };
 CC_ENUM_OPERATORS(TransformFlagBit);
 
+template <typename Value>
+struct TransformT {
+    static constexpr size_t MAX_CHILDREN_COUNT = 256;
+
+    using Packet = TransformT<vmath::FloatP>;
+
+    using Vec3 = vmath::Vec3<Value>;
+    using Quat = vmath::Quat<Value>;
+    using Mat4 = vmath::Mat4<Value>;
+
+    using TransformFlags = vmath::replace_scalar_t<Value, TransformFlagBit>;
+    using Index          = vmath::replace_scalar_t<Value, vmath::Index>;
+    using IndexX         = vmath::Array<Index, MAX_CHILDREN_COUNT>;
+
+    Vec3 lpos = vmath::zero<Vec3>();
+    Quat lrot = vmath::identity<Quat>();
+    Vec3 lscale{1.F, 1.F, 1.F};
+
+    TransformFlags dirtyFlags{TransformFlagBit::NONE};
+    Vec3           pos = vmath::zero<Vec3>();
+    Quat           rot = vmath::identity<Quat>();
+    Vec3           scale{1.F, 1.F, 1.F};
+    Mat4           mat = vmath::identity<Mat4>();
+
+    Index  parent{-1};
+    Index  childrenCount{0};
+    IndexX children{-1};
+
+    // NOLINTNEXTLINE(google-explicit-constructor) false positive when involving __VA_ARGS__
+    CC_VMATH_STRUCT(TransformT, lpos, lrot, lscale, dirtyFlags, pos, rot, scale, mat, parent, childrenCount, children)
+};
+
+CC_VMATH_STRUCT_SUPPORT_1(cc, TransformT, lpos, lrot, lscale, dirtyFlags, pos, rot, scale, mat, parent, childrenCount, children)
+
+using TransformF = TransformT<float>;
+using TransformP = TransformT<vmath::FloatP>;
+using TransformX = TransformT<vmath::FloatX>;
+
 class Transform {
 public:
-    Transform()                           = default;
-    virtual ~Transform()                  = default;
+    using Ptr  = Transform *;
+    using PtrP = vmath::Array<Ptr, vmath::PACKET_SIZE>;
+    using PtrX = vmath::DynamicArray<PtrP>;
+
+    Transform() = default;
+    virtual ~Transform();
     Transform(const Transform &) noexcept = delete;
     Transform(Transform &&) noexcept      = delete;
     Transform &operator=(const Transform &) noexcept = delete;
     Transform &operator=(Transform &&) noexcept = delete;
+
+    explicit Transform(vmath::Index idx) : _idx(idx) {}
 
     virtual void setParent(Transform *value);
     virtual void setPosition(float x, float y, float z);
@@ -40,62 +84,28 @@ public:
     virtual void setRotationFromEuler(float angleX, float angleY, float angleZ);
     virtual void setScale(float x, float y, float z);
 
-    inline const vmath::Vec3F &getPosition() const { return _lpos; }
-    inline const vmath::QuatF &getRotation() const { return _lrot; }
-    inline const vmath::Vec3F &getScale() const { return _lscale; }
+    static TransformX   buffer;
+    static PtrX         views;
+    static vmath::Index viewCount;
 
-    inline const vmath::Vec3F &getWorldPosition() const;
-    inline const vmath::QuatF &getWorldRotation() const;
-    inline const vmath::Vec3F &getWorldScale() const;
-    inline const vmath::Mat4F &getWorldMatrix() const;
+    void         updateWorldTransform() const;
+    vmath::Index getIdx() const { return _idx; }
 
 protected:
-    void invalidateChildren(TransformFlagBit dirtyFlags);
-    void updateWorldTransform() const;
+    void invalidateChildren(TransformFlagBit dirtyFlags) const;
 
-    vmath::Vec3F _lpos = vmath::zero<vmath::Vec3F>();
-    vmath::QuatF _lrot = vmath::identity<vmath::QuatF>();
-    vmath::Vec3F _lscale{1.F, 1.F, 1.F};
-
-    mutable TransformFlagBit _dirtyFlags{TransformFlagBit::NONE};
-    mutable vmath::Vec3F     _pos = vmath::zero<vmath::Vec3F>();
-    mutable vmath::QuatF     _rot = vmath::identity<vmath::QuatF>();
-    mutable vmath::Vec3F     _scale{1.F, 1.F, 1.F};
-    mutable vmath::Mat4F     _mat = vmath::identity<vmath::Mat4F>();
-
-    Transform *         _parent{nullptr};
-    vector<Transform *> _children;
+    vmath::Index _idx{-1};
 };
-
-const vmath::Vec3F &Transform::getWorldPosition() const {
-    updateWorldTransform();
-    return _pos;
-}
-
-const vmath::QuatF &Transform::getWorldRotation() const {
-    updateWorldTransform();
-    return _rot;
-}
-
-const vmath::Vec3F &Transform::getWorldScale() const {
-    updateWorldTransform();
-    return _scale;
-}
-
-const vmath::Mat4F &Transform::getWorldMatrix() const {
-    updateWorldTransform();
-    return _mat;
-}
 
 template <typename Value>
 struct ModelT {
     using Packet = ModelT<vmath::FloatP>;
 
-    using TransformPtr = vmath::replace_scalar_t<Value, const Transform *>;
+    using TransformIdx = vmath::replace_scalar_t<Value, vmath::Index>;
     using Vec4         = vmath::Vec4<Value>;
     using Bool         = vmath::mask_t<Value>;
 
-    TransformPtr transform{nullptr};
+    TransformIdx transform{-1};
     Vec4         color{1.F, 1.F, 1.F, 1.F};
     Bool         enabled{true};
 
@@ -111,6 +121,10 @@ using ModelX = ModelT<vmath::FloatX>;
 
 class Model {
 public:
+    using Ptr  = Model *;
+    using PtrP = vmath::Array<Ptr, vmath::PACKET_SIZE>;
+    using PtrX = vmath::DynamicArray<PtrP>;
+
     Model() = default;
     virtual ~Model();
     Model(const Model &) noexcept = delete;
@@ -118,17 +132,20 @@ public:
     Model &operator=(const Model &) noexcept = delete;
     Model &operator=(Model &&) noexcept = delete;
 
-    explicit Model(uint idx) : _idx(idx) {}
+    explicit Model(vmath::Index idx) : _idx(idx) {}
 
     virtual void setColor(float r, float g, float b, float a);
     virtual void setTransform(const Transform *transform);
     virtual void setEnabled(bool enabled);
 
-    static ModelX buffer;
-    static vector<Model *> views;
+    static ModelX       buffer;
+    static PtrX         views;
+    static vmath::Index viewCount;
+
+    vmath::Index getIdx() const { return _idx; }
 
 protected:
-    uint _idx{0U};
+    vmath::Index _idx{-1};
 };
 
 class Root {
@@ -220,11 +237,9 @@ class RootManager {
 public:
     static Root *create() {
         Root *root = CC_NEW(Root);
-
-        root = CC_NEW(RootAgent(root));
+        root       = CC_NEW(RootAgent(root));
 
         root->initialize();
-
         instance = root;
 
         return root;

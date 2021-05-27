@@ -73,10 +73,13 @@ using float_array_t = enoki::float_array_t<T, CopyFlags>;
 template <typename T, typename Value, bool CopyFlags = true>
 using replace_scalar_t = enoki::replace_scalar_t<T, Value, CopyFlags>;
 
-using IndexP = Packet<int, 16>;
+constexpr size_t PACKET_SIZE = enoki::array_default_size > 1 ? enoki::array_default_size * 2 : 1;
+
+using Index  = int;
+using IndexP = Packet<Index, PACKET_SIZE>;
 using IndexX = DynamicArray<IndexP>;
 
-using FloatP = Packet<float, 16>;
+using FloatP = Packet<float, PACKET_SIZE>;
 using FloatX = DynamicArray<FloatP>;
 
 template <typename Value>
@@ -125,7 +128,7 @@ CC_INLINE size_t slices(const Value &v) {
     return enoki::slices<Value>(v);
 }
 
-template <typename Value, bool keepValue = true>
+template <bool keepValue = false, typename Value>
 CC_INLINE void setSlices(Value &v, size_t size) {
     // by default previous values are not preserved when enlarging the array
     if (keepValue || size <= enoki::packets(v)) {
@@ -212,20 +215,21 @@ CC_INLINE void storeAligned(void *mem, const Value &value, const mask_t<Value> &
     enoki::store<Value>(mem, value, mask);
 }
 
-template <size_t Stride = 0, bool Packed = true, typename Array, typename Index>
-CC_INLINE void scatter(void *mem, const Array &value, const Index &index) {
-    enoki::scatter<Stride, Packed, Array, Index>(mem, value, index);
+template <typename Array, size_t Stride = 0, bool Packed = true, bool IsPermute = false, typename Source, typename Index, typename Mask = mask_t<Index>>
+CC_INLINE Array gather(const Source &source, const Index &index, const enoki::identity_t<Mask> &mask = true) {
+    enoki::gather<Array, Stride, Packed, IsPermute, Source, Index, Mask>(source, index, mask);
 }
 
 template <size_t Stride = 0, bool Packed = true, bool Masked = true, typename Array, typename Index,
           typename Mask = mask_t<replace_scalar_t<Index, scalar_t<Array>>>>
-CC_INLINE void scatter(void *mem, const Array &value, const Index &index, const enoki::identity_t<Mask> &mask) {
+CC_INLINE void scatter(void *mem, const Array &value, const Index &index, const enoki::identity_t<Mask> &mask = true) {
     enoki::scatter<Stride, Packed, Masked, Array, Index, Mask>(mem, value, index, mask);
 }
 
-template <typename Array, typename Index>
-CC_INLINE void scatterAdd(void *mem, Array array, Index index, mask_t<Array> mask = true) {
-    enoki::scatter<Array, Index>(mem, array, index, mask);
+template <size_t Stride = 0, bool Packed = true, bool IsPermute = false, typename Target, typename Index, typename Value,
+          typename Mask = mask_t<Index>, enoki::enable_if_t<enoki::is_dynamic_v<Target>> = 0>
+CC_INLINE void scatterAdd(Target &target, const Value &value, const Index &index, const enoki::identity_t<Mask> &mask = true) {
+    enoki::scatter_add<Stride, Packed, IsPermute, Target, Index, Value, Mask>(target, value, index, mask);
 }
 
 template <typename Output, typename Input, typename Mask>
@@ -238,9 +242,20 @@ CC_INLINE Input compress(const Input &value, const Mask &mask) {
     return enoki::compress<Input>(value, mask);
 }
 
-template <typename Value>
-CC_INLINE Value conjugate(const Value &v) {
+template <typename Arg, size_t Stride = sizeof(enoki::scalar_t<Arg>),
+          typename Func, typename Index, typename... Args>
+CC_INLINE void transform(void *mem, const Index &index, Func &&func, Args &&...args) {
+    enoki::transform<Arg, Stride, Func, Index, Args...>(mem, index, func, args...);
+}
+
+template <typename Value, typename Expr = enoki::expr_t<Value>>
+CC_INLINE Expr conjugate(const Value &v) {
     return enoki::conj(v);
+}
+
+template <typename Value, size_t Size>
+CC_INLINE auto transpose(const enoki::Matrix<Value, Size> &v) {
+    return enoki::transpose(v);
 }
 
 template <typename Value, typename Expr = enoki::expr_t<Value>>
