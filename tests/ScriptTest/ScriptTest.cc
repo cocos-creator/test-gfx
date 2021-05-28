@@ -24,6 +24,8 @@ bool ScriptTest::onInit() {
 }
 
 void ScriptTest::onTick() {
+    printTime();
+
     tickScript();
 }
 

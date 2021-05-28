@@ -21,8 +21,12 @@ gfx::InputAssembler *        inputAssembler{nullptr};
 vector<gfx::GlobalBarrier *> globalBarriers;
 vector<float>                uniformBufferData;
 uint                         uboStride     = 0U;
-uint                         modelCapacity = vmath::FloatP::Size;
+uint                         modelCapacity = Root::INITIAL_CAPACITY;
 vmath::IndexP                index;
+
+gfx::Buffer *        vertexBufferOutline{nullptr};
+gfx::PipelineState * pipelineStateOutline{nullptr};
+gfx::InputAssembler *inputAssemblerOutline{nullptr};
 } // namespace
 
 void Root::initialize() {
@@ -32,7 +36,7 @@ void Root::initialize() {
     sources.glsl4 = {
         R"(
             precision highp float;
-            layout(location = 0) in vec2 a_position;
+            layout(location = 0) in vec3 a_position;
             layout(set = 0, binding = 0) uniform Constants {
                 vec4 u_color;
                 mat4 u_worldView;
@@ -42,7 +46,7 @@ void Root::initialize() {
             };
 
             void main() {
-                gl_Position = u_project * u_worldView * vec4(a_position, 0.0, 1.0);
+                gl_Position = u_project * u_worldView * vec4(a_position, 1.0);
             }
         )",
         R"(
@@ -61,7 +65,7 @@ void Root::initialize() {
 
     sources.glsl3 = {
         R"(
-            in vec2 a_position;
+            in vec3 a_position;
             layout(std140) uniform Constants {
                 vec4 u_color;
                 mat4 u_worldView;
@@ -71,7 +75,7 @@ void Root::initialize() {
             };
 
             void main() {
-                gl_Position = u_project * u_worldView * vec4(a_position, 0.0, 1.0);
+                gl_Position = u_project * u_worldView * vec4(a_position, 1.0);
             }
         )",
         R"(
@@ -90,13 +94,13 @@ void Root::initialize() {
 
     sources.glsl1 = {
         R"(
-            attribute vec2 a_position;
+            attribute vec3 a_position;
             uniform vec4 u_color;
             uniform mat4 u_worldView;
             uniform mat4 u_project;
 
             void main() {
-                gl_Position = u_project * u_worldView * vec4(a_position, 0.0, 1.0);
+                gl_Position = u_project * u_worldView * vec4(a_position, 1.0);
             }
         )",
         R"(
@@ -142,7 +146,7 @@ void Root::initialize() {
             1,
         },
     };
-    gfx::AttributeList attributeList = {{"a_position", gfx::Format::RG32F, false, 0, false, 0}};
+    gfx::AttributeList attributeList = {{"a_position", gfx::Format::RGB32F, false, 0, false, 0}};
 
     gfx::ShaderInfo shaderInfo;
     shaderInfo.name       = "Basic Triangle";
@@ -151,16 +155,15 @@ void Root::initialize() {
     shaderInfo.blocks     = std::move(uniformBlockList);
     shader                = device->createShader(shaderInfo);
 
-    float vertexData[] = {-0.02F, -0.04F,
-                          0.02F, -0.04F,
-                          0.0F, 0.04F};
+    float vertexData[] = {-0.02F, -0.04F, 0.F,
+                          0.02F, -0.04F, 0.F,
+                          0.0F, 0.04F, 0.F};
 
     gfx::BufferInfo vertexBufferInfo = {
         gfx::BufferUsage::VERTEX,
         gfx::MemoryUsage::DEVICE,
         sizeof(vertexData),
-        2 * sizeof(float),
-        gfx::BufferFlagBit::NONE,
+        3 * sizeof(float),
     };
 
     vertexBuffer = device->createBuffer(vertexBufferInfo);
@@ -170,12 +173,12 @@ void Root::initialize() {
 
     uboStride = TestBaseI::getAlignedUBOStride(sizeof(float) * memberCount);
 
-    uniformBufferData.resize(uboStride * modelCapacity / sizeof(float));
+    uniformBufferData.resize(uboStride * (modelCapacity + 1) / sizeof(float));
 
     gfx::BufferInfo uniformBufferInfo = {
         gfx::BufferUsage::UNIFORM,
         gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
-        uboStride * modelCapacity,
+        uboStride * (modelCapacity + 1),
     };
     uniformBuffer = device->createBuffer(uniformBufferInfo);
 
@@ -186,8 +189,11 @@ void Root::initialize() {
     };
     uniformBufferGlobal = device->createBuffer(uniformBufferGlobalInfo);
 
+    Mat4 view;
     Mat4 projection;
-    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &projection);
+    Mat4::createLookAt({1.F, 1.F, 3.F}, {0.F, 0.F, .5F}, {0.F, 1.F, 0.F}, &view);
+    TestBaseI::createOrthographic(-1.5F, 1.5F, -1.5F, 1.5F, 1.F, 10.F, &projection);
+    projection = projection * view;
     uniformBufferGlobal->update(projection.m, sizeof(projection));
 
     gfx::BufferViewInfo uniformBufferViewInfo = {
@@ -197,7 +203,7 @@ void Root::initialize() {
     };
     uniformBufferView = device->createBuffer(uniformBufferViewInfo);
 
-    gfx::Attribute          position{"a_position", gfx::Format::RG32F, false, 0, false};
+    gfx::Attribute          position{"a_position", gfx::Format::RGB32F, false, 0, false};
     gfx::InputAssemblerInfo inputAssemblerInfo;
     inputAssemblerInfo.attributes.emplace_back(std::move(position));
     inputAssemblerInfo.vertexBuffers.emplace_back(vertexBuffer);
@@ -227,11 +233,19 @@ void Root::initialize() {
     descriptorSet->update();
 
     gfx::PipelineStateInfo pipelineInfo;
-    pipelineInfo.primitive      = gfx::PrimitiveMode::TRIANGLE_LIST;
-    pipelineInfo.shader         = shader;
-    pipelineInfo.inputState     = {inputAssembler->getAttributes()};
-    pipelineInfo.renderPass     = TestBaseI::fbo->getRenderPass();
-    pipelineInfo.pipelineLayout = pipelineLayout;
+    pipelineInfo.primitive                           = gfx::PrimitiveMode::TRIANGLE_LIST;
+    pipelineInfo.shader                              = shader;
+    pipelineInfo.inputState                          = {inputAssembler->getAttributes()};
+    pipelineInfo.renderPass                          = TestBaseI::fbo->getRenderPass();
+    pipelineInfo.rasterizerState.cullMode            = gfx::CullMode::NONE;
+    pipelineInfo.depthStencilState.depthTest         = false;
+    pipelineInfo.depthStencilState.depthWrite        = false;
+    pipelineInfo.blendState.targets[0].blend         = true;
+    pipelineInfo.blendState.targets[0].blendSrc      = gfx::BlendFactor::SRC_ALPHA;
+    pipelineInfo.blendState.targets[0].blendDst      = gfx::BlendFactor::ONE_MINUS_SRC_ALPHA;
+    pipelineInfo.blendState.targets[0].blendSrcAlpha = gfx::BlendFactor::ONE;
+    pipelineInfo.blendState.targets[0].blendDstAlpha = gfx::BlendFactor::ONE_MINUS_SRC_ALPHA;
+    pipelineInfo.pipelineLayout                      = pipelineLayout;
 
     pipelineState = device->createPipelineState(pipelineInfo);
 
@@ -248,6 +262,63 @@ void Root::initialize() {
 
     auto max = static_cast<int>((vmath::IndexP::Size - 1) * uboStride / sizeof(float));
     index    = vmath::linspace<vmath::IndexP>(0, max);
+
+    // bounding box outline
+
+    float vertexDataOutline[] = {-1.F, -1.F, 0.F,
+                                 -1.F, 1.F, 0.F,
+                                 -1.F, 1.F, 0.F,
+                                 1.F, 1.F, 0.F,
+                                 1.F, 1.F, 0.F,
+                                 1.F, -1.F, 0.F,
+                                 1.F, -1.F, 0.F,
+                                 -1.F, -1.F, 0.F,
+
+                                 -1.F, -1.F, 1.F,
+                                 -1.F, 1.F, 1.F,
+                                 -1.F, 1.F, 1.F,
+                                 1.F, 1.F, 1.F,
+                                 1.F, 1.F, 1.F,
+                                 1.F, -1.F, 1.F,
+                                 1.F, -1.F, 1.F,
+                                 -1.F, -1.F, 1.F,
+
+                                 -1.F, -1.F, 1.F,
+                                 -1.F, -1.F, 0.F,
+                                 -1.F, 1.F, 1.F,
+                                 -1.F, 1.F, 0.F,
+                                 1.F, 1.F, 1.F,
+                                 1.F, 1.F, 0.F,
+                                 1.F, -1.F, 1.F,
+                                 1.F, -1.F, 0.F};
+
+    gfx::BufferInfo vertexBufferOutlineInfo = {
+        gfx::BufferUsage::VERTEX,
+        gfx::MemoryUsage::DEVICE,
+        sizeof(vertexDataOutline),
+        3 * sizeof(float),
+    };
+
+    vertexBufferOutline = device->createBuffer(vertexBufferOutlineInfo);
+    vertexBufferOutline->update(vertexDataOutline, sizeof(vertexDataOutline));
+
+    gfx::Color outlineColor{1.F, 1.F, 1.F, 1.F};
+    memcpy(uniformBufferData.data(), &outlineColor, sizeof(outlineColor));
+    memcpy(&uniformBufferData[4], Mat4::IDENTITY.m, sizeof(Mat4));
+
+    gfx::InputAssemblerInfo inputAssemblerInfoOutline;
+    inputAssemblerInfoOutline.attributes = inputAssemblerInfo.attributes;
+    inputAssemblerInfoOutline.vertexBuffers.emplace_back(vertexBufferOutline);
+    inputAssemblerOutline = device->createInputAssembler(inputAssemblerInfoOutline);
+
+    gfx::PipelineStateInfo pipelineInfoOutline;
+    pipelineInfoOutline.primitive      = gfx::PrimitiveMode::LINE_LIST;
+    pipelineInfoOutline.shader         = shader;
+    pipelineInfoOutline.inputState     = {inputAssemblerOutline->getAttributes()};
+    pipelineInfoOutline.renderPass     = TestBaseI::fbo->getRenderPass();
+    pipelineInfoOutline.pipelineLayout = pipelineLayout;
+
+    pipelineStateOutline = device->createPipelineState(pipelineInfoOutline);
 }
 
 void Root::destroy() {
@@ -261,33 +332,37 @@ void Root::destroy() {
     CC_SAFE_DESTROY(descriptorSetLayout);
     CC_SAFE_DESTROY(pipelineLayout);
     CC_SAFE_DESTROY(pipelineState);
+
+    CC_SAFE_DESTROY(vertexBufferOutline);
+    CC_SAFE_DESTROY(pipelineStateOutline);
+    CC_SAFE_DESTROY(inputAssemblerOutline);
+
     globalBarriers.clear();
 }
 
 void Root::render() {
     gfx::Device *device     = gfx::Device::getInstance();
-    gfx::Color   clearColor = {0, 0, 0, 1.F};
+    gfx::Color   clearColor = {.1F, .1F, .1F, 1.F};
 
-    size_t modelCount = Model::views.size();
+    size_t modelCount = ModelView::viewCount;
 
-    if (modelCount > modelCapacity) {
-        modelCapacity = utils::nextPOT(modelCount);
+    if (modelCount >= modelCapacity) {
+        modelCapacity = utils::nextPOT(modelCount + 1);
         uniformBuffer->resize(modelCapacity * uboStride);
         uniformBufferData.resize(modelCapacity * uboStride / sizeof(float));
     }
 
     uint lengthPerPacket = uboStride / sizeof(float) * vmath::FloatP::Size;
-    for (size_t i = 0; i < vmath::packets(Model::buffer); ++i) {
-        float *pDst  = &uniformBufferData[i * lengthPerPacket];
-        auto &&model = vmath::packet(Model::buffer, i);
+    for (size_t i = 0; i < vmath::packets(ModelView::buffer); ++i) {
+        float *pDst  = &uniformBufferData[i * lengthPerPacket + uboStride / sizeof(float)];
+        auto &&model = vmath::packet(ModelView::buffer, i);
         vmath::scatter(pDst + 0, model.color.x(), index, model.enabled);
         vmath::scatter(pDst + 1, model.color.y(), index, model.enabled);
         vmath::scatter(pDst + 2, model.color.z(), index, model.enabled);
         vmath::scatter(pDst + 3, model.color.w(), index, model.enabled);
         for (size_t j = 0; j < model.transform.size(); ++j) {
-            Transform::views[model.transform[j]]->updateWorldTransform();
-            TransformF::Mat4 mat = vmath::slice(Transform::buffer.mat, model.transform[j]);
-            vmath::store(pDst + 4, vmath::transpose(mat));
+            TransformView::views[model.transform[j]]->updateWorldTransform();
+            vmath::store(pDst + 4, static_cast<TransformF::Mat4>(vmath::slice(TransformView::buffer.mat, model.transform[j])));
         }
     }
 
@@ -308,15 +383,20 @@ void Root::render() {
 
     commandBuffer->beginRenderPass(TestBaseI::fbo->getRenderPass(), TestBaseI::fbo, renderArea, &clearColor, 1.F, 0);
 
+    uint dynamicOffset = 0U;
+    commandBuffer->bindPipelineState(pipelineStateOutline);
+    commandBuffer->bindInputAssembler(inputAssemblerOutline);
+    commandBuffer->bindDescriptorSet(0, descriptorSet, 1, &dynamicOffset);
+    commandBuffer->draw(inputAssemblerOutline);
+
     if (modelCount) {
         commandBuffer->bindPipelineState(pipelineState);
         commandBuffer->bindInputAssembler(inputAssembler);
     }
 
-    uint dynamicOffset = 0U;
     for (uint i = 0U; i < modelCount; ++i) {
-        if (!vmath::slice(Model::buffer, i).enabled) continue;
-        dynamicOffset = i * uboStride;
+        if (!vmath::slice(ModelView::buffer, i).enabled) continue;
+        dynamicOffset = (i + 1) * uboStride;
         commandBuffer->bindDescriptorSet(0, descriptorSet, 1, &dynamicOffset);
         commandBuffer->draw(inputAssembler);
     }

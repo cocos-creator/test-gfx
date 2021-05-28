@@ -3,22 +3,22 @@
 
 namespace cc {
 
-TransformX            Transform::buffer;
-vector<vmath::IndexX> Transform::childrenBuffers;
-Transform::PtrX       Transform::views;
-vmath::Index          Transform::viewCount{0};
+TransformX            TransformView::buffer;
+vector<vmath::IndexX> TransformView::childrenBuffers;
+TransformView::PtrX       TransformView::views;
+vmath::Index          TransformView::viewCount{0};
 
-Transform::Transform(vmath::Index idx) : _idx(idx) {
+TransformView::TransformView(vmath::Index idx) : _idx(idx) {
     auto &&children = childrenBuffers[_idx];
     if (vmath::slices(children) < 8) {
         vmath::setSlices(children, 8);
     }
 }
 
-Transform::~Transform() {
+TransformView::~TransformView() {
     if (vmath::slice(views, _idx) != this) return;
 
-    Transform *last                  = vmath::slice(views, --viewCount);
+    TransformView *last                  = vmath::slice(views, --viewCount);
     vmath::slice(buffer, last->_idx) = TransformF{};
 
     if (this != last) {
@@ -28,7 +28,7 @@ Transform::~Transform() {
     }
 }
 
-void Transform::setParent(Transform *value) {
+void TransformView::setParent(TransformView *value) {
     auto &&transform = vmath::slice(buffer, _idx);
 
     if ((!value && transform.parent < 0) || (transform.parent == value->_idx)) return;
@@ -56,7 +56,7 @@ void Transform::setParent(Transform *value) {
     children[newParent.childrenCount++] = _idx;
 }
 
-void Transform::setPosition(float x, float y, float z) {
+void TransformView::setPosition(float x, float y, float z) {
     auto &&transform = vmath::slice(buffer, _idx);
 
     transform.lpos.x() = x;
@@ -66,7 +66,7 @@ void Transform::setPosition(float x, float y, float z) {
     invalidateChildren(TransformFlagBit::POSITION);
 }
 
-void Transform::setRotation(const float *q) {
+void TransformView::setRotation(const float *q) {
     auto &&transform = vmath::slice(buffer, _idx);
 
     transform.lrot = vmath::load<vmath::QuatF>(q);
@@ -74,7 +74,7 @@ void Transform::setRotation(const float *q) {
     invalidateChildren(TransformFlagBit::ROTATION);
 }
 
-void Transform::setRotationFromEuler(float angleX, float angleY, float angleZ) {
+void TransformView::setRotationFromEuler(float angleX, float angleY, float angleZ) {
     auto &&transform = vmath::slice(buffer, _idx);
 
     transform.lrot = vmath::quatFromEuler(vmath::Vec3F{angleX, angleY, angleZ});
@@ -82,7 +82,7 @@ void Transform::setRotationFromEuler(float angleX, float angleY, float angleZ) {
     invalidateChildren(TransformFlagBit::ROTATION);
 }
 
-void Transform::setScale(float x, float y, float z) {
+void TransformView::setScale(float x, float y, float z) {
     auto &&transform = vmath::slice(buffer, _idx);
 
     transform.lscale.x() = x;
@@ -92,7 +92,7 @@ void Transform::setScale(float x, float y, float z) {
     invalidateChildren(TransformFlagBit::SCALE);
 }
 
-void Transform::invalidateChildren(TransformFlagBit dirtyFlags) const {
+void TransformView::invalidateChildren(TransformFlagBit dirtyFlags) const {
     auto &&transform = vmath::slice(buffer, _idx);
     auto &&children  = childrenBuffers[_idx];
 
@@ -112,7 +112,7 @@ namespace {
 vector<vmath::Index> tempArray;
 }
 
-void Transform::updateWorldTransform() const {
+void TransformView::updateWorldTransform() const {
     if (buffer.dirtyFlags[_idx] == TransformFlagBit::NONE) {
         return;
     }
@@ -176,14 +176,14 @@ void Transform::updateWorldTransform() const {
     }
 }
 
-ModelX       Model::buffer;
-Model::PtrX  Model::views;
-vmath::Index Model::viewCount{0};
+ModelX       ModelView::buffer;
+ModelView::PtrX  ModelView::views;
+vmath::Index ModelView::viewCount{0};
 
-Model::~Model() {
+ModelView::~ModelView() {
     if (vmath::slice(views, _idx) != this) return;
 
-    Model *last                      = vmath::slice(views, --viewCount);
+    ModelView *last                      = vmath::slice(views, --viewCount);
     vmath::slice(buffer, last->_idx) = ModelF{};
 
     if (this != last) {
@@ -193,7 +193,7 @@ Model::~Model() {
     }
 }
 
-void Model::setColor(float r, float g, float b, float a) {
+void ModelView::setColor(float r, float g, float b, float a) {
     auto &&model = vmath::slice(buffer, _idx);
 
     model.color.x() = r;
@@ -202,13 +202,13 @@ void Model::setColor(float r, float g, float b, float a) {
     model.color.w() = a;
 }
 
-void Model::setTransform(const Transform *transform) {
+void ModelView::setTransform(const TransformView *transform) {
     auto &&model = vmath::slice(buffer, _idx);
 
     model.transform = transform->getIdx();
 }
 
-void Model::setEnabled(bool enabled) {
+void ModelView::setEnabled(bool enabled) {
     auto &&model = vmath::slice(buffer, _idx);
 
     model.enabled = enabled;
@@ -221,49 +221,49 @@ Root::Root() {
         instance = this;
     }
 
-    vmath::setSlices(Model::buffer, 256);
-    vmath::setSlices(Model::views, 256);
-    vmath::setSlices(Transform::buffer, 256);
-    Transform::childrenBuffers.resize(256);
-    vmath::setSlices(Transform::views, 256);
+    vmath::setSlices(ModelView::buffer, INITIAL_CAPACITY);
+    vmath::setSlices(ModelView::views, INITIAL_CAPACITY);
+    vmath::setSlices(TransformView::buffer, INITIAL_CAPACITY);
+    TransformView::childrenBuffers.resize(INITIAL_CAPACITY);
+    vmath::setSlices(TransformView::views, INITIAL_CAPACITY);
 
-    for (size_t i = 0; i < vmath::packets(Model::buffer); ++i) {
-        vmath::packet(Model::buffer, i)     = ModelP{};
-        vmath::packet(Model::views, i)      = Model::PtrP{};
-        vmath::packet(Transform::buffer, i) = TransformP{};
-        vmath::packet(Transform::views, i)  = Transform::PtrP{};
+    for (size_t i = 0; i < vmath::packets(ModelView::buffer); ++i) {
+        vmath::packet(ModelView::buffer, i)     = ModelP{};
+        vmath::packet(ModelView::views, i)      = ModelView::PtrP{};
+        vmath::packet(TransformView::buffer, i) = TransformP{};
+        vmath::packet(TransformView::views, i)  = TransformView::PtrP{};
     }
 }
 
 Root::~Root() {
-    CCASSERT(Transform::viewCount == 0, "Resources leaked");
-    CCASSERT(Model::viewCount == 0, "Resources leaked");
+    CCASSERT(TransformView::viewCount == 0, "Resources leaked");
+    CCASSERT(ModelView::viewCount == 0, "Resources leaked");
 
     if (instance == this) {
         instance = nullptr;
     }
 }
 
-Transform *Root::createTransform() {
-    if (Transform::viewCount >= vmath::slices(Transform::views)) {
-        vmath::setSlices<true>(Transform::views, Transform::viewCount * 2);
-        Transform::childrenBuffers.resize(Transform::viewCount * 2);
-        vmath::setSlices<true>(Transform::buffer, Transform::viewCount * 2);
+TransformView *Root::createTransform() {
+    if (TransformView::viewCount >= vmath::slices(TransformView::views)) {
+        vmath::setSlices<true>(TransformView::views, TransformView::viewCount * 2);
+        TransformView::childrenBuffers.resize(TransformView::viewCount * 2);
+        vmath::setSlices<true>(TransformView::buffer, TransformView::viewCount * 2);
     }
-    auto *res = CC_NEW(Transform(Transform::viewCount));
+    auto *res = CC_NEW(TransformView(TransformView::viewCount));
 
-    vmath::slice(Transform::views, Transform::viewCount++) = res;
+    vmath::slice(TransformView::views, TransformView::viewCount++) = res;
     return res;
 }
 
-Model *Root::createModel() {
-    if (Model::viewCount >= vmath::slices(Model::views)) {
-        vmath::setSlices<true>(Model::views, Model::viewCount * 2);
-        vmath::setSlices<true>(Model::buffer, Model::viewCount * 2);
+ModelView *Root::createModel() {
+    if (ModelView::viewCount >= vmath::slices(ModelView::views)) {
+        vmath::setSlices<true>(ModelView::views, ModelView::viewCount * 2);
+        vmath::setSlices<true>(ModelView::buffer, ModelView::viewCount * 2);
     }
-    auto *res = CC_NEW(Model(Model::viewCount));
+    auto *res = CC_NEW(ModelView(ModelView::viewCount));
 
-    vmath::slice(Model::views, Model::viewCount++) = res;
+    vmath::slice(ModelView::views, ModelView::viewCount++) = res;
     return res;
 }
 
@@ -278,7 +278,7 @@ TransformAgent::~TransformAgent() {
         });
 }
 
-void TransformAgent::setParent(Transform *value) {
+void TransformAgent::setParent(TransformView *value) {
     ENQUEUE_MESSAGE_2(
         RootAgent::getInstance()->getMessageQueue(), TransformSetParent,
         actor, getActor(),
@@ -356,7 +356,7 @@ void ModelAgent::setColor(float r, float g, float b, float a) {
         });
 }
 
-void ModelAgent::setTransform(const Transform *transform) {
+void ModelAgent::setTransform(const TransformView *transform) {
     ENQUEUE_MESSAGE_2(
         RootAgent::getInstance()->getMessageQueue(), ModelSetTransform,
         actor, getActor(),
@@ -395,9 +395,14 @@ void RootAgent::initialize() {
         _allocatorPools[i] = CC_NEW(LinearAllocatorPool);
     }
 
-    _actor->initialize();
-
     setMultithreaded(true);
+
+    ENQUEUE_MESSAGE_1(
+        getMessageQueue(), RootInitialize,
+        actor, getActor(),
+        {
+            actor->initialize();
+        });
 }
 
 void RootAgent::destroy() {
@@ -450,12 +455,12 @@ void RootAgent::setMultithreaded(bool multithreaded) {
     }
 }
 
-Transform *RootAgent::createTransform() {
+TransformView *RootAgent::createTransform() {
     auto *actor = _actor->createTransform();
     return CC_NEW(TransformAgent(actor));
 }
 
-Model *RootAgent::createModel() {
+ModelView *RootAgent::createModel() {
     auto *actor = _actor->createModel();
     return CC_NEW(ModelAgent(actor));
 }

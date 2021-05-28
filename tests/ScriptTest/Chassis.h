@@ -26,8 +26,8 @@ enum class TransformFlagBit : uint32_t {
 CC_ENUM_OPERATORS(TransformFlagBit);
 
 template <typename Value>
-struct TransformT {
-    using Packet = TransformT<vmath::FloatP>;
+struct Transform {
+    using Packet = Transform<vmath::FloatP>;
 
     using Vec3 = vmath::Vec3<Value>;
     using Quat = vmath::Quat<Value>;
@@ -50,31 +50,31 @@ struct TransformT {
     Index childrenCount{0};
 
     // NOLINTNEXTLINE(google-explicit-constructor) false positive when involving __VA_ARGS__
-    CC_VMATH_STRUCT(TransformT, lpos, lrot, lscale, dirtyFlags, pos, rot, scale, mat, parent, childrenCount)
+    CC_VMATH_STRUCT(Transform, lpos, lrot, lscale, dirtyFlags, pos, rot, scale, mat, parent, childrenCount)
 };
 
-CC_VMATH_STRUCT_SUPPORT_1(cc, TransformT, lpos, lrot, lscale, dirtyFlags, pos, rot, scale, mat, parent, childrenCount)
+CC_VMATH_STRUCT_SUPPORT_1(cc, Transform, lpos, lrot, lscale, dirtyFlags, pos, rot, scale, mat, parent, childrenCount)
 
-using TransformF = TransformT<float>;
-using TransformP = TransformT<vmath::FloatP>;
-using TransformX = TransformT<vmath::FloatX>;
+using TransformF = Transform<float>;
+using TransformP = Transform<vmath::FloatP>;
+using TransformX = Transform<vmath::FloatX>;
 
-class Transform {
+class TransformView {
 public:
-    using Ptr  = Transform *;
+    using Ptr  = TransformView *;
     using PtrP = vmath::Array<Ptr, vmath::PACKET_SIZE>;
     using PtrX = vmath::DynamicArray<PtrP>;
 
-    Transform() = default;
-    virtual ~Transform();
-    Transform(const Transform &) noexcept = delete;
-    Transform(Transform &&) noexcept      = delete;
-    Transform &operator=(const Transform &) noexcept = delete;
-    Transform &operator=(Transform &&) noexcept = delete;
+    TransformView() = default;
+    virtual ~TransformView();
+    TransformView(const TransformView &) noexcept = delete;
+    TransformView(TransformView &&) noexcept      = delete;
+    TransformView &operator=(const TransformView &) noexcept = delete;
+    TransformView &operator=(TransformView &&) noexcept = delete;
 
-    explicit Transform(vmath::Index idx);
+    explicit TransformView(vmath::Index idx);
 
-    virtual void setParent(Transform *value);
+    virtual void setParent(TransformView *value);
     virtual void setPosition(float x, float y, float z);
     virtual void setRotation(const float *q);
     virtual void setRotationFromEuler(float angleX, float angleY, float angleZ);
@@ -95,8 +95,8 @@ protected:
 };
 
 template <typename Value>
-struct ModelT {
-    using Packet = ModelT<vmath::FloatP>;
+struct Model {
+    using Packet = Model<vmath::FloatP>;
 
     using TransformIdx = vmath::replace_scalar_t<Value, vmath::Index>;
     using Vec4         = vmath::Vec4<Value>;
@@ -107,32 +107,32 @@ struct ModelT {
     Bool         enabled{true};
 
     // NOLINTNEXTLINE(google-explicit-constructor) false positive when involving __VA_ARGS__
-    CC_VMATH_STRUCT(ModelT, transform, color, enabled)
+    CC_VMATH_STRUCT(Model, transform, color, enabled)
 };
 
-CC_VMATH_STRUCT_SUPPORT_1(cc, ModelT, transform, color, enabled)
+CC_VMATH_STRUCT_SUPPORT_1(cc, Model, transform, color, enabled)
 
-using ModelF = ModelT<float>;
-using ModelP = ModelT<vmath::FloatP>;
-using ModelX = ModelT<vmath::FloatX>;
+using ModelF = Model<float>;
+using ModelP = Model<vmath::FloatP>;
+using ModelX = Model<vmath::FloatX>;
 
-class Model {
+class ModelView {
 public:
-    using Ptr  = Model *;
+    using Ptr  = ModelView *;
     using PtrP = vmath::Array<Ptr, vmath::PACKET_SIZE>;
     using PtrX = vmath::DynamicArray<PtrP>;
 
-    Model() = default;
-    virtual ~Model();
-    Model(const Model &) noexcept = delete;
-    Model(Model &&) noexcept      = delete;
-    Model &operator=(const Model &) noexcept = delete;
-    Model &operator=(Model &&) noexcept = delete;
+    ModelView() = default;
+    virtual ~ModelView();
+    ModelView(const ModelView &) noexcept = delete;
+    ModelView(ModelView &&) noexcept      = delete;
+    ModelView &operator=(const ModelView &) noexcept = delete;
+    ModelView &operator=(ModelView &&) noexcept = delete;
 
-    explicit Model(vmath::Index idx) : _idx(idx) {}
+    explicit ModelView(vmath::Index idx) : _idx(idx) {}
 
     virtual void setColor(float r, float g, float b, float a);
-    virtual void setTransform(const Transform *transform);
+    virtual void setTransform(const TransformView *transform);
     virtual void setEnabled(bool enabled);
 
     static ModelX       buffer;
@@ -160,8 +160,10 @@ public:
 
     virtual void render();
 
-    virtual Transform *createTransform();
-    virtual Model *    createModel();
+    virtual TransformView *createTransform();
+    virtual ModelView *    createModel();
+
+    static constexpr size_t INITIAL_CAPACITY = 256;
 
 protected:
     static Root *instance;
@@ -175,25 +177,25 @@ protected:
 class LinearAllocatorPool;
 constexpr uint MAX_CPU_FRAME_AHEAD = 1U;
 
-class TransformAgent : public Agent<Transform> {
+class TransformAgent : public Agent<TransformView> {
 public:
     using Agent::Agent;
     ~TransformAgent() override;
 
-    void setParent(Transform *value) override;
+    void setParent(TransformView *value) override;
     void setPosition(float x, float y, float z) override;
     void setRotation(const float *q) override;
     void setRotationFromEuler(float angleX, float angleY, float angleZ) override;
     void setScale(float x, float y, float z) override;
 };
 
-class ModelAgent : public Agent<Model> {
+class ModelAgent : public Agent<ModelView> {
 public:
     using Agent::Agent;
     ~ModelAgent() override;
 
     void setColor(float r, float g, float b, float a) override;
-    void setTransform(const Transform *transform) override;
+    void setTransform(const TransformView *transform) override;
     void setEnabled(bool enabled) override;
 };
 
@@ -208,8 +210,8 @@ public:
 
     void render() override;
 
-    Transform *createTransform() override;
-    Model *    createModel() override;
+    TransformView *createTransform() override;
+    ModelView *    createModel() override;
 
     void setMultithreaded(bool multithreaded);
 
