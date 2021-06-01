@@ -397,6 +397,9 @@ void RootAgent::initialize() {
 
     setMultithreaded(true);
 
+    // Initialize directly in render thread
+    // otherwise we would have issues when the device thread is joined.
+    // e.g. transfer & submit in different threads is not allowed.
     ENQUEUE_MESSAGE_1(
         getMessageQueue(), RootInitialize,
         actor, getActor(),

@@ -1,8 +1,5 @@
 #pragma once
 
-#include "enoki/array.h"
-#include "enoki/array_router.h"
-#include "enoki/array_struct.h"
 #include "enoki/dynamic.h"
 #include "supp_math.h"
 
@@ -10,7 +7,6 @@
 #include "base/Log.h"
 #include "base/Macros.h"
 #include "base/memory/Memory.h"
-#include "math/Math.h"
 
 namespace cc {
 namespace vmath {
@@ -131,18 +127,22 @@ CC_INLINE size_t slices(const Value &v) {
 template <bool keepValue = false, typename Value>
 CC_INLINE void setSlices(Value &v, size_t size) {
     // by default previous values are not preserved when enlarging the array
-    if (keepValue || size <= enoki::packets(v)) {
-        auto temp = v;
+    if constexpr (keepValue) {
+        if (size > enoki::slices(v)) {
+            auto temp = v;
+            enoki::set_slices<Value>(v, size);
+            for (size_t i = 0; i < enoki::packets(temp); ++i) {
+                enoki::packet(v, i) = enoki::packet(temp, i);
+            }
+            for (size_t i = enoki::packets(temp); i < enoki::packets(v); ++i) {
+                enoki::packet(v, i) = typename Value::Packet{};
+            }
+        } else {
+            enoki::set_slices<Value>(v, size);
+        }
+    } else {
         enoki::set_slices<Value>(v, size);
-        for (size_t i = 0; i < enoki::packets(temp); ++i) {
-            enoki::packet(v, i) = enoki::packet(temp, i);
-        }
-        for (size_t i = enoki::packets(temp); i < enoki::packets(v); ++i) {
-            enoki::packet(v, i) = typename Value::Packet{};
-        }
-        return;
     }
-    enoki::set_slices<Value>(v, size);
 }
 
 template <typename Value>

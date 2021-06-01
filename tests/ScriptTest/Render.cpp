@@ -352,8 +352,9 @@ void Root::render() {
         uniformBufferData.resize(modelCapacity * uboStride / sizeof(float));
     }
 
-    uint lengthPerPacket = uboStride / sizeof(float) * vmath::FloatP::Size;
-    for (size_t i = 0; i < vmath::packets(ModelView::buffer); ++i) {
+    uint   lengthPerPacket = uboStride / sizeof(float) * vmath::PACKET_SIZE;
+    size_t validPackets    = (modelCount - 1) / vmath::PACKET_SIZE + 1;
+    for (size_t i = 0; i < validPackets; ++i) {
         float *pDst  = &uniformBufferData[i * lengthPerPacket + uboStride / sizeof(float)];
         auto &&model = vmath::packet(ModelView::buffer, i);
         vmath::scatter(pDst + 0, model.color.x(), index, model.enabled);
@@ -361,16 +362,16 @@ void Root::render() {
         vmath::scatter(pDst + 2, model.color.z(), index, model.enabled);
         vmath::scatter(pDst + 3, model.color.w(), index, model.enabled);
         for (size_t j = 0; j < model.transform.size(); ++j) {
-            TransformView::views[model.transform[j]]->updateWorldTransform();
-            vmath::store(pDst + 4, static_cast<TransformF::Mat4>(vmath::slice(TransformView::buffer.mat, model.transform[j])));
+            vmath::Index transformIdx = model.transform[j];
+            if (transformIdx < 0) break;
+            TransformView::views[transformIdx]->updateWorldTransform();
+            vmath::store(pDst + 4, static_cast<TransformF::Mat4>(vmath::slice(TransformView::buffer.mat, transformIdx)));
         }
     }
 
     device->acquire();
 
-    if (modelCount) {
-        uniformBuffer->update(uniformBufferData.data(), modelCount * uboStride);
-    }
+    uniformBuffer->update(uniformBufferData.data(), (modelCount + 1) * uboStride);
 
     gfx::Rect renderArea = {0, 0, device->getWidth(), device->getHeight()};
 

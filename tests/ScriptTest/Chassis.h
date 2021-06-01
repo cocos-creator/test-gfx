@@ -2,7 +2,6 @@
 
 #include "base/Agent.h"
 #include "base/LinearAllocatorPool.h"
-#include "base/Ref.h"
 #include "base/TypeDef.h"
 #include "base/memory/Memory.h"
 #include "base/threading/MessageQueue.h"
@@ -247,6 +246,8 @@ public:
     static void destroy() {
         CC_SAFE_DESTROY(instance);
     }
+
+    static Root *getInstance() { return instance; }
 
 private:
     static Root *instance;

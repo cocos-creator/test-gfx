@@ -34,8 +34,8 @@ elseif(COCOS_PLATFORM_ANDROID)
   list(APPEND PLATFORM_SUPPORT_SOURCE
     ${COCOS_SRC_PATH}/platform/android/FileUtils-android.h
     ${COCOS_SRC_PATH}/platform/android/FileUtils-android.cpp
-    ${COCOS_SRC_PATH}/platform/android/jni/JniHelper.h
-    ${COCOS_SRC_PATH}/platform/android/jni/JniHelper.cpp
+    ${COCOS_SRC_PATH}/platform/java/jni/JniHelper.h
+    ${COCOS_SRC_PATH}/platform/java/jni/JniHelper.cpp
   )
 elseif(COCOS_PLATFORM_IOS OR COCOS_PLATFORM_OSX)
   list(APPEND PLATFORM_SUPPORT_SOURCE

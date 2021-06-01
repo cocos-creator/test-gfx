@@ -1,7 +1,7 @@
 (() => {
     const JSB = typeof jsb !== 'undefined';
 
-    const NATIVE_COMPUTATION = JSB && false;
+    const NATIVE_COMPUTATION = JSB && 0;
     const options = {
         boidCount: 1024,
         maxVelocity: 0.4,
@@ -96,10 +96,10 @@
 
     // init
     if (NATIVE_COMPUTATION) {
-        jsb.initBoids(options);
+        jsb.BoidsManager.init(options);
 
         tick = (gTimeInMS) => {
-            jsb.tickBoids(gTimeInMS);
+            jsb.BoidsManager.tick(gTimeInMS);
 
             root.render();
         };

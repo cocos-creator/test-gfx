@@ -8,6 +8,9 @@
 #include "renderer/gfx-base/GFXDef.h"
 #include "renderer/gfx-base/GFXDevice.h"
 
+#include <algorithm>
+#include <iterator>
+
 namespace tinyobj {
 class ObjReader;
 }
