@@ -208,8 +208,6 @@ void TestBaseI::runScript(const String &file) {
 }
 
 void TestBaseI::scriptEngineGC() {
-    se::AutoHandleScope hs;
-
     se::ScriptEngine::getInstance()->addAfterCleanupHook([]() {
         JSBClassType::cleanup();
     });

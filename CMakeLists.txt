@@ -211,15 +211,6 @@ message(STATUS "\${GFX_EXTERNAL_PATH}: ${GFX_EXTERNAL_PATH}")
 macro(use_precompiled_header PrecompiledHeader PrecompiledSource Sources)
 endmacro(use_precompiled_header)
 
-# add dependencies
-set(COCOS_EXTERNAL_TARGETS)
-if(COCOS_PLATFORM_WIN32 OR COCOS_PLATFORM_ANDROID)
-	list(APPEND COCOS_EXTERNAL_TARGETS jemalloc)
-endif()
-foreach(TARGET ${COCOS_EXTERNAL_TARGETS})
-	add_subdirectory(${GFX_EXTERNAL_PATH}/${TARGET})
-endforeach()
-
 set(USE_SE_V8 ON)
 set(USE_V8_DEBUGGER ON)
 add_definitions("-DUSE_JOB_SYSTEM_TASKFLOW")
