@@ -28,7 +28,7 @@ void fillRectWithColor(uint8_t *buf, uint32_t totalWidth, uint32_t totalHeight,
 
 /**
  * Generates a random vector with the given scale
- * @param scale Length of the resulting vector. If ommitted, a unit vector will
+ * @param scale Length of the resulting vector. If omitted, a unit vector will
  * be returned
  */
 Vec3 vec3Random(float scale /* = 1.0f */) {
@@ -390,6 +390,8 @@ void ParticleTest::createPipeline() {
 }
 
 void ParticleTest::onTick() {
+    printTime();
+
     uint globalBarrierIdx = _frameCount ? 1 : 0;
     uint textureBarriers  = _frameCount ? 0 : _textureBarriers.size();
 

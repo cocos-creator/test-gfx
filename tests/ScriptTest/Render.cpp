@@ -23,6 +23,7 @@ vector<float>                uniformBufferData;
 uint                         uboStride     = 0U;
 uint                         modelCapacity = Root::INITIAL_CAPACITY;
 vmath::IndexP                index;
+constexpr bool               ROTATE_VIEW = true;
 
 gfx::Buffer *        vertexBufferOutline{nullptr};
 gfx::PipelineState * pipelineStateOutline{nullptr};
@@ -370,6 +371,18 @@ void Root::render() {
     }
 
     device->acquire();
+
+    if (ROTATE_VIEW) {
+        Mat4         view;
+        Mat4         projection;
+        static float time = M_PI * 0.5F;
+        time += TestBaseI::hostThread.dt * 0.1F;
+        Mat4::createLookAt({std::cos(time) * 4.F + 1.F, 1.F, std::sin(time) * 3.F},
+                           {0.F, 0.F, .5F}, {0.F, 1.F, 0.F}, &view);
+        TestBaseI::createOrthographic(-1.5F, 1.5F, -1.5F, 1.5F, 1.F, 10.F, &projection);
+        projection = projection * view;
+        uniformBufferGlobal->update(projection.m, sizeof(projection));
+    }
 
     uniformBuffer->update(uniformBufferData.data(), (modelCount + 1) * uboStride);
 

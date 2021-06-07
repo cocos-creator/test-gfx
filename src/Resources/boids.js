@@ -3,13 +3,13 @@
 
     const NATIVE_COMPUTATION = JSB && 0;
     const options = {
-        boidCount: 1024,
+        boidCount: 256,
         maxVelocity: 0.4,
         alignmentForce: 0.002,
         cohesionForce: 0.002,
         separationForce: 0.003,
         separationDistance: 0.1,
-        flockmateRadius: 0.5,
+        flockmateRadius: 0.9,
     };
 
     const { vec3, quat } = JSB ? glMatrix : require('./gl-matrix');
