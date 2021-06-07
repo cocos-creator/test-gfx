@@ -4,7 +4,7 @@
 namespace cc {
 
 namespace {
-static const float quadVerts[][2] = {{-1.0f, -1.0f}, {1.0f, -1.0f}, {1.0f, 1.0f}, {-1.0f, 1.0f}};
+const float QUAD_VERTS[][2] = {{-1.0F, -1.0F}, {1.0F, -1.0F}, {1.0F, 1.0F}, {-1.0F, 1.0F}};
 
 void fillRectWithColor(uint8_t *buf, uint32_t totalWidth, uint32_t totalHeight,
                        uint32_t x, uint32_t y, uint32_t width, uint32_t height,
@@ -33,9 +33,9 @@ void fillRectWithColor(uint8_t *buf, uint32_t totalWidth, uint32_t totalHeight,
  */
 Vec3 vec3Random(float scale /* = 1.0f */) {
     Vec3  out;
-    float r      = rand0_1() * 2.0f * cc::math::PI;
-    float z      = rand0_1() * 2.0f - 1.0f;
-    float zScale = sqrtf(1.0f - z * z) * scale;
+    float r      = rand0_1() * 2.0F * cc::math::PI;
+    float z      = rand0_1() * 2.0F - 1.0F;
+    float zScale = sqrtf(1.0F - z * z) * scale;
 
     out.x = cosf(r) * zScale;
     out.y = sinf(r) * zScale;
@@ -75,7 +75,6 @@ bool ParticleTest::onInit() {
 }
 
 void ParticleTest::createShader() {
-
     ShaderSources<StandardShaderSource> sources;
     sources.glsl4 = {
         R"(
@@ -260,10 +259,10 @@ void ParticleTest::createVertexBuffer() {
     });
     _indexBuffer->update(_ibufferArray, sizeof(_ibufferArray));
 
-    for (size_t i = 0; i < PARTICLE_COUNT; ++i) {
-        _particles[i].velocity = vec3Random(cc::random(0.1f, 10.0f));
-        _particles[i].age      = 0;
-        _particles[i].life     = cc::random(1.0f, 10.0f);
+    for (auto &particle : _particles) {
+        particle.velocity = vec3Random(cc::random(0.1F, 10.0F));
+        particle.age      = 0;
+        particle.life     = cc::random(1.0F, 10.0F);
     }
 
     _uniformBuffer = device->createBuffer({
@@ -271,7 +270,7 @@ void ParticleTest::createVertexBuffer() {
         gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
         TestBaseI::getUBOSize(3 * sizeof(Mat4)),
     });
-    Mat4::createLookAt(Vec3(30.0f, 20.0f, 30.0f), Vec3(0.0f, 2.5f, 0.0f), Vec3(0.0f, 1.0f, 0.f), &_matrices[1]);
+    Mat4::createLookAt(Vec3(30.0F, 20.0F, 30.0F), Vec3(0.0F, 2.5F, 0.0F), Vec3(0.0F, 1.0F, 0.F), &_matrices[1]);
 }
 
 void ParticleTest::createInputAssembler() {
@@ -288,33 +287,33 @@ void ParticleTest::createInputAssembler() {
 }
 
 void ParticleTest::createTexture() {
-    const size_t LINE_WIDHT  = 128;
-    const size_t LINE_HEIGHT = 128;
-    const size_t BUFFER_SIZE = LINE_WIDHT * LINE_HEIGHT * 4;
-    uint8_t *    imageData   = (uint8_t *)CC_MALLOC(BUFFER_SIZE);
-    fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 0, 0, 128, 128, 0xD0, 0xD0, 0xD0);
-    fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 0, 0, 64, 64, 0x50, 0x50, 0x50);
-    fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 32, 32, 32, 32, 0xFF, 0x00, 0x00);
-    fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 64, 64, 64, 64, 0x00, 0xFF, 0x00);
-    fillRectWithColor(imageData, LINE_WIDHT, LINE_HEIGHT, 96, 96, 32, 32, 0x00, 0x00, 0xFF);
+    const size_t lineWidht  = 128;
+    const size_t lineHeight = 128;
+    const size_t bufferSize = lineWidht * lineHeight * 4;
+    auto *       imageData  = static_cast<uint8_t *>(CC_MALLOC(bufferSize));
+    fillRectWithColor(imageData, lineWidht, lineHeight, 0, 0, 128, 128, 0xD0, 0xD0, 0xD0);
+    fillRectWithColor(imageData, lineWidht, lineHeight, 0, 0, 64, 64, 0x50, 0x50, 0x50);
+    fillRectWithColor(imageData, lineWidht, lineHeight, 32, 32, 32, 32, 0xFF, 0x00, 0x00);
+    fillRectWithColor(imageData, lineWidht, lineHeight, 64, 64, 64, 64, 0x00, 0xFF, 0x00);
+    fillRectWithColor(imageData, lineWidht, lineHeight, 96, 96, 32, 32, 0x00, 0x00, 0xFF);
 
     gfx::TextureInfo textureInfo;
     textureInfo.usage      = gfx::TextureUsage::SAMPLED | gfx::TextureUsage::TRANSFER_DST;
     textureInfo.format     = gfx::Format::RGBA8;
-    textureInfo.width      = LINE_WIDHT;
-    textureInfo.height     = LINE_HEIGHT;
+    textureInfo.width      = lineWidht;
+    textureInfo.height     = lineHeight;
     textureInfo.flags      = gfx::TextureFlagBit::GEN_MIPMAP;
     textureInfo.levelCount = TestBaseI::getMipmapLevelCounts(textureInfo.width, textureInfo.height);
     _textures.push_back(device->createTexture(textureInfo));
 
     gfx::BufferTextureCopy textureRegion;
     textureRegion.buffTexHeight    = 0;
-    textureRegion.texExtent.width  = LINE_WIDHT;
-    textureRegion.texExtent.height = LINE_HEIGHT;
+    textureRegion.texExtent.width  = lineWidht;
+    textureRegion.texExtent.height = lineHeight;
     textureRegion.texExtent.depth  = 1;
 
     gfx::BufferTextureCopyList regions;
-    regions.push_back(std::move(textureRegion));
+    regions.push_back(textureRegion);
 
     gfx::BufferDataList imageBuffer = {imageData};
     device->copyBuffersToTexture(imageBuffer, _textures[0], regions);
@@ -394,12 +393,11 @@ void ParticleTest::onTick() {
     uint globalBarrierIdx = _frameCount ? 1 : 0;
     uint textureBarriers  = _frameCount ? 0 : _textureBarriers.size();
 
-    gfx::Color clearColor = {0.2f, 0.2f, 0.2f, 1.0f};
+    gfx::Color clearColor = {0.2F, 0.2F, 0.2F, 1.0F};
 
     // update particles
-    for (size_t i = 0; i < PARTICLE_COUNT; ++i) {
-        ParticleData &p = _particles[i];
-        p.position      = std::move(vec3ScaleAndAdd(p.position, p.velocity, hostThread.dt));
+    for (auto &p : _particles) {
+        p.position = vec3ScaleAndAdd(p.position, p.velocity, hostThread.dt);
         p.age += hostThread.dt;
 
         if (p.age >= p.life) {
@@ -416,8 +414,8 @@ void ParticleTest::onTick() {
             size_t offset = VERTEX_STRIDE * (4 * i + v);
 
             // quad
-            pVbuffer[offset + 0] = quadVerts[v][0];
-            pVbuffer[offset + 1] = quadVerts[v][1];
+            pVbuffer[offset + 0] = QUAD_VERTS[v][0];
+            pVbuffer[offset + 1] = QUAD_VERTS[v][1];
 
             // pos
             pVbuffer[offset + 2] = p.position.x;
@@ -428,12 +426,14 @@ void ParticleTest::onTick() {
             pVbuffer[offset + 5] = 1;
             pVbuffer[offset + 6] = 1;
             pVbuffer[offset + 7] = 1;
-            pVbuffer[offset + 8] = 1.0f - p.age / p.life;
+            pVbuffer[offset + 8] = 1.0F - p.age / p.life;
         }
     }
 
     gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize();
-    TestBaseI::createPerspective(60.0f, 1.0f * orientedSize.width / orientedSize.height, 0.01f, 1000.0f, &_matrices[2]);
+    TestBaseI::createPerspective(60.0F,
+                                 static_cast<float>(orientedSize.width) / static_cast<float>(orientedSize.height),
+                                 0.01F, 1000.0F, &_matrices[2]);
 
     device->acquire();
 
@@ -441,13 +441,14 @@ void ParticleTest::onTick() {
     _vertexBuffer->update(_vbufferArray, sizeof(_vbufferArray));
     gfx::Rect renderArea = {0, 0, device->getWidth(), device->getHeight()};
 
-    auto commandBuffer = commandBuffers[0];
+    auto *commandBuffer = commandBuffers[0];
     commandBuffer->begin();
 
-    if (TestBaseI::MANUAL_BARRIER)
+    if (TestBaseI::MANUAL_BARRIER) {
         commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx], _textureBarriers.data(), _textures.data(), textureBarriers);
+    }
 
-    commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0f, 0);
+    commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0F, 0);
     commandBuffer->bindInputAssembler(_inputAssembler);
     commandBuffer->bindPipelineState(_pipelineState);
     commandBuffer->bindDescriptorSet(0, _descriptorSet);

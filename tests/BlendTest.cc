@@ -21,7 +21,7 @@ struct Quad : public cc::Object {
         createPipeline();
     }
 
-    ~Quad() {}
+    ~Quad() override = default;
 
     void destroy() {
         CC_SAFE_DESTROY(shader);
@@ -35,13 +35,12 @@ struct Quad : public cc::Object {
         CC_SAFE_DESTROY(uniformBuffer);
         CC_SAFE_DESTROY(descriptorSetLayout);
         CC_SAFE_DESTROY(pipelineLayout);
-        for (int i = 0; i < TOTAL_BLEND; i++) {
-            CC_SAFE_DESTROY(pipelineState[i]);
+        for (auto &i : pipelineState) {
+            CC_SAFE_DESTROY(i);
         }
     }
 
     void createShader() {
-
         ShaderSources<StandardShaderSource> sources;
         sources.glsl4 = {
             R"(
@@ -148,12 +147,12 @@ struct Quad : public cc::Object {
     }
 
     void createVertexBuffer() {
-        float vertexData[] = {-0.5f, -0.5f, 0.f, 0.f,
-                              -0.5f, 0.5f, 0.f, 1.f,
-                              0.5f, 0.5f, 1.f, 1.f,
-                              0.5f, -0.5f, 1.f, 0.f};
+        float vertexData[] = {-0.5F, -0.5F, 0.F, 0.F,
+                              -0.5F, 0.5F, 0.F, 1.F,
+                              0.5F, 0.5F, 1.F, 1.F,
+                              0.5F, -0.5F, 1.F, 0.F};
 
-        unsigned short indices[6] = {0, 3, 1, 1, 3, 2};
+        uint16_t indices[6] = {0, 3, 1, 1, 3, 2};
 
         // vertex buffer
         vertexBuffer = device->createBuffer({
@@ -169,7 +168,7 @@ struct Quad : public cc::Object {
             gfx::BufferUsage::INDEX,
             gfx::MemoryUsage::DEVICE,
             sizeof(indices),
-            sizeof(unsigned short),
+            sizeof(uint16_t),
         });
         indexBuffer->update(indices, sizeof(indices));
 
@@ -359,7 +358,6 @@ struct BigTriangle : public cc::Object {
     }
 
     void createShader() {
-
         ShaderSources<StandardShaderSource> sources;
         sources.glsl4 = {
             R"(
@@ -467,9 +465,9 @@ struct BigTriangle : public cc::Object {
 
     void createVertexBuffer() {
         float ySign        = device->getCapabilities().screenSpaceSignY;
-        float vertexData[] = {-1.0f, 4.0f * ySign, 0.0, -1.5,
-                              -1.0f, -1.0f * ySign, 0.0, 1.0,
-                              4.0f, -1.0f * ySign, 2.5, 1.0};
+        float vertexData[] = {-1.0F, 4.0F * ySign, 0.0, -1.5,
+                              -1.0F, -1.0F * ySign, 0.0, 1.0,
+                              4.0F, -1.0F * ySign, 2.5, 1.0};
 
         // vertex buffer
         vertexBuffer = device->createBuffer({
@@ -566,7 +564,7 @@ void BlendTest::onDestroy() {
     _textures.clear();
     CC_SAFE_DESTROY(bigTriangle);
     CC_SAFE_DESTROY(quad);
-    renderArea.width = renderArea.height = 1u;
+    renderArea.width = renderArea.height = 1U;
     orientation                          = gfx::SurfaceTransform::IDENTITY;
 }
 
@@ -625,18 +623,18 @@ void BlendTest::onTick() {
     if (matricesDirty) {
         Mat4 model;
         Mat4 projection;
-        TestBaseI::createOrthographic(0.f, (float)orientedSize.width, (float)orientedSize.height, 0.f, -1.0f, 1.f, &projection);
+        TestBaseI::createOrthographic(0.F, static_cast<float>(orientedSize.width), static_cast<float>(orientedSize.height), 0.F, -1.0F, 1.F, &projection);
 
-        float size     = std::min(orientedSize.width, orientedSize.height) * 0.15f;
-        float halfSize = size * 0.5f;
-        float offsetX  = 5.f + halfSize;
-        float offsetY  = 50.f + halfSize;
+        float size     = static_cast<float>(std::min(orientedSize.width, orientedSize.height)) * 0.15F;
+        float halfSize = size * 0.5F;
+        float offsetX  = 5.F + halfSize;
+        float offsetY  = 50.F + halfSize;
 
         for (uint i = 0; i < TOTAL_BLEND; i++) {
             createModelTransform(model, Vec3(offsetX, offsetY, 0), Vec3(size, size, 1));
             memcpy(quad->models.data() + (quad->uboStride * i) / sizeof(float), model.m, sizeof(model));
             memcpy(quad->models.data() + (quad->uboStride * i + sizeof(Mat4)) / sizeof(float), projection.m, sizeof(projection));
-            offsetY += 5.f + size;
+            offsetY += 5.F + size;
         }
         // render area is not oriented
         renderArea.width  = device->getWidth();
@@ -644,18 +642,20 @@ void BlendTest::onTick() {
         orientation       = device->getSurfaceTransform();
     }
 
-    auto commandBuffer = commandBuffers[0];
+    auto *commandBuffer = commandBuffers[0];
     commandBuffer->begin();
 
     commandBuffer->updateBuffer(bigTriangle->timeBuffer, &_time, sizeof(_time));
 
-    if (matricesDirty)
+    if (matricesDirty) {
         commandBuffer->updateBuffer(quad->uniformBuffer, quad->models.data(), quad->models.size() * sizeof(float));
+    }
 
-    if (TestBaseI::MANUAL_BARRIER)
+    if (TestBaseI::MANUAL_BARRIER) {
         commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx], _textureBarriers.data(), _textures.data(), textureBarriers);
+    }
 
-    commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0f, 0);
+    commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0F, 0);
     // draw background
     commandBuffer->bindInputAssembler(bigTriangle->inputAssembler);
     commandBuffer->bindPipelineState(bigTriangle->pipelineState);

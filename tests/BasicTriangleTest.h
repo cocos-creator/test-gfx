@@ -4,18 +4,16 @@
 
 namespace cc {
 
-typedef struct Vertex {
+struct Vertex {
     float pos[2];
     float col[3];
-} Vertex;
+};
 
 class BasicTriangle : public TestBaseI {
 public:
     DEFINE_CREATE_METHOD(BasicTriangle)
-    BasicTriangle(const WindowInfo &info) : TestBaseI(info){};
-    ~BasicTriangle() = default;
+    using TestBaseI::TestBaseI;
 
-public:
     bool onInit() override;
     void onTick() override;
     void onDestroy() override;

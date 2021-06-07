@@ -11,18 +11,18 @@ bool ClearScreen::onInit() {
 
 void ClearScreen::onTick() {
     gfx::Color clearColor;
-    clearColor.x = 1.0f;
+    clearColor.x = 1.0F;
     clearColor.y = std::abs(std::sin(_time));
-    clearColor.z = 0.0f;
-    clearColor.w = 1.0f;
+    clearColor.z = 0.0F;
+    clearColor.w = 1.0F;
 
     device->acquire();
 
     gfx::Rect renderArea = {0, 0, device->getWidth(), device->getHeight()};
 
-    auto commandBuffer = commandBuffers[0];
+    auto *commandBuffer = commandBuffers[0];
     commandBuffer->begin();
-    commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0f, 0);
+    commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0F, 0);
     commandBuffer->endRenderPass();
     commandBuffer->end();
 

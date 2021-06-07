@@ -7,8 +7,7 @@ namespace cc {
 class DeferredTest : public TestBaseI {
 public:
     DEFINE_CREATE_METHOD(DeferredTest)
-    explicit DeferredTest(const WindowInfo &info) : TestBaseI(info){};
-    ~DeferredTest() override = default;
+    using TestBaseI::TestBaseI;
 
     bool onInit() override;
     void onTick() override;

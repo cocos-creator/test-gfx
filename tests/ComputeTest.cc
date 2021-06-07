@@ -6,8 +6,8 @@ namespace cc {
 #define VERTEX_COUNT 200
 #define RADIUS       .7f
 
-static uint BG_GROUP_SIZE_X = 8u;
-static uint BG_GROUP_SIZE_Y = 8u;
+static uint bgGroupSizeX = 8U;
+static uint bgGroupSizeY = 8U;
 #define BG_WIDTH  100
 #define BG_HEIGHT 100
 
@@ -60,10 +60,10 @@ void ComputeTest::createComputeVBPipeline() {
 
     // default value for storage buffer
     vector<Vec4> buffer{VERTEX_COUNT * 2};
-    for (uint i = 0u; i < VERTEX_COUNT; ++i) {
-        float alpha       = 2.f * math::PI * i / VERTEX_COUNT;
-        buffer[i * 2]     = Vec4(std::sin(alpha) * RADIUS, std::cos(alpha) * RADIUS, 0.f, 1.f);
-        buffer[i * 2 + 1] = Vec4(1.f, 1.f, 1.f, 1.f);
+    for (uint i = 0U; i < VERTEX_COUNT; ++i) {
+        float alpha       = 2.F * math::PI * static_cast<float>(i) / VERTEX_COUNT;
+        buffer[i * 2]     = Vec4(std::sin(alpha) * RADIUS, std::cos(alpha) * RADIUS, 0.F, 1.F);
+        buffer[i * 2 + 1] = Vec4(1.F, 1.F, 1.F, 1.F);
     }
     _compStorageBuffer->update(buffer.data(), buffer.size() * sizeof(Vec4));
 
@@ -165,8 +165,8 @@ void ComputeTest::createComputeBGPipeline() {
     if (!device->hasFeature(gfx::Feature::COMPUTE_SHADER)) return;
 
     uint maxInvocations = device->getCapabilities().maxComputeWorkGroupInvocations;
-    BG_GROUP_SIZE_X = BG_GROUP_SIZE_Y = (uint)sqrt(maxInvocations);
-    CC_LOG_INFO("BG work group size: %dx%d", BG_GROUP_SIZE_X, BG_GROUP_SIZE_Y);
+    bgGroupSizeX = bgGroupSizeY = static_cast<uint>(sqrt(maxInvocations));
+    CC_LOG_INFO("BG work group size: %dx%d", bgGroupSizeX, bgGroupSizeY);
 
     ShaderSources<ComputeShaderSource> sources;
     sources.glsl4 = StringUtil::format(
@@ -184,7 +184,7 @@ void ComputeTest::createComputeBGPipeline() {
             vec3 col = 0.5 + 0.5 * cos(time + uv.xyx + vec3(0, 2, 4));
             imageStore(background, ivec2(gl_GlobalInvocationID.xy), vec4(col, 1.0));
         })",
-        BG_GROUP_SIZE_X, BG_GROUP_SIZE_Y);
+        bgGroupSizeX, bgGroupSizeY);
     sources.glsl3 = StringUtil::format(
         R"(
         layout(local_size_x = %d, local_size_y = %d, local_size_z = 1) in;
@@ -200,7 +200,7 @@ void ComputeTest::createComputeBGPipeline() {
             vec3 col = 0.5 + 0.5 * cos(time + uv.xyx + vec3(0, 2, 4));
             imageStore(background, ivec2(gl_GlobalInvocationID.xy), vec4(col, 1.0));
         })",
-        BG_GROUP_SIZE_X, BG_GROUP_SIZE_Y);
+        bgGroupSizeX, bgGroupSizeY);
     // no compute support in GLES2
 
     gfx::ShaderInfo shaderInfo;
@@ -232,7 +232,6 @@ void ComputeTest::createComputeBGPipeline() {
 }
 
 void ComputeTest::createShader() {
-
     ShaderSources<StandardShaderSource> sources;
     sources.glsl4 = {
         R"(
@@ -446,18 +445,18 @@ void ComputeTest::createPipeline() {
 
 void ComputeTest::onTick() {
     gfx::DispatchInfo dispatchInfo{(VERTEX_COUNT - 1) / GROUP_SIZE + 1, 1, 1};
-    gfx::DispatchInfo bgDispatchInfo{(BG_WIDTH - 1) / BG_GROUP_SIZE_X + 1, (BG_HEIGHT - 1) / BG_GROUP_SIZE_Y + 1, 1};
+    gfx::DispatchInfo bgDispatchInfo{(BG_WIDTH - 1) / bgGroupSizeX + 1, (BG_HEIGHT - 1) / bgGroupSizeY + 1, 1};
 
-    gfx::Color clearColor = {.2f, .2f, .2f, 1.0f};
+    gfx::Color clearColor = {.2F, .2F, .2F, 1.0F};
     Vec4       constants{_time, VERTEX_COUNT, BG_WIDTH, BG_HEIGHT};
 
-    Mat4 MVP;
-    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &MVP);
+    Mat4 mvp;
+    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &mvp);
 
     device->acquire();
 
     if (_compConstantsBuffer) _compConstantsBuffer->update(&constants, sizeof(constants));
-    _uniformBufferMVP->update(MVP.m, sizeof(MVP.m));
+    _uniformBufferMVP->update(mvp.m, sizeof(mvp.m));
 
     gfx::Rect renderArea = {0, 0, device->getWidth(), device->getHeight()};
 
@@ -478,11 +477,12 @@ void ComputeTest::onTick() {
     blit.dstExtent.height = device->getHeight();
 #endif
 
-    auto commandBuffer = commandBuffers[0];
+    auto *commandBuffer = commandBuffers[0];
     commandBuffer->begin();
 
-    if (TestBaseI::MANUAL_BARRIER)
+    if (TestBaseI::MANUAL_BARRIER) {
         commandBuffer->pipelineBarrier(_globalBarriers[0]);
+    }
 
     if (device->hasFeature(gfx::Feature::COMPUTE_SHADER)) {
         commandBuffer->pipelineBarrier(_globalBarriers[1], _textureBarriers.data(), _textures.data(), 1);
@@ -497,11 +497,11 @@ void ComputeTest::onTick() {
 
 #if USE_BLIT_TEXTURE
         commandBuffer->pipelineBarrier(_globalBarriers[2], &_textureBarriers[1], _textures.data(), 2);
-        commandBuffer->blitTexture(_textures[0], nullptr, &blit, 1u, gfx::Filter::POINT);
+        commandBuffer->blitTexture(_textures[0], nullptr, &blit, 1U, gfx::Filter::POINT);
 #endif
     }
 
-    commandBuffer->beginRenderPass(_renderPassLoad, fbo, renderArea, &clearColor, 1.0f, 0);
+    commandBuffer->beginRenderPass(_renderPassLoad, fbo, renderArea, &clearColor, 1.0F, 0);
     commandBuffer->bindInputAssembler(_inputAssembler);
     commandBuffer->bindPipelineState(_pipelineState);
     commandBuffer->bindDescriptorSet(0, _descriptorSet);

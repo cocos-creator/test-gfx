@@ -42,7 +42,7 @@ int               TestBaseI::curTestIndex           = -1;
 int               TestBaseI::nextDirection          = 0;
 TestBaseI *       TestBaseI::test                   = nullptr;
 const bool        TestBaseI::MANUAL_BARRIER         = true;
-const uint        TestBaseI::NANOSECONDS_PER_SECOND = 1000000000;
+const float       TestBaseI::NANOSECONDS_PER_SECOND = 1000000000.F;
 gfx::Device *     TestBaseI::device                 = nullptr;
 gfx::Framebuffer *TestBaseI::fbo                    = nullptr;
 gfx::RenderPass * TestBaseI::renderPass             = nullptr;
@@ -98,7 +98,7 @@ TestBaseI::TestBaseI(const WindowInfo &info) {
         se->start();
 
         gfx::DeviceInfo deviceInfo;
-        // deviceInfo.isAntiAlias  = true;
+        deviceInfo.isAntiAlias  = true;
         deviceInfo.windowHandle = info.windowHandle;
         deviceInfo.width        = info.screen.width;
         deviceInfo.height       = info.screen.height;
@@ -301,15 +301,15 @@ void TestBaseI::createOrthographic(float left, float right, float bottom, float 
     float dx = (left + right) / (left - right);
     float dy = (bottom + top) / (bottom - top) * signY;
 
-    dst->m[0]  = x * preTransform[0];
-    dst->m[1]  = x * preTransform[1];
-    dst->m[4]  = y * preTransform[2];
-    dst->m[5]  = y * preTransform[3];
-    dst->m[10] = (1.0f - minZ) / (ZNear - ZFar);
-    dst->m[12] = dx * preTransform[0] + dy * preTransform[2];
-    dst->m[13] = dx * preTransform[1] + dy * preTransform[3];
-    dst->m[14] = (ZNear - minZ * ZFar) / (ZNear - ZFar);
-    dst->m[15] = 1.0f;
+    dst->m[0]                          = x * preTransform[0];
+    dst->m[1]                          = x * preTransform[1];
+    dst->m[4]                          = y * preTransform[2];
+    dst->m[5]                          = y * preTransform[3];
+    dst->m[10]                         = (1.0f - minZ) / (ZNear - ZFar);
+    dst->m[12]                         = dx * preTransform[0] + dy * preTransform[2];
+    dst->m[13]                         = dx * preTransform[1] + dy * preTransform[3];
+    dst->m[14]                         = (ZNear - minZ * ZFar) / (ZNear - ZFar);
+    dst->m[15]                         = 1.0f;
 #endif
 }
 

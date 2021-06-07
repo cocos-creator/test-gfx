@@ -652,13 +652,13 @@ void DeferredTest::createDeferredResources() {
     deferredRPInfo.colorAttachments.emplace_back();
     deferredRPInfo.colorAttachments.back().format = gfx::Format::RGBA8;
     deferredRPInfo.colorAttachments.back().beginAccesses.push_back(gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE);
-    deferredRPInfo.colorAttachments.back().endAccesses[0] = gfx::AccessType::TRANSFER_READ;
+    deferredRPInfo.colorAttachments.back().endAccesses[0]  = gfx::AccessType::TRANSFER_READ;
     deferredRPInfo.colorAttachments.back().isGeneralLayout = true;
-    deferredRPInfo.depthStencilAttachment.format          = device->getDepthStencilFormat();
-    deferredRPInfo.depthStencilAttachment.depthLoadOp     = gfx::LoadOp::DISCARD;
-    deferredRPInfo.depthStencilAttachment.stencilLoadOp   = gfx::LoadOp::DISCARD;
-    deferredRPInfo.depthStencilAttachment.depthStoreOp    = gfx::StoreOp::DISCARD;
-    deferredRPInfo.depthStencilAttachment.stencilStoreOp  = gfx::StoreOp::DISCARD;
+    deferredRPInfo.depthStencilAttachment.format           = device->getDepthStencilFormat();
+    deferredRPInfo.depthStencilAttachment.depthLoadOp      = gfx::LoadOp::DISCARD;
+    deferredRPInfo.depthStencilAttachment.stencilLoadOp    = gfx::LoadOp::DISCARD;
+    deferredRPInfo.depthStencilAttachment.depthStoreOp     = gfx::StoreOp::DISCARD;
+    deferredRPInfo.depthStencilAttachment.stencilStoreOp   = gfx::StoreOp::DISCARD;
     deferredRPInfo.depthStencilAttachment.beginAccesses.push_back(gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE);
     _deferredRenderPass = device->createRenderPass(deferredRPInfo);
 
@@ -819,7 +819,9 @@ void DeferredTest::onTick() {
 
     gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize();
     Mat4::createRotationY(_time, &_worldMatrix);
-    TestBaseI::createPerspective(60.0F, 1.0F * orientedSize.width / orientedSize.height, 0.01F, 1000.0F, &_projectionMatrix);
+    TestBaseI::createPerspective(60.0F,
+                                 static_cast<float>(orientedSize.width) / static_cast<float>(orientedSize.height),
+                                 0.01F, 1000.0F, &_projectionMatrix);
 
     std::copy(_worldMatrix.m, _worldMatrix.m + 16, &_rootBuffer[0]);
     std::copy(_projectionMatrix.m, _projectionMatrix.m + 16, &_rootBuffer[32]);

@@ -24,7 +24,6 @@ bool BasicTexture::onInit() {
 }
 
 void BasicTexture::createShader() {
-
     ShaderSources<StandardShaderSource> sources;
     sources.glsl4 = {
         R"(
@@ -140,14 +139,17 @@ void BasicTexture::createShader() {
 
 void BasicTexture::createVertexBuffer() {
     //float left = -.7f, bottom = -.2f, right = .1f, top = .6f;
-    float left = -1.f, bottom = -1.f, right = 1.f, top = 1.f;
-    float vertexData[] = {left, bottom, 0.f, 1.f,
-                          right, bottom, 1.f, 1.f,
-                          right, top, 1.f, 0.f,
+    float left         = -1.F;
+    float bottom       = -1.F;
+    float right        = 1.F;
+    float top          = 1.F;
+    float vertexData[] = {left, bottom, 0.F, 1.F,
+                          right, bottom, 1.F, 1.F,
+                          right, top, 1.F, 0.F,
 
-                          right, top, 1.f, 0.f,
-                          left, top, 0.f, 0.f,
-                          left, bottom, 0.f, 1.f};
+                          right, top, 1.F, 0.F,
+                          left, top, 0.F, 0.F,
+                          left, bottom, 0.F, 1.F};
 
     _vertexBuffer = device->createBuffer({
         gfx::BufferUsage::VERTEX,
@@ -250,7 +252,7 @@ void BasicTexture::onTick() {
     uint globalBarrierIdx = _frameCount ? 1 : 0;
     uint textureBarriers  = _frameCount ? 0 : _textureBarriers.size();
 
-    gfx::Color clearColor = {0, 0, 0, 1.0f};
+    gfx::Color clearColor = {0, 0, 0, 1.0F};
 
     Mat4 mvpMatrix;
     TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &mvpMatrix);
@@ -260,13 +262,14 @@ void BasicTexture::onTick() {
     _uniformBuffer->update(&mvpMatrix, sizeof(mvpMatrix));
     gfx::Rect renderArea = {0, 0, device->getWidth(), device->getHeight()};
 
-    auto commandBuffer = commandBuffers[0];
+    auto *commandBuffer = commandBuffers[0];
     commandBuffer->begin();
 
-    if (TestBaseI::MANUAL_BARRIER)
+    if (TestBaseI::MANUAL_BARRIER) {
         commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx], _textureBarriers.data(), _textures.data(), textureBarriers);
+    }
 
-    commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0f, 0);
+    commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0F, 0);
     commandBuffer->bindInputAssembler(_inputAssembler);
     commandBuffer->bindPipelineState(_pipelineState);
     commandBuffer->bindDescriptorSet(0, _descriptorSet);

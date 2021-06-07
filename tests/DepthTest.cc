@@ -170,7 +170,7 @@ struct BigTriangle : public cc::Object {
             TestBaseI::getUBOSize(2 * sizeof(float)),
         });
 
-        float uboData[] = {1.f, 100.0f};
+        float uboData[] = {1.F, 100.0F};
         nearFarUniformBuffer->update(uboData, sizeof(uboData));
     }
 
@@ -208,7 +208,7 @@ struct BigTriangle : public cc::Object {
 
         pipelineState = device->createPipelineState(pipelineInfo);
     }
-    ~BigTriangle() {}
+    ~BigTriangle() override = default;
 
     void destroy() {
         CC_SAFE_DESTROY(shader);
@@ -244,8 +244,6 @@ struct Bunny : public cc::Object {
         createInputAssembler();
         createPipeline(fbo);
     }
-
-    ~Bunny() {}
 
     void createShader() {
         ShaderSources<StandardShaderSource> sources;
@@ -354,9 +352,9 @@ struct Bunny : public cc::Object {
         vector<uint16_t> indices;
         indices.reserve(indicesInfo.size());
         std::transform(indicesInfo.begin(), indicesInfo.end(), std::back_inserter(indices),
-                       [](auto &&info) { return (uint16_t)info.vertex_index; });
+                       [](auto &&info) { return static_cast<uint16_t>(info.vertex_index); });
 
-        indexBuffer         = device->createBuffer({
+        indexBuffer = device->createBuffer({
             gfx::BufferUsage::INDEX,
             gfx::MemoryUsage::DEVICE,
             static_cast<uint>(indices.size() * sizeof(uint16_t)),
@@ -371,8 +369,9 @@ struct Bunny : public cc::Object {
             gfx::MemoryUsage::HOST | gfx::MemoryUsage::DEVICE,
             TestBaseI::getUBOSize(3 * sizeof(Mat4)),
         };
-        for (uint i = 0; i < BUNNY_NUM; i++)
-            mvpUniformBuffer[i] = device->createBuffer(uniformBufferInfo);
+        for (auto &i : mvpUniformBuffer) {
+            i = device->createBuffer(uniformBufferInfo);
+        }
     }
 
     void createInputAssembler() {
@@ -391,7 +390,7 @@ struct Bunny : public cc::Object {
 
         pipelineLayout = device->createPipelineLayout({{descriptorSetLayout}});
 
-        for (uint i = 0u; i < BUNNY_NUM; i++) {
+        for (uint i = 0U; i < BUNNY_NUM; i++) {
             descriptorSet[i] = device->createDescriptorSet({descriptorSetLayout});
 
             descriptorSet[i]->bindBuffer(0, mvpUniformBuffer[i]);
@@ -519,42 +518,45 @@ bool DepthTexture::onInit() {
 void DepthTexture::onTick() {
     uint globalBarrierIdx = _frameCount ? 1 : 0;
 
-    static constexpr float cameraDistance = 8.f;
-    _eye.set(cameraDistance * std::cos(_time), cameraDistance * 0.5f, cameraDistance * std::sin(_time));
-    _center.set(0, 0.5f, 0);
-    _up.set(0, 1.f, 0);
+    static constexpr float CAMERA_DISTANCE = 8.F;
+    _eye.set(CAMERA_DISTANCE * std::cos(_time), CAMERA_DISTANCE * 0.5F, CAMERA_DISTANCE * std::sin(_time));
+    _center.set(0, 0.5F, 0);
+    _up.set(0, 1.F, 0);
     Mat4::createLookAt(_eye, _center, _up, &_bunnyMatrices[1]);
     gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize();
-    TestBaseI::createPerspective(45.f, 1.0f * orientedSize.width / orientedSize.height, 1.f, 10.f, &_bunnyMatrices[2]);
+    TestBaseI::createPerspective(45.F,
+                                 static_cast<float>(orientedSize.width) / static_cast<float>(orientedSize.height),
+                                 1.F, 10.F, &_bunnyMatrices[2]);
 
-    gfx::Color clearColor = {1.0, 0, 0, 1.0f};
+    gfx::Color clearColor = {1.0, 0, 0, 1.0F};
 
     device->acquire();
 
     for (uint i = 0; i < Bunny::BUNNY_NUM; i++) {
-        _bunnyMatrices[0].m[12] = i % 2 ? -1.5f : 1.5f;
+        _bunnyMatrices[0].m[12] = i % 2 ? -1.5F : 1.5F;
         bunny->mvpUniformBuffer[i]->update(_bunnyMatrices, sizeof(_bunnyMatrices));
     }
     gfx::Rect renderArea = {0, 0, device->getWidth(), device->getHeight()};
 
-    auto commandBuffer = commandBuffers[0];
+    auto *commandBuffer = commandBuffers[0];
     commandBuffer->begin();
 
-    if (TestBaseI::MANUAL_BARRIER)
+    if (TestBaseI::MANUAL_BARRIER) {
         commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx]);
+    }
 
     // render bunny
-    commandBuffer->beginRenderPass(_bunnyFBO->renderPass, _bunnyFBO->framebuffer, renderArea, nullptr, 1.0f, 0);
+    commandBuffer->beginRenderPass(_bunnyFBO->renderPass, _bunnyFBO->framebuffer, renderArea, nullptr, 1.0F, 0);
     commandBuffer->bindPipelineState(bunny->pipelineState);
     commandBuffer->bindInputAssembler(bunny->inputAssembler);
-    for (uint i = 0; i < Bunny::BUNNY_NUM; i++) {
-        commandBuffer->bindDescriptorSet(0, bunny->descriptorSet[i]);
+    for (auto &i : bunny->descriptorSet) {
+        commandBuffer->bindDescriptorSet(0, i);
         commandBuffer->draw(bunny->inputAssembler);
     }
     commandBuffer->endRenderPass();
 
     // render bg
-    commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0f, 0);
+    commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0F, 0);
     commandBuffer->bindInputAssembler(bg->inputAssembler);
     commandBuffer->bindPipelineState(bg->pipelineState);
     commandBuffer->bindDescriptorSet(0, bg->descriptorSet);

@@ -7,15 +7,14 @@ namespace cc {
 class StressTest : public TestBaseI {
 public:
     DEFINE_CREATE_METHOD(StressTest)
-    StressTest(const WindowInfo &info) : TestBaseI(info){};
-    ~StressTest() = default;
+    using TestBaseI::TestBaseI;
 
     bool onInit() override;
     void onTick() override;
     void onDestroy() override;
 
 protected:
-    static const gfx::Color clearColors[];
+    static const gfx::Color CLEAR_COLORS[];
 
     void onSpacePressed() override;
 
@@ -24,7 +23,7 @@ protected:
     void createPipeline();
     void createInputAssembler();
 
-    void recordRenderPass(uint index);
+    void recordRenderPass(uint jobIdx);
 
     gfx::Shader *_shader          = nullptr;
     gfx::Buffer *_vertexBuffer    = nullptr;
@@ -49,8 +48,8 @@ protected:
 
     vector<gfx::CommandBuffer *> _parallelCBs;
 
-    uint _worldBufferStride = 0u;
-    uint _threadCount       = 1u;
+    uint _worldBufferStride = 0U;
+    uint _threadCount       = 1U;
 };
 
 } // namespace cc

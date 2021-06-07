@@ -408,17 +408,17 @@ void SubpassTest::createDeferredResources() {
 
     for (uint i = 0; i < 4; ++i) {
         // RGBA8 is suffice for albedo, emission & occlusion
-        gfx::Format       format     = i % 3 ? gfx::Format::RGBA16F : gfx::Format::RGBA8;
-        gfx::TextureUsage usage      = gfx::TextureUsageBit::INPUT_ATTACHMENT | gfx::TextureUsageBit::COLOR_ATTACHMENT;
-        gfx::TextureFlags flags      = gfx::TextureFlagBit::NONE;
-        gfx::StoreOp      storeOp    = gfx::StoreOp::DISCARD;
-        gfx::AccessType   accessType = gfx::AccessType::FRAGMENT_SHADER_READ_COLOR_INPUT_ATTACHMENT;
+        gfx::Format       format          = i % 3 ? gfx::Format::RGBA16F : gfx::Format::RGBA8;
+        gfx::TextureUsage usage           = gfx::TextureUsageBit::INPUT_ATTACHMENT | gfx::TextureUsageBit::COLOR_ATTACHMENT;
+        gfx::TextureFlags flags           = gfx::TextureFlagBit::NONE;
+        gfx::StoreOp      storeOp         = gfx::StoreOp::DISCARD;
+        gfx::AccessType   accessType      = gfx::AccessType::FRAGMENT_SHADER_READ_COLOR_INPUT_ATTACHMENT;
         bool              isGeneralLayout = false;
         if (i == 3) { // use the emission buffer as output
             usage |= gfx::TextureUsageBit::TRANSFER_SRC;
             flags |= gfx::TextureFlagBit::GENERAL_LAYOUT;
-            storeOp    = gfx::StoreOp::STORE;
-            accessType = gfx::AccessType::TRANSFER_READ;
+            storeOp         = gfx::StoreOp::STORE;
+            accessType      = gfx::AccessType::TRANSFER_READ;
             isGeneralLayout = true;
         }
         _deferredGBuffers.emplace_back(device->createTexture({
@@ -430,9 +430,9 @@ void SubpassTest::createDeferredResources() {
             flags,
         }));
         rpInfo.colorAttachments.emplace_back();
-        rpInfo.colorAttachments.back().storeOp        = storeOp;
-        rpInfo.colorAttachments.back().format         = format;
-        rpInfo.colorAttachments.back().endAccesses[0] = accessType;
+        rpInfo.colorAttachments.back().storeOp         = storeOp;
+        rpInfo.colorAttachments.back().format          = format;
+        rpInfo.colorAttachments.back().endAccesses[0]  = accessType;
         rpInfo.colorAttachments.back().isGeneralLayout = isGeneralLayout;
     }
 
@@ -887,7 +887,9 @@ void SubpassTest::onTick() {
 
     gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize();
     Mat4::createRotationY(_time, &_worldMatrix);
-    TestBaseI::createPerspective(60.0F, 1.0F * orientedSize.width / orientedSize.height, 0.01F, 1000.0F, &_projectionMatrix);
+    TestBaseI::createPerspective(60.0F,
+                                 static_cast<float>(orientedSize.width) / static_cast<float>(orientedSize.height),
+                                 0.01F, 1000.0F, &_projectionMatrix);
 
     std::copy(_worldMatrix.m, _worldMatrix.m + 16, &_rootBuffer[0]);
     std::copy(_projectionMatrix.m, _projectionMatrix.m + 16, &_rootBuffer[32]);

@@ -26,7 +26,6 @@ bool BasicTriangle::onInit() {
 }
 
 void BasicTriangle::createShader() {
-
     ShaderSources<StandardShaderSource> sources;
     sources.glsl4 = {
         R"(
@@ -119,11 +118,11 @@ void BasicTriangle::createShader() {
 }
 
 void BasicTriangle::createVertexBuffer() {
-    float vertexData[] = {-0.5f, 0.5f,
-                          -0.5f, -0.5f,
-                          0.5f, -0.5f,
-                          0.0f, 0.5f,
-                          0.5f, 0.5f};
+    float vertexData[] = {-0.5F, 0.5F,
+                          -0.5F, -0.5F,
+                          0.5F, -0.5F,
+                          0.0F, 0.5F,
+                          0.5F, 0.5F};
 
     gfx::BufferInfo vertexBufferInfo = {
         gfx::BufferUsage::VERTEX,
@@ -150,12 +149,12 @@ void BasicTriangle::createVertexBuffer() {
     };
     _uniformBufferMVP = device->createBuffer(uniformBufferMVPInfo);
 
-    unsigned short  indices[]       = {1, 3, 0, 1, 2, 3, 2, 4, 3};
+    uint16_t        indices[]       = {1, 3, 0, 1, 2, 3, 2, 4, 3};
     gfx::BufferInfo indexBufferInfo = {
         gfx::BufferUsageBit::INDEX,
         gfx::MemoryUsage::DEVICE,
         sizeof(indices),
-        sizeof(unsigned short),
+        sizeof(uint16_t),
     };
     _indexBuffer = device->createBuffer(indexBufferInfo);
     _indexBuffer->update(indices, sizeof(indices));
@@ -234,31 +233,32 @@ void BasicTriangle::createPipeline() {
 void BasicTriangle::onTick() {
     uint globalBarrierIdx = _frameCount ? 1 : 0;
 
-    gfx::Color clearColor = {1.0f, 0, 0, 1.0f};
+    gfx::Color clearColor = {1.0F, 0, 0, 1.0F};
 
     gfx::Color uniformColor;
     uniformColor.x = std::abs(std::sin(_time));
-    uniformColor.y = 1.0f;
-    uniformColor.z = 0.0f;
-    uniformColor.w = 1.0f;
+    uniformColor.y = 1.0F;
+    uniformColor.z = 0.0F;
+    uniformColor.w = 1.0F;
 
-    Mat4 MVP;
-    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &MVP);
+    Mat4 mvp;
+    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &mvp);
 
     device->acquire();
 
     _uniformBuffer->update(&uniformColor, sizeof(uniformColor));
-    _uniformBufferMVP->update(MVP.m, sizeof(Mat4));
+    _uniformBufferMVP->update(mvp.m, sizeof(Mat4));
 
     gfx::Rect renderArea = {0, 0, device->getWidth(), device->getHeight()};
 
-    auto commandBuffer = commandBuffers[0];
+    auto *commandBuffer = commandBuffers[0];
     commandBuffer->begin();
 
-    if (TestBaseI::MANUAL_BARRIER)
+    if (TestBaseI::MANUAL_BARRIER) {
         commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx]);
+    }
 
-    commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0f, 0);
+    commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0F, 0);
     commandBuffer->bindInputAssembler(_inputAssembler);
     commandBuffer->bindPipelineState(_pipelineState);
     commandBuffer->bindDescriptorSet(0, _descriptorSet);

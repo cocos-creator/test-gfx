@@ -7,10 +7,8 @@ namespace cc {
 class BasicTexture : public TestBaseI {
 public:
     DEFINE_CREATE_METHOD(BasicTexture)
-    BasicTexture(const WindowInfo &info) : TestBaseI(info){};
-    ~BasicTexture() = default;
+    using TestBaseI::TestBaseI;
 
-public:
     void onTick() override;
     bool onInit() override;
     void onDestroy() override;

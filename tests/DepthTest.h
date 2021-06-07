@@ -7,10 +7,8 @@ namespace cc {
 class DepthTexture : public TestBaseI {
 public:
     DEFINE_CREATE_METHOD(DepthTexture)
-    DepthTexture(const WindowInfo &info) : TestBaseI(info){};
-    ~DepthTexture() = default;
+    using TestBaseI::TestBaseI;
 
-public:
     bool onInit() override;
     void onDestroy() override;
     void onTick() override;

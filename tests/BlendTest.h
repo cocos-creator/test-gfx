@@ -7,8 +7,7 @@ namespace cc {
 class BlendTest : public TestBaseI {
 public:
     DEFINE_CREATE_METHOD(BlendTest)
-    BlendTest(const WindowInfo &info) : TestBaseI(info){};
-    ~BlendTest() = default;
+    using TestBaseI::TestBaseI;
 
     bool onInit() override;
     void onTick() override;

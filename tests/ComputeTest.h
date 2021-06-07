@@ -7,10 +7,8 @@ namespace cc {
 class ComputeTest : public TestBaseI {
 public:
     DEFINE_CREATE_METHOD(ComputeTest)
-    ComputeTest(const WindowInfo &info) : TestBaseI(info){};
-    ~ComputeTest() = default;
+    using TestBaseI::TestBaseI;
 
-public:
     bool onInit() override;
     void onTick() override;
     void onDestroy() override;

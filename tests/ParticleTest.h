@@ -7,10 +7,8 @@ namespace cc {
 class ParticleTest : public TestBaseI {
 public:
     DEFINE_CREATE_METHOD(ParticleTest)
-    ParticleTest(const WindowInfo &info) : TestBaseI(info){};
-    ~ParticleTest() = default;
+    using TestBaseI::TestBaseI;
 
-public:
     bool onInit() override;
     void onTick() override;
     void onDestroy() override;

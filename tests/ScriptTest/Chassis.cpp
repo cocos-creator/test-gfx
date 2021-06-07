@@ -5,7 +5,7 @@ namespace cc {
 
 TransformX            TransformView::buffer;
 vector<vmath::IndexX> TransformView::childrenBuffers;
-TransformView::PtrX       TransformView::views;
+TransformView::PtrX   TransformView::views;
 vmath::Index          TransformView::viewCount{0};
 
 TransformView::TransformView(vmath::Index idx) : _idx(idx) {
@@ -18,7 +18,7 @@ TransformView::TransformView(vmath::Index idx) : _idx(idx) {
 TransformView::~TransformView() {
     if (vmath::slice(views, _idx) != this) return;
 
-    TransformView *last                  = vmath::slice(views, --viewCount);
+    TransformView *last              = vmath::slice(views, --viewCount);
     vmath::slice(buffer, last->_idx) = TransformF{};
 
     if (this != last) {
@@ -176,14 +176,14 @@ void TransformView::updateWorldTransform() const {
     }
 }
 
-ModelX       ModelView::buffer;
-ModelView::PtrX  ModelView::views;
-vmath::Index ModelView::viewCount{0};
+ModelX          ModelView::buffer;
+ModelView::PtrX ModelView::views;
+vmath::Index    ModelView::viewCount{0};
 
 ModelView::~ModelView() {
     if (vmath::slice(views, _idx) != this) return;
 
-    ModelView *last                      = vmath::slice(views, --viewCount);
+    ModelView *last                  = vmath::slice(views, --viewCount);
     vmath::slice(buffer, last->_idx) = ModelF{};
 
     if (this != last) {

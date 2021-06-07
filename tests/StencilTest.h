@@ -7,10 +7,8 @@ namespace cc {
 class StencilTest : public TestBaseI {
 public:
     DEFINE_CREATE_METHOD(StencilTest)
-    StencilTest(const WindowInfo &info) : TestBaseI(info){};
-    ~StencilTest() = default;
+    using TestBaseI::TestBaseI;
 
-public:
     bool onInit() override;
     void onTick() override;
     void onDestroy() override;

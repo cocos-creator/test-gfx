@@ -7,10 +7,8 @@ namespace cc {
 class FrameGraphTest : public TestBaseI {
 public:
     DEFINE_CREATE_METHOD(FrameGraphTest)
-    FrameGraphTest(const WindowInfo &info) : TestBaseI(info){};
-    ~FrameGraphTest() = default;
+    using TestBaseI::TestBaseI;
 
-public:
     bool onInit() override;
     void onTick() override;
     void onDestroy() override;

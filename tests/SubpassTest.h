@@ -7,8 +7,7 @@ namespace cc {
 class SubpassTest : public TestBaseI {
 public:
     DEFINE_CREATE_METHOD(SubpassTest)
-    explicit SubpassTest(const WindowInfo &info) : TestBaseI(info){};
-    ~SubpassTest() override = default;
+    using TestBaseI::TestBaseI;
 
     bool onInit() override;
     void onTick() override;

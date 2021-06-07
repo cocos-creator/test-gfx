@@ -186,7 +186,7 @@ public:
     static FrameRate  deviceThread;
     static const bool MANUAL_BARRIER;
 
-    static const uint NANOSECONDS_PER_SECOND;
+    static const float NANOSECONDS_PER_SECOND;
 
     virtual bool onInit() { return true; }
     virtual void onTick() {}
@@ -223,14 +223,14 @@ public:
     }
 
 protected:
-    static WindowInfo              windowInfo;
-    static int                     curTestIndex;
+    static WindowInfo         windowInfo;
+    static int                curTestIndex;
     static vector<createFunc> tests;
-    static TestBaseI *             test;
-    static int                     nextDirection;
+    static TestBaseI *        test;
+    static int                nextDirection;
 
-    static gfx::Device *                     device;
-    static gfx::Framebuffer *                fbo;
+    static gfx::Device *                device;
+    static gfx::Framebuffer *           fbo;
     static vector<gfx::CommandBuffer *> commandBuffers;
 
     static gfx::RenderPass *renderPass;
