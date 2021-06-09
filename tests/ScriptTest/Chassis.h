@@ -178,7 +178,10 @@ constexpr uint MAX_CPU_FRAME_AHEAD = 1U;
 
 class TransformAgent : public Agent<TransformView> {
 public:
-    using Agent::Agent;
+    explicit TransformAgent(TransformView *const actor)
+    : Agent<TransformView>(actor) {
+        _idx = static_cast<TransformAgent *>(actor)->_idx;
+    }
     ~TransformAgent() override;
 
     void setParent(TransformView *value) override;
@@ -190,7 +193,10 @@ public:
 
 class ModelAgent : public Agent<ModelView> {
 public:
-    using Agent::Agent;
+    explicit ModelAgent(ModelView *const actor)
+    : Agent<ModelView>(actor) {
+        _idx = static_cast<ModelAgent *>(actor)->_idx;
+    }
     ~ModelAgent() override;
 
     void setColor(float r, float g, float b, float a) override;

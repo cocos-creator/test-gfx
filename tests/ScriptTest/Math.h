@@ -1,6 +1,11 @@
 #pragma once
 
+#include "enoki/array_router.h"
+#include "enoki/array_traits.h"
 #include "enoki/dynamic.h"
+#include "enoki/matrix.h"
+#include "enoki/quaternion.h"
+#include "enoki/random.h"
 #include "supp_math.h"
 
 #include <sstream>
@@ -49,23 +54,45 @@ namespace vmath {
     namespace ns1 {                                   \
     namespace ns2 {
 
+/// Generic array class, which broadcasts from the outer to inner dimensions
 template <typename Value, size_t Size>
 using Array = enoki::Array<Value, Size>;
+
+/// Generic array class, which broadcasts from the inner to outer dimensions
 template <typename Value, size_t Size>
 using Packet = enoki::Packet<Value, Size>;
+
+/// Dynamically sized array
 template <typename Value>
 using DynamicArray = enoki::DynamicArray<Value>;
 
+/// PCG32 pseudorandom number generator proposed by Melissa O'Neill
+template <typename Value>
+using PCG32 = enoki::PCG32<Value>;
+
+template <typename Value>
+using divisor = enoki::divisor<Value>;
+
+/// Type trait to compute the type of an arithmetic expression involving Ts...
 template <typename... Ts>
 using expr_t = enoki::expr_t<Ts...>;
+
+/// Type trait to access the base scalar type underlying a potentially nested array
 template <typename T>
 using scalar_t = enoki::scalar_t<T>;
+
+/// Type trait to access the mask type underlying an array
 template <typename T, bool CopyFlags = true>
 using mask_t = enoki::mask_t<T, CopyFlags>;
+
+/// Unsigned integer-based version of a given array class
 template <typename T, bool CopyFlags = true>
 using uint_array_t = enoki::uint_array_t<T, CopyFlags>;
+
+/// Floating point-based version of a given array class
 template <typename T, bool CopyFlags = true>
 using float_array_t = enoki::float_array_t<T, CopyFlags>;
+
 template <typename T, typename Value, bool CopyFlags = true>
 using replace_scalar_t = enoki::replace_scalar_t<T, Value, CopyFlags>;
 
@@ -114,15 +141,54 @@ using MaskF = Mask<float>;
 using MaskP = Mask<FloatP>;
 using MaskX = Mask<FloatX>;
 
-template <typename Value>
-CC_INLINE size_t packets(const Value &v) {
-    return enoki::packets<Value>(v);
-}
+using enoki::abs;       // NOLINT(misc-unused-using-decls)
+using enoki::concat;    // NOLINT(misc-unused-using-decls)
+using enoki::cross;     // NOLINT(misc-unused-using-decls)
+using enoki::dot;       // NOLINT(misc-unused-using-decls)
+using enoki::floor;     // NOLINT(misc-unused-using-decls)
+using enoki::high;      // NOLINT(misc-unused-using-decls)
+using enoki::isinf;     // NOLINT(misc-unused-using-decls)
+using enoki::isnan;     // NOLINT(misc-unused-using-decls)
+using enoki::linspace;  // NOLINT(misc-unused-using-decls)
+using enoki::low;       // NOLINT(misc-unused-using-decls)
+using enoki::norm;      // NOLINT(misc-unused-using-decls)
+using enoki::normalize; // NOLINT(misc-unused-using-decls)
+using enoki::partition; // NOLINT(misc-unused-using-decls)
+using enoki::rol;       // NOLINT(misc-unused-using-decls)
+using enoki::ror;       // NOLINT(misc-unused-using-decls)
+using enoki::select;    // NOLINT(misc-unused-using-decls)
+using enoki::shuffle;   // NOLINT(misc-unused-using-decls)
+using enoki::sign;      // NOLINT(misc-unused-using-decls)
+using enoki::sqr;       // NOLINT(misc-unused-using-decls)
 
-template <typename Value>
-CC_INLINE size_t slices(const Value &v) {
-    return enoki::slices<Value>(v);
-}
+using enoki::acos;      // NOLINT(misc-unused-using-decls)
+using enoki::asin;      // NOLINT(misc-unused-using-decls)
+using enoki::atan;      // NOLINT(misc-unused-using-decls)
+using enoki::atan2;     // NOLINT(misc-unused-using-decls)
+using enoki::clamp;     // NOLINT(misc-unused-using-decls)
+using enoki::cos;       // NOLINT(misc-unused-using-decls)
+using enoki::cot;       // NOLINT(misc-unused-using-decls)
+using enoki::exp;       // NOLINT(misc-unused-using-decls)
+using enoki::fmod;      // NOLINT(misc-unused-using-decls)
+using enoki::identity;  // NOLINT(misc-unused-using-decls)
+using enoki::lerp;      // NOLINT(misc-unused-using-decls)
+using enoki::log;       // NOLINT(misc-unused-using-decls)
+using enoki::pow;       // NOLINT(misc-unused-using-decls)
+using enoki::sin;       // NOLINT(misc-unused-using-decls)
+using enoki::sincos;    // NOLINT(misc-unused-using-decls)
+using enoki::tan;       // NOLINT(misc-unused-using-decls)
+using enoki::transpose; // NOLINT(misc-unused-using-decls)
+using enoki::zero;      // NOLINT(misc-unused-using-decls)
+
+using enoki::packet;  // NOLINT(misc-unused-using-decls)
+using enoki::packets; // NOLINT(misc-unused-using-decls)
+using enoki::slice;   // NOLINT(misc-unused-using-decls)
+using enoki::slices;  // NOLINT(misc-unused-using-decls)
+
+using enoki::compress; // NOLINT(misc-unused-using-decls)
+using enoki::gather;   // NOLINT(misc-unused-using-decls)
+/// Scatter operations with an array or other data structure as target
+using enoki::scatter; // NOLINT(misc-unused-using-decls)
 
 template <bool keepValue = false, typename Value>
 CC_INLINE void setSlices(Value &v, size_t size) {
@@ -145,103 +211,67 @@ CC_INLINE void setSlices(Value &v, size_t size) {
     }
 }
 
-template <typename Value>
-CC_INLINE decltype(auto) packet(Value &&v, size_t i) {
-    return enoki::packet<Value>(v, i);
-}
-
-template <typename Value>
-CC_INLINE decltype(auto) slice(Value &v, size_t i) {
-    return enoki::slice<Value>(v, i);
-}
-
-template <typename Value>
-CC_INLINE Value zero() {
-    return enoki::zero<Value>();
-}
-
-template <typename Array, enoki::enable_if_dynamic_array_t<Array> = 0>
-CC_INLINE Array linspace(scalar_t<Array> min, scalar_t<Array> max, size_t size = 1) {
-    return enoki::linspace<Array>(min, max, size);
-}
-
-template <typename Array, enoki::enable_if_static_array_t<Array> = 0>
-CC_INLINE Array linspace(scalar_t<Array> min, scalar_t<Array> max, size_t size = Array::Size) {
-    return enoki::linspace<Array>(min, max, size);
-}
-
-template <typename Value>
-CC_INLINE Value identity() {
-    return enoki::identity<Value>();
-}
-
-template <typename Value>
-CC_INLINE Value load(const void *mem) {
-    return enoki::load_unaligned<Value>(mem);
-}
-
-template <typename Value>
-CC_INLINE void store(void *mem, const Value &value) {
-    enoki::store_unaligned<Value>(mem, value);
-}
-
-template <typename Value>
-CC_INLINE Value loadAligned(const void *mem) {
-    return enoki::load<Value>(mem);
-}
-
-template <typename Value>
-CC_INLINE void storeAligned(void *mem, const Value &value) {
-    enoki::store<Value>(mem, value);
-}
-
-template <typename Value>
-CC_INLINE Value load(const void *mem, const mask_t<Value> &mask) {
-    return enoki::load_unaligned<Value>(mem, mask);
-}
-
-template <typename Value>
-CC_INLINE void store(void *mem, const Value &value, const mask_t<Value> &mask) {
-    enoki::store_unaligned<Value>(mem, value, mask);
-}
-
-template <typename Value>
-CC_INLINE Value loadAligned(const void *mem, const mask_t<Value> &mask) {
-    return enoki::load<Value>(mem, mask);
-}
-
-template <typename Value>
-CC_INLINE void storeAligned(void *mem, const Value &value, const mask_t<Value> &mask) {
-    enoki::store<Value>(mem, value, mask);
-}
-
-template <typename Array, size_t Stride = 0, bool Packed = true, bool IsPermute = false, typename Source, typename Index, typename Mask = mask_t<Index>>
-CC_INLINE Array gather(const Source &source, const Index &index, const enoki::identity_t<Mask> &mask = true) {
-    enoki::gather<Array, Stride, Packed, IsPermute, Source, Index, Mask>(source, index, mask);
-}
-
-template <size_t Stride = 0, bool Packed = true, bool Masked = true, typename Array, typename Index,
-          typename Mask = mask_t<replace_scalar_t<Index, scalar_t<Array>>>>
-CC_INLINE void scatter(void *mem, const Array &value, const Index &index, const enoki::identity_t<Mask> &mask = true) {
-    enoki::scatter<Stride, Packed, Masked, Array, Index, Mask>(mem, value, index, mask);
-}
-
+/// Conflict-free scatter-add update
 template <size_t Stride = 0, bool Packed = true, bool IsPermute = false, typename Target, typename Index, typename Value,
           typename Mask = mask_t<Index>, enoki::enable_if_t<enoki::is_dynamic_v<Target>> = 0>
 CC_INLINE void scatterAdd(Target &target, const Value &value, const Index &index, const enoki::identity_t<Mask> &mask = true) {
     enoki::scatter_add<Stride, Packed, IsPermute, Target, Index, Value, Mask>(target, value, index, mask);
 }
 
-template <typename Output, typename Input, typename Mask>
-CC_INLINE size_t compress(Output &mem, const Input &value, const Mask &mask) {
-    return enoki::compress<Output, Input, Mask>(mem, value, mask);
+template <typename Target, typename Source>
+CC_INLINE Target reinterpret(const Source &src) {
+    return enoki::reinterpret_array(src);
 }
 
-template <typename Input, typename Mask>
-CC_INLINE Input compress(const Input &value, const Mask &mask) {
-    return enoki::compress<Input>(value, mask);
+/// Load an array from unaligned memory
+template <typename Value>
+CC_INLINE Value load(const void *mem) {
+    return enoki::load_unaligned<Value>(mem);
 }
 
+/// Store an array to unaligned memory
+template <typename Value>
+CC_INLINE void store(void *mem, const Value &value) {
+    enoki::store_unaligned<Value>(mem, value);
+}
+
+/// Load an array from aligned memory
+template <typename Value>
+CC_INLINE Value loadAligned(const void *mem) {
+    return enoki::load<Value>(mem);
+}
+
+/// Store an array to aligned memory
+template <typename Value>
+CC_INLINE void storeAligned(void *mem, const Value &value) {
+    enoki::store<Value>(mem, value);
+}
+
+/// Load an array from unaligned memory
+template <typename Value>
+CC_INLINE Value load(const void *mem, const mask_t<Value> &mask) {
+    return enoki::load_unaligned<Value>(mem, mask);
+}
+
+/// Store an array to unaligned memory
+template <typename Value>
+CC_INLINE void store(void *mem, const Value &value, const mask_t<Value> &mask) {
+    enoki::store_unaligned<Value>(mem, value, mask);
+}
+
+/// Load an array from aligned memory
+template <typename Value>
+CC_INLINE Value loadAligned(const void *mem, const mask_t<Value> &mask) {
+    return enoki::load<Value>(mem, mask);
+}
+
+/// Store an array to aligned memory
+template <typename Value>
+CC_INLINE void storeAligned(void *mem, const Value &value, const mask_t<Value> &mask) {
+    enoki::store<Value>(mem, value, mask);
+}
+
+/// Conflict-free modification operation
 template <typename Arg, size_t Stride = sizeof(enoki::scalar_t<Arg>),
           typename Func, typename Index, typename... Args>
 CC_INLINE void transform(void *mem, const Index &index, Func &&func, Args &&...args) {
@@ -251,11 +281,6 @@ CC_INLINE void transform(void *mem, const Index &index, Func &&func, Args &&...a
 template <typename Value, typename Expr = enoki::expr_t<Value>>
 CC_INLINE Expr conjugate(const Value &v) {
     return enoki::conj(v);
-}
-
-template <typename Value, size_t Size>
-CC_INLINE auto transpose(const enoki::Matrix<Value, Size> &v) {
-    return enoki::transpose(v);
 }
 
 template <typename Value, typename Expr = enoki::expr_t<Value>>
