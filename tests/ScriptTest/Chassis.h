@@ -28,22 +28,30 @@ template <typename Value>
 struct Transform {
     using Packet = Transform<vmath::FloatP>;
 
+    /* AoS */
+    using Vec3 = vmath::replace_scalar_t<Value, vmath::Vec3F>;
+    using Quat = vmath::replace_scalar_t<Value, vmath::QuatF>;
+    using Mat4 = vmath::replace_scalar_t<Value, vmath::Mat4F>;
+    // */
+
+    /* SoA *
     using Vec3 = vmath::Vec3<Value>;
     using Quat = vmath::Quat<Value>;
     using Mat4 = vmath::Mat4<Value>;
+    // */
 
     using TransformFlags = vmath::replace_scalar_t<Value, TransformFlagBit>;
     using Index          = vmath::replace_scalar_t<Value, vmath::Index>;
 
-    Vec3 lpos = vmath::zero<Vec3>();
-    Quat lrot = vmath::identity<Quat>();
-    Vec3 lscale{1.F, 1.F, 1.F};
+    Vec3 lpos   = vmath::zero<vmath::Vec3F>();
+    Quat lrot   = vmath::identity<vmath::QuatF>();
+    Vec3 lscale = vmath::Vec3F{1.F, 1.F, 1.F};
 
     TransformFlags dirtyFlags{TransformFlagBit::NONE};
-    Vec3           pos = vmath::zero<Vec3>();
-    Quat           rot = vmath::identity<Quat>();
-    Vec3           scale{1.F, 1.F, 1.F};
-    Mat4           mat = vmath::identity<Mat4>();
+    Vec3           pos   = vmath::zero<vmath::Vec3F>();
+    Quat           rot   = vmath::identity<vmath::QuatF>();
+    Vec3           scale = vmath::Vec3F{1.F, 1.F, 1.F};
+    Mat4           mat   = vmath::identity<vmath::Mat4F>();
 
     Index parent{-1};
     Index childrenCount{0};
@@ -60,10 +68,6 @@ using TransformX = Transform<vmath::FloatX>;
 
 class TransformView {
 public:
-    using Ptr  = TransformView *;
-    using PtrP = vmath::Array<Ptr, vmath::PACKET_SIZE>;
-    using PtrX = vmath::DynamicArray<PtrP>;
-
     TransformView() = default;
     virtual ~TransformView();
     TransformView(const TransformView &) noexcept = delete;
@@ -75,14 +79,23 @@ public:
 
     virtual void setParent(TransformView *value);
     virtual void setPosition(float x, float y, float z);
-    virtual void setRotation(const float *q);
+    virtual void setRotation(float x, float y, float z, float w);
     virtual void setRotationFromEuler(float angleX, float angleY, float angleZ);
     virtual void setScale(float x, float y, float z);
 
-    static TransformX            buffer;
-    static vector<vmath::IndexX> childrenBuffers;
-    static PtrX                  views;
-    static vmath::Index          viewCount;
+    template <typename Value>
+    inline void setPosition(const Value &v) { setPosition(v[0], v[1], v[2]); }
+    inline void setPosition(const float *v) { setPosition(v[0], v[1], v[2]); }
+    template <typename Value>
+    inline void setRotation(const Value &q) { setRotation(q[0], q[1], q[2], q[3]); }
+    inline void setRotation(const float *q) { setRotation(q[0], q[1], q[2], q[3]); }
+    template <typename Value>
+    inline void setScale(const Value &v) { setScale(v[0], v[1], v[2]); }
+    inline void setScale(const float *v) { setScale(v[0], v[1], v[2]); }
+
+    static TransformX              buffer;
+    static vector<vmath::IndexX>   childrenBuffers;
+    static vector<TransformView *> views;
 
     void         updateWorldTransform() const;
     vmath::Index getIdx() const { return _idx; }
@@ -97,13 +110,13 @@ template <typename Value>
 struct Model {
     using Packet = Model<vmath::FloatP>;
 
-    using TransformIdx = vmath::replace_scalar_t<Value, vmath::Index>;
-    using Vec4         = vmath::Vec4<Value>;
-    using Bool         = vmath::mask_t<Value>;
+    using Index = vmath::replace_scalar_t<Value, vmath::Index>;
+    using Vec4  = vmath::replace_scalar_t<Value, vmath::Vec4F>;
+    using Bool  = vmath::mask_t<Value>;
 
-    TransformIdx transform{-1};
-    Vec4         color{1.F, 1.F, 1.F, 1.F};
-    Bool         enabled{true};
+    Index transform{-1};
+    Vec4  color = vmath::Vec4F{1.F, 1.F, 1.F, 1.F};
+    Bool  enabled{true};
 
     // NOLINTNEXTLINE(google-explicit-constructor) false positive when involving __VA_ARGS__
     CC_VMATH_STRUCT(Model, transform, color, enabled)
@@ -117,10 +130,6 @@ using ModelX = Model<vmath::FloatX>;
 
 class ModelView {
 public:
-    using Ptr  = ModelView *;
-    using PtrP = vmath::Array<Ptr, vmath::PACKET_SIZE>;
-    using PtrX = vmath::DynamicArray<PtrP>;
-
     ModelView() = default;
     virtual ~ModelView();
     ModelView(const ModelView &) noexcept = delete;
@@ -134,9 +143,12 @@ public:
     virtual void setTransform(const TransformView *transform);
     virtual void setEnabled(bool enabled);
 
-    static ModelX       buffer;
-    static PtrX         views;
-    static vmath::Index viewCount;
+    template <typename Value>
+    inline void setColor(const Value &v) { setColor(v[0], v[1], v[2], v[3]); }
+    inline void setColor(const float *v) { setColor(v[0], v[1], v[2], v[3]); }
+
+    static ModelX              buffer;
+    static vector<ModelView *> views;
 
     vmath::Index getIdx() const { return _idx; }
 
@@ -186,7 +198,7 @@ public:
 
     void setParent(TransformView *value) override;
     void setPosition(float x, float y, float z) override;
-    void setRotation(const float *q) override;
+    void setRotation(float x, float y, float z, float w) override;
     void setRotationFromEuler(float angleX, float angleY, float angleZ) override;
     void setScale(float x, float y, float z) override;
 };

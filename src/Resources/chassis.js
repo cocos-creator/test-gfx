@@ -47,22 +47,38 @@ const chassis = (() => {
         }
 
         setPosition(x, y, z) {
-            vec3.set(this._lpos, x, y, z);
+            if (y !== undefined) {
+                vec3.set(this._lpos, x, y, z);
+            } else {
+                vec3.copy(this._lpos, x);
+            }
             this._invalidateChildren(TransformFlagBit.POSITION);
         }
 
-        setRotation(q) {
-            quat.copy(this._lrot, q);
+        setRotation(x, y, z, w) {
+            if (y !== undefined) {
+                quat.set(this._lrot, x, y, z, w);
+            } else {
+                quat.copy(this._lrot, x);
+            }
             this._invalidateChildren(TransformFlagBit.ROTATION);
         }
 
-        setRotationFromEuler(angleX, angleY, angleZ) {
-            quat.fromEuler(this._lrot, angleX, angleY, angleZ, 'yzx');
+        setRotationFromEuler(x, y, z) {
+            if (y !== undefined) {
+                quat.fromEuler(this._lrot, x, y, z, 'yzx');
+            } else {
+                quat.fromEuler(this._lrot, x[0], x[1], x[2], 'yzx');
+            }
             this._invalidateChildren(TransformFlagBit.ROTATION);
         }
 
         setScale(x, y, z) {
-            vec3.set(this._lscale, x, y, z);
+            if (y !== undefined) {
+                vec3.set(this._lscale, x, y, z);
+            } else {
+                vec3.copy(this._lscale, x);
+            }
             this._invalidateChildren(TransformFlagBit.SCALE);
         }
 
@@ -174,7 +190,11 @@ const chassis = (() => {
         }
 
         setColor(r, g, b, a) {
-            vec4.set(this._color, r, g, b, a);
+            if (g !== undefined) {
+                vec4.set(this._color, r, g, b, a);
+            } else {
+                vec4.copy(this._color, r);
+            }
         }
 
         getTransform() {
@@ -226,23 +246,43 @@ const chassis = (() => {
         }
 
         setPosition(x, y, z) {
-            super.setPosition(x, y, z);
-            this._actor.setPosition(x, y, z);
+            if (y !== undefined) {
+                super.setPosition(x, y, z);
+                this._actor.setPosition(x, y, z);
+            } else {
+                super.setPosition(x);
+                this._actor.setPosition(x);
+            }
         }
 
-        setRotation(q) {
-            super.setRotation(q);
-            this._actor.setRotation(q);
+        setRotation(x, y, z, w) {
+            if (y !== undefined) {
+                super.setRotation(x, y, z, w);
+                this._actor.setRotation(x, y, z, w);
+            } else {
+                super.setRotation(x);
+                this._actor.setRotation(x);
+            }
         }
 
-        setRotationFromEuler(angleX, angleY, angleZ) {
-            super.setRotationFromEuler(angleX, angleY, angleZ);
-            this._actor.setRotationFromEuler(angleX, angleY, angleZ);
+        setRotationFromEuler(x, y, z) {
+            if (y !== undefined) {
+                super.setRotationFromEuler(x, y, z);
+                this._actor.setRotationFromEuler(x, y, z);
+            } else {
+                super.setRotationFromEuler(x);
+                this._actor.setRotationFromEuler(x);
+            }
         }
 
         setScale(x, y, z) {
-            super.setScale(x, y, z);
-            this._actor.setScale(x, y, z);
+            if (y !== undefined) {
+                super.setScale(x, y, z);
+                this._actor.setScale(x, y, z);
+            } else {
+                super.setScale(x);
+                this._actor.setScale(x);
+            }
         }
     }
 
@@ -260,8 +300,13 @@ const chassis = (() => {
         }
 
         setColor(r, g, b, a) {
-            super.setColor(r, g, b, a);
-            this._actor.setColor(r, g, b, a);
+            if (g !== undefined) {
+                super.setColor(r, g, b, a);
+                this._actor.setColor(r, g, b, a);
+            } else {
+                super.setColor(r);
+                this._actor.setColor(r);
+            }
         }
     }
 

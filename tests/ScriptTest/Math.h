@@ -96,7 +96,7 @@ using float_array_t = enoki::float_array_t<T, CopyFlags>;
 template <typename T, typename Value, bool CopyFlags = true>
 using replace_scalar_t = enoki::replace_scalar_t<T, Value, CopyFlags>;
 
-constexpr size_t PACKET_SIZE = enoki::array_default_size > 1 ? enoki::array_default_size * 2 : 1;
+constexpr size_t PACKET_SIZE = std::max(16U, enoki::array_default_size * 2U);
 
 using Index  = int;
 using IndexP = Packet<Index, PACKET_SIZE>;
@@ -135,31 +135,73 @@ using Mat4F = Mat4<float>;
 using Mat4P = Mat4<FloatP>;
 using Mat4X = Mat4<FloatX>;
 
-template <typename Value>
-using Mask  = enoki::Mask<Value>;
-using MaskF = Mask<float>;
-using MaskP = Mask<FloatP>;
-using MaskX = Mask<FloatX>;
+using MaskF = mask_t<float>;
+using MaskP = mask_t<FloatP>;
+using MaskX = mask_t<FloatX>;
 
-using enoki::abs;       // NOLINT(misc-unused-using-decls)
-using enoki::concat;    // NOLINT(misc-unused-using-decls)
-using enoki::cross;     // NOLINT(misc-unused-using-decls)
-using enoki::dot;       // NOLINT(misc-unused-using-decls)
-using enoki::floor;     // NOLINT(misc-unused-using-decls)
-using enoki::high;      // NOLINT(misc-unused-using-decls)
-using enoki::isinf;     // NOLINT(misc-unused-using-decls)
-using enoki::isnan;     // NOLINT(misc-unused-using-decls)
-using enoki::linspace;  // NOLINT(misc-unused-using-decls)
-using enoki::low;       // NOLINT(misc-unused-using-decls)
-using enoki::norm;      // NOLINT(misc-unused-using-decls)
-using enoki::normalize; // NOLINT(misc-unused-using-decls)
-using enoki::partition; // NOLINT(misc-unused-using-decls)
-using enoki::rol;       // NOLINT(misc-unused-using-decls)
-using enoki::ror;       // NOLINT(misc-unused-using-decls)
-using enoki::select;    // NOLINT(misc-unused-using-decls)
-using enoki::shuffle;   // NOLINT(misc-unused-using-decls)
-using enoki::sign;      // NOLINT(misc-unused-using-decls)
-using enoki::sqr;       // NOLINT(misc-unused-using-decls)
+using enoki::abs;         // NOLINT(misc-unused-using-decls)
+using enoki::all;         // NOLINT(misc-unused-using-decls)
+using enoki::all_inner;   // NOLINT(misc-unused-using-decls)
+using enoki::andnot;      // NOLINT(misc-unused-using-decls)
+using enoki::any;         // NOLINT(misc-unused-using-decls)
+using enoki::any_inner;   // NOLINT(misc-unused-using-decls)
+using enoki::ceil;        // NOLINT(misc-unused-using-decls)
+using enoki::concat;      // NOLINT(misc-unused-using-decls)
+using enoki::count;       // NOLINT(misc-unused-using-decls)
+using enoki::count_inner; // NOLINT(misc-unused-using-decls)
+using enoki::cross;       // NOLINT(misc-unused-using-decls)
+using enoki::dot;         // NOLINT(misc-unused-using-decls)
+using enoki::eq;          // NOLINT(misc-unused-using-decls)
+using enoki::floor;       // NOLINT(misc-unused-using-decls)
+using enoki::fmadd;       // NOLINT(misc-unused-using-decls)
+using enoki::fmaddsub;    // NOLINT(misc-unused-using-decls)
+using enoki::fmsub;       // NOLINT(misc-unused-using-decls)
+using enoki::fmsubadd;    // NOLINT(misc-unused-using-decls)
+using enoki::fnmadd;      // NOLINT(misc-unused-using-decls)
+using enoki::fnmsub;      // NOLINT(misc-unused-using-decls)
+using enoki::high;        // NOLINT(misc-unused-using-decls)
+using enoki::hmax;        // NOLINT(misc-unused-using-decls)
+using enoki::hmax_inner;  // NOLINT(misc-unused-using-decls)
+using enoki::hmean;       // NOLINT(misc-unused-using-decls)
+using enoki::hmean_inner; // NOLINT(misc-unused-using-decls)
+using enoki::hmin;        // NOLINT(misc-unused-using-decls)
+using enoki::hmin_inner;  // NOLINT(misc-unused-using-decls)
+using enoki::hprod;       // NOLINT(misc-unused-using-decls)
+using enoki::hprod_inner; // NOLINT(misc-unused-using-decls)
+using enoki::hsum;        // NOLINT(misc-unused-using-decls)
+using enoki::hsum_inner;  // NOLINT(misc-unused-using-decls)
+using enoki::isinf;       // NOLINT(misc-unused-using-decls)
+using enoki::isnan;       // NOLINT(misc-unused-using-decls)
+using enoki::linspace;    // NOLINT(misc-unused-using-decls)
+using enoki::low;         // NOLINT(misc-unused-using-decls)
+using enoki::lzcnt;       // NOLINT(misc-unused-using-decls)
+using enoki::max;         // NOLINT(misc-unused-using-decls)
+using enoki::min;         // NOLINT(misc-unused-using-decls)
+using enoki::mulhi;       // NOLINT(misc-unused-using-decls)
+using enoki::neq;         // NOLINT(misc-unused-using-decls)
+using enoki::norm;        // NOLINT(misc-unused-using-decls)
+using enoki::normalize;   // NOLINT(misc-unused-using-decls)
+using enoki::partition;   // NOLINT(misc-unused-using-decls)
+using enoki::popcnt;      // NOLINT(misc-unused-using-decls)
+using enoki::psum;        // NOLINT(misc-unused-using-decls)
+using enoki::psum_inner;  // NOLINT(misc-unused-using-decls)
+using enoki::rcp;         // NOLINT(misc-unused-using-decls)
+using enoki::reverse;     // NOLINT(misc-unused-using-decls)
+using enoki::rol;         // NOLINT(misc-unused-using-decls)
+using enoki::rol_array;   // NOLINT(misc-unused-using-decls)
+using enoki::ror;         // NOLINT(misc-unused-using-decls)
+using enoki::ror_array;   // NOLINT(misc-unused-using-decls)
+using enoki::round;       // NOLINT(misc-unused-using-decls)
+using enoki::rsqrt;       // NOLINT(misc-unused-using-decls)
+using enoki::select;      // NOLINT(misc-unused-using-decls)
+using enoki::shuffle;     // NOLINT(misc-unused-using-decls)
+using enoki::sign;        // NOLINT(misc-unused-using-decls)
+using enoki::sl;          // NOLINT(misc-unused-using-decls)
+using enoki::sqr;         // NOLINT(misc-unused-using-decls)
+using enoki::sqrt;        // NOLINT(misc-unused-using-decls)
+using enoki::sr;          // NOLINT(misc-unused-using-decls)
+using enoki::trunc;       // NOLINT(misc-unused-using-decls)
+using enoki::tzcnt;       // NOLINT(misc-unused-using-decls)
 
 using enoki::acos;      // NOLINT(misc-unused-using-decls)
 using enoki::asin;      // NOLINT(misc-unused-using-decls)

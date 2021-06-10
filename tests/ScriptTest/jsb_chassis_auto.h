@@ -55,4 +55,5 @@ bool register_all_chassis(se::Object* obj);
 JSB_REGISTER_OBJECT_TYPE(cc::RootManager);
 SE_DECLARE_FUNC(js_chassis_RootManager_destroy);
 SE_DECLARE_FUNC(js_chassis_RootManager_create);
+SE_DECLARE_FUNC(js_chassis_RootManager_getInstance);
 

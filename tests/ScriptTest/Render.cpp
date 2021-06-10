@@ -10,9 +10,8 @@ namespace {
 // fix-functioned resources just for test purposes
 gfx::Shader *                shader{nullptr};
 gfx::Buffer *                vertexBuffer{nullptr};
+gfx::Buffer *                instancedBuffer{nullptr};
 gfx::Buffer *                uniformBufferGlobal{nullptr};
-gfx::Buffer *                uniformBuffer{nullptr};
-gfx::Buffer *                uniformBufferView{nullptr};
 gfx::DescriptorSet *         descriptorSet{nullptr};
 gfx::DescriptorSetLayout *   descriptorSetLayout{nullptr};
 gfx::PipelineLayout *        pipelineLayout{nullptr};
@@ -20,8 +19,9 @@ gfx::PipelineState *         pipelineState{nullptr};
 gfx::InputAssembler *        inputAssembler{nullptr};
 vector<gfx::GlobalBarrier *> globalBarriers;
 vector<float>                uniformBufferData;
-uint                         uboStride     = 0U;
-uint                         modelCapacity = Root::INITIAL_CAPACITY;
+uint                         uboStride          = 0U;
+uint                         floatCountPerModel = 0U;
+uint                         modelCapacity      = Root::INITIAL_CAPACITY;
 vmath::IndexP                index;
 constexpr bool               ROTATE_VIEW = true;
 
@@ -38,28 +38,39 @@ void Root::initialize() {
         R"(
             precision highp float;
             layout(location = 0) in vec3 a_position;
-            layout(set = 0, binding = 0) uniform Constants {
-                vec4 u_color;
-                mat4 u_worldView;
-            };
-            layout(set = 0, binding = 1) uniform Global {
+            layout(location = 1) in vec4 a_color;
+            layout(location = 2) in vec4 a_worldView0;
+            layout(location = 3) in vec4 a_worldView1;
+            layout(location = 4) in vec4 a_worldView2;
+            layout(location = 5) in vec4 a_worldView3;
+
+            mat4 getWorldViewMatrix () {
+                return mat4(
+                    a_worldView0,
+                    a_worldView1,
+                    a_worldView2,
+                    a_worldView3
+                );
+            }
+
+            layout(set = 0, binding = 0) uniform Global {
                 mat4 u_project;
             };
 
-            void main() {
-                gl_Position = u_project * u_worldView * vec4(a_position, 1.0);
+            layout(location = 0) out vec4 v_color;
+
+            void main () {
+                v_color = a_color;
+                gl_Position = u_project * getWorldViewMatrix() * vec4(a_position, 1.0);
             }
         )",
         R"(
             precision highp float;
-            layout(set = 0, binding = 0) uniform Constants {
-                vec4 u_color;
-                mat4 u_worldView;
-            };
+            layout(location = 0) in vec4 v_color;
             layout(location = 0) out vec4 o_color;
 
-            void main() {
-                o_color = u_color;
+            void main () {
+                o_color = v_color;
             }
         )",
     };
@@ -67,28 +78,39 @@ void Root::initialize() {
     sources.glsl3 = {
         R"(
             in vec3 a_position;
-            layout(std140) uniform Constants {
-                vec4 u_color;
-                mat4 u_worldView;
-            };
+            in vec4 a_color;
+            in vec4 a_worldView0;
+            in vec4 a_worldView1;
+            in vec4 a_worldView2;
+            in vec4 a_worldView3;
+
+            mat4 getWorldViewMatrix () {
+                return mat4(
+                    a_worldView0,
+                    a_worldView1,
+                    a_worldView2,
+                    a_worldView3
+                );
+            }
+
             layout(std140) uniform Global {
                 mat4 u_project;
             };
 
-            void main() {
-                gl_Position = u_project * u_worldView * vec4(a_position, 1.0);
+            out vec4 v_color;
+
+            void main () {
+                v_color = a_color;
+                gl_Position = u_project * getWorldViewMatrix() * vec4(a_position, 1.0);
             }
         )",
         R"(
             precision mediump float;
-            layout(std140) uniform Constants {
-                vec4 u_color;
-                mat4 u_worldView;
-            };
-
+            in vec4 v_color;
             out vec4 o_color;
-            void main() {
-                o_color = u_color;
+
+            void main () {
+                o_color = v_color;
             }
         )",
     };
@@ -96,19 +118,36 @@ void Root::initialize() {
     sources.glsl1 = {
         R"(
             attribute vec3 a_position;
-            uniform vec4 u_color;
-            uniform mat4 u_worldView;
+            attribute vec4 a_color;
+            attribute vec4 a_worldView0;
+            attribute vec4 a_worldView1;
+            attribute vec4 a_worldView2;
+            attribute vec4 a_worldView3;
+
+            mat4 getWorldViewMatrix () {
+                return mat4(
+                    a_worldView0,
+                    a_worldView1,
+                    a_worldView2,
+                    a_worldView3
+                );
+            }
+
             uniform mat4 u_project;
 
-            void main() {
-                gl_Position = u_project * u_worldView * vec4(a_position, 1.0);
+            varying vec4 v_color;
+
+            void main () {
+                v_color = a_color;
+                gl_Position = u_project * getWorldViewMatrix() * vec4(a_position, 1.0);
             }
         )",
         R"(
             precision mediump float;
-            uniform vec4 u_color;
+            varying vec4 v_color;
+
             void main() {
-                gl_FragColor = u_color;
+                gl_FragColor = v_color;
             }
         )",
     };
@@ -130,16 +169,6 @@ void Root::initialize() {
         {
             0,
             0,
-            "Constants",
-            {
-                {"u_color", gfx::Type::FLOAT4, 1},
-                {"u_worldView", gfx::Type::MAT4, 1},
-            },
-            1,
-        },
-        {
-            0,
-            1,
             "Global",
             {
                 {"u_project", gfx::Type::MAT4, 1},
@@ -147,7 +176,14 @@ void Root::initialize() {
             1,
         },
     };
-    gfx::AttributeList attributeList = {{"a_position", gfx::Format::RGB32F, false, 0, false, 0}};
+    gfx::AttributeList attributeList = {
+        {"a_position", gfx::Format::RGB32F, false, 0, false, 0},
+        {"a_color", gfx::Format::RGBA32F, false, 1, true, 1},
+        {"a_worldView0", gfx::Format::RGBA32F, false, 1, true, 2},
+        {"a_worldView1", gfx::Format::RGBA32F, false, 1, true, 3},
+        {"a_worldView2", gfx::Format::RGBA32F, false, 1, true, 4},
+        {"a_worldView3", gfx::Format::RGBA32F, false, 1, true, 5},
+    };
 
     gfx::ShaderInfo shaderInfo;
     shaderInfo.name       = "Basic Triangle";
@@ -170,18 +206,18 @@ void Root::initialize() {
     vertexBuffer = device->createBuffer(vertexBufferInfo);
     vertexBuffer->update(vertexData, sizeof(vertexData));
 
-    constexpr uint memberCount = 4 + 16;
+    floatCountPerModel = 4 + 16;
+    uboStride          = sizeof(float) * floatCountPerModel;
 
-    uboStride = TestBaseI::getAlignedUBOStride(sizeof(float) * memberCount);
+    uniformBufferData.resize(floatCountPerModel * (modelCapacity + 1));
 
-    uniformBufferData.resize(uboStride * (modelCapacity + 1) / sizeof(float));
-
-    gfx::BufferInfo uniformBufferInfo = {
-        gfx::BufferUsage::UNIFORM,
-        gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
+    gfx::BufferInfo instancedBufferInfo = {
+        gfx::BufferUsage::VERTEX,
+        gfx::MemoryUsage::DEVICE,
         uboStride * (modelCapacity + 1),
+        uboStride,
     };
-    uniformBuffer = device->createBuffer(uniformBufferInfo);
+    instancedBuffer = device->createBuffer(instancedBufferInfo);
 
     gfx::BufferInfo uniformBufferGlobalInfo = {
         gfx::BufferUsage::UNIFORM,
@@ -197,28 +233,16 @@ void Root::initialize() {
     projection = projection * view;
     uniformBufferGlobal->update(projection.m, sizeof(projection));
 
-    gfx::BufferViewInfo uniformBufferViewInfo = {
-        uniformBuffer,
-        0U,
-        sizeof(float) * memberCount,
-    };
-    uniformBufferView = device->createBuffer(uniformBufferViewInfo);
-
-    gfx::Attribute          position{"a_position", gfx::Format::RGB32F, false, 0, false};
     gfx::InputAssemblerInfo inputAssemblerInfo;
-    inputAssemblerInfo.attributes.emplace_back(std::move(position));
+    inputAssemblerInfo.attributes = shaderInfo.attributes;
     inputAssemblerInfo.vertexBuffers.emplace_back(vertexBuffer);
+    inputAssemblerInfo.vertexBuffers.emplace_back(instancedBuffer);
     inputAssembler = device->createInputAssembler(inputAssemblerInfo);
+    inputAssembler->setFirstInstance(1);
 
     gfx::DescriptorSetLayoutInfo dslInfo;
     dslInfo.bindings.push_back({
         0,
-        gfx::DescriptorType::DYNAMIC_UNIFORM_BUFFER,
-        1,
-        gfx::ShaderStageFlagBit::VERTEX | gfx::ShaderStageFlagBit::FRAGMENT,
-    });
-    dslInfo.bindings.push_back({
-        1,
         gfx::DescriptorType::UNIFORM_BUFFER,
         1,
         gfx::ShaderStageFlagBit::VERTEX,
@@ -229,8 +253,7 @@ void Root::initialize() {
 
     descriptorSet = device->createDescriptorSet({descriptorSetLayout});
 
-    descriptorSet->bindBuffer(0, uniformBufferView);
-    descriptorSet->bindBuffer(1, uniformBufferGlobal);
+    descriptorSet->bindBuffer(0, uniformBufferGlobal);
     descriptorSet->update();
 
     gfx::PipelineStateInfo pipelineInfo;
@@ -261,7 +284,7 @@ void Root::initialize() {
         },
     }));
 
-    auto max = static_cast<int>((vmath::IndexP::Size - 1) * uboStride / sizeof(float));
+    auto max = static_cast<int>((vmath::IndexP::Size - 1) * floatCountPerModel);
     index    = vmath::linspace<vmath::IndexP>(0, max);
 
     // bounding box outline
@@ -310,6 +333,7 @@ void Root::initialize() {
     gfx::InputAssemblerInfo inputAssemblerInfoOutline;
     inputAssemblerInfoOutline.attributes = inputAssemblerInfo.attributes;
     inputAssemblerInfoOutline.vertexBuffers.emplace_back(vertexBufferOutline);
+    inputAssemblerInfoOutline.vertexBuffers.emplace_back(instancedBuffer);
     inputAssemblerOutline = device->createInputAssembler(inputAssemblerInfoOutline);
 
     gfx::PipelineStateInfo pipelineInfoOutline;
@@ -323,11 +347,10 @@ void Root::initialize() {
 }
 
 void Root::destroy() {
-    CC_SAFE_DESTROY(vertexBuffer);
     CC_SAFE_DESTROY(inputAssembler);
+    CC_SAFE_DESTROY(vertexBuffer);
+    CC_SAFE_DESTROY(instancedBuffer);
     CC_SAFE_DESTROY(uniformBufferGlobal);
-    CC_SAFE_DESTROY(uniformBuffer);
-    CC_SAFE_DESTROY(uniformBufferView);
     CC_SAFE_DESTROY(shader);
     CC_SAFE_DESTROY(descriptorSet);
     CC_SAFE_DESTROY(descriptorSetLayout);
@@ -345,29 +368,22 @@ void Root::render() {
     gfx::Device *device     = gfx::Device::getInstance();
     gfx::Color   clearColor = {.1F, .1F, .1F, 1.F};
 
-    size_t modelCount = ModelView::viewCount;
+    size_t modelCount = ModelView::views.size();
 
     if (modelCount >= modelCapacity) {
         modelCapacity = utils::nextPOT(modelCount + 1);
-        uniformBuffer->resize(modelCapacity * uboStride);
-        uniformBufferData.resize(modelCapacity * uboStride / sizeof(float));
+        instancedBuffer->resize(modelCapacity * uboStride);
+        uniformBufferData.resize(modelCapacity * floatCountPerModel);
     }
 
-    uint   lengthPerPacket = uboStride / sizeof(float) * vmath::PACKET_SIZE;
-    size_t validPackets    = (modelCount - 1) / vmath::PACKET_SIZE + 1;
-    for (size_t i = 0; i < validPackets; ++i) {
-        float *pDst  = &uniformBufferData[i * lengthPerPacket + uboStride / sizeof(float)];
-        auto &&model = vmath::packet(ModelView::buffer, i);
-        vmath::scatter(pDst + 0, model.color.x(), index, model.enabled);
-        vmath::scatter(pDst + 1, model.color.y(), index, model.enabled);
-        vmath::scatter(pDst + 2, model.color.z(), index, model.enabled);
-        vmath::scatter(pDst + 3, model.color.w(), index, model.enabled);
-        for (size_t j = 0; j < model.transform.size(); ++j) {
-            vmath::Index transformIdx = model.transform[j];
-            if (transformIdx < 0) break;
-            TransformView::views[transformIdx]->updateWorldTransform();
-            vmath::store(pDst + 4, static_cast<TransformF::Mat4>(vmath::slice(TransformView::buffer.mat, transformIdx)));
-        }
+    for (size_t i = 0; i < modelCount; ++i) {
+        auto &&model = vmath::slice(ModelView::buffer, i);
+        if (model.transform < 0) break;
+        TransformView::views[model.transform]->updateWorldTransform();
+
+        float *pDst = &uniformBufferData[(i + 1) * floatCountPerModel];
+        vmath::store(pDst, model.color);
+        vmath::store(pDst + 4, vmath::slice(TransformView::buffer.mat, model.transform));
     }
 
     device->acquire();
@@ -384,7 +400,7 @@ void Root::render() {
         uniformBufferGlobal->update(projection.m, sizeof(projection));
     }
 
-    uniformBuffer->update(uniformBufferData.data(), (modelCount + 1) * uboStride);
+    instancedBuffer->update(uniformBufferData.data(), (modelCount + 1) * uboStride);
 
     gfx::Rect renderArea = {0, 0, device->getWidth(), device->getHeight()};
 
@@ -397,21 +413,15 @@ void Root::render() {
 
     commandBuffer->beginRenderPass(TestBaseI::fbo->getRenderPass(), TestBaseI::fbo, renderArea, &clearColor, 1.F, 0);
 
-    uint dynamicOffset = 0U;
     commandBuffer->bindPipelineState(pipelineStateOutline);
     commandBuffer->bindInputAssembler(inputAssemblerOutline);
-    commandBuffer->bindDescriptorSet(0, descriptorSet, 1, &dynamicOffset);
+    commandBuffer->bindDescriptorSet(0, descriptorSet);
     commandBuffer->draw(inputAssemblerOutline);
 
     if (modelCount) {
+        inputAssembler->setInstanceCount(modelCount);
         commandBuffer->bindPipelineState(pipelineState);
         commandBuffer->bindInputAssembler(inputAssembler);
-    }
-
-    for (uint i = 0U; i < modelCount; ++i) {
-        if (!vmath::slice(ModelView::buffer, i).enabled) continue;
-        dynamicOffset = (i + 1) * uboStride;
-        commandBuffer->bindDescriptorSet(0, descriptorSet, 1, &dynamicOffset);
         commandBuffer->draw(inputAssembler);
     }
 

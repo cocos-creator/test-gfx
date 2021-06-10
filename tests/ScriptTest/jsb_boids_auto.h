@@ -22,6 +22,7 @@ bool js_register_application_BoidsManager(se::Object* obj);
 bool register_all_boids(se::Object* obj);
 
 JSB_REGISTER_OBJECT_TYPE(application::BoidsManager);
+SE_DECLARE_FUNC(js_boids_BoidsManager_destroy);
 SE_DECLARE_FUNC(js_boids_BoidsManager_init);
 SE_DECLARE_FUNC(js_boids_BoidsManager_tick);
 

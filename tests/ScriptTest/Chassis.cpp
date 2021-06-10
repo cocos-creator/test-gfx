@@ -3,10 +3,9 @@
 
 namespace cc {
 
-TransformX            TransformView::buffer;
-vector<vmath::IndexX> TransformView::childrenBuffers;
-TransformView::PtrX   TransformView::views;
-vmath::Index          TransformView::viewCount{0};
+TransformX              TransformView::buffer;
+vector<vmath::IndexX>   TransformView::childrenBuffers;
+vector<TransformView *> TransformView::views;
 
 TransformView::TransformView(vmath::Index idx) : _idx(idx) {
     auto &&children = childrenBuffers[_idx];
@@ -16,16 +15,18 @@ TransformView::TransformView(vmath::Index idx) : _idx(idx) {
 }
 
 TransformView::~TransformView() {
-    if (vmath::slice(views, _idx) != this) return;
+    if (views[_idx] != this) return;
 
-    TransformView *last              = vmath::slice(views, --viewCount);
-    vmath::slice(buffer, last->_idx) = TransformF{};
+    TransformView *last = views.back();
+    views.pop_back();
 
     if (this != last) {
         vmath::slice(buffer, _idx) = vmath::slice(buffer, last->_idx);
-        vmath::slice(views, _idx)  = last;
+        views[_idx]                = last;
         last->_idx                 = _idx;
     }
+
+    vmath::slice(buffer, last->_idx) = TransformF{};
 }
 
 void TransformView::setParent(TransformView *value) {
@@ -33,6 +34,7 @@ void TransformView::setParent(TransformView *value) {
 
     if ((!value && transform.parent < 0) || (transform.parent == value->_idx)) return;
 
+    // remove this from former parent
     if (transform.parent >= 0) {
         auto &&parent   = vmath::slice(buffer, transform.parent);
         auto &&children = childrenBuffers[transform.parent];
@@ -48,6 +50,7 @@ void TransformView::setParent(TransformView *value) {
 
     if (!value) return;
 
+    // add this to new parent
     auto &&newParent = vmath::slice(buffer, value->_idx);
     auto &&children  = childrenBuffers[value->_idx];
     if (vmath::slices(children) <= newParent.childrenCount) {
@@ -66,10 +69,13 @@ void TransformView::setPosition(float x, float y, float z) {
     invalidateChildren(TransformFlagBit::POSITION);
 }
 
-void TransformView::setRotation(const float *q) {
+void TransformView::setRotation(float x, float y, float z, float w) {
     auto &&transform = vmath::slice(buffer, _idx);
 
-    transform.lrot = vmath::load<vmath::QuatF>(q);
+    transform.lrot.x() = x;
+    transform.lrot.y() = y;
+    transform.lrot.z() = z;
+    transform.lrot.w() = w;
 
     invalidateChildren(TransformFlagBit::ROTATION);
 }
@@ -176,21 +182,22 @@ void TransformView::updateWorldTransform() const {
     }
 }
 
-ModelX          ModelView::buffer;
-ModelView::PtrX ModelView::views;
-vmath::Index    ModelView::viewCount{0};
+ModelX              ModelView::buffer;
+vector<ModelView *> ModelView::views;
 
 ModelView::~ModelView() {
-    if (vmath::slice(views, _idx) != this) return;
+    if (views[_idx] != this) return;
 
-    ModelView *last                  = vmath::slice(views, --viewCount);
-    vmath::slice(buffer, last->_idx) = ModelF{};
+    ModelView *last = views.back();
+    views.pop_back();
 
     if (this != last) {
         vmath::slice(buffer, _idx) = vmath::slice(buffer, last->_idx);
-        vmath::slice(views, _idx)  = last;
+        views[_idx]                = last;
         last->_idx                 = _idx;
     }
+
+    vmath::slice(buffer, last->_idx) = ModelF{};
 }
 
 void ModelView::setColor(float r, float g, float b, float a) {
@@ -222,22 +229,18 @@ Root::Root() {
     }
 
     vmath::setSlices(ModelView::buffer, INITIAL_CAPACITY);
-    vmath::setSlices(ModelView::views, INITIAL_CAPACITY);
     vmath::setSlices(TransformView::buffer, INITIAL_CAPACITY);
     TransformView::childrenBuffers.resize(INITIAL_CAPACITY);
-    vmath::setSlices(TransformView::views, INITIAL_CAPACITY);
 
     for (size_t i = 0; i < vmath::packets(ModelView::buffer); ++i) {
         vmath::packet(ModelView::buffer, i)     = ModelP{};
-        vmath::packet(ModelView::views, i)      = ModelView::PtrP{};
         vmath::packet(TransformView::buffer, i) = TransformP{};
-        vmath::packet(TransformView::views, i)  = TransformView::PtrP{};
     }
 }
 
 Root::~Root() {
-    CCASSERT(TransformView::viewCount == 0, "Resources leaked");
-    CCASSERT(ModelView::viewCount == 0, "Resources leaked");
+    CCASSERT(TransformView::views.empty(), "Resources leaked");
+    CCASSERT(ModelView::views.empty(), "Resources leaked");
 
     if (instance == this) {
         instance = nullptr;
@@ -245,25 +248,23 @@ Root::~Root() {
 }
 
 TransformView *Root::createTransform() {
-    if (TransformView::viewCount >= vmath::slices(TransformView::views)) {
-        vmath::setSlices<true>(TransformView::views, TransformView::viewCount * 2);
-        TransformView::childrenBuffers.resize(TransformView::viewCount * 2);
-        vmath::setSlices<true>(TransformView::buffer, TransformView::viewCount * 2);
+    if (TransformView::views.size() >= vmath::slices(TransformView::buffer)) {
+        TransformView::childrenBuffers.resize(TransformView::views.size() * 2);
+        vmath::setSlices<true>(TransformView::buffer, TransformView::views.size() * 2);
     }
-    auto *res = CC_NEW(TransformView(TransformView::viewCount));
+    auto *res = CC_NEW(TransformView(TransformView::views.size()));
 
-    vmath::slice(TransformView::views, TransformView::viewCount++) = res;
+    TransformView::views.push_back(res);
     return res;
 }
 
 ModelView *Root::createModel() {
-    if (ModelView::viewCount >= vmath::slices(ModelView::views)) {
-        vmath::setSlices<true>(ModelView::views, ModelView::viewCount * 2);
-        vmath::setSlices<true>(ModelView::buffer, ModelView::viewCount * 2);
+    if (ModelView::views.size() >= vmath::slices(ModelView::buffer)) {
+        vmath::setSlices<true>(ModelView::buffer, ModelView::views.size() * 2);
     }
-    auto *res = CC_NEW(ModelView(ModelView::viewCount));
+    auto *res = CC_NEW(ModelView(ModelView::views.size()));
 
-    vmath::slice(ModelView::views, ModelView::viewCount++) = res;
+    ModelView::views.push_back(res);
     return res;
 }
 
@@ -300,9 +301,12 @@ void TransformAgent::setPosition(float x, float y, float z) {
         });
 }
 
-void TransformAgent::setRotation(const float *q) {
+void TransformAgent::setRotation(float x, float y, float z, float w) {
     auto *actorQuat = RootAgent::getInstance()->getMainAllocator()->allocate<float>(4);
-    memcpy(actorQuat, q, sizeof(float) * 4);
+    actorQuat[0]    = x;
+    actorQuat[1]    = y;
+    actorQuat[2]    = z;
+    actorQuat[3]    = w;
 
     ENQUEUE_MESSAGE_2(
         RootAgent::getInstance()->getMessageQueue(), TransformSetRotation,

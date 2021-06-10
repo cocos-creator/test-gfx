@@ -1,15 +1,16 @@
 (() => {
     const JSB = typeof jsb !== 'undefined';
 
-    const NATIVE_COMPUTATION = JSB && 0;
+    const NATIVE_COMPUTATION = JSB && 1;
     const options = {
-        boidCount: 256,
+        boidCount: 512,
         maxVelocity: 0.4,
         alignmentForce: 0.002,
         cohesionForce: 0.002,
         separationForce: 0.003,
         separationDistance: 0.1,
         flockmateRadius: 0.9,
+        startingDelay: 2,
     };
 
     const { vec3, quat } = JSB ? glMatrix : require('./gl-matrix');
@@ -19,8 +20,8 @@
     const tempVec3a = vec3.create();
     const tempVec3b = vec3.create();
     const tempQuat = quat.create();
+    const tempVec4 = quat.create();
 
-    const UP = vec3.set(vec3.create(), 0, 1, 0);
     const HALF = vec3.set(vec3.create(), 0.5, 0.5, 0.5);
 
     const alignment = vec3.create();
@@ -48,10 +49,10 @@
         if (l > max) { vec3.scale(v, v, max / l); }
     };
 
-    const applyForce = (acc, vel, v, f, max) => {
-        vec3.scale(tempVec3a, v, max / vec3.length(v));
-        clampLength(vec3.subtract(tempVec3a, tempVec3a, vel), f);
-        vec3.add(acc, acc, tempVec3a);
+    const applyForce = (velocity, force, strength) => {
+        vec3.scale(tempVec3a, force, options.maxVelocity / vec3.length(force));
+        clampLength(vec3.subtract(tempVec3a, tempVec3a, velocity), strength);
+        return tempVec3a;
     };
 
     class Boid {
@@ -65,30 +66,24 @@
             this.transform.setParent(parent);
             this.model.setTransform(this.transform);
 
-            const theta = Math.random() * Math.PI * 2;
-            const phi = Math.random() * Math.PI * 0.5;
-
-            this.transform.setPosition(
-                Math.cos(theta) * Math.sin(phi),
-                Math.sin(theta) * Math.sin(phi),
-                0.5);
-
+            vec3.random(tempVec3a);
+            tempVec3a[2] = Math.abs(tempVec3a[2]);
+            this.transform.setPosition(tempVec3a);
             vec3.random(this.velocity, Math.random() * options.maxVelocity);
 
             this.update();
         }
 
         update() {
-            vec3.normalize(tempVec3a, this.velocity);
-            const dot = vec3.dot(UP, tempVec3a);
-            vec3.cross(tempVec3b, UP, tempVec3a);
-            quat.normalize(tempQuat, quat.set(tempQuat, tempVec3b[0], tempVec3b[1], tempVec3b[2], 1 + dot));
+            vec3.normalize(tempVec4, this.velocity);
+            quat.normalize(tempQuat, quat.set(tempQuat, tempVec4[2], 0, -tempVec4[0], 1 + tempVec4[1]));
             this.transform.setRotation(tempQuat);
 
-            // vec3.normalize(tempVec31, this.acceleration); // visualize acceleration
+            // vec3.normalize(tempVec4, this.acceleration); // visualize acceleration
 
-            vec3.scaleAndAdd(tempVec3a, HALF, tempVec3a, 0.5);
-            this.model.setColor(tempVec3a[0], tempVec3a[1], tempVec3a[2], getBoundaryFade(this.transform.getPosition(), 0.1));
+            vec3.scaleAndAdd(tempVec4, HALF, tempVec4, 0.5);
+            tempVec4[3] = getBoundaryFade(this.transform.getPosition(), 0.1);
+            this.model.setColor(tempVec4);
         }
     }
 
@@ -112,6 +107,12 @@
         let lastTime = -1;
 
         tick = (gTimeInMS) => {
+            if (lastTime < options.startingDelay * 1000) {
+                lastTime = gTimeInMS;
+                root.render();
+                return;
+            }
+
             dt = (gTimeInMS - lastTime) / 1000;
             lastTime = gTimeInMS;
             let distance = 0;
@@ -120,7 +121,6 @@
                 vec3.set(alignment, 0, 0, 0);
                 vec3.set(cohesion, 0, 0, 0);
                 vec3.set(separation, 0, 0, 0);
-                vec3.set(b1.acceleration, 0, 0, 0);
                 let alignmentActive = false;
                 let cohesionActive = false;
                 let separationActive = false;
@@ -144,15 +144,16 @@
                     }
                 }
 
-                if (alignmentActive) { applyForce(b1.acceleration, b1.velocity, alignment, options.alignmentForce, options.maxVelocity); }
-                if (cohesionActive) { applyForce(b1.acceleration, b1.velocity, cohesion, options.cohesionForce, options.maxVelocity); }
-                if (separationActive) { applyForce(b1.acceleration, b1.velocity, separation, options.separationForce, options.maxVelocity); }
+                const { acceleration: acc, velocity: vel } = b1;
+                if (alignmentActive) { vec3.copy(acc, applyForce(vel, alignment, options.alignmentForce)); }
+                if (cohesionActive) { vec3.add(acc, acc, applyForce(vel, cohesion, options.cohesionForce)); }
+                if (separationActive) { vec3.add(acc, acc, applyForce(vel, separation, options.separationForce)); }
             }
 
             for (const b of boids) {
                 clampLength(vec3.add(b.velocity, b.velocity, b.acceleration), options.maxVelocity);
                 wrapBound(vec3.scaleAndAdd(tempVec3a, b.transform.getPosition(), b.velocity, dt));
-                b.transform.setPosition(tempVec3a[0], tempVec3a[1], tempVec3a[2]);
+                b.transform.setPosition(tempVec3a);
                 b.update();
             }
 
@@ -161,6 +162,6 @@
     }
 
     if (JSB) { window.gameTick = tick; }
-    else { tick(); }
+    else { tick(); console.log('tick finished.'); }
 
 })();
