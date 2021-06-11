@@ -24,6 +24,8 @@
 #include "tests/StressTest.h"
 #include "tests/SubpassTest.h"
 
+#include "tests/ScriptTest/Math.h"
+
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
@@ -106,6 +108,8 @@ TestBaseI::TestBaseI(const WindowInfo &info) {
         deviceInfo.nativeHeight = info.physicalHeight;
 
         device = gfx::DeviceManager::create(deviceInfo);
+
+        CC_LOG_INFO(vmath::processorFeatures().c_str());
     }
 
     if (!renderPass) {

@@ -8,6 +8,7 @@
 #include "enoki/random.h"
 #include "supp_math.h"
 
+#include <algorithm>
 #include <sstream>
 #include "base/Log.h"
 #include "base/Macros.h"
@@ -96,7 +97,7 @@ using float_array_t = enoki::float_array_t<T, CopyFlags>;
 template <typename T, typename Value, bool CopyFlags = true>
 using replace_scalar_t = enoki::replace_scalar_t<T, Value, CopyFlags>;
 
-constexpr size_t PACKET_SIZE = std::max(16U, enoki::array_default_size * 2U);
+constexpr size_t PACKET_SIZE = enoki::array_default_size < 8U ? 16U : enoki::array_default_size * 2U;
 
 using Index  = int;
 using IndexP = Packet<Index, PACKET_SIZE>;
@@ -377,6 +378,33 @@ CC_INLINE void print(const Value &v, const String &prefix = "") {
     std::stringstream ss;
     ss << v;
     CC_LOG_DEBUG("%s %s\n", prefix.c_str(), ss.str().c_str());
+}
+
+CC_INLINE std::string processorFeatures() {
+    std::ostringstream oss;
+
+    oss << "Enabled processor features:";
+
+    if (enoki::has_avx512f) oss << " avx512f";
+    if (enoki::has_avx512cd) oss << " avx512cd";
+    if (enoki::has_avx512dq) oss << " avx512dq";
+    if (enoki::has_avx512vl) oss << " avx512vl";
+    if (enoki::has_avx512bw) oss << " avx512bw";
+    if (enoki::has_avx512pf) oss << " avx512pf";
+    if (enoki::has_avx512er) oss << " avx512er";
+    if (enoki::has_avx512vpopcntdq) oss << " avx512vpopcntdq";
+    if (enoki::has_avx2) oss << " avx2";
+    if (enoki::has_avx) oss << " avx";
+    if (enoki::has_fma) oss << " fma";
+    if (enoki::has_f16c) oss << " f16c";
+    if (enoki::has_sse42) oss << " sse4.2";
+    if (enoki::has_x86_64) oss << " x86_64";
+    if (enoki::has_x86_32) oss << " x86";
+    if (enoki::has_neon) oss << " neon";
+    if (enoki::has_arm_32) oss << " arm";
+    if (enoki::has_arm_64) oss << " aarch64";
+
+    return oss.str();
 }
 
 } // namespace vmath

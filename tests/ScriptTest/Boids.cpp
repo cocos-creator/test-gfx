@@ -1,9 +1,36 @@
 #include "Boids.h"
-#include "tests/ScriptTest/Chassis.h"
+
+#include <vector>
+#include "Chassis.h"
+#include "base/Log.h"
 
 using namespace cc::vmath; // NOLINT(google-build-using-namespace) when inside cpp files this is usually fine
 
 namespace application {
+
+template <typename Value>
+struct Boid {
+    using Index = cc::vmath::replace_scalar_t<Value, cc::vmath::Index>;
+    using Vec3  = cc::vmath::Vec3<Value>;
+
+    Index model{-1};
+    Index transform{-1};
+
+    Vec3 acceleration = cc::vmath::zero<Vec3>();
+    Vec3 velocity     = cc::vmath::zero<Vec3>();
+
+    // cache states
+    Vec3 position = cc::vmath::zero<Vec3>();
+
+    // NOLINTNEXTLINE(google-explicit-constructor) false positive when involving __VA_ARGS__
+    CC_VMATH_STRUCT(Boid, model, transform, acceleration, velocity, position)
+};
+
+CC_VMATH_STRUCT_SUPPORT_1(application, Boid, model, transform, acceleration, velocity, position)
+
+using BoidF = Boid<float>;
+using BoidP = Boid<cc::vmath::FloatP>;
+using BoidX = Boid<cc::vmath::FloatX>;
 
 namespace {
 std::vector<cc::TransformView *> transformViews;
@@ -14,11 +41,11 @@ BoidX                            boids;
 
 template <typename Value>
 static Vec3<Value> sampleUniformSphere(PCG32<Value> &rng) {
-    Value theta   = rng.next_float32() * cc::math::PI * 2.F;
-    Value cosPhi  = rng.next_float32() * 2.F - 1.F;
-    Value sinPhi  = sqrt(1.F - sqr(cosPhi));
-    auto [s1, c1] = sincos(theta);
-    return Vec3<Value>{c1 * sinPhi, s1 * sinPhi, cosPhi};
+    Value theta  = rng.next_float32() * cc::math::PI * 2.F;
+    Value cosPhi = rng.next_float32() * 2.F - 1.F;
+    Value sinPhi = sqrt(1.F - sqr(cosPhi));
+    auto [s, c]  = sincos(theta);
+    return Vec3<Value>{c * sinPhi, s * sinPhi, cosPhi};
 }
 
 template <typename Value_, typename Value = expr_t<Value_>>
@@ -92,6 +119,8 @@ void BoidsManager::init(const BoidsOptions &newOptions) {
         transformViews.push_back(transform);
         modelViews.push_back(model);
     }
+
+    CC_LOG_INFO("Boids count: %d", options.boidCount);
 
     PCG32<FloatP> rng(std::time(nullptr)); // make every run unique
     for (size_t i = 0; i < packets(boids); ++i) {

@@ -2,8 +2,8 @@ apply plugin: 'com.android.application'
 
 android {
     signingConfigs {
-        release {
-            storeFile file('/Users/yunhsiao/workspace/android.keystore')
+        debug {
+            storeFile file('android.keystore')
             storePassword 'hyf123456'
             keyAlias 'android.keystore'
             keyPassword 'hyf123456'
@@ -14,7 +14,7 @@ android {
     defaultConfig {
         applicationId = 'com.example.gfx_tests'
         minSdkVersion 25
-        targetSdkVersion 28
+        targetSdkVersion 30
         externalNativeBuild {
             cmake {
                 targets "gfx_tests"
@@ -26,6 +26,7 @@ android {
         ndk {
             abiFilters 'x86', 'armeabi-v7a', 'arm64-v8a'
         }
+        signingConfig signingConfigs.debug
     }
     buildTypes {
         release {
@@ -33,7 +34,6 @@ android {
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'),
                     'proguard-rules.pro'
-            signingConfig signingConfigs.release
         }
 
         debug {
@@ -68,7 +68,7 @@ android.applicationVariants.all { variant ->
     delete dest_assets_folder
     def targetName = variant.name.capitalize()
     def copyTaskName = "copy${targetName}ResourcesToAssets"
-    
+
     tasks.register(copyTaskName) {
         copy {
             from "${buildDir}/../../../Resources"
