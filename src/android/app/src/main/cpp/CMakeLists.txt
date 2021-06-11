@@ -30,26 +30,6 @@ set(CMAKE_SHARED_LINKER_FLAGS
     "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate")
 
 # ---------------------------------------------------------------------
-# set include files
-
-set(INCLUDE_FILES
-        ${GFX_EXTERNAL_PATH}/khronos
-        ${GFX_EXTERNAL_PATH}/boost
-        ${GFX_EXTERNAL_PATH}/concurrentqueue
-        ${GFX_EXTERNAL_PATH}/taskflow
-        ${GFX_EXTERNAL_PATH}/acl/includes
-        ${GFX_EXTERNAL_PATH}/rtm/includes
-        ${COCOS_SRC_PATH}/renderer/core
-        ${COCOS_SRC_PATH}/renderer/gfx-gles2
-        ${COCOS_SRC_PATH}/renderer/gfx-gles3
-        ${COCOS_SRC_PATH}/renderer/gfx-vulkan
-        ./
-        ${COCOS_ROOT_PATH}
-        )
-
-include_directories( ${INCLUDE_FILES} )
-
-# ---------------------------------------------------------------------
 
 set(ALL_FILES
     ${GFX_TESTCASE_HEADER}

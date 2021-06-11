@@ -8,7 +8,7 @@
 #pragma once
 
 #import <UIKit/UIView.h>
-#ifdef USE_METAL
+#ifdef CC_USE_METAL
 #import <MetalKit/MetalKit.h>
 #endif
 
@@ -18,4 +18,3 @@
 @property(nonatomic, assign) id<MTLDevice> device;
 
 @end
-

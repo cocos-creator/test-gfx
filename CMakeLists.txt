@@ -219,18 +219,14 @@ include(${COCOS_EXTERNAL_PATH}/CMakeLists.txt)
 list(REMOVE_ITEM CC_EXTERNAL_LIBS "glfw3")
 
 set(GFX_INCLUDE_FILES
-  ${GFX_EXTERNAL_PATH}/khronos
-  ${GFX_EXTERNAL_PATH}/taskflow
-  ${GFX_EXTERNAL_PATH}/boost
-  ${GFX_EXTERNAL_PATH}/tbb/include
-  ${GFX_EXTERNAL_PATH}/acl/includes
-  ${GFX_EXTERNAL_PATH}/rtm/includes
-  ${GFX_EXTERNAL_PATH}/concurrentqueue
-  ${CC_EXTERNAL_INCLUDES}
-  ${CC_EXTERNAL_PRIVATE_INCLUDES}
+  ${COCOS_EXTERNAL_PATH}/sources/EGL
+  ${COCOS_EXTERNAL_PATH}/sources/khronos
   ${COCOS_2dx_LITE_PATH}
   ${COCOS_SRC_PATH}
   ${COCOS_SRC_PATH}/renderer
+  ${COCOS_ROOT_PATH}
+  ${CC_EXTERNAL_INCLUDES}
+  ${CC_EXTERNAL_PRIVATE_INCLUDES}
 )
 
 include_directories(${GFX_INCLUDE_FILES})

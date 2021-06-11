@@ -19,7 +19,7 @@ android {
             cmake {
                 targets "gfx_tests"
                 arguments '-DANDROID_STL=c++_static'
-                cppFlags "-std=c++14"
+                arguments '-DANDROID_ARM_NEON=ON'
             }
         }
 

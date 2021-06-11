@@ -49,7 +49,7 @@ namespace
 }
 
 - (void)initWindowInfo:(UIView*)view size:(CGSize)size {
-#if USE_VULKAN
+#if CC_USE_VULKAN
     g_windowInfo.windowHandle = (intptr_t)[view layer];
 #else
     g_windowInfo.windowHandle = (intptr_t)(view);

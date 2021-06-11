@@ -3,38 +3,18 @@ set(TARGET_NAME ${APP_NAME})
 message(STATUS "Target: ${TARGET_NAME}...")
 
 # ---------------------------------------------------------------------
-# set include files
-
-# include(${PROJECT_SOURCE_DIR}/tests/CMakeLists.txt)
-
-set(INCLUDE_FILES
-  ${GFX_EXTERNAL_PATH}/khronos
-  ${GFX_EXTERNAL_PATH}/boost
-  ${GFX_EXTERNAL_PATH}/concurrentqueue
-  ${GFX_EXTERNAL_PATH}/tbb/include
-  ${GFX_EXTERNAL_PATH}/taskflow
-  ${GFX_EXTERNAL_PATH}/acl/includes
-  ${GFX_EXTERNAL_PATH}/rtm/includes
-  ${COCOS_SRC_PATH}/renderer/core
-  ${COCOS_SRC_PATH}/renderer/gfx-gles2
-  ${COCOS_SRC_PATH}/renderer/gfx-gles3
-  ${COCOS_SRC_PATH}/renderer/gfx-vulkan
-  ./GFXTest
-)
-
-# ---------------------------------------------------------------------
 
 file(GLOB_RECURSE HEADER_FILES *.h)
 file(GLOB_RECURSE SOURCE_CPP_FILES *.cpp *.cc)
 file(GLOB_RECURSE SOURCE_C_FILES *.c)
 
 set(ALL_FILES
-    ${HEADER_FILES}
-    ${SOURCE_CPP_FILES}
-    ${SOURCE_C_FILES}
-    ${GFX_TESTCASE_HEADER}
-    ${GFX_TESTCASE_SOURCE}
-    ${CC_EXTERNAL_SOURCES}
+  ${HEADER_FILES}
+  ${SOURCE_CPP_FILES}
+  ${SOURCE_C_FILES}
+  ${GFX_TESTCASE_HEADER}
+  ${GFX_TESTCASE_SOURCE}
+  ${CC_EXTERNAL_SOURCES}
 )
 
 if(COCOS_UNICODE)
@@ -47,31 +27,12 @@ add_definitions("-DCC_USE_GLES2")
 
 add_executable(${TARGET_NAME} WIN32 ${ALL_FILES})
 
-if(COCOS_CPU_X64)
-  set(PVRSDK_LIB_DIR ${GFX_EXTERNAL_PATH}/pvrsdk/lib/Windows_x86_64)
-else()
-  set(PVRSDK_LIB_DIR ${GFX_EXTERNAL_PATH}/pvrsdk/lib/Windows_x86_32)
-endif()
-
-# Gather list of all .dll files
-file(GLOB PVRDLLS ${PVRSDK_LIB_DIR}/*.dll)
-if(COCOS_PLATFORM_WIN32)
-  list(APPEND PVRDLLS ${COCOS_EXTERNAL_PATH}/win32/libs/zlib1.dll)
-endif()
-
-foreach(PVRDLL ${PVRDLLS})
-  add_custom_command(TARGET ${TARGET_NAME} PRE_BUILD
-                     COMMAND ${CMAKE_COMMAND} -E
-                         copy ${PVRDLL} $<TARGET_FILE_DIR:${TARGET_NAME}>)
-endforeach()
-
 target_include_directories(${TARGET_NAME} PUBLIC
-    ${PROJECT_SOURCE_DIR}/src/win
-    ${PROJECT_SOURCE_DIR}
-    ${INCLUDE_FILES}
-    ${COCOS_EXTERNAL_PATH}/sources
-    ${CC_EXTERNAL_INCLUDES}
-    ${COCOS_SRC_PATH}/platform
+  ${PROJECT_SOURCE_DIR}/src/win
+  ${PROJECT_SOURCE_DIR}
+  ${COCOS_EXTERNAL_PATH}/sources
+  ${CC_EXTERNAL_INCLUDES}
+  ${COCOS_SRC_PATH}/platform
 )
 
 list(APPEND CC_EXTERNAL_LIBS
@@ -91,26 +52,30 @@ target_compile_definitions(${TARGET_NAME}
   PUBLIC _USE_MATH_DEFINES
 )
 
-if(LINUX OR WINDOWS)
-  set(COCOS2DX_ROOT_PATH ${COCOS_EXTERNAL_PATH})
-  cocos_def_copy_resource_target(${TARGET_NAME})
-  cocos_copy_target_res(${TARGET_NAME} LINK_TO "${COCOS_BUILD_PATH}/${CMAKE_CFG_INTDIR}/Resources" FOLDERS ${GAME_RES_FOLDER})
-endif()
+set(bin_dir ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${CMAKE_CFG_INTDIR})
+add_custom_target(copy_resource ALL
+    COMMAND ${CMAKE_COMMAND} -E echo "Copying resources to ${bin_dir}"
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${bin_dir}/Resources
+    COMMAND robocopy "${GAME_RES_FOLDER}/" "${bin_dir}/Resources/" /MIR || (exit 0)
+    COMMAND ${CMAKE_COMMAND} -E echo "Copying resources done!"
+)
+add_dependencies(${TARGET_NAME} copy_resource)
+set_target_properties(copy_resource PROPERTIES FOLDER Utils)
 
 if(MSVC)
-    file(GLOB_RECURSE WIN32_DLLS
-        ${COCOS_EXTERNAL_PATH}/win32/libs/*.dll
-        ${COCOS_EXTERNAL_PATH}/win32/libs/Debug/*.dll
-    )
+  file(GLOB_RECURSE WIN32_DLLS
+    ${COCOS_EXTERNAL_PATH}/win32/libs/*.dll
+    ${COCOS_EXTERNAL_PATH}/win32/libs/Debug/*.dll
+  )
 
-    foreach(item ${WIN32_DLLS})
-        get_filename_component(filename ${item} NAME)
-        get_filename_component(abs ${item} ABSOLUTE)
-        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${abs} $<TARGET_FILE_DIR:${TARGET_NAME}>/${filename}
-        )
-    endforeach()
-    target_link_options(${TARGET_NAME} PRIVATE /SUBSYSTEM:WINDOWS)
+  foreach(item ${WIN32_DLLS})
+    get_filename_component(filename ${item} NAME)
+    get_filename_component(abs ${item} ABSOLUTE)
+    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different ${abs} $<TARGET_FILE_DIR:${TARGET_NAME}>/${filename}
+    )
+  endforeach()
+  target_link_options(${TARGET_NAME} PRIVATE /SUBSYSTEM:WINDOWS)
 endif()
 
 source_group(TREE ${COCOS_SRC_PATH}/base PREFIX "Header Files/base" FILES ${CC_BASE_HEADERS})

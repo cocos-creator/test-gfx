@@ -21,22 +21,6 @@ option(USE_VULKAN "USE METAL" OFF)
 # use_molten_vk()
 
 # ---------------------------------------------------------------------
-# set include files
-
-set(INCLUDE_FILES
-  ${GFX_EXTERNAL_PATH}/khronos
-  ${GFX_EXTERNAL_PATH}/boost
-  ${GFX_EXTERNAL_PATH}/concurrentqueue
-  ${GFX_EXTERNAL_PATH}/taskflow
-  ${GFX_EXTERNAL_PATH}/acl/includes
-  ${GFX_EXTERNAL_PATH}/rtm/includes
-  ${COCOS_SRC_PATH}/renderer/core
-  ./GFXTest
-)
-
-include_directories( ${INCLUDE_FILES} )
-
-# ---------------------------------------------------------------------
 
 file(GLOB_RECURSE HEADER_FILES *.h)
 file(GLOB_RECURSE SOURCE_CPP_FILES *.cpp *.cc)

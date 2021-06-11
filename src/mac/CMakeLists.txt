@@ -11,33 +11,6 @@ option(USE_METAL "USE METAL" ON)
 # set(USE_METAL OFF)
 
 # ---------------------------------------------------------------------
-# set include files
-
-set(INCLUDE_FILES
-  ${GFX_EXTERNAL_PATH}/khronos
-  ${GFX_EXTERNAL_PATH}/boost
-  ${GFX_EXTERNAL_PATH}/concurrentqueue
-  ${GFX_EXTERNAL_PATH}/taskflow
-  ${GFX_EXTERNAL_PATH}/acl/includes
-  ${GFX_EXTERNAL_PATH}/rtm/includes
-  ${COCOS_SRC_PATH}/renderer/core
-  ${COCOS_SRC_PATH}/renderer/gfx-metal
-  ./GFXTest
-)
-
-if(COCOS_PLATFORM_OSX)
-  list(APPEND INCLUDE_FILES ${GFX_EXTERNAL_PATH}/pvrsdk/include)
-  set(PVRSDK_LIB_DIR ${GFX_EXTERNAL_PATH}/pvrsdk/lib/OSX_x86)
-
-  link_libraries(
-    ${PVRSDK_LIB_DIR}/libEGL.dylib
-    ${PVRSDK_LIB_DIR}/libGLESv2.dylib
-  )
-endif()
-
-include_directories( ${INCLUDE_FILES} )
-
-# ---------------------------------------------------------------------
 
 file(GLOB_RECURSE HEADER_FILES *.h)
 file(GLOB_RECURSE SOURCE_CPP_FILES *.cpp *.cc)

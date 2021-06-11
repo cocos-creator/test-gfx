@@ -1,17 +1,7 @@
 # add -lite external here for test project
 
-# include modules
-if(WIN32)
-    set(CMAKE_MODULE_PATH ${GFX_EXTERNAL_PATH}/cmake)
-    include(CocosBuildSet)
-endif()
-
 # resources
 set(GAME_RES_FOLDER "${CMAKE_CURRENT_SOURCE_DIR}/Resources")
-if(VS)
-    cocos_mark_multi_resources(cc_common_res RES_TO "Resources" FOLDERS ${GAME_RES_FOLDER})
-endif()
-
 file(GLOB_RECURSE APP_UI_RES ${GAME_RES_FOLDER}/*)
 
 # add test cases

@@ -8,19 +8,6 @@ message(STATUS "App: ${APP_NAME}...")
 # ---------------------------------------------------------------------
 # set include files
 
-set(INCLUDE_FILES
-  ${GFX_EXTERNAL_PATH}/khronos
-  ${GFX_EXTERNAL_PATH}/boost
-  ${GFX_EXTERNAL_PATH}/concurrentqueue
-  ${GFX_EXTERNAL_PATH}/taskflow
-  ${GFX_EXTERNAL_PATH}/acl/includes
-  ${GFX_EXTERNAL_PATH}/rtm/includes
-  ${COCOS_SRC_PATH}/renderer/core
-  ${COCOS_SRC_PATH}/renderer/gfx-metal
-  ${COCOS_SRC_PATH}/renderer/gfx-gles3
-  ./GFXTest
-)
-
 include_directories( ${INCLUDE_FILES} )
 
 # ---------------------------------------------------------------------
@@ -65,9 +52,7 @@ set_xcode_property(${APP_NAME} PRODUCT_BUNDLE_IDENTIFIER ${APP_NAME})
 # Locate system libraries on macOS
 find_library(APPKIT_LIBRARY AppKit)
 list(APPEND PLATFORM_SPECIFIC_LIBS
-     ${APPKIT_LIBRARY}
-     ${GFX_EXTERNAL_PATH}/pvrsdk/lib/OSX_x86/libEGL.dylib
-     ${GFX_EXTERNAL_PATH}/pvrsdk/lib/OSX_x86/libGLESv2.dylib
+    ${APPKIT_LIBRARY}
 )
 
 target_link_libraries(${APP_NAME}
@@ -94,8 +79,6 @@ if(MACOSX)
         ${COCOS_SRC_PATH}/platform/ios
     )
 endif()
-
-set(PVRSDK_LIB_DIR ${GFX_EXTERNAL_PATH}/pvrsdk/lib/OSX_x86)
 
 # Gather list of all .dylib files
 file(GLOB PVRDLLS ${PVRSDK_LIB_DIR}/*.dylib)

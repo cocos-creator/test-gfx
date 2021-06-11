@@ -44,7 +44,7 @@ target_include_directories(${TARGET_NAME} PUBLIC ${COCOS_EXTERNAL_PATH}/mac/incl
 set_target_properties(${TARGET_NAME} PROPERTIES OUTPUT_NAME CCGFXMetal)
 set_target_properties(${TARGET_NAME} PROPERTIES OUTPUT_NAME_DEBUG CCGFXMetal_d)
 
-use_precompiled_header("${CMAKE_CURRENT_SOURCE_DIR}/MTLStd.h" "${CMAKE_CURRENT_SOURCE_DIR}/MTLStd.cpp" ${SOURCE_CPP_FILES} ${SOURCE_OBJC_FILES} ${SOURCE_C_FILES})
+use_precompiled_header("${CMAKE_CURRENT_SOURCE_DIR}/MTLStd.h" "${CMAKE_CURRENT_SOURCE_DIR}/MTLStd.cpp" SOURCE_CPP_FILES SOURCE_OBJC_FILES SOURCE_C_FILES)
 
 message(STATUS "${TARGET_NAME} configuration completed.")
 
