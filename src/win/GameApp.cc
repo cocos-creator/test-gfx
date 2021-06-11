@@ -96,8 +96,8 @@ void GameApp::initialize() {
     info.windowHandle = (intptr_t)_hWnd;
     info.screen.x = posX;
     info.screen.y = posY;
-    info.screen.width = info.physicalWidth = screenWidth;
-    info.screen.height = info.physicalHeight = screenHeight;
+    info.screen.width = screenWidth;
+    info.screen.height = screenHeight;
 
     TestBaseI::setWindowInfo(info);
     TestBaseI::nextTest();

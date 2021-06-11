@@ -57,9 +57,7 @@ namespace
     g_windowInfo.screen.y = 0;
     g_windowInfo.screen.width = rect.size.width * pixelRatio;
     g_windowInfo.screen.height = rect.size.height * pixelRatio;
-
-    g_windowInfo.physicalHeight = g_windowInfo.screen.height;
-    g_windowInfo.physicalWidth = g_windowInfo.screen.width;
+    g_windowInfo.pixelRatio = pixelRatio;
 
     cc::TestBaseI::setWindowInfo(g_windowInfo);
     cc::TestBaseI::nextTest();

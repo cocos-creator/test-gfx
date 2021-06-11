@@ -1,7 +1,10 @@
 #include "Chassis.h"
 #include "tests/ScriptTest/Math.h"
+#include "base/LinearAllocatorPool.h"
+#include "base/threading/MessageQueue.h"
 
 namespace cc {
+namespace experimental {
 
 TransformX              TransformView::buffer;
 vector<vmath::IndexX>   TransformView::childrenBuffers;
@@ -396,7 +399,7 @@ void RootAgent::initialize() {
 
     _allocatorPools.resize(MAX_CPU_FRAME_AHEAD + 1);
     for (uint i = 0U; i < MAX_CPU_FRAME_AHEAD + 1; ++i) {
-        _allocatorPools[i] = CC_NEW(LinearAllocatorPool);
+        _allocatorPools[i] = CC_NEW(cc::LinearAllocatorPool);
     }
 
     setMultithreaded(true);
@@ -423,7 +426,7 @@ void RootAgent::destroy() {
     _mainMessageQueue->terminateConsumerThread();
     CC_SAFE_DELETE(_mainMessageQueue);
 
-    for (LinearAllocatorPool *pool : _allocatorPools) {
+    for (cc::LinearAllocatorPool *pool : _allocatorPools) {
         CC_SAFE_DELETE(pool);
     }
     _allocatorPools.clear();
@@ -439,7 +442,7 @@ void RootAgent::render() {
             frameBoundarySemaphore->signal();
         });
 
-    MessageQueue::freeChunksInFreeQueue(_mainMessageQueue);
+    cc::MessageQueue::freeChunksInFreeQueue(_mainMessageQueue);
     _mainMessageQueue->finishWriting();
     _currentIndex = (_currentIndex + 1) % (MAX_CPU_FRAME_AHEAD + 1);
     _frameBoundarySemaphore.wait();
@@ -474,4 +477,5 @@ ModelView *RootAgent::createModel() {
 
 Root *RootManager::instance{nullptr};
 
+} // namespace experimental
 } // namespace cc

@@ -38,8 +38,8 @@ void engineHandleCmd(struct android_app* app, int32_t cmd) {
         case APP_CMD_INIT_WINDOW:
             if (state->app->window && !g_windowInfo.windowHandle) {
                 g_windowInfo.windowHandle  = (intptr_t)state->app->window;
-                g_windowInfo.physicalWidth = g_windowInfo.screen.width = ANativeWindow_getWidth(app->window);
-                g_windowInfo.physicalHeight = g_windowInfo.screen.height = ANativeWindow_getHeight(app->window);
+                g_windowInfo.screen.width = ANativeWindow_getWidth(app->window);
+                g_windowInfo.screen.height = ANativeWindow_getHeight(app->window);
                 g_windowInfo.screen.x = g_windowInfo.screen.y = 0;
 
                 TestBaseI::setWindowInfo(g_windowInfo);

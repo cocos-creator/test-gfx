@@ -12,7 +12,7 @@ namespace cc {
 void ScriptTest::onDestroy() {
     application::BoidsManager::destroy();
     TestBaseI::scriptEngineGC();
-    RootManager::destroy();
+    experimental::RootManager::destroy();
 }
 
 bool ScriptTest::onInit() {

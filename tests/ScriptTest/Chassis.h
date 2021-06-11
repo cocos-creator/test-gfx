@@ -1,10 +1,8 @@
 #pragma once
 
 #include "base/Agent.h"
-#include "base/LinearAllocatorPool.h"
 #include "base/TypeDef.h"
 #include "base/memory/Memory.h"
-#include "base/threading/MessageQueue.h"
 #include "base/threading/Semaphore.h"
 
 #include "gfx-base/GFXDevice.h"
@@ -12,6 +10,11 @@
 #include "Math.h"
 
 namespace cc {
+
+class LinearAllocatorPool;
+class MessageQueue;
+
+namespace experimental {
 
 enum class TransformFlagBit : uint32_t {
     NONE     = 0,
@@ -60,7 +63,7 @@ struct Transform {
     CC_VMATH_STRUCT(Transform, lpos, lrot, lscale, dirtyFlags, pos, rot, scale, mat, parent, childrenCount)
 };
 
-CC_VMATH_STRUCT_SUPPORT_1(cc, Transform, lpos, lrot, lscale, dirtyFlags, pos, rot, scale, mat, parent, childrenCount)
+CC_VMATH_STRUCT_SUPPORT_2(cc, experimental, Transform, lpos, lrot, lscale, dirtyFlags, pos, rot, scale, mat, parent, childrenCount)
 
 using TransformF = Transform<float>;
 using TransformP = Transform<vmath::FloatP>;
@@ -122,7 +125,7 @@ struct Model {
     CC_VMATH_STRUCT(Model, transform, color, enabled)
 };
 
-CC_VMATH_STRUCT_SUPPORT_1(cc, Model, transform, color, enabled)
+CC_VMATH_STRUCT_SUPPORT_2(cc, experimental, Model, transform, color, enabled)
 
 using ModelF = Model<float>;
 using ModelP = Model<vmath::FloatP>;
@@ -232,8 +235,8 @@ public:
 
     void setMultithreaded(bool multithreaded);
 
-    inline MessageQueue *       getMessageQueue() const { return _mainMessageQueue; }
-    inline LinearAllocatorPool *getMainAllocator() const { return _allocatorPools[_currentIndex]; }
+    inline cc::MessageQueue *       getMessageQueue() const { return _mainMessageQueue; }
+    inline cc::LinearAllocatorPool *getMainAllocator() const { return _allocatorPools[_currentIndex]; }
 
 protected:
     static RootAgent *instance;
@@ -244,9 +247,9 @@ protected:
     bool          _multithreaded{false};
     MessageQueue *_mainMessageQueue{nullptr};
 
-    uint                          _currentIndex = 0U;
-    vector<LinearAllocatorPool *> _allocatorPools;
-    Semaphore                     _frameBoundarySemaphore{MAX_CPU_FRAME_AHEAD};
+    uint                              _currentIndex = 0U;
+    vector<cc::LinearAllocatorPool *> _allocatorPools;
+    Semaphore                         _frameBoundarySemaphore{MAX_CPU_FRAME_AHEAD};
 };
 
 class RootManager {
@@ -271,4 +274,5 @@ private:
     static Root *instance;
 };
 
+} // namespace experimental
 } // namespace cc

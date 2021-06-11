@@ -59,9 +59,7 @@ namespace
     g_windowInfo.screen.y = 0;
     g_windowInfo.screen.width = size.width * scale;
     g_windowInfo.screen.height = size.height * scale;
-
-    g_windowInfo.physicalHeight = g_windowInfo.screen.height;
-    g_windowInfo.physicalWidth = g_windowInfo.screen.width;
+    g_windowInfo.pixelRatio = scale;
 }
 
 - (void)run {

@@ -78,8 +78,9 @@ namespace
 
         g_windowInfo.screen.x = frameRect.origin.x;
         g_windowInfo.screen.y = frameRect.origin.y;
-        g_windowInfo.screen.width = g_windowInfo.physicalWidth = size.width;
-        g_windowInfo.screen.height = g_windowInfo.physicalHeight = size.height;
+        g_windowInfo.screen.width = size.width;
+        g_windowInfo.screen.height = size.height;
+        g_windowInfo.pixelRatio = pixelRatio;
 
         // Start main loop
         self.timer = [NSTimer scheduledTimerWithTimeInterval:1.0f / 60

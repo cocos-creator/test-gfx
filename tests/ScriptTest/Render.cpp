@@ -5,9 +5,14 @@
 #include "tests/ScriptTest/Math.h"
 
 namespace cc {
+namespace experimental {
 
 namespace {
 // fix-functioned resources just for test purposes
+gfx::Framebuffer *           fbo;
+gfx::RenderPass *            renderPass;
+vector<gfx::CommandBuffer *> commandBuffers;
+
 gfx::Shader *                shader{nullptr};
 gfx::Buffer *                vertexBuffer{nullptr};
 gfx::Buffer *                instancedBuffer{nullptr};
@@ -32,6 +37,18 @@ gfx::InputAssembler *inputAssemblerOutline{nullptr};
 
 void Root::initialize() {
     gfx::Device *device = gfx::Device::getInstance();
+
+    gfx::RenderPassInfo renderPassInfo;
+    renderPassInfo.colorAttachments.emplace_back().format = device->getColorFormat();
+    renderPassInfo.depthStencilAttachment.format = device->getDepthStencilFormat();
+    renderPass                                   = device->createRenderPass(renderPassInfo);
+
+    gfx::FramebufferInfo fboInfo;
+    fboInfo.colorTextures.resize(1);
+    fboInfo.renderPass = renderPass;
+    fbo                = device->createFramebuffer(fboInfo);
+
+    commandBuffers.push_back(device->getCommandBuffer());
 
     ShaderSources<StandardShaderSource> sources;
     sources.glsl4 = {
@@ -260,7 +277,7 @@ void Root::initialize() {
     pipelineInfo.primitive                           = gfx::PrimitiveMode::TRIANGLE_LIST;
     pipelineInfo.shader                              = shader;
     pipelineInfo.inputState                          = {inputAssembler->getAttributes()};
-    pipelineInfo.renderPass                          = TestBaseI::fbo->getRenderPass();
+    pipelineInfo.renderPass                          = renderPass;
     pipelineInfo.rasterizerState.cullMode            = gfx::CullMode::NONE;
     pipelineInfo.depthStencilState.depthTest         = false;
     pipelineInfo.depthStencilState.depthWrite        = false;
@@ -340,7 +357,7 @@ void Root::initialize() {
     pipelineInfoOutline.primitive      = gfx::PrimitiveMode::LINE_LIST;
     pipelineInfoOutline.shader         = shader;
     pipelineInfoOutline.inputState     = {inputAssemblerOutline->getAttributes()};
-    pipelineInfoOutline.renderPass     = TestBaseI::fbo->getRenderPass();
+    pipelineInfoOutline.renderPass     = renderPass;
     pipelineInfoOutline.pipelineLayout = pipelineLayout;
 
     pipelineStateOutline = device->createPipelineState(pipelineInfoOutline);
@@ -360,6 +377,10 @@ void Root::destroy() {
     CC_SAFE_DESTROY(vertexBufferOutline);
     CC_SAFE_DESTROY(pipelineStateOutline);
     CC_SAFE_DESTROY(inputAssemblerOutline);
+
+    CC_SAFE_DESTROY(fbo);
+    CC_SAFE_DESTROY(renderPass);
+    commandBuffers.clear();
 
     globalBarriers.clear();
 }
@@ -404,14 +425,14 @@ void Root::render() {
 
     gfx::Rect renderArea = {0, 0, device->getWidth(), device->getHeight()};
 
-    auto *commandBuffer = TestBaseI::commandBuffers[0];
+    auto *commandBuffer = commandBuffers[0];
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER) {
         commandBuffer->pipelineBarrier(globalBarriers[0]);
     }
 
-    commandBuffer->beginRenderPass(TestBaseI::fbo->getRenderPass(), TestBaseI::fbo, renderArea, &clearColor, 1.F, 0);
+    commandBuffer->beginRenderPass(renderPass, fbo, renderArea, &clearColor, 1.F, 0);
 
     commandBuffer->bindPipelineState(pipelineStateOutline);
     commandBuffer->bindInputAssembler(inputAssemblerOutline);
@@ -428,9 +449,10 @@ void Root::render() {
     commandBuffer->endRenderPass();
     commandBuffer->end();
 
-    device->flushCommands(TestBaseI::commandBuffers);
-    device->getQueue()->submit(TestBaseI::commandBuffers);
+    device->flushCommands(commandBuffers);
+    device->getQueue()->submit(commandBuffers);
     device->present();
 }
 
+} // namespace experimental
 } // namespace cc

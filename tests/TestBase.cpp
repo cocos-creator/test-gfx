@@ -104,8 +104,7 @@ TestBaseI::TestBaseI(const WindowInfo &info) {
         deviceInfo.windowHandle = info.windowHandle;
         deviceInfo.width        = info.screen.width;
         deviceInfo.height       = info.screen.height;
-        deviceInfo.nativeWidth  = info.physicalWidth;
-        deviceInfo.nativeHeight = info.physicalHeight;
+        deviceInfo.pixelRatio   = info.pixelRatio;
 
         device = gfx::DeviceManager::create(deviceInfo);
 
@@ -113,15 +112,10 @@ TestBaseI::TestBaseI(const WindowInfo &info) {
     }
 
     if (!renderPass) {
-        gfx::RenderPassInfo  renderPassInfo;
-        gfx::ColorAttachment colorAttachment;
-        colorAttachment.format = device->getColorFormat();
-        renderPassInfo.colorAttachments.emplace_back(colorAttachment);
-
-        gfx::DepthStencilAttachment &depthStencilAttachment = renderPassInfo.depthStencilAttachment;
-        depthStencilAttachment.format                       = device->getDepthStencilFormat();
-
-        renderPass = device->createRenderPass(renderPassInfo);
+        gfx::RenderPassInfo renderPassInfo;
+        renderPassInfo.colorAttachments.emplace_back().format = device->getColorFormat();
+        renderPassInfo.depthStencilAttachment.format          = device->getDepthStencilFormat();
+        renderPass                                            = device->createRenderPass(renderPassInfo);
     }
 
     if (!fbo) {
@@ -303,15 +297,15 @@ void TestBaseI::createOrthographic(float left, float right, float bottom, float 
     float dx = (left + right) / (left - right);
     float dy = (bottom + top) / (bottom - top) * signY;
 
-    dst->m[0]                          = x * preTransform[0];
-    dst->m[1]                          = x * preTransform[1];
-    dst->m[4]                          = y * preTransform[2];
-    dst->m[5]                          = y * preTransform[3];
-    dst->m[10]                         = (1.0f - minZ) / (ZNear - ZFar);
-    dst->m[12]                         = dx * preTransform[0] + dy * preTransform[2];
-    dst->m[13]                         = dx * preTransform[1] + dy * preTransform[3];
-    dst->m[14]                         = (ZNear - minZ * ZFar) / (ZNear - ZFar);
-    dst->m[15]                         = 1.0f;
+    dst->m[0]  = x * preTransform[0];
+    dst->m[1]  = x * preTransform[1];
+    dst->m[4]  = y * preTransform[2];
+    dst->m[5]  = y * preTransform[3];
+    dst->m[10] = (1.0f - minZ) / (ZNear - ZFar);
+    dst->m[12] = dx * preTransform[0] + dy * preTransform[2];
+    dst->m[13] = dx * preTransform[1] + dy * preTransform[3];
+    dst->m[14] = (ZNear - minZ * ZFar) / (ZNear - ZFar);
+    dst->m[15] = 1.0f;
 #endif
 }
 

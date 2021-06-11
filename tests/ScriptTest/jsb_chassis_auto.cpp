@@ -10,18 +10,18 @@
 #ifndef JSB_FREE
 #define JSB_FREE(ptr) delete ptr
 #endif
-se::Object* __jsb_cc_TransformView_proto = nullptr;
-se::Class* __jsb_cc_TransformView_class = nullptr;
+se::Object* __jsb_cc_experimental_TransformView_proto = nullptr;
+se::Class* __jsb_cc_experimental_TransformView_class = nullptr;
 
 static bool js_chassis_TransformView_setParent(se::State& s) // NOLINT(readability-identifier-naming, google-runtime-references)
 {
-    auto* cobj = SE_THIS_OBJECT<cc::TransformView>(s);
+    auto* cobj = SE_THIS_OBJECT<cc::experimental::TransformView>(s);
     SE_PRECONDITION2(cobj, false, "js_chassis_TransformView_setParent : Invalid Native Object");
     const auto& args = s.args();
     size_t argc = args.size();
     CC_UNUSED bool ok = true;
     if (argc == 1) {
-        HolderType<cc::TransformView*, false> arg0 = {};
+        HolderType<cc::experimental::TransformView*, false> arg0 = {};
         ok &= sevalue_to_native(args[0], &arg0, s.thisObject());
         SE_PRECONDITION2(ok, false, "js_chassis_TransformView_setParent : Error processing arguments");
         cobj->setParent(arg0.value());
@@ -35,7 +35,7 @@ SE_BIND_FUNC(js_chassis_TransformView_setParent)
 static bool js_chassis_TransformView_setPosition(se::State& s) // NOLINT(readability-identifier-naming, google-runtime-references)
 {
     CC_UNUSED bool ok = true;
-    auto* cobj = SE_THIS_OBJECT<cc::TransformView>(s);
+    auto* cobj = SE_THIS_OBJECT<cc::experimental::TransformView>(s);
     SE_PRECONDITION2( cobj, false, "js_chassis_TransformView_setPosition : Invalid Native Object");
     const auto& args = s.args();
     size_t argc = args.size();
@@ -75,7 +75,7 @@ SE_BIND_FUNC(js_chassis_TransformView_setPosition)
 static bool js_chassis_TransformView_setRotation(se::State& s) // NOLINT(readability-identifier-naming, google-runtime-references)
 {
     CC_UNUSED bool ok = true;
-    auto* cobj = SE_THIS_OBJECT<cc::TransformView>(s);
+    auto* cobj = SE_THIS_OBJECT<cc::experimental::TransformView>(s);
     SE_PRECONDITION2( cobj, false, "js_chassis_TransformView_setRotation : Invalid Native Object");
     const auto& args = s.args();
     size_t argc = args.size();
@@ -117,7 +117,7 @@ SE_BIND_FUNC(js_chassis_TransformView_setRotation)
 
 static bool js_chassis_TransformView_setRotationFromEuler(se::State& s) // NOLINT(readability-identifier-naming, google-runtime-references)
 {
-    auto* cobj = SE_THIS_OBJECT<cc::TransformView>(s);
+    auto* cobj = SE_THIS_OBJECT<cc::experimental::TransformView>(s);
     SE_PRECONDITION2(cobj, false, "js_chassis_TransformView_setRotationFromEuler : Invalid Native Object");
     const auto& args = s.args();
     size_t argc = args.size();
@@ -141,7 +141,7 @@ SE_BIND_FUNC(js_chassis_TransformView_setRotationFromEuler)
 static bool js_chassis_TransformView_setScale(se::State& s) // NOLINT(readability-identifier-naming, google-runtime-references)
 {
     CC_UNUSED bool ok = true;
-    auto* cobj = SE_THIS_OBJECT<cc::TransformView>(s);
+    auto* cobj = SE_THIS_OBJECT<cc::experimental::TransformView>(s);
     SE_PRECONDITION2( cobj, false, "js_chassis_TransformView_setScale : Invalid Native Object");
     const auto& args = s.args();
     size_t argc = args.size();
@@ -180,7 +180,7 @@ SE_BIND_FUNC(js_chassis_TransformView_setScale)
 
 static bool js_chassis_TransformView_updateWorldTransform(se::State& s) // NOLINT(readability-identifier-naming, google-runtime-references)
 {
-    auto* cobj = SE_THIS_OBJECT<cc::TransformView>(s);
+    auto* cobj = SE_THIS_OBJECT<cc::experimental::TransformView>(s);
     SE_PRECONDITION2(cobj, false, "js_chassis_TransformView_updateWorldTransform : Invalid Native Object");
     const auto& args = s.args();
     size_t argc = args.size();
@@ -193,7 +193,7 @@ static bool js_chassis_TransformView_updateWorldTransform(se::State& s) // NOLIN
 }
 SE_BIND_FUNC(js_chassis_TransformView_updateWorldTransform)
 
-SE_DECLARE_FINALIZE_FUNC(js_cc_TransformView_finalize)
+SE_DECLARE_FINALIZE_FUNC(js_cc_experimental_TransformView_finalize)
 
 static bool js_chassis_TransformView_constructor(se::State& s) // NOLINT(readability-identifier-naming, google-runtime-references) constructor_overloaded.c
 {
@@ -205,7 +205,7 @@ static bool js_chassis_TransformView_constructor(se::State& s) // NOLINT(readabi
             HolderType<int, false> arg0 = {};
             ok &= sevalue_to_native(args[0], &arg0, s.thisObject());
             if (!ok) { ok = true; break; }
-            cc::TransformView* cobj = JSB_ALLOC(cc::TransformView, arg0.value());
+            cc::experimental::TransformView* cobj = JSB_ALLOC(cc::experimental::TransformView, arg0.value());
             s.thisObject()->setPrivateData(cobj);
             se::NonRefNativePtrCreatedByCtorMap::emplace(cobj);
             return true;
@@ -213,7 +213,7 @@ static bool js_chassis_TransformView_constructor(se::State& s) // NOLINT(readabi
     } while(false);
     do {
         if (argc == 0) {
-            cc::TransformView* cobj = JSB_ALLOC(cc::TransformView);
+            cc::experimental::TransformView* cobj = JSB_ALLOC(cc::experimental::TransformView);
             s.thisObject()->setPrivateData(cobj);
             se::NonRefNativePtrCreatedByCtorMap::emplace(cobj);
             return true;
@@ -222,22 +222,22 @@ static bool js_chassis_TransformView_constructor(se::State& s) // NOLINT(readabi
     SE_REPORT_ERROR("wrong number of arguments: %d", (int)argc);
     return false;
 }
-SE_BIND_CTOR(js_chassis_TransformView_constructor, __jsb_cc_TransformView_class, js_cc_TransformView_finalize)
+SE_BIND_CTOR(js_chassis_TransformView_constructor, __jsb_cc_experimental_TransformView_class, js_cc_experimental_TransformView_finalize)
 
 
 
-static bool js_cc_TransformView_finalize(se::State& s) // NOLINT(readability-identifier-naming, google-runtime-references)
+static bool js_cc_experimental_TransformView_finalize(se::State& s) // NOLINT(readability-identifier-naming, google-runtime-references)
 {
-    auto iter = se::NonRefNativePtrCreatedByCtorMap::find(SE_THIS_OBJECT<cc::TransformView>(s));
+    auto iter = se::NonRefNativePtrCreatedByCtorMap::find(SE_THIS_OBJECT<cc::experimental::TransformView>(s));
     if (iter != se::NonRefNativePtrCreatedByCtorMap::end())
     {
         se::NonRefNativePtrCreatedByCtorMap::erase(iter);
-        auto* cobj = SE_THIS_OBJECT<cc::TransformView>(s);
+        auto* cobj = SE_THIS_OBJECT<cc::experimental::TransformView>(s);
         JSB_FREE(cobj);
     }
     return true;
 }
-SE_BIND_FINALIZE_FUNC(js_cc_TransformView_finalize)
+SE_BIND_FINALIZE_FUNC(js_cc_experimental_TransformView_finalize)
 
 bool js_register_chassis_TransformView(se::Object* obj) // NOLINT(readability-identifier-naming, google-runtime-references)
 {
@@ -249,23 +249,23 @@ bool js_register_chassis_TransformView(se::Object* obj) // NOLINT(readability-id
     cls->defineFunction("setRotationFromEuler", _SE(js_chassis_TransformView_setRotationFromEuler));
     cls->defineFunction("setScale", _SE(js_chassis_TransformView_setScale));
     cls->defineFunction("updateWorldTransform", _SE(js_chassis_TransformView_updateWorldTransform));
-    cls->defineFinalizeFunction(_SE(js_cc_TransformView_finalize));
+    cls->defineFinalizeFunction(_SE(js_cc_experimental_TransformView_finalize));
     cls->install();
-    JSBClassType::registerClass<cc::TransformView>(cls);
+    JSBClassType::registerClass<cc::experimental::TransformView>(cls);
 
-    __jsb_cc_TransformView_proto = cls->getProto();
-    __jsb_cc_TransformView_class = cls;
+    __jsb_cc_experimental_TransformView_proto = cls->getProto();
+    __jsb_cc_experimental_TransformView_class = cls;
 
     se::ScriptEngine::getInstance()->clearException();
     return true;
 }
-se::Object* __jsb_cc_ModelView_proto = nullptr;
-se::Class* __jsb_cc_ModelView_class = nullptr;
+se::Object* __jsb_cc_experimental_ModelView_proto = nullptr;
+se::Class* __jsb_cc_experimental_ModelView_class = nullptr;
 
 static bool js_chassis_ModelView_setColor(se::State& s) // NOLINT(readability-identifier-naming, google-runtime-references)
 {
     CC_UNUSED bool ok = true;
-    auto* cobj = SE_THIS_OBJECT<cc::ModelView>(s);
+    auto* cobj = SE_THIS_OBJECT<cc::experimental::ModelView>(s);
     SE_PRECONDITION2( cobj, false, "js_chassis_ModelView_setColor : Invalid Native Object");
     const auto& args = s.args();
     size_t argc = args.size();
@@ -307,7 +307,7 @@ SE_BIND_FUNC(js_chassis_ModelView_setColor)
 
 static bool js_chassis_ModelView_setEnabled(se::State& s) // NOLINT(readability-identifier-naming, google-runtime-references)
 {
-    auto* cobj = SE_THIS_OBJECT<cc::ModelView>(s);
+    auto* cobj = SE_THIS_OBJECT<cc::experimental::ModelView>(s);
     SE_PRECONDITION2(cobj, false, "js_chassis_ModelView_setEnabled : Invalid Native Object");
     const auto& args = s.args();
     size_t argc = args.size();
@@ -326,13 +326,13 @@ SE_BIND_FUNC(js_chassis_ModelView_setEnabled)
 
 static bool js_chassis_ModelView_setTransform(se::State& s) // NOLINT(readability-identifier-naming, google-runtime-references)
 {
-    auto* cobj = SE_THIS_OBJECT<cc::ModelView>(s);
+    auto* cobj = SE_THIS_OBJECT<cc::experimental::ModelView>(s);
     SE_PRECONDITION2(cobj, false, "js_chassis_ModelView_setTransform : Invalid Native Object");
     const auto& args = s.args();
     size_t argc = args.size();
     CC_UNUSED bool ok = true;
     if (argc == 1) {
-        HolderType<const cc::TransformView*, false> arg0 = {};
+        HolderType<const cc::experimental::TransformView*, false> arg0 = {};
         ok &= sevalue_to_native(args[0], &arg0, s.thisObject());
         SE_PRECONDITION2(ok, false, "js_chassis_ModelView_setTransform : Error processing arguments");
         cobj->setTransform(arg0.value());
@@ -343,7 +343,7 @@ static bool js_chassis_ModelView_setTransform(se::State& s) // NOLINT(readabilit
 }
 SE_BIND_FUNC(js_chassis_ModelView_setTransform)
 
-SE_DECLARE_FINALIZE_FUNC(js_cc_ModelView_finalize)
+SE_DECLARE_FINALIZE_FUNC(js_cc_experimental_ModelView_finalize)
 
 static bool js_chassis_ModelView_constructor(se::State& s) // NOLINT(readability-identifier-naming, google-runtime-references) constructor_overloaded.c
 {
@@ -355,7 +355,7 @@ static bool js_chassis_ModelView_constructor(se::State& s) // NOLINT(readability
             HolderType<int, false> arg0 = {};
             ok &= sevalue_to_native(args[0], &arg0, s.thisObject());
             if (!ok) { ok = true; break; }
-            cc::ModelView* cobj = JSB_ALLOC(cc::ModelView, arg0.value());
+            cc::experimental::ModelView* cobj = JSB_ALLOC(cc::experimental::ModelView, arg0.value());
             s.thisObject()->setPrivateData(cobj);
             se::NonRefNativePtrCreatedByCtorMap::emplace(cobj);
             return true;
@@ -363,7 +363,7 @@ static bool js_chassis_ModelView_constructor(se::State& s) // NOLINT(readability
     } while(false);
     do {
         if (argc == 0) {
-            cc::ModelView* cobj = JSB_ALLOC(cc::ModelView);
+            cc::experimental::ModelView* cobj = JSB_ALLOC(cc::experimental::ModelView);
             s.thisObject()->setPrivateData(cobj);
             se::NonRefNativePtrCreatedByCtorMap::emplace(cobj);
             return true;
@@ -372,22 +372,22 @@ static bool js_chassis_ModelView_constructor(se::State& s) // NOLINT(readability
     SE_REPORT_ERROR("wrong number of arguments: %d", (int)argc);
     return false;
 }
-SE_BIND_CTOR(js_chassis_ModelView_constructor, __jsb_cc_ModelView_class, js_cc_ModelView_finalize)
+SE_BIND_CTOR(js_chassis_ModelView_constructor, __jsb_cc_experimental_ModelView_class, js_cc_experimental_ModelView_finalize)
 
 
 
-static bool js_cc_ModelView_finalize(se::State& s) // NOLINT(readability-identifier-naming, google-runtime-references)
+static bool js_cc_experimental_ModelView_finalize(se::State& s) // NOLINT(readability-identifier-naming, google-runtime-references)
 {
-    auto iter = se::NonRefNativePtrCreatedByCtorMap::find(SE_THIS_OBJECT<cc::ModelView>(s));
+    auto iter = se::NonRefNativePtrCreatedByCtorMap::find(SE_THIS_OBJECT<cc::experimental::ModelView>(s));
     if (iter != se::NonRefNativePtrCreatedByCtorMap::end())
     {
         se::NonRefNativePtrCreatedByCtorMap::erase(iter);
-        auto* cobj = SE_THIS_OBJECT<cc::ModelView>(s);
+        auto* cobj = SE_THIS_OBJECT<cc::experimental::ModelView>(s);
         JSB_FREE(cobj);
     }
     return true;
 }
-SE_BIND_FINALIZE_FUNC(js_cc_ModelView_finalize)
+SE_BIND_FINALIZE_FUNC(js_cc_experimental_ModelView_finalize)
 
 bool js_register_chassis_ModelView(se::Object* obj) // NOLINT(readability-identifier-naming, google-runtime-references)
 {
@@ -396,28 +396,28 @@ bool js_register_chassis_ModelView(se::Object* obj) // NOLINT(readability-identi
     cls->defineFunction("setColor", _SE(js_chassis_ModelView_setColor));
     cls->defineFunction("setEnabled", _SE(js_chassis_ModelView_setEnabled));
     cls->defineFunction("setTransform", _SE(js_chassis_ModelView_setTransform));
-    cls->defineFinalizeFunction(_SE(js_cc_ModelView_finalize));
+    cls->defineFinalizeFunction(_SE(js_cc_experimental_ModelView_finalize));
     cls->install();
-    JSBClassType::registerClass<cc::ModelView>(cls);
+    JSBClassType::registerClass<cc::experimental::ModelView>(cls);
 
-    __jsb_cc_ModelView_proto = cls->getProto();
-    __jsb_cc_ModelView_class = cls;
+    __jsb_cc_experimental_ModelView_proto = cls->getProto();
+    __jsb_cc_experimental_ModelView_class = cls;
 
     se::ScriptEngine::getInstance()->clearException();
     return true;
 }
-se::Object* __jsb_cc_Root_proto = nullptr;
-se::Class* __jsb_cc_Root_class = nullptr;
+se::Object* __jsb_cc_experimental_Root_proto = nullptr;
+se::Class* __jsb_cc_experimental_Root_class = nullptr;
 
 static bool js_chassis_Root_createModel(se::State& s) // NOLINT(readability-identifier-naming, google-runtime-references)
 {
-    auto* cobj = SE_THIS_OBJECT<cc::Root>(s);
+    auto* cobj = SE_THIS_OBJECT<cc::experimental::Root>(s);
     SE_PRECONDITION2(cobj, false, "js_chassis_Root_createModel : Invalid Native Object");
     const auto& args = s.args();
     size_t argc = args.size();
     CC_UNUSED bool ok = true;
     if (argc == 0) {
-        cc::ModelView* result = cobj->createModel();
+        cc::experimental::ModelView* result = cobj->createModel();
         ok &= nativevalue_to_se(result, s.rval(), nullptr /*ctx*/);
         SE_PRECONDITION2(ok, false, "js_chassis_Root_createModel : Error processing arguments");
         se::NonRefNativePtrCreatedByCtorMap::emplace(result);
@@ -431,13 +431,13 @@ SE_BIND_FUNC(js_chassis_Root_createModel)
 
 static bool js_chassis_Root_createTransform(se::State& s) // NOLINT(readability-identifier-naming, google-runtime-references)
 {
-    auto* cobj = SE_THIS_OBJECT<cc::Root>(s);
+    auto* cobj = SE_THIS_OBJECT<cc::experimental::Root>(s);
     SE_PRECONDITION2(cobj, false, "js_chassis_Root_createTransform : Invalid Native Object");
     const auto& args = s.args();
     size_t argc = args.size();
     CC_UNUSED bool ok = true;
     if (argc == 0) {
-        cc::TransformView* result = cobj->createTransform();
+        cc::experimental::TransformView* result = cobj->createTransform();
         ok &= nativevalue_to_se(result, s.rval(), nullptr /*ctx*/);
         SE_PRECONDITION2(ok, false, "js_chassis_Root_createTransform : Error processing arguments");
         se::NonRefNativePtrCreatedByCtorMap::emplace(result);
@@ -451,7 +451,7 @@ SE_BIND_FUNC(js_chassis_Root_createTransform)
 
 static bool js_chassis_Root_destroy(se::State& s) // NOLINT(readability-identifier-naming, google-runtime-references)
 {
-    auto* cobj = SE_THIS_OBJECT<cc::Root>(s);
+    auto* cobj = SE_THIS_OBJECT<cc::experimental::Root>(s);
     SE_PRECONDITION2(cobj, false, "js_chassis_Root_destroy : Invalid Native Object");
     const auto& args = s.args();
     size_t argc = args.size();
@@ -466,7 +466,7 @@ SE_BIND_FUNC(js_chassis_Root_destroy)
 
 static bool js_chassis_Root_initialize(se::State& s) // NOLINT(readability-identifier-naming, google-runtime-references)
 {
-    auto* cobj = SE_THIS_OBJECT<cc::Root>(s);
+    auto* cobj = SE_THIS_OBJECT<cc::experimental::Root>(s);
     SE_PRECONDITION2(cobj, false, "js_chassis_Root_initialize : Invalid Native Object");
     const auto& args = s.args();
     size_t argc = args.size();
@@ -481,7 +481,7 @@ SE_BIND_FUNC(js_chassis_Root_initialize)
 
 static bool js_chassis_Root_render(se::State& s) // NOLINT(readability-identifier-naming, google-runtime-references)
 {
-    auto* cobj = SE_THIS_OBJECT<cc::Root>(s);
+    auto* cobj = SE_THIS_OBJECT<cc::experimental::Root>(s);
     SE_PRECONDITION2(cobj, false, "js_chassis_Root_render : Invalid Native Object");
     const auto& args = s.args();
     size_t argc = args.size();
@@ -500,7 +500,7 @@ static bool js_chassis_Root_getInstance(se::State& s) // NOLINT(readability-iden
     size_t argc = args.size();
     CC_UNUSED bool ok = true;
     if (argc == 0) {
-        cc::Root* result = cc::Root::getInstance();
+        cc::experimental::Root* result = cc::experimental::Root::getInstance();
         ok &= nativevalue_to_se(result, s.rval(), nullptr /*ctx*/);
         SE_PRECONDITION2(ok, false, "js_chassis_Root_getInstance : Error processing arguments");
         SE_HOLD_RETURN_VALUE(result, s.thisObject(), s.rval());
@@ -512,18 +512,18 @@ static bool js_chassis_Root_getInstance(se::State& s) // NOLINT(readability-iden
 SE_BIND_FUNC(js_chassis_Root_getInstance)
 
 
-static bool js_cc_Root_finalize(se::State& s) // NOLINT(readability-identifier-naming, google-runtime-references)
+static bool js_cc_experimental_Root_finalize(se::State& s) // NOLINT(readability-identifier-naming, google-runtime-references)
 {
-    auto iter = se::NonRefNativePtrCreatedByCtorMap::find(SE_THIS_OBJECT<cc::Root>(s));
+    auto iter = se::NonRefNativePtrCreatedByCtorMap::find(SE_THIS_OBJECT<cc::experimental::Root>(s));
     if (iter != se::NonRefNativePtrCreatedByCtorMap::end())
     {
         se::NonRefNativePtrCreatedByCtorMap::erase(iter);
-        auto* cobj = SE_THIS_OBJECT<cc::Root>(s);
+        auto* cobj = SE_THIS_OBJECT<cc::experimental::Root>(s);
         JSB_FREE(cobj);
     }
     return true;
 }
-SE_BIND_FINALIZE_FUNC(js_cc_Root_finalize)
+SE_BIND_FINALIZE_FUNC(js_cc_experimental_Root_finalize)
 
 bool js_register_chassis_Root(se::Object* obj) // NOLINT(readability-identifier-naming, google-runtime-references)
 {
@@ -535,25 +535,25 @@ bool js_register_chassis_Root(se::Object* obj) // NOLINT(readability-identifier-
     cls->defineFunction("initialize", _SE(js_chassis_Root_initialize));
     cls->defineFunction("render", _SE(js_chassis_Root_render));
     cls->defineStaticFunction("getInstance", _SE(js_chassis_Root_getInstance));
-    cls->defineFinalizeFunction(_SE(js_cc_Root_finalize));
+    cls->defineFinalizeFunction(_SE(js_cc_experimental_Root_finalize));
     cls->install();
-    JSBClassType::registerClass<cc::Root>(cls);
+    JSBClassType::registerClass<cc::experimental::Root>(cls);
 
-    __jsb_cc_Root_proto = cls->getProto();
-    __jsb_cc_Root_class = cls;
+    __jsb_cc_experimental_Root_proto = cls->getProto();
+    __jsb_cc_experimental_Root_class = cls;
 
     se::ScriptEngine::getInstance()->clearException();
     return true;
 }
-se::Object* __jsb_cc_RootManager_proto = nullptr;
-se::Class* __jsb_cc_RootManager_class = nullptr;
+se::Object* __jsb_cc_experimental_RootManager_proto = nullptr;
+se::Class* __jsb_cc_experimental_RootManager_class = nullptr;
 
 static bool js_chassis_RootManager_destroy(se::State& s) // NOLINT(readability-identifier-naming, google-runtime-references)
 {
     const auto& args = s.args();
     size_t argc = args.size();
     if (argc == 0) {
-        cc::RootManager::destroy();
+        cc::experimental::RootManager::destroy();
         return true;
     }
     SE_REPORT_ERROR("wrong number of arguments: %d, was expecting %d", (int)argc, 0);
@@ -567,7 +567,7 @@ static bool js_chassis_RootManager_create(se::State& s) // NOLINT(readability-id
     size_t argc = args.size();
     CC_UNUSED bool ok = true;
     if (argc == 0) {
-        cc::Root* result = cc::RootManager::create();
+        cc::experimental::Root* result = cc::experimental::RootManager::create();
         ok &= nativevalue_to_se(result, s.rval(), nullptr /*ctx*/);
         SE_PRECONDITION2(ok, false, "js_chassis_RootManager_create : Error processing arguments");
         SE_HOLD_RETURN_VALUE(result, s.thisObject(), s.rval());
@@ -584,7 +584,7 @@ static bool js_chassis_RootManager_getInstance(se::State& s) // NOLINT(readabili
     size_t argc = args.size();
     CC_UNUSED bool ok = true;
     if (argc == 0) {
-        cc::Root* result = cc::RootManager::getInstance();
+        cc::experimental::Root* result = cc::experimental::RootManager::getInstance();
         ok &= nativevalue_to_se(result, s.rval(), nullptr /*ctx*/);
         SE_PRECONDITION2(ok, false, "js_chassis_RootManager_getInstance : Error processing arguments");
         SE_HOLD_RETURN_VALUE(result, s.thisObject(), s.rval());
@@ -596,18 +596,18 @@ static bool js_chassis_RootManager_getInstance(se::State& s) // NOLINT(readabili
 SE_BIND_FUNC(js_chassis_RootManager_getInstance)
 
 
-static bool js_cc_RootManager_finalize(se::State& s) // NOLINT(readability-identifier-naming, google-runtime-references)
+static bool js_cc_experimental_RootManager_finalize(se::State& s) // NOLINT(readability-identifier-naming, google-runtime-references)
 {
-    auto iter = se::NonRefNativePtrCreatedByCtorMap::find(SE_THIS_OBJECT<cc::RootManager>(s));
+    auto iter = se::NonRefNativePtrCreatedByCtorMap::find(SE_THIS_OBJECT<cc::experimental::RootManager>(s));
     if (iter != se::NonRefNativePtrCreatedByCtorMap::end())
     {
         se::NonRefNativePtrCreatedByCtorMap::erase(iter);
-        auto* cobj = SE_THIS_OBJECT<cc::RootManager>(s);
+        auto* cobj = SE_THIS_OBJECT<cc::experimental::RootManager>(s);
         JSB_FREE(cobj);
     }
     return true;
 }
-SE_BIND_FINALIZE_FUNC(js_cc_RootManager_finalize)
+SE_BIND_FINALIZE_FUNC(js_cc_experimental_RootManager_finalize)
 
 bool js_register_chassis_RootManager(se::Object* obj) // NOLINT(readability-identifier-naming, google-runtime-references)
 {
@@ -616,12 +616,12 @@ bool js_register_chassis_RootManager(se::Object* obj) // NOLINT(readability-iden
     cls->defineStaticFunction("destroy", _SE(js_chassis_RootManager_destroy));
     cls->defineStaticFunction("create", _SE(js_chassis_RootManager_create));
     cls->defineStaticFunction("getInstance", _SE(js_chassis_RootManager_getInstance));
-    cls->defineFinalizeFunction(_SE(js_cc_RootManager_finalize));
+    cls->defineFinalizeFunction(_SE(js_cc_experimental_RootManager_finalize));
     cls->install();
-    JSBClassType::registerClass<cc::RootManager>(cls);
+    JSBClassType::registerClass<cc::experimental::RootManager>(cls);
 
-    __jsb_cc_RootManager_proto = cls->getProto();
-    __jsb_cc_RootManager_class = cls;
+    __jsb_cc_experimental_RootManager_proto = cls->getProto();
+    __jsb_cc_experimental_RootManager_class = cls;
 
     se::ScriptEngine::getInstance()->clearException();
     return true;

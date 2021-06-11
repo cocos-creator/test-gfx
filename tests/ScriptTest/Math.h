@@ -35,7 +35,7 @@ namespace vmath {
 #define CC_VMATH_STRUCT_SUPPORT_2(ns1, ns2, Struct, ...) \
     } /* namespace ns2 */                                \
     } /* namespace ns1 */                                \
-    ENOKI_STRUCT_SUPPORT(ns::Struct, __VA_ARGS__)        \
+    ENOKI_STRUCT_SUPPORT(ns1::ns2::Struct, __VA_ARGS__)  \
     namespace ns1 {                                      \
     namespace ns2 {
 

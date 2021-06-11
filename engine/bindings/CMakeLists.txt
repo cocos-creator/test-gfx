@@ -29,8 +29,6 @@ set(GENERAL_FILES
 
   ${COCOS_SRC_PATH}/bindings/dop/BufferPool.cpp
   ${COCOS_SRC_PATH}/bindings/dop/BufferPool.h
-  ${COCOS_SRC_PATH}/bindings/dop/ObjectPool.cpp
-  ${COCOS_SRC_PATH}/bindings/dop/ObjectPool.h
   ${COCOS_SRC_PATH}/bindings/dop/jsb_dop.cpp
   ${COCOS_SRC_PATH}/bindings/dop/jsb_dop.h
   ${COCOS_SRC_PATH}/bindings/dop/PoolType.h

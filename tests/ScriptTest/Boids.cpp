@@ -33,8 +33,8 @@ using BoidP = Boid<cc::vmath::FloatP>;
 using BoidX = Boid<cc::vmath::FloatX>;
 
 namespace {
-std::vector<cc::TransformView *> transformViews;
-std::vector<cc::ModelView *>     modelViews;
+std::vector<cc::experimental::TransformView *> transformViews;
+std::vector<cc::experimental::ModelView *>     modelViews;
 BoidsOptions                     options;
 BoidX                            boids;
 } // namespace
@@ -101,14 +101,14 @@ static Vec3<Value> applyForce(const Vec3<Value_> &velocity, const Vec3<Value> &f
 void BoidsManager::init(const BoidsOptions &newOptions) {
     options = newOptions;
 
-    cc::Root *         root   = cc::RootManager::getInstance();
-    cc::TransformView *parent = root->createTransform();
+    cc::experimental::Root *         root   = cc::experimental::RootManager::getInstance();
+    cc::experimental::TransformView *parent = root->createTransform();
     transformViews.push_back(parent);
 
     setSlices(boids, options.boidCount);
     for (uint32_t i = 0; i < options.boidCount; ++i) {
-        cc::TransformView *transform = root->createTransform();
-        cc::ModelView *    model     = root->createModel();
+        cc::experimental::TransformView *transform = root->createTransform();
+        cc::experimental::ModelView *    model     = root->createModel();
 
         transform->setParent(parent);
         model->setTransform(transform);

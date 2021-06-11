@@ -20,8 +20,7 @@ namespace cc {
 using WindowInfo = struct WindowInfo {
     intptr_t  windowHandle = 0;
     gfx::Rect screen;
-    int       physicalWidth;
-    int       physicalHeight;
+    float     pixelRatio = 1.F;
 };
 
 struct Framebuffer {
