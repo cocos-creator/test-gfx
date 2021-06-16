@@ -364,28 +364,31 @@ void Root::initialize() {
 }
 
 void Root::destroy() {
-    CC_SAFE_DESTROY(inputAssembler);
-    CC_SAFE_DESTROY(vertexBuffer);
-    CC_SAFE_DESTROY(instancedBuffer);
-    CC_SAFE_DESTROY(uniformBufferGlobal);
-    CC_SAFE_DESTROY(shader);
-    CC_SAFE_DESTROY(descriptorSet);
-    CC_SAFE_DESTROY(descriptorSetLayout);
-    CC_SAFE_DESTROY(pipelineLayout);
-    CC_SAFE_DESTROY(pipelineState);
+    CC_SAFE_DESTROY(inputAssembler)
+    CC_SAFE_DESTROY(vertexBuffer)
+    CC_SAFE_DESTROY(instancedBuffer)
+    CC_SAFE_DESTROY(uniformBufferGlobal)
+    CC_SAFE_DESTROY(shader)
+    CC_SAFE_DESTROY(descriptorSet)
+    CC_SAFE_DESTROY(descriptorSetLayout)
+    CC_SAFE_DESTROY(pipelineLayout)
+    CC_SAFE_DESTROY(pipelineState)
 
-    CC_SAFE_DESTROY(vertexBufferOutline);
-    CC_SAFE_DESTROY(pipelineStateOutline);
-    CC_SAFE_DESTROY(inputAssemblerOutline);
+    CC_SAFE_DESTROY(vertexBufferOutline)
+    CC_SAFE_DESTROY(pipelineStateOutline)
+    CC_SAFE_DESTROY(inputAssemblerOutline)
 
-    CC_SAFE_DESTROY(fbo);
-    CC_SAFE_DESTROY(renderPass);
+    CC_SAFE_DESTROY(fbo)
+    CC_SAFE_DESTROY(renderPass)
     commandBuffers.clear();
 
     globalBarriers.clear();
 }
 
 void Root::render() {
+    TestBaseI::lookupTime(&TestBaseI::renderThread);
+    TestBaseI::printTime(TestBaseI::renderThread, "Render thread");
+
     gfx::Device *device     = gfx::Device::getInstance();
     gfx::Color   clearColor = {.1F, .1F, .1F, 1.F};
 
@@ -413,7 +416,7 @@ void Root::render() {
         Mat4         view;
         Mat4         projection;
         static float time = M_PI * 0.5F;
-        time += TestBaseI::hostThread.dt * 0.1F;
+        time += TestBaseI::renderThread.dt * 0.1F;
         Mat4::createLookAt({std::cos(time) * 4.F + 1.F, 1.F, std::sin(time) * 3.F},
                            {0.F, 0.F, .5F}, {0.F, 1.F, 0.F}, &view);
         TestBaseI::createOrthographic(-1.5F, 1.5F, -1.5F, 1.5F, 1.F, 10.F, &projection);
@@ -440,10 +443,12 @@ void Root::render() {
     commandBuffer->draw(inputAssemblerOutline);
 
     if (modelCount) {
-        inputAssembler->setInstanceCount(modelCount);
-        commandBuffer->bindPipelineState(pipelineState);
-        commandBuffer->bindInputAssembler(inputAssembler);
-        commandBuffer->draw(inputAssembler);
+        for (uint i = 0; i < 1; ++i) {
+            inputAssembler->setInstanceCount(modelCount);
+            commandBuffer->bindPipelineState(pipelineState);
+            commandBuffer->bindInputAssembler(inputAssembler);
+            commandBuffer->draw(inputAssembler);
+        }
     }
 
     commandBuffer->endRenderPass();

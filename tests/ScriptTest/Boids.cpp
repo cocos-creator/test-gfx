@@ -3,6 +3,7 @@
 #include <vector>
 #include "Chassis.h"
 #include "base/Log.h"
+#include "base/job-system/JobSystem.h"
 
 using namespace cc::vmath; // NOLINT(google-build-using-namespace) when inside cpp files this is usually fine
 
@@ -35,8 +36,10 @@ using BoidX = Boid<cc::vmath::FloatX>;
 namespace {
 std::vector<cc::experimental::TransformView *> transformViews;
 std::vector<cc::experimental::ModelView *>     modelViews;
-BoidsOptions                     options;
-BoidX                            boids;
+
+BoidsOptions options;
+BoidX        boids;
+uint         threadCount{0U};
 } // namespace
 
 template <typename Value>
@@ -121,6 +124,7 @@ void BoidsManager::init(const BoidsOptions &newOptions) {
     }
 
     CC_LOG_INFO("Boids count: %d", options.boidCount);
+    threadCount = cc::JobSystem::getInstance()->threadCount();
 
     PCG32<FloatP> rng(std::time(nullptr)); // make every run unique
     for (size_t i = 0; i < packets(boids); ++i) {
@@ -134,36 +138,34 @@ void BoidsManager::init(const BoidsOptions &newOptions) {
 
 void BoidsManager::destroy() {
     for (auto *transform : transformViews) {
-        CC_SAFE_DELETE(transform);
+        CC_SAFE_DELETE(transform)
     }
     transformViews.clear();
 
     for (auto *model : modelViews) {
-        CC_SAFE_DELETE(model);
+        CC_SAFE_DELETE(model)
     }
     modelViews.clear();
 }
 
-void BoidsManager::tick(float globalTime) {
-    static float lastTime = -1.F;
-    if (lastTime < options.startingDelay * 1000.F) {
-        lastTime = globalTime;
-        return;
-    }
+namespace {
+float              dt{0.F};
+size_t             totalPackets{0U};
+size_t             packetsPerJob{0U};
+const auto         ZERO = zero<Vec3P>();
+thread_local Vec3P alignment;
+thread_local Vec3P cohesion;
+thread_local Vec3P separation;
+thread_local MaskP alignmentActive;
+thread_local MaskP cohesionActive;
+thread_local MaskP separationActive;
+} // namespace
 
-    float dt = (globalTime - lastTime) / 1000.F;
-    lastTime = globalTime;
+static void tickJob(uint jobIdx) {
+    size_t begIdx = jobIdx * packetsPerJob;
+    size_t endIdx = min(begIdx + packetsPerJob, totalPackets);
 
-    static const auto ZERO = zero<Vec3P>();
-
-    static Vec3P alignment;
-    static Vec3P cohesion;
-    static Vec3P separation;
-    static MaskP alignmentActive;
-    static MaskP cohesionActive;
-    static MaskP separationActive;
-
-    for (size_t i = 0; i < packets(boids); ++i) {
+    for (size_t i = begIdx; i < endIdx; ++i) {
         auto &&b1        = packet(boids, i);
         alignment        = zero<Vec3P>();
         cohesion         = zero<Vec3P>();
@@ -194,8 +196,31 @@ void BoidsManager::tick(float globalTime) {
         b1.acceleration += select(cohesionActive, applyForce(b1.velocity, cohesion, options.cohesionForce), ZERO);
         b1.acceleration += select(separationActive, applyForce(b1.velocity, separation, options.separationForce), ZERO);
     }
+}
 
-    for (size_t i = 0; i < packets(boids); ++i) {
+void BoidsManager::tick(float globalTime) {
+    static float lastTime = -1.F;
+    if (lastTime < options.startingDelay * 1000.F) {
+        lastTime = globalTime;
+        return;
+    }
+
+    dt       = (globalTime - lastTime) / 1000.F;
+    lastTime = globalTime;
+    totalPackets = packets(boids);
+
+#if 1
+    packetsPerJob = (totalPackets - 1) / threadCount + 1;
+    cc::JobGraph g(cc::JobSystem::getInstance());
+    g.createForEachIndexJob(0, threadCount, 1U, tickJob);
+    g.run();
+    g.waitForAll();
+#else
+    packetsPerJob = totalPackets;
+    tickJob(0U);
+#endif
+
+    for (size_t i = 0; i < totalPackets; ++i) {
         auto &&b   = packet(boids, i);
         b.velocity = clampLength(b.velocity + b.acceleration, options.maxVelocity);
         b.position = wrapBound(b.position + b.velocity * dt);

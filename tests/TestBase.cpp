@@ -68,7 +68,8 @@ vector<TestBaseI::createFunc> TestBaseI::tests = {
 #endif // CC_PLATFORM != CC_PLATFORM_MAC_IOS
 };
 
-FrameRate                                  TestBaseI::hostThread;
+FrameRate                                  TestBaseI::logicThread;
+FrameRate                                  TestBaseI::renderThread;
 FrameRate                                  TestBaseI::deviceThread;
 vector<gfx::CommandBuffer *>               TestBaseI::commandBuffers;
 unordered_map<uint, gfx::GlobalBarrier *>  TestBaseI::globalBarrierMap;
@@ -129,7 +130,7 @@ TestBaseI::TestBaseI(const WindowInfo &info) {
         commandBuffers.push_back(device->getCommandBuffer());
     }
 
-    hostThread.prevTime   = std::chrono::steady_clock::now();
+    logicThread.prevTime   = std::chrono::steady_clock::now();
     deviceThread.prevTime = std::chrono::steady_clock::now();
 }
 

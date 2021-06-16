@@ -16,81 +16,10 @@
     const { vec3, quat } = JSB ? glMatrix : require('./gl-matrix');
     const { root } = JSB ? chassis : require('./chassis');
 
-    const parent = root.createTransform();
-    const tempVec3a = vec3.create();
-    const tempVec3b = vec3.create();
-    const tempQuat = quat.create();
-    const tempVec4 = quat.create();
-
-    const HALF = vec3.set(vec3.create(), 0.5, 0.5, 0.5);
-
-    const alignment = vec3.create();
-    const cohesion = vec3.create();
-    const separation = vec3.create();
-
-    const getBoundaryFade = (v, clamp) => {
-        return Math.min(clamp,
-            1 - Math.abs(v[0]),
-            1 - Math.abs(v[1]),
-            1 - 2 * Math.abs(v[2] - 0.5)) / clamp;
-    };
-
-    const wrapBound = (v) => {
-        if (v[0] > 1) { v[0] -= 2; }
-        else if (v[0] < -1) { v[0] += 2; }
-        if (v[1] > 1) { v[1] -= 2; }
-        else if (v[1] < -1) { v[1] += 2; }
-        if (v[2] > 1) { v[2] -= 1; }
-        else if (v[2] < 0) { v[2] += 1; }
-    };
-
-    const clampLength = (v, max) => {
-        const l = vec3.length(v);
-        if (l > max) { vec3.scale(v, v, max / l); }
-    };
-
-    const applyForce = (velocity, force, strength) => {
-        vec3.scale(tempVec3a, force, options.maxVelocity / vec3.length(force));
-        clampLength(vec3.subtract(tempVec3a, tempVec3a, velocity), strength);
-        return tempVec3a;
-    };
-
-    class Boid {
-        model = root.createModel();
-        transform = root.createTransform();
-
-        acceleration = vec3.create();
-        velocity = vec3.create();
-
-        constructor() {
-            this.transform.setParent(parent);
-            this.model.setTransform(this.transform);
-
-            vec3.random(tempVec3a);
-            tempVec3a[2] = Math.abs(tempVec3a[2]);
-            this.transform.setPosition(tempVec3a);
-            vec3.random(this.velocity, Math.random() * options.maxVelocity);
-
-            this.update();
-        }
-
-        update() {
-            vec3.normalize(tempVec4, this.velocity);
-            quat.normalize(tempQuat, quat.set(tempQuat, tempVec4[2], 0, -tempVec4[0], 1 + tempVec4[1]));
-            this.transform.setRotation(tempQuat);
-
-            // vec3.normalize(tempVec4, this.acceleration); // visualize acceleration
-
-            vec3.scaleAndAdd(tempVec4, HALF, tempVec4, 0.5);
-            tempVec4[3] = getBoundaryFade(this.transform.getPosition(), 0.1);
-            this.model.setColor(tempVec4);
-        }
-    }
-
     let tick = null;
 
-    // init
     if (NATIVE_COMPUTATION) {
+
         jsb.BoidsManager.init(options);
 
         tick = (gTimeInMS) => {
@@ -98,7 +27,80 @@
 
             root.render();
         };
+
     } else {
+
+        const parent = root.createTransform();
+        const tempVec3a = vec3.create();
+        const tempVec3b = vec3.create();
+        const tempQuat = quat.create();
+        const tempVec4 = quat.create();
+
+        const HALF = vec3.set(vec3.create(), 0.5, 0.5, 0.5);
+
+        const alignment = vec3.create();
+        const cohesion = vec3.create();
+        const separation = vec3.create();
+
+        const getBoundaryFade = (v, clamp) => {
+            return Math.min(clamp,
+                1 - Math.abs(v[0]),
+                1 - Math.abs(v[1]),
+                1 - 2 * Math.abs(v[2] - 0.5)) / clamp;
+        };
+
+        const wrapBound = (v) => {
+            if (v[0] > 1) { v[0] -= 2; }
+            else if (v[0] < -1) { v[0] += 2; }
+            if (v[1] > 1) { v[1] -= 2; }
+            else if (v[1] < -1) { v[1] += 2; }
+            if (v[2] > 1) { v[2] -= 1; }
+            else if (v[2] < 0) { v[2] += 1; }
+        };
+
+        const clampLength = (v, max) => {
+            const l = vec3.length(v);
+            if (l > max) { vec3.scale(v, v, max / l); }
+        };
+
+        const applyForce = (acc, velocity, force, strength) => {
+            vec3.scale(tempVec3a, force, options.maxVelocity / vec3.length(force));
+            clampLength(vec3.subtract(tempVec3a, tempVec3a, velocity), strength);
+            vec3.add(acc, acc, tempVec3a);
+        };
+
+        class Boid {
+            model = root.createModel();
+            transform = root.createTransform();
+
+            acceleration = vec3.create();
+            velocity = vec3.create();
+
+            constructor() {
+                this.transform.setParent(parent);
+                this.model.setTransform(this.transform);
+
+                vec3.random(tempVec3a);
+                tempVec3a[2] = Math.abs(tempVec3a[2]);
+                this.transform.setPosition(tempVec3a);
+                vec3.random(this.velocity, Math.random() * options.maxVelocity);
+
+                this.update();
+            }
+
+            update() {
+                vec3.normalize(tempVec4, this.velocity);
+                quat.normalize(tempQuat, quat.set(tempQuat, tempVec4[2], 0, -tempVec4[0], 1 + tempVec4[1]));
+                this.transform.setRotation(tempQuat);
+
+                // vec3.normalize(tempVec4, this.acceleration); // visualize acceleration
+
+                vec3.scaleAndAdd(tempVec4, HALF, tempVec4, 0.5);
+                tempVec4[3] = getBoundaryFade(this.transform.getPosition(), 0.1);
+                this.model.setColor(tempVec4);
+            }
+        }
+
         const boids = [];
         for (let i = 0; i < options.boidCount; ++i) {
             boids.push(new Boid());
@@ -145,9 +147,10 @@
                 }
 
                 const { acceleration: acc, velocity: vel } = b1;
-                if (alignmentActive) { vec3.copy(acc, applyForce(vel, alignment, options.alignmentForce)); }
-                if (cohesionActive) { vec3.add(acc, acc, applyForce(vel, cohesion, options.cohesionForce)); }
-                if (separationActive) { vec3.add(acc, acc, applyForce(vel, separation, options.separationForce)); }
+                vec3.set(acc, 0, 0, 0);
+                if (alignmentActive) { applyForce(acc, vel, alignment, options.alignmentForce); }
+                if (cohesionActive) { applyForce(acc, vel, cohesion, options.cohesionForce); }
+                if (separationActive) { applyForce(acc, vel, separation, options.separationForce); }
             }
 
             for (const b of boids) {

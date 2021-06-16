@@ -105,14 +105,14 @@ public:
 
     using createFunc = TestBaseI *(*)(const WindowInfo &info);
 
-    static void lookupTime(FrameRate *statistics = &hostThread) {
+    static void lookupTime(FrameRate *statistics = &logicThread) {
         if (!statistics->frameAcc) {
-            statistics->prevTime = std::chrono::steady_clock::now();
+            statistics->prevTime = statistics->curTime = std::chrono::steady_clock::now();
         } else {
+            statistics->prevTime = statistics->curTime;
             statistics->curTime  = std::chrono::steady_clock::now();
             auto time            = std::chrono::duration_cast<std::chrono::nanoseconds>(statistics->curTime - statistics->prevTime);
             statistics->dt       = static_cast<float>(time.count()) / NANOSECONDS_PER_SECOND;
-            statistics->prevTime = statistics->curTime;
 
             if (statistics->timeAcc == 0.F) {
                 statistics->timeAcc = statistics->dt;
@@ -123,7 +123,7 @@ public:
 
         ++statistics->frameAcc;
     }
-    static void printTime(const FrameRate &statistics = hostThread, const String &prefix = "Host thread") {
+    static void printTime(const FrameRate &statistics = logicThread, const String &prefix = "Host thread") {
         if (statistics.frameAcc % 6 == 0) {
             CC_LOG_INFO("%s: frame %d, avg: %.2fms (~%ld FPS)",
                         prefix.c_str(),
@@ -181,7 +181,8 @@ public:
     }
 
     // FPS calculation
-    static FrameRate  hostThread;
+    static FrameRate  logicThread;
+    static FrameRate  renderThread;
     static FrameRate  deviceThread;
     static const bool MANUAL_BARRIER;
 
@@ -199,7 +200,7 @@ public:
     CC_INLINE void tick() {
         lookupTime();
 
-        _time += hostThread.dt;
+        _time += logicThread.dt;
 
         onTick();
 

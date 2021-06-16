@@ -117,7 +117,7 @@ bool StressTest::onInit() {
     createInputAssembler();
     createPipeline();
 
-    _threadCount = JobSystem::getInstance()->threadCount() + 1; // main thread counts too
+    _threadCount = JobSystem::getInstance()->threadCount(); // main thread counts too
     gfx::CommandBufferInfo info;
     info.queue   = device->getQueue();
     uint cbCount = 0U;
@@ -529,7 +529,7 @@ void StressTest::onTick() {
     device->acquire();
 
     _uboVP.color.w = 1.F;
-    hsV2Rgb(float((hostThread.frameAcc * 20U) % 360U), .5F, 1.F, _uboVP.color.x, _uboVP.color.y, _uboVP.color.z);
+    hsV2Rgb(float((logicThread.frameAcc * 20U) % 360U), .5F, 1.F, _uboVP.color.x, _uboVP.color.y, _uboVP.color.z);
     _uniformBufferVP->update(&_uboVP, sizeof(_uboVP));
 
     /* un-toggle this to support dynamic screen rotation *

@@ -12,6 +12,8 @@ public:
     bool onInit() override;
     void onTick() override;
     void onDestroy() override;
+
+    void onSpacePressed() override;
 };
 
 } // namespace cc

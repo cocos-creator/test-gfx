@@ -1,7 +1,7 @@
 #include "Chassis.h"
-#include "tests/ScriptTest/Math.h"
 #include "base/LinearAllocatorPool.h"
 #include "base/threading/MessageQueue.h"
+#include "tests/ScriptTest/Math.h"
 
 namespace cc {
 namespace experimental {
@@ -18,7 +18,7 @@ TransformView::TransformView(vmath::Index idx) : _idx(idx) {
 }
 
 TransformView::~TransformView() {
-    if (views[_idx] != this) return;
+    if (_idx >= views.size() || views[_idx] != this) return;
 
     TransformView *last = views.back();
     views.pop_back();
@@ -35,7 +35,7 @@ TransformView::~TransformView() {
 void TransformView::setParent(TransformView *value) {
     auto &&transform = vmath::slice(buffer, _idx);
 
-    if ((!value && transform.parent < 0) || (transform.parent == value->_idx)) return;
+    if ((!value && transform.parent < 0) || (value && transform.parent == value->_idx)) return;
 
     // remove this from former parent
     if (transform.parent >= 0) {
@@ -189,7 +189,7 @@ ModelX              ModelView::buffer;
 vector<ModelView *> ModelView::views;
 
 ModelView::~ModelView() {
-    if (views[_idx] != this) return;
+    if (_idx >= views.size() || views[_idx] != this) return;
 
     ModelView *last = views.back();
     views.pop_back();
@@ -279,7 +279,7 @@ TransformAgent::~TransformAgent() {
         actor, getActor(),
         {
             CC_SAFE_DELETE(actor);
-        });
+        })
 }
 
 void TransformAgent::setParent(TransformView *value) {
@@ -289,7 +289,7 @@ void TransformAgent::setParent(TransformView *value) {
         value, static_cast<TransformAgent *>(value)->getActor(),
         {
             actor->setParent(value);
-        });
+        })
 }
 
 void TransformAgent::setPosition(float x, float y, float z) {
@@ -301,11 +301,11 @@ void TransformAgent::setPosition(float x, float y, float z) {
         z, z,
         {
             actor->setPosition(x, y, z);
-        });
+        })
 }
 
 void TransformAgent::setRotation(float x, float y, float z, float w) {
-    auto *actorQuat = RootAgent::getInstance()->getMainAllocator()->allocate<float>(4);
+    auto *actorQuat = RootAgent::getInstance()->getMessageQueue()->allocate<float>(4);
     actorQuat[0]    = x;
     actorQuat[1]    = y;
     actorQuat[2]    = z;
@@ -317,7 +317,7 @@ void TransformAgent::setRotation(float x, float y, float z, float w) {
         q, actorQuat,
         {
             actor->setRotation(q);
-        });
+        })
 }
 
 void TransformAgent::setRotationFromEuler(float angleX, float angleY, float angleZ) {
@@ -329,7 +329,7 @@ void TransformAgent::setRotationFromEuler(float angleX, float angleY, float angl
         angleZ, angleZ,
         {
             actor->setRotationFromEuler(angleX, angleY, angleZ);
-        });
+        })
 }
 
 void TransformAgent::setScale(float x, float y, float z) {
@@ -341,7 +341,7 @@ void TransformAgent::setScale(float x, float y, float z) {
         z, z,
         {
             actor->setScale(x, y, z);
-        });
+        })
 }
 
 ModelAgent::~ModelAgent() {
@@ -350,7 +350,7 @@ ModelAgent::~ModelAgent() {
         actor, getActor(),
         {
             CC_SAFE_DELETE(actor);
-        });
+        })
 }
 
 void ModelAgent::setColor(float r, float g, float b, float a) {
@@ -360,7 +360,7 @@ void ModelAgent::setColor(float r, float g, float b, float a) {
         r, r, g, g, b, b, a, a,
         {
             actor->setColor(r, g, b, a);
-        });
+        })
 }
 
 void ModelAgent::setTransform(const TransformView *transform) {
@@ -370,7 +370,7 @@ void ModelAgent::setTransform(const TransformView *transform) {
         transform, static_cast<const TransformAgent *>(transform)->getActor(),
         {
             actor->setTransform(transform);
-        });
+        })
 }
 
 void ModelAgent::setEnabled(bool enabled) {
@@ -380,7 +380,7 @@ void ModelAgent::setEnabled(bool enabled) {
         enabled, enabled,
         {
             actor->setEnabled(enabled);
-        });
+        })
 }
 
 RootAgent *RootAgent::instance = nullptr;
@@ -390,17 +390,12 @@ RootAgent::RootAgent(Root *root) : Agent(root) {
 }
 
 RootAgent::~RootAgent() {
-    CC_SAFE_DELETE(_actor);
+    CC_SAFE_DELETE(_actor)
     instance = nullptr;
 }
 
 void RootAgent::initialize() {
     _mainMessageQueue = CC_NEW(MessageQueue);
-
-    _allocatorPools.resize(MAX_CPU_FRAME_AHEAD + 1);
-    for (uint i = 0U; i < MAX_CPU_FRAME_AHEAD + 1; ++i) {
-        _allocatorPools[i] = CC_NEW(cc::LinearAllocatorPool);
-    }
 
     setMultithreaded(true);
 
@@ -412,42 +407,60 @@ void RootAgent::initialize() {
         actor, getActor(),
         {
             actor->initialize();
-        });
+        })
 }
 
 void RootAgent::destroy() {
-    ENQUEUE_MESSAGE_1(
+    Semaphore  event;
+    Semaphore *pEvent   = &event;
+    bool *     pRunning = &_running;
+
+    ENQUEUE_MESSAGE_3(
         getMessageQueue(), RootDestroy,
         actor, getActor(),
+        pRunning, pRunning,
+        pEvent, pEvent,
         {
             actor->destroy();
-        });
+            *pRunning = false;
+            pEvent->signal();
+        })
 
-    _mainMessageQueue->terminateConsumerThread();
-    CC_SAFE_DELETE(_mainMessageQueue);
+    _mainMessageQueue->finishWriting();
+    _pendingTickCount.increment();
+    event.wait();
 
-    for (cc::LinearAllocatorPool *pool : _allocatorPools) {
-        CC_SAFE_DELETE(pool);
+    CC_SAFE_DELETE(_mainMessageQueue)
+}
+
+/**
+ * Render thread will be running completely asynchronously from 
+ * logic thread. (No semaphores guarding each frame boundaries)
+ * This allows different refresh rates between RT(60 FPS, V-Synced)
+ * and LT(e.g. 120 FPS, providing the best responsiveness).
+ */
+void RootAgent::renderThreadLoop() {
+    while (true) {
+        uint pendingTickCount = _pendingTickCount.get();
+        if (pendingTickCount) {
+            _pendingTickCount.subtract(pendingTickCount);
+            while (pendingTickCount--) {
+                _mainMessageQueue->flushMessages();
+            }
+            if (!_running) break;
+            _actor->render();
+        }
     }
-    _allocatorPools.clear();
 }
 
 void RootAgent::render() {
-    ENQUEUE_MESSAGE_2(
-        _mainMessageQueue, RootRender,
-        actor, getActor(),
-        frameBoundarySemaphore, &_frameBoundarySemaphore,
-        {
-            actor->render();
-            frameBoundarySemaphore->signal();
-        });
-
-    cc::MessageQueue::freeChunksInFreeQueue(_mainMessageQueue);
-    _mainMessageQueue->finishWriting();
-    _currentIndex = (_currentIndex + 1) % (MAX_CPU_FRAME_AHEAD + 1);
-    _frameBoundarySemaphore.wait();
-
-    getMainAllocator()->reset();
+    if (_multithreaded) {
+        _mainMessageQueue->finishWriting();
+        _pendingTickCount.increment();
+        cc::MessageQueue::freeChunksInFreeQueue(_mainMessageQueue);
+    } else {
+        _actor->render();
+    }
 }
 
 void RootAgent::setMultithreaded(bool multithreaded) {
@@ -456,10 +469,28 @@ void RootAgent::setMultithreaded(bool multithreaded) {
 
     if (multithreaded) {
         _mainMessageQueue->setImmediateMode(false);
-        _mainMessageQueue->runConsumerThread();
+        _running = true;
+        std::thread renderThread(&RootAgent::renderThreadLoop, this);
+        renderThread.detach();
         CC_LOG_INFO("Render thread detached.");
     } else {
-        _mainMessageQueue->terminateConsumerThread();
+        Semaphore  event;
+        Semaphore *pEvent   = &event;
+        bool *     pRunning = &_running;
+
+        ENQUEUE_MESSAGE_2(
+            getMessageQueue(), RootJoinThread,
+            pRunning, pRunning,
+            pEvent, pEvent,
+            {
+                *pRunning = false;
+                pEvent->signal();
+            })
+
+        _mainMessageQueue->finishWriting();
+        _pendingTickCount.increment();
+        event.wait();
+
         _mainMessageQueue->setImmediateMode(true);
         CC_LOG_INFO("Render thread joined.");
     }

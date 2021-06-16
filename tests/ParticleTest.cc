@@ -399,8 +399,8 @@ void ParticleTest::onTick() {
 
     // update particles
     for (auto &p : _particles) {
-        p.position = vec3ScaleAndAdd(p.position, p.velocity, hostThread.dt);
-        p.age += hostThread.dt;
+        p.position = vec3ScaleAndAdd(p.position, p.velocity, logicThread.dt);
+        p.age += logicThread.dt;
 
         if (p.age >= p.life) {
             p.age      = 0;

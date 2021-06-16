@@ -4,6 +4,7 @@
 #include "base/TypeDef.h"
 #include "base/memory/Memory.h"
 #include "base/threading/Semaphore.h"
+#include "base/threading/ThreadSafeCounter.h"
 
 #include "gfx-base/GFXDevice.h"
 
@@ -11,7 +12,6 @@
 
 namespace cc {
 
-class LinearAllocatorPool;
 class MessageQueue;
 
 namespace experimental {
@@ -188,9 +188,6 @@ protected:
 
 ///////////////////// Agent /////////////////////
 
-class LinearAllocatorPool;
-constexpr uint MAX_CPU_FRAME_AHEAD = 1U;
-
 class TransformAgent : public Agent<TransformView> {
 public:
     explicit TransformAgent(TransformView *const actor)
@@ -229,14 +226,14 @@ public:
     void destroy() override;
 
     void render() override;
+    void renderThreadLoop();
 
     TransformView *createTransform() override;
     ModelView *    createModel() override;
 
     void setMultithreaded(bool multithreaded);
 
-    inline cc::MessageQueue *       getMessageQueue() const { return _mainMessageQueue; }
-    inline cc::LinearAllocatorPool *getMainAllocator() const { return _allocatorPools[_currentIndex]; }
+    inline cc::MessageQueue *getMessageQueue() const { return _mainMessageQueue; }
 
 protected:
     static RootAgent *instance;
@@ -247,9 +244,8 @@ protected:
     bool          _multithreaded{false};
     MessageQueue *_mainMessageQueue{nullptr};
 
-    uint                              _currentIndex = 0U;
-    vector<cc::LinearAllocatorPool *> _allocatorPools;
-    Semaphore                         _frameBoundarySemaphore{MAX_CPU_FRAME_AHEAD};
+    bool                    _running{false};
+    ThreadSafeCounter<uint> _pendingTickCount;
 };
 
 class RootManager {
