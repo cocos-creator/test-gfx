@@ -25,7 +25,7 @@ add_definitions("-DCC_USE_VULKAN")
 add_definitions("-DCC_USE_GLES3")
 add_definitions("-DCC_USE_GLES2")
 
-add_executable(${TARGET_NAME} WIN32 ${ALL_FILES})
+add_executable(${TARGET_NAME} ${ALL_FILES})
 
 target_include_directories(${TARGET_NAME} PUBLIC
   ${PROJECT_SOURCE_DIR}/src/win
@@ -63,12 +63,13 @@ add_dependencies(${TARGET_NAME} copy_resource)
 set_target_properties(copy_resource PROPERTIES FOLDER Utils)
 
 if(MSVC)
-  file(GLOB_RECURSE WIN32_DLLS
-    ${COCOS_EXTERNAL_PATH}/win32/libs/*.dll
-    ${COCOS_EXTERNAL_PATH}/win32/libs/Debug/*.dll
-  )
+  if(${CMAKE_SIZEOF_VOID_P} STREQUAL "4")
+    file(GLOB_RECURSE WIN_DLLS ${COCOS_EXTERNAL_PATH}/win32/libs/*.dll)
+  else()
+    file(GLOB_RECURSE WIN_DLLS ${COCOS_EXTERNAL_PATH}/win64/libs/*.dll)
+  endif()
 
-  foreach(item ${WIN32_DLLS})
+  foreach(item ${WIN_DLLS})
     get_filename_component(filename ${item} NAME)
     get_filename_component(abs ${item} ABSOLUTE)
     add_custom_command(TARGET ${TARGET_NAME} POST_BUILD

@@ -4,13 +4,97 @@
 #include "bindings/jswrapper/v8/ScriptEngine.h"
 #include "tests/ScriptTest/Math.h"
 
+// fix-functioned pipeline just for test purposes
+
 namespace cc {
 namespace experimental {
 
 namespace {
-// fix-functioned resources just for test purposes
-gfx::Framebuffer *           fbo;
-gfx::RenderPass *            renderPass;
+struct MultisampledFramebuffer {
+    MultisampledFramebuffer(gfx::Device *device, gfx::SampleCount sampleCount) {
+        gfx::RenderPassInfo renderPassInfo;
+
+        gfx::ColorAttachment &colorAttachment{renderPassInfo.colorAttachments.emplace_back()};
+        colorAttachment.format      = device->getColorFormat();
+        colorAttachment.sampleCount = sampleCount;
+        colorAttachment.storeOp     = gfx::StoreOp::DISCARD;
+        colorAttachment.endAccesses = {gfx::AccessType::COLOR_ATTACHMENT_WRITE};
+
+        gfx::ColorAttachment &colorResolveAttachment{renderPassInfo.colorAttachments.emplace_back()};
+        colorResolveAttachment.format      = device->getColorFormat();
+        colorResolveAttachment.loadOp      = gfx::LoadOp::DISCARD;
+
+        gfx::DepthStencilAttachment &depthStencilAttachment{renderPassInfo.depthStencilAttachment};
+        depthStencilAttachment.format         = device->getDepthStencilFormat();
+        depthStencilAttachment.sampleCount    = sampleCount;
+        depthStencilAttachment.depthStoreOp = gfx::StoreOp::DISCARD;
+        depthStencilAttachment.stencilStoreOp = gfx::StoreOp::DISCARD;
+
+        gfx::SubpassInfo &subpass{renderPassInfo.subpasses.emplace_back()};
+        subpass.colors.push_back(0);
+        subpass.resolves.push_back(1);
+        subpass.depthStencil = 2;
+
+        renderPass = device->createRenderPass(renderPassInfo);
+
+        gfx::TextureInfo colorTexMSAAInfo;
+        colorTexMSAAInfo.type    = gfx::TextureType::TEX2D;
+        colorTexMSAAInfo.usage   = gfx::TextureUsageBit::COLOR_ATTACHMENT;
+        colorTexMSAAInfo.samples = sampleCount;
+        colorTexMSAAInfo.format  = device->getColorFormat();
+        colorTexMSAAInfo.width   = device->getWidth();
+        colorTexMSAAInfo.height  = device->getHeight();
+        colorTexMSAA             = device->createTexture(colorTexMSAAInfo);
+
+        gfx::TextureInfo depthStencilTexInfo;
+        depthStencilTexInfo.type   = gfx::TextureType::TEX2D;
+        depthStencilTexInfo.usage  = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT;
+        depthStencilTexInfo.samples = sampleCount;
+        depthStencilTexInfo.format = device->getDepthStencilFormat();
+        depthStencilTexInfo.width  = device->getWidth();
+        depthStencilTexInfo.height = device->getHeight();
+        depthStencilTex            = device->createTexture(depthStencilTexInfo);
+
+        gfx::FramebufferInfo fboInfo;
+        fboInfo.renderPass = renderPass;
+        fboInfo.colorTextures.push_back(colorTexMSAA);
+        fboInfo.colorTextures.push_back(nullptr);
+        fboInfo.depthStencilTexture = depthStencilTex;
+        framebuffer = device->createFramebuffer(fboInfo);
+    }
+
+    void resize(uint width, uint height) const {
+        framebuffer->destroy();
+
+        colorTexMSAA->resize(width, height);
+        depthStencilTex->resize(width, height);
+
+        gfx::FramebufferInfo fboInfo;
+        fboInfo.renderPass = renderPass;
+        fboInfo.colorTextures.push_back(colorTexMSAA);
+        fboInfo.colorTextures.push_back(nullptr);
+        fboInfo.depthStencilTexture = depthStencilTex;
+        framebuffer->initialize(fboInfo);
+    }
+
+    void destroy() {
+        CC_SAFE_DESTROY(framebuffer);
+        CC_SAFE_DESTROY(depthStencilTex);
+        CC_SAFE_DESTROY(colorTexMSAA);
+        CC_SAFE_DESTROY(renderPass);
+    }
+
+    gfx::RenderPass * renderPass{nullptr};
+    gfx::Texture *    colorTexMSAA{nullptr};
+    gfx::Texture *    depthStencilTex{nullptr};
+    gfx::Framebuffer *framebuffer{nullptr};
+};
+
+gfx::Framebuffer *fbo;
+
+MultisampledFramebuffer *    msaaFBO;
+gfx::Framebuffer *           backBufferFBO;
+gfx::RenderPass *            backBufferRenderPass;
 vector<gfx::CommandBuffer *> commandBuffers;
 
 gfx::Shader *                shader{nullptr};
@@ -24,11 +108,12 @@ gfx::PipelineState *         pipelineState{nullptr};
 gfx::InputAssembler *        inputAssembler{nullptr};
 vector<gfx::GlobalBarrier *> globalBarriers;
 vector<float>                uniformBufferData;
-uint                         uboStride          = 0U;
-uint                         floatCountPerModel = 0U;
-uint                         modelCapacity      = Root::INITIAL_CAPACITY;
+uint                         uboStride{0U};
+uint                         floatCountPerModel{0U};
+uint                         modelCapacity{Root::INITIAL_CAPACITY};
 vmath::IndexP                index;
-constexpr bool               ROTATE_VIEW = true;
+constexpr bool               ROTATE_VIEW{true};
+constexpr bool               OFFSCREEN_MSAA{true};
 
 gfx::Buffer *        vertexBufferOutline{nullptr};
 gfx::PipelineState * pipelineStateOutline{nullptr};
@@ -40,13 +125,17 @@ void Root::initialize() {
 
     gfx::RenderPassInfo renderPassInfo;
     renderPassInfo.colorAttachments.emplace_back().format = device->getColorFormat();
-    renderPassInfo.depthStencilAttachment.format = device->getDepthStencilFormat();
-    renderPass                                   = device->createRenderPass(renderPassInfo);
+    renderPassInfo.depthStencilAttachment.format          = device->getDepthStencilFormat();
+    backBufferRenderPass                                  = device->createRenderPass(renderPassInfo);
 
     gfx::FramebufferInfo fboInfo;
     fboInfo.colorTextures.resize(1);
-    fboInfo.renderPass = renderPass;
-    fbo                = device->createFramebuffer(fboInfo);
+    fboInfo.renderPass = backBufferRenderPass;
+    backBufferFBO      = device->createFramebuffer(fboInfo);
+
+    msaaFBO = CC_NEW(MultisampledFramebuffer(device, gfx::SampleCount::X8));
+
+    fbo = OFFSCREEN_MSAA ? msaaFBO->framebuffer : backBufferFBO;
 
     commandBuffers.push_back(device->getCommandBuffer());
 
@@ -277,7 +366,7 @@ void Root::initialize() {
     pipelineInfo.primitive                           = gfx::PrimitiveMode::TRIANGLE_LIST;
     pipelineInfo.shader                              = shader;
     pipelineInfo.inputState                          = {inputAssembler->getAttributes()};
-    pipelineInfo.renderPass                          = renderPass;
+    pipelineInfo.renderPass                          = fbo->getRenderPass();
     pipelineInfo.rasterizerState.cullMode            = gfx::CullMode::NONE;
     pipelineInfo.depthStencilState.depthTest         = false;
     pipelineInfo.depthStencilState.depthWrite        = false;
@@ -357,7 +446,7 @@ void Root::initialize() {
     pipelineInfoOutline.primitive      = gfx::PrimitiveMode::LINE_LIST;
     pipelineInfoOutline.shader         = shader;
     pipelineInfoOutline.inputState     = {inputAssemblerOutline->getAttributes()};
-    pipelineInfoOutline.renderPass     = renderPass;
+    pipelineInfoOutline.renderPass     = fbo->getRenderPass();
     pipelineInfoOutline.pipelineLayout = pipelineLayout;
 
     pipelineStateOutline = device->createPipelineState(pipelineInfoOutline);
@@ -378,8 +467,10 @@ void Root::destroy() {
     CC_SAFE_DESTROY(pipelineStateOutline)
     CC_SAFE_DESTROY(inputAssemblerOutline)
 
-    CC_SAFE_DESTROY(fbo)
-    CC_SAFE_DESTROY(renderPass)
+    fbo = nullptr;
+    CC_SAFE_DESTROY(msaaFBO)
+    CC_SAFE_DESTROY(backBufferFBO)
+    CC_SAFE_DESTROY(backBufferRenderPass)
     commandBuffers.clear();
 
     globalBarriers.clear();
@@ -435,7 +526,7 @@ void Root::render() {
         commandBuffer->pipelineBarrier(globalBarriers[0]);
     }
 
-    commandBuffer->beginRenderPass(renderPass, fbo, renderArea, &clearColor, 1.F, 0);
+    commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.F, 0);
 
     commandBuffer->bindPipelineState(pipelineStateOutline);
     commandBuffer->bindInputAssembler(inputAssemblerOutline);

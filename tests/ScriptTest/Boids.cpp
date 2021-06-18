@@ -149,21 +149,22 @@ void BoidsManager::destroy() {
 }
 
 namespace {
-float              dt{0.F};
-size_t             totalPackets{0U};
-size_t             packetsPerJob{0U};
-const auto         ZERO = zero<Vec3P>();
-thread_local Vec3P alignment;
-thread_local Vec3P cohesion;
-thread_local Vec3P separation;
-thread_local MaskP alignmentActive;
-thread_local MaskP cohesionActive;
-thread_local MaskP separationActive;
+float      dt{0.F};
+size_t     totalPackets{0U};
+size_t     packetsPerJob{0U};
+const auto ZERO = zero<Vec3P>();
 } // namespace
 
 static void tickJob(uint jobIdx) {
     size_t begIdx = jobIdx * packetsPerJob;
     size_t endIdx = min(begIdx + packetsPerJob, totalPackets);
+
+    Vec3P alignment;
+    Vec3P cohesion;
+    Vec3P separation;
+    MaskP alignmentActive;
+    MaskP cohesionActive;
+    MaskP separationActive;
 
     for (size_t i = begIdx; i < endIdx; ++i) {
         auto &&b1        = packet(boids, i);
@@ -205,8 +206,8 @@ void BoidsManager::tick(float globalTime) {
         return;
     }
 
-    dt       = (globalTime - lastTime) / 1000.F;
-    lastTime = globalTime;
+    dt           = (globalTime - lastTime) / 1000.F;
+    lastTime     = globalTime;
     totalPackets = packets(boids);
 
 #if 1

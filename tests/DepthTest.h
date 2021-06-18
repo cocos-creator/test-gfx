@@ -15,8 +15,6 @@ public:
     void onResize(uint width, uint height) override;
 
 private:
-    Framebuffer *_bunnyFBO;
-
     Mat4 _bunnyMatrices[3];
     Vec3 _eye;
     Vec3 _center;

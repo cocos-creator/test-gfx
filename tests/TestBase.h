@@ -23,20 +23,6 @@ using WindowInfo = struct WindowInfo {
     float     pixelRatio = 1.F;
 };
 
-struct Framebuffer {
-    gfx::RenderPass * renderPass      = nullptr;
-    gfx::Texture *    colorTex        = nullptr;
-    gfx::Texture *    depthStencilTex = nullptr;
-    gfx::Framebuffer *framebuffer     = nullptr;
-
-    ~Framebuffer() {
-        CC_SAFE_DESTROY(framebuffer)
-        CC_SAFE_DESTROY(depthStencilTex)
-        CC_SAFE_DESTROY(colorTex)
-        CC_SAFE_DESTROY(renderPass)
-    }
-};
-
 struct StandardShaderSource {
     String vert;
     String frag;
