@@ -15,7 +15,6 @@
 #include "tests/BlendTest.h"
 #include "tests/ClearScreenTest.h"
 #include "tests/ComputeTest.h"
-#include "tests/DeferredTest.h"
 #include "tests/DepthTest.h"
 #include "tests/FrameGraphTest.h"
 #include "tests/ParticleTest.h"
@@ -52,7 +51,6 @@ gfx::RenderPass * TestBaseI::renderPass             = nullptr;
 vector<TestBaseI::createFunc> TestBaseI::tests = {
     ScriptTest::create,
     SubpassTest::create,
-    DeferredTest::create,
     ComputeTest::create,
     FrameGraphTest::create,
     StressTest::create,
@@ -110,28 +108,19 @@ TestBaseI::TestBaseI(const WindowInfo &info) {
         device = gfx::DeviceManager::create(deviceInfo);
 
         CC_LOG_INFO(vmath::processorFeatures().c_str());
-    }
 
-    if (!renderPass) {
         gfx::RenderPassInfo renderPassInfo;
         renderPassInfo.colorAttachments.emplace_back().format = device->getColorFormat();
         renderPassInfo.depthStencilAttachment.format          = device->getDepthStencilFormat();
         renderPass                                            = device->createRenderPass(renderPassInfo);
-    }
 
-    if (!fbo) {
         gfx::FramebufferInfo fboInfo;
         fboInfo.colorTextures.resize(1);
         fboInfo.renderPass = renderPass;
         fbo                = device->createFramebuffer(fboInfo);
-    }
 
-    if (commandBuffers.empty()) {
         commandBuffers.push_back(device->getCommandBuffer());
     }
-
-    logicThread.prevTime   = std::chrono::steady_clock::now();
-    deviceThread.prevTime = std::chrono::steady_clock::now();
 }
 
 void TestBaseI::tickScript() {
@@ -273,7 +262,7 @@ void TestBaseI::modifyProjectionBasedOnDevice(Mat4 *projection) {
 }
 
 #ifndef DEFAULT_MATRIX_MATH
-constexpr float preTransforms[4][4] = {
+constexpr float PRE_TRANSFORMS[4][4] = {
     {1, 0, 0, 1},   // GFXSurfaceTransform.IDENTITY
     {0, 1, -1, 0},  // GFXSurfaceTransform.ROTATE_90
     {-1, 0, 0, -1}, // GFXSurfaceTransform.ROTATE_180
@@ -289,12 +278,12 @@ void TestBaseI::createOrthographic(float left, float right, float bottom, float 
     float                 minZ         = device->getCapabilities().clipSpaceMinZ;
     float                 signY        = device->getCapabilities().clipSpaceSignY;
     gfx::SurfaceTransform orientation  = device->getSurfaceTransform();
-    const float *         preTransform = preTransforms[(uint)orientation];
+    const float *         preTransform = PRE_TRANSFORMS[static_cast<uint>(orientation)];
 
-    memset(dst, 0, MATRIX_SIZE);
+    memset(dst->m, 0, 16 * sizeof(float));
 
-    float x  = 2.f / (right - left);
-    float y  = 2.f / (top - bottom) * signY;
+    float x  = 2.F / (right - left);
+    float y  = 2.F / (top - bottom) * signY;
     float dx = (left + right) / (left - right);
     float dy = (bottom + top) / (bottom - top) * signY;
 
@@ -302,11 +291,11 @@ void TestBaseI::createOrthographic(float left, float right, float bottom, float 
     dst->m[1]  = x * preTransform[1];
     dst->m[4]  = y * preTransform[2];
     dst->m[5]  = y * preTransform[3];
-    dst->m[10] = (1.0f - minZ) / (ZNear - ZFar);
+    dst->m[10] = (1.0F - minZ) / (zNear - zFar);
     dst->m[12] = dx * preTransform[0] + dy * preTransform[2];
     dst->m[13] = dx * preTransform[1] + dy * preTransform[3];
-    dst->m[14] = (ZNear - minZ * ZFar) / (ZNear - ZFar);
-    dst->m[15] = 1.0f;
+    dst->m[14] = (zNear - minZ * zFar) / (zNear - zFar);
+    dst->m[15] = 1.0F;
 #endif
 }
 
@@ -318,12 +307,12 @@ void TestBaseI::createPerspective(float fov, float aspect, float zNear, float zF
     float                 minZ         = device->getCapabilities().clipSpaceMinZ;
     float                 signY        = device->getCapabilities().clipSpaceSignY;
     gfx::SurfaceTransform orientation  = device->getSurfaceTransform();
-    const float *         preTransform = preTransforms[(uint)orientation];
+    const float *         preTransform = PRE_TRANSFORMS[static_cast<uint>(orientation)];
 
-    memset(dst, 0, MATRIX_SIZE);
+    memset(dst->m, 0, 16 * sizeof(float));
 
-    float f  = 1.0f / std::tan(MATH_DEG_TO_RAD(fov * 0.5f));
-    float nf = 1.0f / (zNear - ZFar);
+    float f  = 1.0F / std::tan(MATH_DEG_TO_RAD(fov * 0.5F));
+    float nf = 1.0F / (zNear - zFar);
 
     float x = f / aspect;
     float y = f * signY;
@@ -332,9 +321,9 @@ void TestBaseI::createPerspective(float fov, float aspect, float zNear, float zF
     dst->m[1]  = x * preTransform[1];
     dst->m[4]  = y * preTransform[2];
     dst->m[5]  = y * preTransform[3];
-    dst->m[10] = (ZFar - minZ * zNear) * nf;
-    dst->m[11] = -1.0f;
-    dst->m[14] = ZFar * zNear * nf * (1.0f - minZ);
+    dst->m[10] = (zFar - minZ * zNear) * nf;
+    dst->m[11] = -1.0F;
+    dst->m[14] = zFar * zNear * nf * (1.0F - minZ);
 #endif
 }
 

@@ -21,13 +21,13 @@ struct MultisampledFramebuffer {
         colorAttachment.endAccesses = {gfx::AccessType::COLOR_ATTACHMENT_WRITE};
 
         gfx::ColorAttachment &colorResolveAttachment{renderPassInfo.colorAttachments.emplace_back()};
-        colorResolveAttachment.format      = device->getColorFormat();
-        colorResolveAttachment.loadOp      = gfx::LoadOp::DISCARD;
+        colorResolveAttachment.format = device->getColorFormat();
+        colorResolveAttachment.loadOp = gfx::LoadOp::DISCARD;
 
         gfx::DepthStencilAttachment &depthStencilAttachment{renderPassInfo.depthStencilAttachment};
         depthStencilAttachment.format         = device->getDepthStencilFormat();
         depthStencilAttachment.sampleCount    = sampleCount;
-        depthStencilAttachment.depthStoreOp = gfx::StoreOp::DISCARD;
+        depthStencilAttachment.depthStoreOp   = gfx::StoreOp::DISCARD;
         depthStencilAttachment.stencilStoreOp = gfx::StoreOp::DISCARD;
 
         gfx::SubpassInfo &subpass{renderPassInfo.subpasses.emplace_back()};
@@ -47,20 +47,20 @@ struct MultisampledFramebuffer {
         colorTexMSAA             = device->createTexture(colorTexMSAAInfo);
 
         gfx::TextureInfo depthStencilTexInfo;
-        depthStencilTexInfo.type   = gfx::TextureType::TEX2D;
-        depthStencilTexInfo.usage  = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT;
+        depthStencilTexInfo.type    = gfx::TextureType::TEX2D;
+        depthStencilTexInfo.usage   = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT;
         depthStencilTexInfo.samples = sampleCount;
-        depthStencilTexInfo.format = device->getDepthStencilFormat();
-        depthStencilTexInfo.width  = device->getWidth();
-        depthStencilTexInfo.height = device->getHeight();
-        depthStencilTex            = device->createTexture(depthStencilTexInfo);
+        depthStencilTexInfo.format  = device->getDepthStencilFormat();
+        depthStencilTexInfo.width   = device->getWidth();
+        depthStencilTexInfo.height  = device->getHeight();
+        depthStencilTex             = device->createTexture(depthStencilTexInfo);
 
         gfx::FramebufferInfo fboInfo;
         fboInfo.renderPass = renderPass;
         fboInfo.colorTextures.push_back(colorTexMSAA);
         fboInfo.colorTextures.push_back(nullptr);
         fboInfo.depthStencilTexture = depthStencilTex;
-        framebuffer = device->createFramebuffer(fboInfo);
+        framebuffer                 = device->createFramebuffer(fboInfo);
     }
 
     void resize(uint width, uint height) const {
