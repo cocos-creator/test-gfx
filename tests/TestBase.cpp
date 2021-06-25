@@ -88,7 +88,7 @@ TestBaseI::TestBaseI(const WindowInfo &info) {
 
 #if defined(CC_DEBUG) && (CC_DEBUG > 0)
         // Enable debugger here
-        jsb_enable_debugger("0.0.0.0", 6086, false);
+//        jsb_enable_debugger("0.0.0.0", 6086, false);
 #endif
 
         se->setExceptionCallback([](const char *location, const char *message, const char *stack) {
@@ -99,7 +99,7 @@ TestBaseI::TestBaseI(const WindowInfo &info) {
         se->start();
 
         gfx::DeviceInfo deviceInfo;
-        deviceInfo.isAntiAlias  = true;
+        //deviceInfo.isAntiAlias  = true;
         deviceInfo.windowHandle = info.windowHandle;
         deviceInfo.width        = info.screen.width;
         deviceInfo.height       = info.screen.height;

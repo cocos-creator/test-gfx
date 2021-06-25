@@ -109,7 +109,7 @@ public:
 
         ++statistics->frameAcc;
     }
-    static void printTime(const FrameRate &statistics = logicThread, const String &prefix = "Host thread") {
+    static void printTime(const FrameRate &statistics = logicThread, const String &prefix = "Logic thread") {
         if (statistics.frameAcc % 6 == 0) {
             CC_LOG_INFO("%s: frame %d, avg: %.2fms (~%ld FPS)",
                         prefix.c_str(),

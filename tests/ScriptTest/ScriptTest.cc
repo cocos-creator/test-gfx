@@ -30,12 +30,13 @@ bool ScriptTest::onInit() {
 }
 
 void ScriptTest::onTick() {
-    auto dt = std::chrono::duration_cast<std::chrono::nanoseconds>(logicThread.curTime - logicThread.prevTime);
-    if (dt < LOGIC_THREAD_FRAME_TIME_LIMIT) std::this_thread::sleep_for(LOGIC_THREAD_FRAME_TIME_LIMIT - dt);
-
     printTime();
 
     tickScript();
+    
+    auto curTime = std::chrono::steady_clock::now();
+    auto dt = std::chrono::duration_cast<std::chrono::nanoseconds>(curTime - logicThread.prevTime);
+    if (dt < LOGIC_THREAD_FRAME_TIME_LIMIT) std::this_thread::sleep_for(LOGIC_THREAD_FRAME_TIME_LIMIT - dt);
 }
 
 void ScriptTest::onSpacePressed() {

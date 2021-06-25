@@ -3,7 +3,7 @@
 
     const NATIVE_COMPUTATION = JSB && 1;
     const options = {
-        boidCount: 2048,
+        boidCount: 512,
         maxVelocity: 0.4,
         alignmentForce: 0.002,
         cohesionForce: 0.002,

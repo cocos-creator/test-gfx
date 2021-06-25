@@ -46,6 +46,14 @@ struct MultisampledFramebuffer {
         colorTexMSAAInfo.height  = device->getHeight();
         colorTexMSAA             = device->createTexture(colorTexMSAAInfo);
 
+        gfx::TextureInfo colorTexInfo;
+        colorTexInfo.type   = gfx::TextureType::TEX2D;
+        colorTexInfo.usage  = gfx::TextureUsageBit::COLOR_ATTACHMENT | gfx::TextureUsageBit::TRANSFER_SRC;
+        colorTexInfo.format = device->getColorFormat();
+        colorTexInfo.width  = device->getWidth();
+        colorTexInfo.height = device->getHeight();
+        colorTex            = device->createTexture(colorTexInfo);
+
         gfx::TextureInfo depthStencilTexInfo;
         depthStencilTexInfo.type    = gfx::TextureType::TEX2D;
         depthStencilTexInfo.usage   = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT;
@@ -58,7 +66,7 @@ struct MultisampledFramebuffer {
         gfx::FramebufferInfo fboInfo;
         fboInfo.renderPass = renderPass;
         fboInfo.colorTextures.push_back(colorTexMSAA);
-        fboInfo.colorTextures.push_back(nullptr);
+        fboInfo.colorTextures.push_back(colorTex);
         fboInfo.depthStencilTexture = depthStencilTex;
         framebuffer                 = device->createFramebuffer(fboInfo);
     }
@@ -67,6 +75,7 @@ struct MultisampledFramebuffer {
         framebuffer->destroy();
 
         colorTexMSAA->resize(width, height);
+        colorTex->resize(width, height);
         depthStencilTex->resize(width, height);
 
         gfx::FramebufferInfo fboInfo;
@@ -80,12 +89,14 @@ struct MultisampledFramebuffer {
     void destroy() {
         CC_SAFE_DESTROY(framebuffer);
         CC_SAFE_DESTROY(depthStencilTex);
+        CC_SAFE_DESTROY(colorTex);
         CC_SAFE_DESTROY(colorTexMSAA);
         CC_SAFE_DESTROY(renderPass);
     }
 
     gfx::RenderPass * renderPass{nullptr};
     gfx::Texture *    colorTexMSAA{nullptr};
+    gfx::Texture *    colorTex{nullptr};
     gfx::Texture *    depthStencilTex{nullptr};
     gfx::Framebuffer *framebuffer{nullptr};
 };
@@ -368,7 +379,6 @@ void Root::initialize() {
     pipelineInfo.inputState                          = {inputAssembler->getAttributes()};
     pipelineInfo.renderPass                          = fbo->getRenderPass();
     pipelineInfo.rasterizerState.cullMode            = gfx::CullMode::NONE;
-    pipelineInfo.depthStencilState.depthTest         = false;
     pipelineInfo.depthStencilState.depthWrite        = false;
     pipelineInfo.blendState.targets[0].blend         = true;
     pipelineInfo.blendState.targets[0].blendSrc      = gfx::BlendFactor::SRC_ALPHA;
@@ -543,6 +553,16 @@ void Root::render() {
     }
 
     commandBuffer->endRenderPass();
+
+    if (OFFSCREEN_MSAA) {
+        gfx::TextureBlit region;
+        region.srcExtent.width  = device->getWidth();
+        region.srcExtent.height = device->getHeight();
+        region.dstExtent.width  = device->getWidth();
+        region.dstExtent.height = device->getHeight();
+        commandBuffer->blitTexture(msaaFBO->colorTex, nullptr, &region, 1, gfx::Filter::POINT);
+    }
+
     commandBuffer->end();
 
     device->flushCommands(commandBuffers);
