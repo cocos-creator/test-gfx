@@ -13,8 +13,8 @@ android {
 
     defaultConfig {
         applicationId = 'com.example.gfx_tests'
-        minSdkVersion 25
-        targetSdkVersion 30
+        minSdkVersion 21
+        targetSdkVersion 26
         externalNativeBuild {
             cmake {
                 targets "gfx_tests"

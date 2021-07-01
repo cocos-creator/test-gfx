@@ -5,28 +5,17 @@ namespace cc {
 
 namespace {
 
+constexpr bool USE_DEPTH_RESOLVE = false;
+
 struct DepthResolveFramebuffer {
     explicit DepthResolveFramebuffer(gfx::Device *device) {
-        gfx::RenderPassInfo renderPassInfo;
-
-        gfx::ColorAttachment &depthStencilAttachment{renderPassInfo.colorAttachments.emplace_back()};
-        depthStencilAttachment.format      = device->getDepthStencilFormat();
-        depthStencilAttachment.sampleCount = gfx::SampleCount::X4;
-        depthStencilAttachment.storeOp     = gfx::StoreOp::DISCARD;
-        depthStencilAttachment.endAccesses = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
-
-        gfx::ColorAttachment &depthStencilResolveAttachment{renderPassInfo.colorAttachments.emplace_back()};
-        depthStencilResolveAttachment.format      = device->getDepthStencilFormat();
-        depthStencilResolveAttachment.loadOp      = gfx::LoadOp::DISCARD;
-        depthStencilResolveAttachment.endAccesses = {gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE};
-
-        gfx::SubpassInfo &subpass{renderPassInfo.subpasses.emplace_back()};
-        subpass.depthStencil        = 0U;
-        subpass.depthStencilResolve = 1U;
-        subpass.depthResolveMode    = gfx::ResolveMode::AVERAGE;
-        subpass.stencilResolveMode  = gfx::ResolveMode::AVERAGE;
-
-        renderPass = device->createRenderPass(renderPassInfo);
+        gfx::TextureInfo depthStecnilTexInfo;
+        depthStecnilTexInfo.type   = gfx::TextureType::TEX2D;
+        depthStecnilTexInfo.usage  = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT | gfx::TextureUsageBit::SAMPLED;
+        depthStecnilTexInfo.format = device->getDepthStencilFormat();
+        depthStecnilTexInfo.width  = device->getWidth();
+        depthStecnilTexInfo.height = device->getHeight();
+        depthStencilTex            = device->createTexture(depthStecnilTexInfo);
 
         gfx::TextureInfo depthStecnilTexMSAAInfo;
         depthStecnilTexMSAAInfo.type    = gfx::TextureType::TEX2D;
@@ -37,19 +26,44 @@ struct DepthResolveFramebuffer {
         depthStecnilTexMSAAInfo.height  = device->getHeight();
         depthStencilTexMSAA             = device->createTexture(depthStecnilTexMSAAInfo);
 
-        gfx::TextureInfo depthStecnilTexInfo;
-        depthStecnilTexInfo.type   = gfx::TextureType::TEX2D;
-        depthStecnilTexInfo.usage  = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT | gfx::TextureUsageBit::SAMPLED;
-        depthStecnilTexInfo.format = device->getDepthStencilFormat();
-        depthStecnilTexInfo.width  = device->getWidth();
-        depthStecnilTexInfo.height = device->getHeight();
-        depthStencilTex            = device->createTexture(depthStecnilTexInfo);
+        if (USE_DEPTH_RESOLVE) {
+            gfx::RenderPassInfo renderPassInfo;
 
-        gfx::FramebufferInfo fboInfo;
-        fboInfo.renderPass = renderPass;
-        fboInfo.colorTextures.push_back(depthStencilTexMSAA);
-        fboInfo.colorTextures.push_back(depthStencilTex);
-        framebuffer = device->createFramebuffer(fboInfo);
+            gfx::ColorAttachment &depthStencilAttachment{renderPassInfo.colorAttachments.emplace_back()};
+            depthStencilAttachment.format      = device->getDepthStencilFormat();
+            depthStencilAttachment.sampleCount = gfx::SampleCount::X4;
+            depthStencilAttachment.storeOp     = gfx::StoreOp::DISCARD;
+            depthStencilAttachment.endAccesses = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
+
+            gfx::ColorAttachment &depthStencilResolveAttachment{renderPassInfo.colorAttachments.emplace_back()};
+            depthStencilResolveAttachment.format      = device->getDepthStencilFormat();
+            depthStencilResolveAttachment.loadOp      = gfx::LoadOp::DISCARD;
+            depthStencilResolveAttachment.endAccesses = {gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE};
+
+            gfx::SubpassInfo &subpass{renderPassInfo.subpasses.emplace_back()};
+            subpass.depthStencil        = 0U;
+            subpass.depthStencilResolve = 1U;
+            subpass.depthResolveMode    = gfx::ResolveMode::AVERAGE;
+            subpass.stencilResolveMode  = gfx::ResolveMode::AVERAGE;
+
+            renderPass = device->createRenderPass(renderPassInfo);
+
+            gfx::FramebufferInfo fboInfo;
+            fboInfo.renderPass = renderPass;
+            fboInfo.colorTextures.push_back(depthStencilTexMSAA);
+            fboInfo.colorTextures.push_back(depthStencilTex);
+            framebuffer = device->createFramebuffer(fboInfo);
+        } else {
+            gfx::RenderPassInfo renderPassInfo;
+            renderPassInfo.depthStencilAttachment.format      = device->getDepthStencilFormat();
+            renderPassInfo.depthStencilAttachment.endAccesses = {gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE};
+            renderPass                                        = device->createRenderPass(renderPassInfo);
+
+            gfx::FramebufferInfo fboInfo;
+            fboInfo.renderPass = renderPass;
+            fboInfo.depthStencilTexture = depthStencilTex;
+            framebuffer = device->createFramebuffer(fboInfo);
+        }
     }
 
     void resize(uint width, uint height) const {
@@ -223,11 +237,10 @@ struct BigTriangle : public cc::Object {
 
     void createBuffers() {
         // create vertex buffer
-        float ySign = device->getCapabilities().screenSpaceSignY;
         // UV space origin is at top-left
-        float vertices[] = {-1, 4 * ySign, 0.0, -1.5,
-                            -1, -1 * ySign, 0.0, 1.0,
-                            4, -1 * ySign, 2.5, 1.0};
+        float vertices[] = {-1, -4, 0.0, -1.5,
+                            -1, 1, 0.0, 1.0,
+                            4, 1, 2.5, 1.0};
 
         vertexBuffer = device->createBuffer({
             gfx::BufferUsage::VERTEX,

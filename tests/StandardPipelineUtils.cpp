@@ -680,7 +680,7 @@ void createStandardPipelineResources(gfx::Device *device, StandardDeferredPipeli
         deferredRenderPassInfo.colorAttachments.emplace_back();
         deferredRenderPassInfo.colorAttachments.back().storeOp         = storeOp;
         deferredRenderPassInfo.colorAttachments.back().format          = format;
-        deferredRenderPassInfo.colorAttachments.back().endAccesses[0]  = accessType;
+        deferredRenderPassInfo.colorAttachments.back().endAccesses     = {accessType};
         deferredRenderPassInfo.colorAttachments.back().isGeneralLayout = isGeneralLayout;
     }
 

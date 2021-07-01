@@ -234,7 +234,7 @@ using enoki::gather;   // NOLINT(misc-unused-using-decls)
 using enoki::scatter; // NOLINT(misc-unused-using-decls)
 
 template <bool keepValue = false, typename Value>
-CC_INLINE void setSlices(Value &v, size_t size) {
+inline void setSlices(Value &v, size_t size) {
     // by default previous values are not preserved when enlarging the array
     if constexpr (keepValue) {
         if (size > enoki::slices(v)) {
@@ -257,130 +257,130 @@ CC_INLINE void setSlices(Value &v, size_t size) {
 /// Conflict-free scatter-add update
 template <size_t Stride = 0, bool Packed = true, bool IsPermute = false, typename Target, typename Index, typename Value,
           typename Mask = mask_t<Index>, enoki::enable_if_t<enoki::is_dynamic_v<Target>> = 0>
-CC_INLINE void scatterAdd(Target &target, const Value &value, const Index &index, const enoki::identity_t<Mask> &mask = true) {
+inline void scatterAdd(Target &target, const Value &value, const Index &index, const enoki::identity_t<Mask> &mask = true) {
     enoki::scatter_add<Stride, Packed, IsPermute, Target, Index, Value, Mask>(target, value, index, mask);
 }
 
 template <typename Target, typename Source>
-CC_INLINE Target reinterpret(const Source &src) {
+inline Target reinterpret(const Source &src) {
     return enoki::reinterpret_array(src);
 }
 
 /// Load an array from unaligned memory
 template <typename Value>
-CC_INLINE Value load(const void *mem) {
+inline Value load(const void *mem) {
     return enoki::load_unaligned<Value>(mem);
 }
 
 /// Store an array to unaligned memory
 template <typename Value>
-CC_INLINE void store(void *mem, const Value &value) {
+inline void store(void *mem, const Value &value) {
     enoki::store_unaligned<Value>(mem, value);
 }
 
 /// Load an array from aligned memory
 template <typename Value>
-CC_INLINE Value loadAligned(const void *mem) {
+inline Value loadAligned(const void *mem) {
     return enoki::load<Value>(mem);
 }
 
 /// Store an array to aligned memory
 template <typename Value>
-CC_INLINE void storeAligned(void *mem, const Value &value) {
+inline void storeAligned(void *mem, const Value &value) {
     enoki::store<Value>(mem, value);
 }
 
 /// Load an array from unaligned memory
 template <typename Value>
-CC_INLINE Value load(const void *mem, const mask_t<Value> &mask) {
+inline Value load(const void *mem, const mask_t<Value> &mask) {
     return enoki::load_unaligned<Value>(mem, mask);
 }
 
 /// Store an array to unaligned memory
 template <typename Value>
-CC_INLINE void store(void *mem, const Value &value, const mask_t<Value> &mask) {
+inline void store(void *mem, const Value &value, const mask_t<Value> &mask) {
     enoki::store_unaligned<Value>(mem, value, mask);
 }
 
 /// Load an array from aligned memory
 template <typename Value>
-CC_INLINE Value loadAligned(const void *mem, const mask_t<Value> &mask) {
+inline Value loadAligned(const void *mem, const mask_t<Value> &mask) {
     return enoki::load<Value>(mem, mask);
 }
 
 /// Store an array to aligned memory
 template <typename Value>
-CC_INLINE void storeAligned(void *mem, const Value &value, const mask_t<Value> &mask) {
+inline void storeAligned(void *mem, const Value &value, const mask_t<Value> &mask) {
     enoki::store<Value>(mem, value, mask);
 }
 
 /// Conflict-free modification operation
 template <typename Arg, size_t Stride = sizeof(enoki::scalar_t<Arg>),
           typename Func, typename Index, typename... Args>
-CC_INLINE void transform(void *mem, const Index &index, Func &&func, Args &&...args) {
+inline void transform(void *mem, const Index &index, Func &&func, Args &&...args) {
     enoki::transform<Arg, Stride, Func, Index, Args...>(mem, index, func, args...);
 }
 
 template <typename Value, typename Expr = enoki::expr_t<Value>>
-CC_INLINE Expr conjugate(const Value &v) {
+inline Expr conjugate(const Value &v) {
     return enoki::conj(v);
 }
 
 template <typename Value, typename Expr = enoki::expr_t<Value>>
-CC_INLINE Vec3<Expr> quatToEuler(const Quat<Value> &q) {
+inline Vec3<Expr> quatToEuler(const Quat<Value> &q) {
     return enoki::rad_to_deg(enoki::quat_to_euler_yzx<Vec3<Value>, Value>(q));
 }
 
 template <typename Value, typename Expr = enoki::expr_t<Value>>
-CC_INLINE Quat<Expr> quatFromEuler(const Vec3<Value> &v) {
+inline Quat<Expr> quatFromEuler(const Vec3<Value> &v) {
     return enoki::euler_to_quat_yzx<Value>(enoki::deg_to_rad(v));
 }
 
 template <typename Value, typename Expr = enoki::expr_t<Value>>
-CC_INLINE Quat<Expr> quatFromMat3(const Mat3<Value> &m) {
+inline Quat<Expr> quatFromMat3(const Mat3<Value> &m) {
     return enoki::matrix_to_quat<Value, 3>(m);
 }
 
 template <typename Value, typename Expr = enoki::expr_t<Value>>
-CC_INLINE Quat<Expr> quatFromMat4(const Mat4<Value> &m) {
+inline Quat<Expr> quatFromMat4(const Mat4<Value> &m) {
     return enoki::matrix_to_quat<Value, 4>(m);
 }
 
 template <typename Value, typename Expr = enoki::expr_t<Value>>
-CC_INLINE Mat3<Expr> mat3FromQuat(const Quat<Value> &q) {
+inline Mat3<Expr> mat3FromQuat(const Quat<Value> &q) {
     return enoki::quat_to_matrix<Mat3<Value>, Value>(q);
 }
 
 template <typename Value, typename Expr = enoki::expr_t<Value>>
-CC_INLINE Mat4<Expr> mat4FromQuat(const Quat<Value> &q) {
+inline Mat4<Expr> mat4FromQuat(const Quat<Value> &q) {
     return enoki::quat_to_matrix<Mat4<Value>, Value>(q);
 }
 
 template <typename Value, typename Expr = enoki::expr_t<Value>>
-CC_INLINE Mat4<Expr> mat4FromRTS(const Quat<Value> &q, const Vec3<Value> &v, const Vec3<Value> &s) {
+inline Mat4<Expr> mat4FromRTS(const Quat<Value> &q, const Vec3<Value> &v, const Vec3<Value> &s) {
     return enoki::rts_to_matrix<Value>(q, v, s);
 }
 
 template <typename Value, typename Expr = enoki::expr_t<Value>>
-CC_INLINE Vec3<Expr> vec3TransformMat4(const Vec3<Value> &v, const Mat4<Value> &m) {
+inline Vec3<Expr> vec3TransformMat4(const Vec3<Value> &v, const Mat4<Value> &m) {
     return enoki::matrix_transform_vector<Value, false>(m, v);
 }
 
 template <typename Value, typename Expr = enoki::expr_t<Value>>
-CC_INLINE Vec3<Expr> vec3TransformMat4Normal(const Vec3<Value> &v, const Mat4<Value> &m) {
+inline Vec3<Expr> vec3TransformMat4Normal(const Vec3<Value> &v, const Mat4<Value> &m) {
     return enoki::matrix_transform_vector<Value, true>(m, v);
 }
 
 ///////////////////// Debugging /////////////////////
 
 template <typename Value>
-CC_INLINE void print(const Value &v, const String &prefix = "") {
+inline void print(const Value &v, const String &prefix = "") {
     std::stringstream ss;
     ss << v;
     CC_LOG_DEBUG("%s %s\n", prefix.c_str(), ss.str().c_str());
 }
 
-CC_INLINE std::string processorFeatures() {
+inline std::string processorFeatures() {
     std::ostringstream oss;
 
     oss << "Enabled processor features:";

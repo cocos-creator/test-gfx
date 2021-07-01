@@ -88,7 +88,7 @@ TestBaseI::TestBaseI(const WindowInfo &info) {
 
 #if defined(CC_DEBUG) && (CC_DEBUG > 0)
         // Enable debugger here
-//        jsb_enable_debugger("0.0.0.0", 6086, false);
+        jsb_enable_debugger("0.0.0.0", 6086, false);
 #endif
 
         se->setExceptionCallback([](const char *location, const char *message, const char *stack) {
@@ -341,7 +341,7 @@ gfx::Extent TestBaseI::getOrientedSurfaceSize() {
 
 gfx::Viewport TestBaseI::getViewportBasedOnDevice(const Vec4 &relativeArea) {
     float x = relativeArea.x;
-    float y = device->getCapabilities().screenSpaceSignY < 0.0F ? 1.F - relativeArea.y - relativeArea.w : relativeArea.y;
+    float y = device->getCapabilities().clipSpaceSignY < 0.0F ? 1.F - relativeArea.y - relativeArea.w : relativeArea.y;
     float w = relativeArea.z;
     float h = relativeArea.w;
 

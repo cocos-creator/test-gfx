@@ -23,6 +23,7 @@ struct MultisampledFramebuffer {
         gfx::ColorAttachment &colorResolveAttachment{renderPassInfo.colorAttachments.emplace_back()};
         colorResolveAttachment.format = device->getColorFormat();
         colorResolveAttachment.loadOp = gfx::LoadOp::DISCARD;
+        colorResolveAttachment.endAccesses = {gfx::AccessType::TRANSFER_READ};
 
         gfx::DepthStencilAttachment &depthStencilAttachment{renderPassInfo.depthStencilAttachment};
         depthStencilAttachment.format         = device->getDepthStencilFormat();
@@ -69,6 +70,22 @@ struct MultisampledFramebuffer {
         fboInfo.colorTextures.push_back(colorTex);
         fboInfo.depthStencilTexture = depthStencilTex;
         framebuffer                 = device->createFramebuffer(fboInfo);
+
+        textureBarriers.push_back(TestBaseI::getTextureBarrier({
+            {},
+            {
+                gfx::AccessType::TRANSFER_WRITE,
+            },
+        }));
+
+        textureBarriers.push_back(TestBaseI::getTextureBarrier({
+            {
+                gfx::AccessType::TRANSFER_WRITE,
+            },
+            {
+                gfx::AccessType::PRESENT,
+            },
+        }));
     }
 
     void resize(uint width, uint height) const {
@@ -99,6 +116,7 @@ struct MultisampledFramebuffer {
     gfx::Texture *    colorTex{nullptr};
     gfx::Texture *    depthStencilTex{nullptr};
     gfx::Framebuffer *framebuffer{nullptr};
+    vector<gfx::TextureBarrier *> textureBarriers;
 };
 
 gfx::Framebuffer *fbo;
@@ -487,6 +505,8 @@ void Root::destroy() {
 }
 
 void Root::render() {
+    static gfx::Texture *backBuffer{nullptr};
+
     TestBaseI::lookupTime(&TestBaseI::renderThread);
     TestBaseI::printTime(TestBaseI::renderThread, "Render thread");
 
@@ -555,12 +575,16 @@ void Root::render() {
     commandBuffer->endRenderPass();
 
     if (OFFSCREEN_MSAA) {
+        commandBuffer->pipelineBarrier(nullptr, &msaaFBO->textureBarriers[0], &backBuffer, 1);
+
         gfx::TextureBlit region;
         region.srcExtent.width  = device->getWidth();
         region.srcExtent.height = device->getHeight();
         region.dstExtent.width  = device->getWidth();
         region.dstExtent.height = device->getHeight();
         commandBuffer->blitTexture(msaaFBO->colorTex, nullptr, &region, 1, gfx::Filter::POINT);
+
+        commandBuffer->pipelineBarrier(nullptr, &msaaFBO->textureBarriers[1], &backBuffer, 1);
     }
 
     commandBuffer->end();

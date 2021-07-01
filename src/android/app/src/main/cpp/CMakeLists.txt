@@ -61,6 +61,10 @@ add_library( # Sets the name of the library.
 
         ${ALL_FILES})
 
+if(ANDROID_ABI STREQUAL armeabi-v7a)
+    set_target_properties(${APP_NAME} PROPERTIES COMPILE_FLAGS -mfpu=neon-fp16)
+endif()
+
 target_include_directories(${APP_NAME} PRIVATE
     ${ANDROID_NDK}/sources/android/native_app_glue
 

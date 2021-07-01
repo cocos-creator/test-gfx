@@ -179,11 +179,11 @@ public:
     virtual void onResize(uint width, uint height) {}
     virtual void onDestroy() {}
 
-    CC_INLINE bool initialize() {
+    inline bool initialize() {
         return onInit();
     }
 
-    CC_INLINE void tick() {
+    inline void tick() {
         lookupTime();
 
         _time += logicThread.dt;
@@ -193,13 +193,13 @@ public:
         ++_frameCount;
     }
 
-    CC_INLINE void resize(uint width, uint height) {
+    inline void resize(uint width, uint height) {
         onResize(width, height);
 
         device->resize(width, height);
     }
 
-    CC_INLINE void destroy() {
+    inline void destroy() {
         onDestroy();
 
         for (auto *texture : _textures) {

@@ -464,7 +464,7 @@ struct BigTriangle : public cc::Object {
     }
 
     void createVertexBuffer() {
-        float ySign        = device->getCapabilities().screenSpaceSignY;
+        float ySign        = device->getCapabilities().clipSpaceSignY;
         float vertexData[] = {-1.0F, 4.0F * ySign, 0.0, -1.5,
                               -1.0F, -1.0F * ySign, 0.0, 1.0,
                               4.0F, -1.0F * ySign, 2.5, 1.0};
