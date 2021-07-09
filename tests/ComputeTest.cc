@@ -1,4 +1,6 @@
 #include "ComputeTest.h"
+#include "base/memory/Memory.h"
+#include "utils/FullscreenQuad.h"
 
 namespace cc {
 
@@ -11,7 +13,7 @@ static uint bgGroupSizeY = 8U;
 #define BG_WIDTH  100
 #define BG_HEIGHT 100
 
-#define USE_BLIT_TEXTURE 1
+static FullscreenQuad *quad{nullptr};
 
 void ComputeTest::onDestroy() {
     CC_SAFE_DESTROY(_inputAssembler);
@@ -21,7 +23,6 @@ void ComputeTest::onDestroy() {
     CC_SAFE_DESTROY(_descriptorSetLayout);
     CC_SAFE_DESTROY(_pipelineLayout);
     CC_SAFE_DESTROY(_pipelineState);
-    CC_SAFE_DESTROY(_renderPassLoad);
 
     CC_SAFE_DESTROY(_compShader);
     CC_SAFE_DESTROY(_compConstantsBuffer);
@@ -36,6 +37,8 @@ void ComputeTest::onDestroy() {
     CC_SAFE_DESTROY(_compBGDescriptorSetLayout);
     CC_SAFE_DESTROY(_compBGPipelineLayout);
     CC_SAFE_DESTROY(_compBGPipelineState);
+
+    CC_SAFE_DELETE(quad);
 }
 
 bool ComputeTest::onInit() {
@@ -46,6 +49,8 @@ bool ComputeTest::onInit() {
     createUniformBuffer();
     createInputAssembler();
     createPipeline();
+
+    quad = CC_NEW(FullscreenQuad(device, renderPass, _textures[0]));
 
     return true;
 }
@@ -153,7 +158,7 @@ void ComputeTest::createComputeVBPipeline() {
 void ComputeTest::createComputeBGPipeline() {
     _textures.push_back(device->createTexture({
         gfx::TextureType::TEX2D,
-        gfx::TextureUsage::STORAGE | gfx::TextureUsage::TRANSFER_SRC,
+        gfx::TextureUsage::STORAGE | gfx::TextureUsage::SAMPLED,
         gfx::Format::RGBA8,
         BG_WIDTH,
         BG_HEIGHT,
@@ -371,18 +376,6 @@ void ComputeTest::createPipeline() {
 
     _pipelineState = device->createPipelineState(pipelineInfo);
 
-    gfx::RenderPassInfo  renderPassInfo;
-    gfx::ColorAttachment colorAttachment;
-    colorAttachment.format        = device->getColorFormat();
-    colorAttachment.loadOp        = gfx::LoadOp::LOAD;
-    colorAttachment.beginAccesses = {gfx::AccessType::TRANSFER_WRITE};
-    renderPassInfo.colorAttachments.emplace_back(colorAttachment);
-
-    gfx::DepthStencilAttachment &depthStencilAttachment = renderPassInfo.depthStencilAttachment;
-    depthStencilAttachment.format                       = device->getDepthStencilFormat();
-
-    _renderPassLoad = device->createRenderPass(renderPassInfo);
-
     _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
@@ -407,40 +400,16 @@ void ComputeTest::createPipeline() {
             gfx::AccessType::COMPUTE_SHADER_WRITE,
         },
         {
-            gfx::AccessType::TRANSFER_READ,
             gfx::AccessType::VERTEX_BUFFER,
+            gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE,
         },
     }));
 
-    _textureBarriers.push_back(TestBaseI::getTextureBarrier({
-        {
-            gfx::AccessType::TRANSFER_READ,
-        },
-        {
-            gfx::AccessType::COMPUTE_SHADER_WRITE,
-        },
-        true,
-    }));
-
-    _textureBarriers.push_back(TestBaseI::getTextureBarrier({
-        {
-            gfx::AccessType::COMPUTE_SHADER_WRITE,
-        },
-        {
-            gfx::AccessType::TRANSFER_READ,
-        },
-        false,
-    }));
-
-    _textureBarriers.push_back(TestBaseI::getTextureBarrier({
-        {
-            gfx::AccessType::PRESENT,
-        },
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        true,
-    }));
+    _textureBarriers.push_back(TestBaseI::getTextureBarrier({{},
+                                                             {
+                                                                 gfx::AccessType::COMPUTE_SHADER_WRITE,
+                                                             },
+                                                             true}));
 }
 
 void ComputeTest::onTick() {
@@ -484,13 +453,13 @@ void ComputeTest::onTick() {
         commandBuffer->bindDescriptorSet(0, _compBGDescriptorSet);
         commandBuffer->dispatch(bgDispatchInfo);
 
-#if USE_BLIT_TEXTURE
-        commandBuffer->pipelineBarrier(_globalBarriers[2], &_textureBarriers[1], _textures.data(), 2);
-        commandBuffer->blitTexture(_textures[0], nullptr, &blit, 1U, gfx::Filter::POINT);
-#endif
+        commandBuffer->pipelineBarrier(_globalBarriers[2]);
     }
 
-    commandBuffer->beginRenderPass(_renderPassLoad, fbo, renderArea, &clearColor, 1.0F, 0);
+    commandBuffer->beginRenderPass(renderPass, fbo, renderArea, &clearColor, 1.0F, 0);
+
+    quad->draw(commandBuffer);
+
     commandBuffer->bindInputAssembler(_inputAssembler);
     commandBuffer->bindPipelineState(_pipelineState);
     commandBuffer->bindDescriptorSet(0, _descriptorSet);

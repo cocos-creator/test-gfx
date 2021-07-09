@@ -1,6 +1,4 @@
 #include "SubpassTest.h"
-#include <cmath>
-#include "tests/StandardPipelineUtils.h"
 #include "tiny_obj_loader.h"
 
 namespace cc {

@@ -29,7 +29,6 @@ private:
     gfx::PipelineLayout *     _pipelineLayout      = nullptr;
     gfx::PipelineState *      _pipelineState       = nullptr;
     gfx::InputAssembler *     _inputAssembler      = nullptr;
-    gfx::RenderPass *         _renderPassLoad      = nullptr;
 
     gfx::Buffer *             _compConstantsBuffer     = nullptr;
     gfx::Buffer *             _compStorageBuffer       = nullptr;

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "TestBase.h"
-#include "tests/StandardPipelineUtils.h"
+#include "utils/StandardPipelineUtils.h"
 
 namespace cc {
 

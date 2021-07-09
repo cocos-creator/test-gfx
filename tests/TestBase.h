@@ -172,6 +172,8 @@ public:
     static FrameRate  deviceThread;
     static const bool MANUAL_BARRIER;
 
+    static framegraph::FrameGraph fg;
+
     static const float NANOSECONDS_PER_SECOND;
 
     virtual bool onInit() { return true; }
@@ -223,10 +225,6 @@ protected:
 
     static unordered_map<uint, gfx::GlobalBarrier *>  globalBarrierMap;
     static unordered_map<uint, gfx::TextureBarrier *> textureBarrierMap;
-
-    static framegraph::FrameGraph fg;
-    static framegraph::Texture    fgBackBuffer;
-    static framegraph::Texture    fgDepthStencilBackBuffer;
 
     virtual void onSpacePressed() {}
 

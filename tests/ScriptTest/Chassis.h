@@ -8,7 +8,7 @@
 
 #include "gfx-base/GFXDevice.h"
 
-#include "Math.h"
+#include "../utils/Math.h"
 
 namespace cc {
 

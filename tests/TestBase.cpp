@@ -23,7 +23,7 @@
 #include "tests/StressTest.h"
 #include "tests/SubpassTest.h"
 
-#include "tests/ScriptTest/Math.h"
+#include "utils/Math.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
@@ -49,8 +49,8 @@ gfx::Framebuffer *TestBaseI::fbo                    = nullptr;
 gfx::RenderPass * TestBaseI::renderPass             = nullptr;
 
 vector<TestBaseI::createFunc> TestBaseI::tests = {
-    ScriptTest::create,
     SubpassTest::create,
+    ScriptTest::create,
     ComputeTest::create,
     FrameGraphTest::create,
     StressTest::create,
@@ -73,9 +73,7 @@ vector<gfx::CommandBuffer *>               TestBaseI::commandBuffers;
 unordered_map<uint, gfx::GlobalBarrier *>  TestBaseI::globalBarrierMap;
 unordered_map<uint, gfx::TextureBarrier *> TestBaseI::textureBarrierMap;
 
-framegraph::FrameGraph TestBaseI::fg;
-framegraph::Texture    TestBaseI::fgBackBuffer;
-framegraph::Texture    TestBaseI::fgDepthStencilBackBuffer;
+framegraph::FrameGraph   TestBaseI::fg;
 
 TestBaseI::TestBaseI(const WindowInfo &info) {
     if (!device) {
@@ -136,7 +134,7 @@ void TestBaseI::destroyGlobal() {
     se::ScriptEngine::destroyInstance();
 
     auto *agent = gfx::DeviceAgent::getInstance();
-    if (agent) agent->getMessageQueue()->finishWriting(true);
+    if (agent) agent->getMessageQueue()->kickAndWait();
 
     for (auto textureBarrier : textureBarrierMap) {
         CC_SAFE_DELETE(textureBarrier.second)
@@ -287,15 +285,15 @@ void TestBaseI::createOrthographic(float left, float right, float bottom, float 
     float dx = (left + right) / (left - right);
     float dy = (bottom + top) / (bottom - top) * signY;
 
-    dst->m[0]  = x * preTransform[0];
-    dst->m[1]  = x * preTransform[1];
-    dst->m[4]  = y * preTransform[2];
-    dst->m[5]  = y * preTransform[3];
-    dst->m[10] = (1.0F - minZ) / (zNear - zFar);
-    dst->m[12] = dx * preTransform[0] + dy * preTransform[2];
-    dst->m[13] = dx * preTransform[1] + dy * preTransform[3];
-    dst->m[14] = (zNear - minZ * zFar) / (zNear - zFar);
-    dst->m[15] = 1.0F;
+    dst->m[0]                          = x * preTransform[0];
+    dst->m[1]                          = x * preTransform[1];
+    dst->m[4]                          = y * preTransform[2];
+    dst->m[5]                          = y * preTransform[3];
+    dst->m[10]                         = (1.0F - minZ) / (zNear - zFar);
+    dst->m[12]                         = dx * preTransform[0] + dy * preTransform[2];
+    dst->m[13]                         = dx * preTransform[1] + dy * preTransform[3];
+    dst->m[14]                         = (zNear - minZ * zFar) / (zNear - zFar);
+    dst->m[15]                         = 1.0F;
 #endif
 }
 

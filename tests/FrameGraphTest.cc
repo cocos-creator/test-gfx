@@ -1,4 +1,5 @@
 #include "FrameGraphTest.h"
+#include "frame-graph/Resource.h"
 
 namespace cc {
 
@@ -288,7 +289,7 @@ void FrameGraphTest::onTick() {
                 colorTexInfo.usage  = gfx::TextureUsageBit::COLOR_ATTACHMENT | gfx::TextureUsageBit::TRANSFER_SRC;
                 colorTexInfo.width  = device->getWidth();
                 colorTexInfo.height = device->getHeight();
-                builder.create(data.colorTex, colorTexName, colorTexInfo);
+                data.colorTex = builder.create<framegraph::Texture>(colorTexName, colorTexInfo);
             }
 
             data.colorTex = builder.write(data.colorTex, colorAttachmentInfo);
@@ -313,7 +314,7 @@ void FrameGraphTest::onTick() {
                 depthStencilTexInfo.usage  = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT;
                 depthStencilTexInfo.width  = device->getWidth();
                 depthStencilTexInfo.height = device->getHeight();
-                builder.create(data.depthStencilTex, depthStencilTexName, depthStencilTexInfo);
+                data.depthStencilTex = builder.create<framegraph::Texture>(depthStencilTexName, depthStencilTexInfo);
             }
 
             data.depthStencilTex = builder.write(data.depthStencilTex, depthStencilAttachmentInfo);
@@ -333,48 +334,12 @@ void FrameGraphTest::onTick() {
         commandBuffer->draw(_inputAssembler);
     };
 
-    static framegraph::StringHandle blitName                   = framegraph::FrameGraph::stringToHandle("Blit");
-    static framegraph::StringHandle backBufferName             = framegraph::FrameGraph::stringToHandle("BackBuffer");
-    static framegraph::StringHandle depthStencilBackBufferName = framegraph::FrameGraph::stringToHandle("DepthStencilBackBuffer");
-
-    struct BlitData {
-        framegraph::TextureHandle colorInput;
-        framegraph::TextureHandle colorOutput;
-    };
-
-    auto blitSetup = [&](framegraph::PassNodeBuilder &builder, BlitData &data) {
-        data.colorInput = builder.read(framegraph::TextureHandle(builder.readFromBlackboard(colorTexName)));
-        builder.writeToBlackboard(colorTexName, data.colorInput);
-
-        data.colorOutput = builder.write(framegraph::TextureHandle(builder.readFromBlackboard(backBufferName)));
-        builder.writeToBlackboard(backBufferName, data.colorOutput);
-    };
-
-    auto blitExec = [=](BlitData &data, const framegraph::DevicePassResourceTable &table) {
-        auto *input  = table.getRead(data.colorInput);
-        auto *output = table.getWrite(data.colorOutput);
-        commandBuffer->pipelineBarrier(nullptr, &_textureBarriers[0], &output, 1);
-
-        gfx::TextureBlit region;
-        region.srcExtent.width  = device->getWidth();
-        region.srcExtent.height = device->getHeight();
-        region.dstExtent.width  = device->getWidth();
-        region.dstExtent.height = device->getHeight();
-        commandBuffer->blitTexture(input, nullptr, &region, 1, gfx::Filter::POINT);
-
-        commandBuffer->pipelineBarrier(nullptr, &_textureBarriers[1], &output, 1);
-    };
-
     fg.reset();
-
-    fg.getBlackboard().put(backBufferName, fg.importExternal(backBufferName, fgBackBuffer));
-    fg.getBlackboard().put(depthStencilBackBufferName, fg.importExternal(depthStencilBackBufferName, fgDepthStencilBackBuffer));
 
     fg.addPass<DrawData>(100, leftName, drawSetupFactory(0), drawExecFactory);
     fg.addPass<DrawData>(200, rightName, drawSetupFactory(1), drawExecFactory);
-    fg.addPass<BlitData>(300, blitName, blitSetup, blitExec);
 
-    fg.presentFromBlackboard(backBufferName);
+    fg.presentFromBlackboard(colorTexName);
 
     fg.compile();
 

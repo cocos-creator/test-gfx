@@ -793,22 +793,6 @@ void createStandardPipelineResources(gfx::Device *device, StandardDeferredPipeli
     out->lightingDescriptorSet->bindSampler(3, out->sampler.get());
     out->lightingDescriptorSet->bindSampler(4, out->sampler.get());
     out->lightingDescriptorSet->update();
-
-    out->textureBarriers.push_back(TestBaseI::getTextureBarrier({
-        {},
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-    }));
-
-    out->textureBarriers.push_back(TestBaseI::getTextureBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::PRESENT,
-        },
-    }));
 }
 
 } // namespace cc
