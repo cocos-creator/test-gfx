@@ -39,14 +39,16 @@ namespace cc {
 
 WindowInfo TestBaseI::windowInfo;
 
-int               TestBaseI::curTestIndex           = -1;
-int               TestBaseI::nextDirection          = 0;
-TestBaseI *       TestBaseI::test                   = nullptr;
-const bool        TestBaseI::MANUAL_BARRIER         = true;
-const float       TestBaseI::NANOSECONDS_PER_SECOND = 1000000000.F;
-gfx::Device *     TestBaseI::device                 = nullptr;
-gfx::Framebuffer *TestBaseI::fbo                    = nullptr;
-gfx::RenderPass * TestBaseI::renderPass             = nullptr;
+int         TestBaseI::curTestIndex           = -1;
+int         TestBaseI::nextDirection          = 0;
+TestBaseI * TestBaseI::test                   = nullptr;
+const bool  TestBaseI::MANUAL_BARRIER         = true;
+const float TestBaseI::NANOSECONDS_PER_SECOND = 1000000000.F;
+
+gfx::Device *     TestBaseI::device     = nullptr;
+gfx::Swapchain *  TestBaseI::swapchain  = nullptr;
+gfx::Framebuffer *TestBaseI::fbo        = nullptr;
+gfx::RenderPass * TestBaseI::renderPass = nullptr;
 
 vector<TestBaseI::createFunc> TestBaseI::tests = {
     ScriptTest::create,
@@ -73,7 +75,7 @@ vector<gfx::CommandBuffer *>               TestBaseI::commandBuffers;
 unordered_map<uint, gfx::GlobalBarrier *>  TestBaseI::globalBarrierMap;
 unordered_map<uint, gfx::TextureBarrier *> TestBaseI::textureBarrierMap;
 
-framegraph::FrameGraph   TestBaseI::fg;
+framegraph::FrameGraph TestBaseI::fg;
 
 TestBaseI::TestBaseI(const WindowInfo &info) {
     if (!device) {
@@ -97,23 +99,26 @@ TestBaseI::TestBaseI(const WindowInfo &info) {
         se->start();
 
         gfx::DeviceInfo deviceInfo;
-        //deviceInfo.isAntiAlias  = true;
-        deviceInfo.windowHandle = info.windowHandle;
-        deviceInfo.width        = info.screen.width;
-        deviceInfo.height       = info.screen.height;
-        deviceInfo.pixelRatio   = info.pixelRatio;
-
         device = gfx::DeviceManager::create(deviceInfo);
+
+        gfx::SwapchainInfo swapchainInfo;
+        swapchainInfo.windowHandle       = info.windowHandle;
+        swapchainInfo.colorFormat        = device->getColorFormat();
+        swapchainInfo.depthStencilFormat = device->getDepthStencilFormat();
+        swapchainInfo.width              = info.screen.width;
+        swapchainInfo.height             = info.screen.height;
+        swapchain                        = device->createSwapchain(swapchainInfo);
 
         CC_LOG_INFO(vmath::processorFeatures().c_str());
 
         gfx::RenderPassInfo renderPassInfo;
-        renderPassInfo.colorAttachments.emplace_back().format = device->getColorFormat();
-        renderPassInfo.depthStencilAttachment.format          = device->getDepthStencilFormat();
+        renderPassInfo.colorAttachments.emplace_back().format = swapchain->getColorTexture()->getFormat();
+        renderPassInfo.depthStencilAttachment.format          = swapchain->getDepthStencilTexture()->getFormat();
         renderPass                                            = device->createRenderPass(renderPassInfo);
 
         gfx::FramebufferInfo fboInfo;
-        fboInfo.colorTextures.resize(1);
+        fboInfo.colorTextures.push_back(swapchain->getColorTexture());
+        fboInfo.depthStencilTexture = swapchain->getDepthStencilTexture();
         fboInfo.renderPass = renderPass;
         fbo                = device->createFramebuffer(fboInfo);
 
@@ -129,6 +134,7 @@ void TestBaseI::destroyGlobal() {
     CC_SAFE_DESTROY(test)
     CC_SAFE_DESTROY(fbo)
     CC_SAFE_DESTROY(renderPass)
+    CC_SAFE_DESTROY(swapchain)
     framegraph::FrameGraph::gc(0);
 
     se::ScriptEngine::destroyInstance();
@@ -248,7 +254,7 @@ gfx::Texture *TestBaseI::createTextureWithFile(const gfx::TextureInfo &partialIn
 void TestBaseI::modifyProjectionBasedOnDevice(Mat4 *projection) {
     float minZ        = device->getCapabilities().clipSpaceMinZ;
     float signY       = device->getCapabilities().clipSpaceSignY;
-    auto  orientation = static_cast<float>(device->getSurfaceTransform());
+    auto  orientation = static_cast<float>(swapchain->getSurfaceTransform());
 
     Mat4 trans;
     Mat4 scale;
@@ -275,7 +281,7 @@ void TestBaseI::createOrthographic(float left, float right, float bottom, float 
 #else
     float                 minZ         = device->getCapabilities().clipSpaceMinZ;
     float                 signY        = device->getCapabilities().clipSpaceSignY;
-    gfx::SurfaceTransform orientation  = device->getSurfaceTransform();
+    gfx::SurfaceTransform orientation  = swapchain->getSurfaceTransform();
     const float *         preTransform = PRE_TRANSFORMS[static_cast<uint>(orientation)];
 
     memset(dst->m, 0, 16 * sizeof(float));
@@ -326,14 +332,14 @@ void TestBaseI::createPerspective(float fov, float aspect, float zNear, float zF
 }
 
 gfx::Extent TestBaseI::getOrientedSurfaceSize() {
-    switch (device->getSurfaceTransform()) {
+    switch (swapchain->getSurfaceTransform()) {
         case gfx::SurfaceTransform::ROTATE_90:
         case gfx::SurfaceTransform::ROTATE_270:
-            return {device->getHeight(), device->getWidth()};
+            return {swapchain->getHeight(), swapchain->getWidth()};
         case gfx::SurfaceTransform::IDENTITY:
         case gfx::SurfaceTransform::ROTATE_180:
         default:
-            return {device->getWidth(), device->getHeight()};
+            return {swapchain->getWidth(), swapchain->getHeight()};
     }
 }
 
@@ -345,10 +351,10 @@ gfx::Viewport TestBaseI::getViewportBasedOnDevice(const Vec4 &relativeArea) {
 
     gfx::Viewport viewport;
 
-    auto deviceWidth  = static_cast<float>(device->getWidth());
-    auto deviceHeight = static_cast<float>(device->getHeight());
+    auto deviceWidth  = static_cast<float>(swapchain->getWidth());
+    auto deviceHeight = static_cast<float>(swapchain->getHeight());
 
-    switch (device->getSurfaceTransform()) {
+    switch (swapchain->getSurfaceTransform()) {
         case gfx::SurfaceTransform::ROTATE_90:
             viewport.left   = static_cast<int>((1.F - y - h) * deviceWidth);
             viewport.top    = static_cast<int>(x * deviceHeight);

@@ -365,7 +365,7 @@ void StressTest::createPipeline() {
 
 #if PARALLEL_STRATEGY == PARALLEL_STRATEGY_SEQUENTIAL
 void StressTest::recordRenderPass(uint passIndex) {
-    gfx::Rect           renderArea    = {0, 0, device->getWidth(), device->getHeight()};
+    gfx::Rect           renderArea    = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
     gfx::CommandBuffer *commandBuffer = commandBuffers[0];
 
     commandBuffer->begin();
@@ -392,8 +392,8 @@ void StressTest::recordRenderPass(uint passIndex) {
 }
 #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED_FINER_JOBS || PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED_FINER_JOBS_MULTI_PRIMARY
 void StressTest::recordRenderPass(uint jobIdx) {
-    gfx::Rect     scissor = {0, 0, device->getWidth(), device->getHeight()};
-    gfx::Viewport vp      = {0, 0, device->getWidth(), device->getHeight()};
+    gfx::Rect     scissor = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
+    gfx::Viewport vp      = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
 
     uint passIdx        = jobIdx / _threadCount;
     uint threadIdx      = jobIdx % _threadCount;
@@ -429,8 +429,8 @@ void StressTest::recordRenderPass(uint jobIdx) {
 }
 #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED
 void StressTest::recordRenderPass(uint threadIdx) {
-    gfx::Rect           scissor       = {0, 0, device->getWidth(), device->getHeight()};
-    gfx::Viewport       vp            = {0, 0, device->getWidth(), device->getHeight()};
+    gfx::Rect           scissor       = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
+    gfx::Viewport       vp            = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
     gfx::CommandBuffer *commandBuffer = _parallelCBs[threadIdx];
 
     for (uint i = 0u; i < PASS_COUNT; ++i) {
@@ -465,8 +465,8 @@ void StressTest::recordRenderPass(uint threadIdx) {
 }
 #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_RP_BASED_SECONDARY
 void StressTest::recordRenderPass(uint passIndex) {
-    gfx::Rect     scissor = {0, 0, device->getWidth(), device->getHeight()};
-    gfx::Viewport vp      = {0, 0, device->getWidth(), device->getHeight()};
+    gfx::Rect     scissor = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
+    gfx::Viewport vp      = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
 
     gfx::CommandBuffer *commandBuffer = _parallelCBs[passIndex];
 
@@ -491,7 +491,7 @@ void StressTest::recordRenderPass(uint passIndex) {
 }
 #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_RP_BASED_PRIMARY
 void StressTest::recordRenderPass(uint passIndex) {
-    gfx::Rect renderArea = {0, 0, device->getWidth(), device->getHeight()};
+    gfx::Rect renderArea = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
     gfx::CommandBuffer *commandBuffer = commandBuffers[passIndex];
 
     commandBuffer->begin();
@@ -538,7 +538,7 @@ void StressTest::onTick() {
     _uniformBufferVP->update(VP.m, 0, sizeof(Mat4));
     // */
 
-    gfx::Rect renderArea = {0, 0, device->getWidth(), device->getHeight()};
+    gfx::Rect renderArea = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
 #if PARALLEL_STRATEGY == PARALLEL_STRATEGY_SEQUENTIAL
     recordRenderPass(0);
     device->flushCommands(commandBuffers);

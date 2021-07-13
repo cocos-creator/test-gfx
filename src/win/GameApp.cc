@@ -93,7 +93,7 @@ void GameApp::initialize() {
     SetFocus(_hWnd);
 
     WindowInfo info;
-    info.windowHandle = (intptr_t)_hWnd;
+    info.windowHandle = _hWnd;
     info.screen.x = posX;
     info.screen.y = posY;
     info.screen.width = screenWidth;

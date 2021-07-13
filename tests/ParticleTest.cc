@@ -441,7 +441,7 @@ void ParticleTest::onTick() {
 
     _uniformBuffer->update(_matrices, sizeof(_matrices));
     _vertexBuffer->update(_vbufferArray, sizeof(_vbufferArray));
-    gfx::Rect renderArea = {0, 0, device->getWidth(), device->getHeight()};
+    gfx::Rect renderArea = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
 
     auto *commandBuffer = commandBuffers[0];
     commandBuffer->begin();

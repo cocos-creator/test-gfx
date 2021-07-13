@@ -9,23 +9,23 @@ namespace experimental {
 
 namespace {
 struct MultisampledFramebuffer {
-    MultisampledFramebuffer(gfx::Device *device, gfx::SampleCount sampleCount) {
+    MultisampledFramebuffer(gfx::Device *device, gfx::Swapchain *swapchain) {
         gfx::RenderPassInfo renderPassInfo;
 
         gfx::ColorAttachment &colorAttachment{renderPassInfo.colorAttachments.emplace_back()};
         colorAttachment.format      = device->getColorFormat();
-        colorAttachment.sampleCount = sampleCount;
+        colorAttachment.sampleCount = gfx::SampleCount::MULTIPLE;
         colorAttachment.storeOp     = gfx::StoreOp::DISCARD;
         colorAttachment.endAccesses = {gfx::AccessType::COLOR_ATTACHMENT_WRITE};
 
         gfx::ColorAttachment &colorResolveAttachment{renderPassInfo.colorAttachments.emplace_back()};
-        colorResolveAttachment.format = device->getColorFormat();
-        colorResolveAttachment.loadOp = gfx::LoadOp::DISCARD;
+        colorResolveAttachment.format      = device->getColorFormat();
+        colorResolveAttachment.loadOp      = gfx::LoadOp::DISCARD;
         colorResolveAttachment.endAccesses = {gfx::AccessType::TRANSFER_READ};
 
         gfx::DepthStencilAttachment &depthStencilAttachment{renderPassInfo.depthStencilAttachment};
         depthStencilAttachment.format         = device->getDepthStencilFormat();
-        depthStencilAttachment.sampleCount    = sampleCount;
+        depthStencilAttachment.sampleCount    = gfx::SampleCount::MULTIPLE;
         depthStencilAttachment.depthStoreOp   = gfx::StoreOp::DISCARD;
         depthStencilAttachment.stencilStoreOp = gfx::StoreOp::DISCARD;
 
@@ -39,27 +39,27 @@ struct MultisampledFramebuffer {
         gfx::TextureInfo colorTexMSAAInfo;
         colorTexMSAAInfo.type    = gfx::TextureType::TEX2D;
         colorTexMSAAInfo.usage   = gfx::TextureUsageBit::COLOR_ATTACHMENT;
-        colorTexMSAAInfo.samples = sampleCount;
-        colorTexMSAAInfo.format  = device->getColorFormat();
-        colorTexMSAAInfo.width   = device->getWidth();
-        colorTexMSAAInfo.height  = device->getHeight();
+        colorTexMSAAInfo.samples = gfx::SampleCount::MULTIPLE;
+        colorTexMSAAInfo.format  = swapchain->getColorTexture()->getFormat();
+        colorTexMSAAInfo.width   = swapchain->getWidth();
+        colorTexMSAAInfo.height  = swapchain->getHeight();
         colorTexMSAA             = device->createTexture(colorTexMSAAInfo);
 
         gfx::TextureInfo colorTexInfo;
         colorTexInfo.type   = gfx::TextureType::TEX2D;
         colorTexInfo.usage  = gfx::TextureUsageBit::COLOR_ATTACHMENT | gfx::TextureUsageBit::TRANSFER_SRC;
-        colorTexInfo.format = device->getColorFormat();
-        colorTexInfo.width  = device->getWidth();
-        colorTexInfo.height = device->getHeight();
+        colorTexInfo.format = swapchain->getColorTexture()->getFormat();
+        colorTexInfo.width  = swapchain->getWidth();
+        colorTexInfo.height = swapchain->getHeight();
         colorTex            = device->createTexture(colorTexInfo);
 
         gfx::TextureInfo depthStencilTexInfo;
         depthStencilTexInfo.type    = gfx::TextureType::TEX2D;
         depthStencilTexInfo.usage   = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT;
-        depthStencilTexInfo.samples = sampleCount;
-        depthStencilTexInfo.format  = device->getDepthStencilFormat();
-        depthStencilTexInfo.width   = device->getWidth();
-        depthStencilTexInfo.height  = device->getHeight();
+        depthStencilTexInfo.samples = gfx::SampleCount::MULTIPLE;
+        depthStencilTexInfo.format  = swapchain->getDepthStencilTexture()->getFormat();
+        depthStencilTexInfo.width   = swapchain->getWidth();
+        depthStencilTexInfo.height  = swapchain->getHeight();
         depthStencilTex             = device->createTexture(depthStencilTexInfo);
 
         gfx::FramebufferInfo fboInfo;
@@ -143,7 +143,7 @@ void Root::initialize() {
     fboInfo.renderPass = backBufferRenderPass;
     backBufferFBO      = device->createFramebuffer(fboInfo);
 
-    msaaFBO = CC_NEW(MultisampledFramebuffer(device, gfx::SampleCount::X8));
+    msaaFBO = CC_NEW(MultisampledFramebuffer(device, TestBaseI::swapchain));
 
     fbo = OFFSCREEN_MSAA ? msaaFBO->framebuffer : backBufferFBO;
 
@@ -491,8 +491,9 @@ void Root::render() {
     TestBaseI::lookupTime(&TestBaseI::renderThread);
     TestBaseI::printTime(TestBaseI::renderThread, "Render thread");
 
-    gfx::Device *device     = gfx::Device::getInstance();
-    gfx::Color   clearColor = {.1F, .1F, .1F, 1.F};
+    gfx::Device *   device     = gfx::Device::getInstance();
+    gfx::Swapchain *swapchain  = TestBaseI::swapchain;
+    gfx::Color      clearColor = {.1F, .1F, .1F, 1.F};
 
     size_t modelCount = ModelView::views.size();
 
@@ -528,7 +529,7 @@ void Root::render() {
 
     instancedBuffer->update(uniformBufferData.data(), (modelCount + 1) * uboStride);
 
-    gfx::Rect renderArea = {0, 0, device->getWidth(), device->getHeight()};
+    gfx::Rect renderArea = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
 
     auto *commandBuffer = commandBuffers[0];
     commandBuffer->begin();
@@ -557,10 +558,10 @@ void Root::render() {
 
     if (OFFSCREEN_MSAA) {
         gfx::TextureBlit region;
-        region.srcExtent.width  = device->getWidth();
-        region.srcExtent.height = device->getHeight();
-        region.dstExtent.width  = device->getWidth();
-        region.dstExtent.height = device->getHeight();
+        region.srcExtent.width  = swapchain->getWidth();
+        region.srcExtent.height = swapchain->getHeight();
+        region.dstExtent.width  = swapchain->getWidth();
+        region.dstExtent.height = swapchain->getHeight();
         commandBuffer->blitTexture(msaaFBO->colorTex, nullptr, &region, 1, gfx::Filter::POINT);
     }
 

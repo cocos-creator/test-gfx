@@ -8,35 +8,35 @@ namespace {
 constexpr bool USE_DEPTH_RESOLVE = false;
 
 struct DepthResolveFramebuffer {
-    explicit DepthResolveFramebuffer(gfx::Device *device) {
+    explicit DepthResolveFramebuffer(gfx::Device *device, gfx::Swapchain *swapchain) {
         gfx::TextureInfo depthStecnilTexInfo;
         depthStecnilTexInfo.type   = gfx::TextureType::TEX2D;
         depthStecnilTexInfo.usage  = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT | gfx::TextureUsageBit::SAMPLED;
-        depthStecnilTexInfo.format = device->getDepthStencilFormat();
-        depthStecnilTexInfo.width  = device->getWidth();
-        depthStecnilTexInfo.height = device->getHeight();
+        depthStecnilTexInfo.format = swapchain->getDepthStencilTexture()->getFormat();
+        depthStecnilTexInfo.width  = swapchain->getWidth();
+        depthStecnilTexInfo.height = swapchain->getHeight();
         depthStencilTex            = device->createTexture(depthStecnilTexInfo);
 
         gfx::TextureInfo depthStecnilTexMSAAInfo;
         depthStecnilTexMSAAInfo.type    = gfx::TextureType::TEX2D;
         depthStecnilTexMSAAInfo.usage   = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT;
-        depthStecnilTexMSAAInfo.samples = gfx::SampleCount::X4;
-        depthStecnilTexMSAAInfo.format  = device->getDepthStencilFormat();
-        depthStecnilTexMSAAInfo.width   = device->getWidth();
-        depthStecnilTexMSAAInfo.height  = device->getHeight();
+        depthStecnilTexMSAAInfo.samples = gfx::SampleCount::MULTIPLE;
+        depthStecnilTexMSAAInfo.format  = swapchain->getDepthStencilTexture()->getFormat();
+        depthStecnilTexMSAAInfo.width   = swapchain->getWidth();
+        depthStecnilTexMSAAInfo.height  = swapchain->getHeight();
         depthStencilTexMSAA             = device->createTexture(depthStecnilTexMSAAInfo);
 
         if (USE_DEPTH_RESOLVE) {
             gfx::RenderPassInfo renderPassInfo;
 
             gfx::ColorAttachment &depthStencilAttachment{renderPassInfo.colorAttachments.emplace_back()};
-            depthStencilAttachment.format      = device->getDepthStencilFormat();
-            depthStencilAttachment.sampleCount = gfx::SampleCount::X4;
+            depthStencilAttachment.format      = swapchain->getDepthStencilTexture()->getFormat();
+            depthStencilAttachment.sampleCount = gfx::SampleCount::MULTIPLE;
             depthStencilAttachment.storeOp     = gfx::StoreOp::DISCARD;
             depthStencilAttachment.endAccesses = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
 
             gfx::ColorAttachment &depthStencilResolveAttachment{renderPassInfo.colorAttachments.emplace_back()};
-            depthStencilResolveAttachment.format      = device->getDepthStencilFormat();
+            depthStencilResolveAttachment.format      = swapchain->getDepthStencilTexture()->getFormat();
             depthStencilResolveAttachment.loadOp      = gfx::LoadOp::DISCARD;
             depthStencilResolveAttachment.endAccesses = {gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE};
 
@@ -540,7 +540,7 @@ void DepthTexture::onResize(uint width, uint height) {
 }
 
 bool DepthTexture::onInit() {
-    bunnyFBO = CC_NEW(DepthResolveFramebuffer(device));
+    bunnyFBO = CC_NEW(DepthResolveFramebuffer(device, swapchain));
     bunny    = CC_NEW(Bunny(device, bunnyFBO->framebuffer));
     bg       = CC_NEW(BigTriangle(device, fbo));
 
@@ -592,7 +592,7 @@ void DepthTexture::onTick() {
         _bunnyMatrices[0].m[12] = i % 2 ? -1.5F : 1.5F;
         bunny->mvpUniformBuffer[i]->update(_bunnyMatrices, sizeof(_bunnyMatrices));
     }
-    gfx::Rect renderArea = {0, 0, device->getWidth(), device->getHeight()};
+    gfx::Rect renderArea = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
 
     auto *commandBuffer = commandBuffers[0];
     commandBuffer->begin();
