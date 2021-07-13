@@ -285,10 +285,10 @@ void FrameGraphTest::onTick() {
                 colorAttachmentInfo.beginAccesses = {gfx::AccessType::TRANSFER_READ};
             } else {
                 framegraph::Texture::Descriptor colorTexInfo;
-                colorTexInfo.format = device->getColorFormat();
+                colorTexInfo.format = swapchain->getColorTexture()->getFormat();
                 colorTexInfo.usage  = gfx::TextureUsageBit::COLOR_ATTACHMENT | gfx::TextureUsageBit::TRANSFER_SRC;
-                colorTexInfo.width  = device->getWidth();
-                colorTexInfo.height = device->getHeight();
+                colorTexInfo.width  = swapchain->getWidth();
+                colorTexInfo.height = swapchain->getHeight();
                 data.colorTex = builder.create<framegraph::Texture>(colorTexName, colorTexInfo);
             }
 
@@ -310,19 +310,19 @@ void FrameGraphTest::onTick() {
                 depthStencilAttachmentInfo.beginAccesses = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
             } else {
                 framegraph::Texture::Descriptor depthStencilTexInfo;
-                depthStencilTexInfo.format = device->getDepthStencilFormat();
+                depthStencilTexInfo.format = swapchain->getDepthStencilTexture()->getFormat();
                 depthStencilTexInfo.usage  = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT;
-                depthStencilTexInfo.width  = device->getWidth();
-                depthStencilTexInfo.height = device->getHeight();
+                depthStencilTexInfo.width  = swapchain->getWidth();
+                depthStencilTexInfo.height = swapchain->getHeight();
                 data.depthStencilTex = builder.create<framegraph::Texture>(depthStencilTexName, depthStencilTexInfo);
             }
 
             data.depthStencilTex = builder.write(data.depthStencilTex, depthStencilAttachmentInfo);
             builder.writeToBlackboard(depthStencilTexName, data.depthStencilTex);
 
-            int           xOff = second * static_cast<int>(device->getWidth()) / 2;
-            gfx::Viewport vp   = {xOff, 0, device->getWidth() / 2, device->getHeight(), 0, 1};
-            gfx::Rect     rect = {xOff, 0, device->getWidth() / 2, device->getHeight()};
+            int           xOff = second * static_cast<int>(swapchain->getWidth()) / 2;
+            gfx::Viewport vp   = {xOff, 0, swapchain->getWidth() / 2, swapchain->getHeight(), 0, 1};
+            gfx::Rect     rect = {xOff, 0, swapchain->getWidth() / 2, swapchain->getHeight()};
             builder.setViewport(vp, rect);
         };
     };

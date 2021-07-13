@@ -97,6 +97,8 @@ void StandardForwardPipeline::recordCommandBuffer(gfx::Device * /*device*/, gfx:
 template <typename Fn>
 void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::CommandBuffer *commandBuffer,
                                                    const gfx::Rect &renderArea, const gfx::Color *clearColors, Fn execute) {
+    gfx::Swapchain *swapchain = TestBaseI::swapchain;
+
 #if 0
     // Logic passes
     static const framegraph::StringHandle GBUFFER_PASS_NAME = framegraph::FrameGraph::stringToHandle("GBufferPass");
@@ -133,8 +135,8 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Com
             gbufferInfo.type   = gfx::TextureType::TEX2D;
             gbufferInfo.usage  = usage;
             gbufferInfo.format = format;
-            gbufferInfo.width  = device->getWidth();
-            gbufferInfo.height = device->getHeight();
+            gbufferInfo.width  = swapchain->getWidth();
+            gbufferInfo.height = swapchain->getHeight();
             gbufferInfo.flags  = flags;
             data.gbuffers[i]   = builder.create<framegraph::Texture>(GBUFFER_NAMES[i], gbufferInfo);
 
@@ -150,9 +152,9 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Com
         framegraph::Texture::Descriptor depthStencilInfo;
         depthStencilInfo.type   = gfx::TextureType::TEX2D;
         depthStencilInfo.usage  = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT;
-        depthStencilInfo.format = device->getDepthStencilFormat();
-        depthStencilInfo.width  = device->getWidth();
-        depthStencilInfo.height = device->getHeight();
+        depthStencilInfo.format = swapchain->getDepthStencilFormat();
+        depthStencilInfo.width  = swapchain->getWidth();
+        depthStencilInfo.height = swapchain->getHeight();
         data.depthStencil       = builder.create<framegraph::Texture>(DEPTH_STENCIL_NAME, depthStencilInfo);
 
         // Attachment Setup
@@ -240,10 +242,10 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Com
     commandBuffer->endRenderPass();
 
     gfx::TextureBlit region;
-    region.srcExtent.width  = device->getWidth();
-    region.srcExtent.height = device->getHeight();
-    region.dstExtent.width  = device->getWidth();
-    region.dstExtent.height = device->getHeight();
+    region.srcExtent.width  = swapchain->getWidth();
+    region.srcExtent.height = swapchain->getHeight();
+    region.dstExtent.width  = swapchain->getWidth();
+    region.dstExtent.height = swapchain->getHeight();
     commandBuffer->blitTexture(gbufferTextures[3].get(), nullptr, &region, 1, gfx::Filter::POINT);
 #endif
 }

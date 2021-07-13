@@ -18,9 +18,9 @@ class ObjReader;
 namespace cc {
 
 using WindowInfo = struct WindowInfo {
-    intptr_t  windowHandle = 0;
+    void *    windowHandle = nullptr;
+    float     pixelRatio   = 1.F;
     gfx::Rect screen;
-    float     pixelRatio = 1.F;
 };
 
 struct StandardShaderSource {
@@ -172,6 +172,12 @@ public:
     static FrameRate  deviceThread;
     static const bool MANUAL_BARRIER;
 
+    static gfx::Device *                device;
+    static gfx::Swapchain *             swapchain;
+    static gfx::Framebuffer *           fbo;
+    static gfx::RenderPass *            renderPass;
+    static vector<gfx::CommandBuffer *> commandBuffers;
+
     static framegraph::FrameGraph fg;
 
     static const float NANOSECONDS_PER_SECOND;
@@ -198,7 +204,7 @@ public:
     inline void resize(uint width, uint height) {
         onResize(width, height);
 
-        device->resize(width, height);
+        swapchain->resize(width, height);
     }
 
     inline void destroy() {
@@ -216,12 +222,6 @@ protected:
     static vector<createFunc> tests;
     static TestBaseI *        test;
     static int                nextDirection;
-
-    static gfx::Device *                device;
-    static gfx::Framebuffer *           fbo;
-    static vector<gfx::CommandBuffer *> commandBuffers;
-
-    static gfx::RenderPass *renderPass;
 
     static unordered_map<uint, gfx::GlobalBarrier *>  globalBarrierMap;
     static unordered_map<uint, gfx::TextureBarrier *> textureBarrierMap;

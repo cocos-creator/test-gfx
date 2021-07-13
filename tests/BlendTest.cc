@@ -618,7 +618,7 @@ void BlendTest::onTick() {
     device->acquire();
 
     gfx::Extent orientedSize  = TestBaseI::getOrientedSurfaceSize();
-    bool        matricesDirty = renderArea.width != orientedSize.width || renderArea.height != orientedSize.height || device->getSurfaceTransform() != orientation;
+    bool        matricesDirty = renderArea.width != orientedSize.width || renderArea.height != orientedSize.height || swapchain->getSurfaceTransform() != orientation;
 
     if (matricesDirty) {
         Mat4 model;
@@ -637,9 +637,9 @@ void BlendTest::onTick() {
             offsetY += 5.F + size;
         }
         // render area is not oriented
-        renderArea.width  = device->getWidth();
-        renderArea.height = device->getHeight();
-        orientation       = device->getSurfaceTransform();
+        renderArea.width  = swapchain->getWidth();
+        renderArea.height = swapchain->getHeight();
+        orientation       = swapchain->getSurfaceTransform();
     }
 
     auto *commandBuffer = commandBuffers[0];

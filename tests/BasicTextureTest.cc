@@ -260,7 +260,7 @@ void BasicTexture::onTick() {
     device->acquire();
 
     _uniformBuffer->update(&mvpMatrix, sizeof(mvpMatrix));
-    gfx::Rect renderArea = {0, 0, device->getWidth(), device->getHeight()};
+    gfx::Rect renderArea = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
 
     auto *commandBuffer = commandBuffers[0];
     commandBuffer->begin();

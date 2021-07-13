@@ -653,6 +653,8 @@ void createStandardPipelineResources(gfx::Device *device, StandardForwardPipelin
 void createStandardPipelineResources(gfx::Device *device, StandardDeferredPipeline *out, const StandardUniformBuffers &ubos) {
     createStandardShader(device, out);
 
+    gfx::Swapchain *swapchain = TestBaseI::swapchain;
+
     gfx::RenderPassInfo deferredRenderPassInfo;
     for (uint i = 0; i < 4; ++i) {
         // RGBA8 is suffice for albedo, emission & occlusion
@@ -673,8 +675,8 @@ void createStandardPipelineResources(gfx::Device *device, StandardDeferredPipeli
             gfx::TextureType::TEX2D,
             usage,
             format,
-            device->getWidth(),
-            device->getHeight(),
+            swapchain->getWidth(),
+            swapchain->getHeight(),
             flags,
         }));
         deferredRenderPassInfo.colorAttachments.emplace_back();
@@ -684,16 +686,16 @@ void createStandardPipelineResources(gfx::Device *device, StandardDeferredPipeli
         deferredRenderPassInfo.colorAttachments.back().isGeneralLayout = isGeneralLayout;
     }
 
-    deferredRenderPassInfo.depthStencilAttachment.format         = device->getDepthStencilFormat();
+    deferredRenderPassInfo.depthStencilAttachment.format         = swapchain->getDepthStencilTexture()->getFormat();
     deferredRenderPassInfo.depthStencilAttachment.depthStoreOp   = gfx::StoreOp::DISCARD;
     deferredRenderPassInfo.depthStencilAttachment.stencilStoreOp = gfx::StoreOp::DISCARD;
 
     out->gbufferDepthStencilTexture.reset(device->createTexture({
         gfx::TextureType::TEX2D,
         gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT,
-        device->getDepthStencilFormat(),
-        device->getWidth(),
-        device->getHeight(),
+        swapchain->getDepthStencilTexture()->getFormat(),
+        swapchain->getWidth(),
+        swapchain->getHeight(),
     }));
 
     deferredRenderPassInfo.subpasses.resize(2);

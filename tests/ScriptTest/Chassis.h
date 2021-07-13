@@ -25,7 +25,7 @@ enum class TransformFlagBit : uint32_t {
     TRS      = static_cast<uint32_t>(TransformFlagBit::POSITION) | static_cast<uint32_t>(TransformFlagBit::ROTATION) | static_cast<uint32_t>(TransformFlagBit::SCALE),
     TRS_MASK = ~static_cast<uint32_t>(TransformFlagBit::TRS),
 };
-CC_ENUM_OPERATORS(TransformFlagBit);
+CC_ENUM_BITWISE_OPERATORS(TransformFlagBit);
 
 template <typename Value>
 struct Transform {

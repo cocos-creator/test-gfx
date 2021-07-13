@@ -427,13 +427,13 @@ void ComputeTest::onTick() {
     if (_compConstantsBuffer) _compConstantsBuffer->update(&constants, sizeof(constants));
     _uniformBufferMVP->update(mvp.m, sizeof(mvp.m));
 
-    gfx::Rect renderArea = {0, 0, device->getWidth(), device->getHeight()};
+    gfx::Rect renderArea = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
 
     gfx::TextureBlit blit;
     blit.srcExtent.width  = BG_WIDTH;
     blit.srcExtent.height = BG_HEIGHT;
-    blit.dstExtent.width  = device->getWidth();
-    blit.dstExtent.height = device->getHeight();
+    blit.dstExtent.width  = swapchain->getWidth();
+    blit.dstExtent.height = swapchain->getHeight();
 
     auto *commandBuffer = commandBuffers[0];
     commandBuffer->begin();
