@@ -61,11 +61,13 @@ find_library(APPKIT_LIBRARY AppKit)
 find_library(METAL_LIBRARY Metal)
 find_library(METALKIT_LIBRARY MetalKit)
 find_library(QUARTZCORE_LIBRARY QuartzCore)
+find_library(MPS_LIBRARY MetalPerformanceShaders)
 list(APPEND PLATFORM_SPECIFIC_LIBS
     ${APPKIT_LIBRARY}
     ${METAL_LIBRARY}
     ${METALKIT_LIBRARY}
     ${QUARTZCORE_LIBRARY}
+    ${MPS_LIBRARY}
 )
 
 if (NOT USE_METAL)
