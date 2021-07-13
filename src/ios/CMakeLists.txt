@@ -64,9 +64,11 @@ set_xcode_property(${APP_NAME} PRODUCT_BUNDLE_IDENTIFIER "com.cocos.device-test"
 # Locate system libraries on iOS
 find_library(UIKIT_LIBRARY UIKit)
 find_library(QUARTZCORE_LIBRARY QuartzCore)
+find_library(MPS_LIBRARY MetalPerformanceShaders)
 list(APPEND PLATFORM_SPECIFIC_LIBS
     ${UIKIT_LIBRARY}
     ${QUARTZCORE_LIBRARY}
+    ${MPS_LIBRARY}
 )
 
 if (USE_VULKAN)

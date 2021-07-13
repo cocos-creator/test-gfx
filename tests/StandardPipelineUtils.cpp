@@ -578,7 +578,7 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
 
     gfx::ShaderInfo lightingShaderInfo;
     lightingShaderInfo.name       = "Standard Deferred";
-    lightingShaderInfo.attributes = attributes;
+    lightingShaderInfo.attributes = lightingAttributes;
     lightingShaderInfo.stages.push_back({gfx::ShaderStageFlagBit::VERTEX, TestBaseI::getAppropriateShaderSource(lightingVert)});
     lightingShaderInfo.stages.push_back({gfx::ShaderStageFlagBit::FRAGMENT, TestBaseI::getAppropriateShaderSource(lightingFrag)});
     lightingShaderInfo.blocks.push_back(cameraUBOInfo);
