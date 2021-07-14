@@ -422,7 +422,7 @@ void ComputeTest::onTick() {
     Mat4 mvp;
     TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &mvp);
 
-    device->acquire();
+    swapchain->acquire();
 
     if (_compConstantsBuffer) _compConstantsBuffer->update(&constants, sizeof(constants));
     _uniformBufferMVP->update(mvp.m, sizeof(mvp.m));
@@ -470,7 +470,7 @@ void ComputeTest::onTick() {
 
     device->flushCommands(commandBuffers);
     device->getQueue()->submit(commandBuffers);
-    device->present();
+    swapchain->present();
 }
 
 } // namespace cc

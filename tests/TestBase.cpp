@@ -34,6 +34,8 @@
 //#undef CC_USE_GLES3
 //#undef CC_USE_GLES2
 #include "GFXDeviceManager.h"
+#include "bindings/event/CustomEventTypes.h"
+#include "bindings/event/EventDispatcher.h"
 
 namespace cc {
 
@@ -108,6 +110,14 @@ TestBaseI::TestBaseI(const WindowInfo &info) {
         swapchainInfo.width              = info.screen.width;
         swapchainInfo.height             = info.screen.height;
         swapchain                        = device->createSwapchain(swapchainInfo);
+
+        EventDispatcher::addCustomEventListener(EVENT_DESTROY_WINDOW, [this](const CustomEvent &/*e*/) -> void {
+            swapchain->destroySurface();
+        });
+
+        EventDispatcher::addCustomEventListener(EVENT_RECREATE_WINDOW, [this](const CustomEvent &e) -> void {
+            swapchain->createSurface(e.args->ptrVal);
+        });
 
         CC_LOG_INFO(vmath::processorFeatures().c_str());
 

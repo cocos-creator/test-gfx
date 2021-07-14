@@ -437,7 +437,7 @@ void ParticleTest::onTick() {
                                  static_cast<float>(orientedSize.width) / static_cast<float>(orientedSize.height),
                                  0.01F, 1000.0F, &_matrices[2]);
 
-    device->acquire();
+    swapchain->acquire();
 
     _uniformBuffer->update(_matrices, sizeof(_matrices));
     _vertexBuffer->update(_vbufferArray, sizeof(_vbufferArray));
@@ -460,7 +460,7 @@ void ParticleTest::onTick() {
 
     device->flushCommands(commandBuffers);
     device->getQueue()->submit(commandBuffers);
-    device->present();
+    swapchain->present();
 }
 
 } // namespace cc

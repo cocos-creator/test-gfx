@@ -116,7 +116,7 @@ void SubpassTest::onTick() {
     std::copy(_worldMatrix.m, _worldMatrix.m + 16, _ubos.getBuffer(standard::MVP));
     std::copy(_projectionMatrix.m, _projectionMatrix.m + 16, _ubos.getBuffer(standard::MVP) + 32);
 
-    device->acquire();
+    swapchain->acquire();
 
     _ubos.update();
     gfx::Rect renderArea = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
@@ -146,7 +146,7 @@ void SubpassTest::onTick() {
 
     device->flushCommands(commandBuffers);
     device->getQueue()->submit(commandBuffers);
-    device->present();
+    swapchain->present();
 }
 
 } // namespace cc
