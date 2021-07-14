@@ -16,7 +16,7 @@ void ClearScreen::onTick() {
     clearColor.z = 0.0F;
     clearColor.w = 1.0F;
 
-    device->acquire();
+    swapchain->acquire();
 
     gfx::Rect renderArea = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
 
@@ -28,7 +28,7 @@ void ClearScreen::onTick() {
 
     device->flushCommands(commandBuffers);
     device->getQueue()->submit(commandBuffers);
-    device->present();
+    swapchain->present();
 }
 
 } // namespace cc

@@ -244,7 +244,7 @@ void BasicTriangle::onTick() {
     Mat4 mvp;
     TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &mvp);
 
-    device->acquire();
+    swapchain->acquire();
 
     _uniformBuffer->update(&uniformColor, sizeof(uniformColor));
     _uniformBufferMVP->update(mvp.m, sizeof(Mat4));
@@ -268,7 +268,7 @@ void BasicTriangle::onTick() {
 
     device->flushCommands(commandBuffers);
     device->getQueue()->submit(commandBuffers);
-    device->present();
+    swapchain->present();
 }
 
 } // namespace cc

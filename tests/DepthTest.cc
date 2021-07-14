@@ -586,7 +586,7 @@ void DepthTexture::onTick() {
 
     gfx::Color clearColor[2] = {{1.0, 0, 0, 1.0F}};
 
-    device->acquire();
+    swapchain->acquire();
 
     for (uint i = 0; i < Bunny::BUNNY_NUM; i++) {
         _bunnyMatrices[0].m[12] = i % 2 ? -1.5F : 1.5F;
@@ -623,7 +623,7 @@ void DepthTexture::onTick() {
 
     device->flushCommands(commandBuffers);
     device->getQueue()->submit(commandBuffers);
-    device->present();
+    swapchain->present();
 }
 
 } // namespace cc
