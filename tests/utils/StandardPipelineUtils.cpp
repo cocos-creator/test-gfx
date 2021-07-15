@@ -631,9 +631,11 @@ void createStandardUniformBuffers(gfx::Device *device, StandardUniformBuffers *o
 void createStandardPipelineResources(gfx::Device *device, StandardForwardPipeline *out, const StandardUniformBuffers & /*ubos*/) {
     createStandardShader(device, out);
 
+    gfx::Swapchain *swapchain = TestBaseI::swapchain;
+
     gfx::RenderPassInfo forwardRenderPassInfo;
-    forwardRenderPassInfo.colorAttachments.emplace_back().format = device->getColorFormat();
-    forwardRenderPassInfo.depthStencilAttachment.format          = device->getDepthStencilFormat();
+    forwardRenderPassInfo.colorAttachments.emplace_back().format = swapchain->getColorTexture()->getFormat();
+    forwardRenderPassInfo.depthStencilAttachment.format          = swapchain->getDepthStencilTexture()->getFormat();
     out->renderPass.reset(device->createRenderPass(forwardRenderPassInfo));
 
     gfx::FramebufferInfo forwardFramebufferInfo;
