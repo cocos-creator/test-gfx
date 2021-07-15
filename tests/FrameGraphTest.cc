@@ -246,7 +246,7 @@ void FrameGraphTest::onTick() {
     Mat4 mvp;
     TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &mvp);
 
-    swapchain->acquire();
+    device->acquire(&swapchain, 1);
 
     _uniformBuffer->update(&uniformColor, sizeof(uniformColor));
     _uniformBufferMVP->update(mvp.m, sizeof(Mat4));
@@ -352,7 +352,7 @@ void FrameGraphTest::onTick() {
     commandBuffer->end();
     device->flushCommands(commandBuffers);
     device->getQueue()->submit(commandBuffers);
-    swapchain->present();
+    device->present();
 }
 
 } // namespace cc

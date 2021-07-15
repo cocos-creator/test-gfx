@@ -513,7 +513,7 @@ void Root::render() {
         vmath::store(pDst + 4, vmath::slice(TransformView::buffer.mat, model.transform));
     }
 
-    swapchain->acquire();
+    device->acquire(&swapchain, 1);
 
     if (ROTATE_VIEW) {
         Mat4         view;
@@ -569,7 +569,7 @@ void Root::render() {
 
     device->flushCommands(commandBuffers);
     device->getQueue()->submit(commandBuffers);
-    swapchain->present();
+    device->present();
 }
 
 } // namespace experimental
