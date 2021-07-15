@@ -615,7 +615,7 @@ void BlendTest::onTick() {
     uint globalBarrierIdx = _frameCount ? 1 : 0;
     uint textureBarriers  = _frameCount ? 0 : _textureBarriers.size();
 
-    swapchain->acquire();
+    device->acquire(&swapchain, 1);
 
     gfx::Extent orientedSize  = TestBaseI::getOrientedSurfaceSize();
     bool        matricesDirty = renderArea.width != orientedSize.width || renderArea.height != orientedSize.height || swapchain->getSurfaceTransform() != orientation;
@@ -694,7 +694,7 @@ void BlendTest::onTick() {
 
     device->flushCommands(commandBuffers);
     device->getQueue()->submit(commandBuffers);
-    swapchain->present();
+    device->present();
 }
 
 } // namespace cc

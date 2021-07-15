@@ -257,7 +257,7 @@ void BasicTexture::onTick() {
     Mat4 mvpMatrix;
     TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &mvpMatrix);
 
-    swapchain->acquire();
+    device->acquire(&swapchain, 1);
 
     _uniformBuffer->update(&mvpMatrix, sizeof(mvpMatrix));
     gfx::Rect renderArea = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
@@ -279,7 +279,7 @@ void BasicTexture::onTick() {
 
     device->flushCommands(commandBuffers);
     device->getQueue()->submit(commandBuffers);
-    swapchain->present();
+    device->present();
 }
 
 } // namespace cc

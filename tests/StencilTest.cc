@@ -362,7 +362,7 @@ void StencilTest::onTick() {
     Mat4 proj;
     TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &proj);
 
-    swapchain->acquire();
+    device->acquire(&swapchain, 1);
 
     for (uint i = 0; i < BINDING_COUNT; i++) {
         TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &_uboData[i].viewProj);
@@ -435,7 +435,7 @@ void StencilTest::onTick() {
 
     device->flushCommands(commandBuffers);
     device->getQueue()->submit(commandBuffers);
-    swapchain->present();
+    device->present();
 }
 
 } // namespace cc

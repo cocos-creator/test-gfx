@@ -526,7 +526,7 @@ void StressTest::onTick() {
 
     printTime();
 
-    swapchain->acquire();
+    device->acquire(&swapchain, 1);
 
     _uboVP.color.w = 1.F;
     hsV2Rgb(float((logicThread.frameAcc * 20U) % 360U), .5F, 1.F, _uboVP.color.x, _uboVP.color.y, _uboVP.color.z);
@@ -669,7 +669,7 @@ void StressTest::onTick() {
     device->getQueue()->submit(commandBuffers);
 #endif
 
-    swapchain->present();
+    device->present();
 
     gfx::DeviceAgent *agent = gfx::DeviceAgent::getInstance();
 
