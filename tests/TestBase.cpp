@@ -105,8 +105,6 @@ TestBaseI::TestBaseI(const WindowInfo &info) {
 
         gfx::SwapchainInfo swapchainInfo;
         swapchainInfo.windowHandle       = info.windowHandle;
-        swapchainInfo.colorFormat        = device->getColorFormat();
-        swapchainInfo.depthStencilFormat = device->getDepthStencilFormat();
         swapchainInfo.width              = info.screen.width;
         swapchainInfo.height             = info.screen.height;
         swapchain                        = device->createSwapchain(swapchainInfo);

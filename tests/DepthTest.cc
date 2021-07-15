@@ -55,7 +55,7 @@ struct DepthResolveFramebuffer {
             framebuffer = device->createFramebuffer(fboInfo);
         } else {
             gfx::RenderPassInfo renderPassInfo;
-            renderPassInfo.depthStencilAttachment.format      = device->getDepthStencilFormat();
+            renderPassInfo.depthStencilAttachment.format      = swapchain->getDepthStencilTexture()->getFormat();
             renderPassInfo.depthStencilAttachment.endAccesses = {gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE};
             renderPass                                        = device->createRenderPass(renderPassInfo);
 

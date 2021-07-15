@@ -13,18 +13,18 @@ struct MultisampledFramebuffer {
         gfx::RenderPassInfo renderPassInfo;
 
         gfx::ColorAttachment &colorAttachment{renderPassInfo.colorAttachments.emplace_back()};
-        colorAttachment.format      = device->getColorFormat();
+        colorAttachment.format      = swapchain->getColorTexture()->getFormat();
         colorAttachment.sampleCount = gfx::SampleCount::MULTIPLE;
         colorAttachment.storeOp     = gfx::StoreOp::DISCARD;
         colorAttachment.endAccesses = {gfx::AccessType::COLOR_ATTACHMENT_WRITE};
 
         gfx::ColorAttachment &colorResolveAttachment{renderPassInfo.colorAttachments.emplace_back()};
-        colorResolveAttachment.format      = device->getColorFormat();
+        colorResolveAttachment.format      = swapchain->getColorTexture()->getFormat();
         colorResolveAttachment.loadOp      = gfx::LoadOp::DISCARD;
         colorResolveAttachment.endAccesses = {gfx::AccessType::TRANSFER_READ};
 
         gfx::DepthStencilAttachment &depthStencilAttachment{renderPassInfo.depthStencilAttachment};
-        depthStencilAttachment.format         = device->getDepthStencilFormat();
+        depthStencilAttachment.format         = swapchain->getDepthStencilTexture()->getFormat();
         depthStencilAttachment.sampleCount    = gfx::SampleCount::MULTIPLE;
         depthStencilAttachment.depthStoreOp   = gfx::StoreOp::DISCARD;
         depthStencilAttachment.stencilStoreOp = gfx::StoreOp::DISCARD;
@@ -132,10 +132,11 @@ gfx::InputAssembler *inputAssemblerOutline{nullptr};
 
 void Root::initialize() {
     gfx::Device *device = gfx::Device::getInstance();
+    gfx::Swapchain *swapchain = TestBaseI::swapchain;
 
     gfx::RenderPassInfo renderPassInfo;
-    renderPassInfo.colorAttachments.emplace_back().format = device->getColorFormat();
-    renderPassInfo.depthStencilAttachment.format          = device->getDepthStencilFormat();
+    renderPassInfo.colorAttachments.emplace_back().format = swapchain->getColorTexture()->getFormat();
+    renderPassInfo.depthStencilAttachment.format          = swapchain->getDepthStencilTexture()->getFormat();
     backBufferRenderPass                                  = device->createRenderPass(renderPassInfo);
 
     gfx::FramebufferInfo fboInfo;
@@ -143,7 +144,7 @@ void Root::initialize() {
     fboInfo.renderPass = backBufferRenderPass;
     backBufferFBO      = device->createFramebuffer(fboInfo);
 
-    msaaFBO = CC_NEW(MultisampledFramebuffer(device, TestBaseI::swapchain));
+    msaaFBO = CC_NEW(MultisampledFramebuffer(device, swapchain));
 
     fbo = OFFSCREEN_MSAA ? msaaFBO->framebuffer : backBufferFBO;
 
