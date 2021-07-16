@@ -142,7 +142,6 @@ void TestBaseI::destroyGlobal() {
     CC_SAFE_DESTROY(test)
     CC_SAFE_DESTROY(fbo)
     CC_SAFE_DESTROY(renderPass)
-    CC_SAFE_DESTROY(swapchain)
     framegraph::FrameGraph::gc(0);
 
     se::ScriptEngine::destroyInstance();
@@ -160,6 +159,7 @@ void TestBaseI::destroyGlobal() {
     }
     globalBarrierMap.clear();
 
+    CC_SAFE_DESTROY(swapchain)
     CC_SAFE_DESTROY(device)
 }
 

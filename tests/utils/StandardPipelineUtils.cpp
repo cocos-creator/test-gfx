@@ -639,7 +639,8 @@ void createStandardPipelineResources(gfx::Device *device, StandardForwardPipelin
     out->renderPass.reset(device->createRenderPass(forwardRenderPassInfo));
 
     gfx::FramebufferInfo forwardFramebufferInfo;
-    forwardFramebufferInfo.colorTextures.resize(1);
+    forwardFramebufferInfo.colorTextures.push_back(swapchain->getColorTexture());
+    forwardFramebufferInfo.depthStencilTexture = swapchain->getDepthStencilTexture();
     forwardFramebufferInfo.renderPass = out->renderPass.get();
     out->framebuffer.reset(device->createFramebuffer(forwardFramebufferInfo));
 

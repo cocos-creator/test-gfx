@@ -339,7 +339,7 @@ void FrameGraphTest::onTick() {
     fg.addPass<DrawData>(100, leftName, drawSetupFactory(0), drawExecFactory);
     fg.addPass<DrawData>(200, rightName, drawSetupFactory(1), drawExecFactory);
 
-    fg.presentFromBlackboard(colorTexName);
+    fg.presentFromBlackboard(colorTexName, swapchain);
 
     fg.compile();
 
