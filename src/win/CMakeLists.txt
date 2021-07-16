@@ -44,7 +44,7 @@ target_link_libraries(${TARGET_NAME}
   GFXGLESCommon
   # GFXGLES2
   # GFXGLES3
-  # GFXVulkan
+  GFXVulkan
   ${CC_EXTERNAL_LIBS}
 )
 

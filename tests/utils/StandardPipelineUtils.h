@@ -219,7 +219,7 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Com
     fg.addPass<GBufferData>(100, GBUFFER_PASS_NAME, gbufferPassSetup, gbufferPassExec);
     fg.addPass<ShadingData>(200, SHADING_PASS_NAME, shadingPassSetup, shadingPassExec);
 
-    fg.presentFromBlackboard(GBUFFER_NAMES[3]);
+    fg.presentFromBlackboard(GBUFFER_NAMES[3], swapchain);
 
     fg.compile();
 
@@ -246,7 +246,7 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Com
     region.srcExtent.height = swapchain->getHeight();
     region.dstExtent.width  = swapchain->getWidth();
     region.dstExtent.height = swapchain->getHeight();
-    commandBuffer->blitTexture(gbufferTextures[3].get(), nullptr, &region, 1, gfx::Filter::POINT);
+    commandBuffer->blitTexture(gbufferTextures[3].get(), swapchain->getColorTexture(), &region, 1, gfx::Filter::POINT);
 #endif
 }
 

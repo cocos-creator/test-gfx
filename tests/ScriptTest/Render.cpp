@@ -14,7 +14,7 @@ struct MultisampledFramebuffer {
 
         gfx::ColorAttachment &colorAttachment{renderPassInfo.colorAttachments.emplace_back()};
         colorAttachment.format      = swapchain->getColorTexture()->getFormat();
-        colorAttachment.sampleCount = gfx::SampleCount::MULTIPLE;
+        colorAttachment.sampleCount = gfx::SampleCount::MULTIPLE_BALANCE;
         colorAttachment.storeOp     = gfx::StoreOp::DISCARD;
         colorAttachment.endAccesses = {gfx::AccessType::COLOR_ATTACHMENT_WRITE};
 
@@ -25,7 +25,7 @@ struct MultisampledFramebuffer {
 
         gfx::DepthStencilAttachment &depthStencilAttachment{renderPassInfo.depthStencilAttachment};
         depthStencilAttachment.format         = swapchain->getDepthStencilTexture()->getFormat();
-        depthStencilAttachment.sampleCount    = gfx::SampleCount::MULTIPLE;
+        depthStencilAttachment.sampleCount    = gfx::SampleCount::MULTIPLE_BALANCE;
         depthStencilAttachment.depthStoreOp   = gfx::StoreOp::DISCARD;
         depthStencilAttachment.stencilStoreOp = gfx::StoreOp::DISCARD;
 
@@ -39,7 +39,7 @@ struct MultisampledFramebuffer {
         gfx::TextureInfo colorTexMSAAInfo;
         colorTexMSAAInfo.type    = gfx::TextureType::TEX2D;
         colorTexMSAAInfo.usage   = gfx::TextureUsageBit::COLOR_ATTACHMENT;
-        colorTexMSAAInfo.samples = gfx::SampleCount::MULTIPLE;
+        colorTexMSAAInfo.samples = gfx::SampleCount::MULTIPLE_BALANCE;
         colorTexMSAAInfo.format  = swapchain->getColorTexture()->getFormat();
         colorTexMSAAInfo.width   = swapchain->getWidth();
         colorTexMSAAInfo.height  = swapchain->getHeight();
@@ -56,7 +56,7 @@ struct MultisampledFramebuffer {
         gfx::TextureInfo depthStencilTexInfo;
         depthStencilTexInfo.type    = gfx::TextureType::TEX2D;
         depthStencilTexInfo.usage   = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT;
-        depthStencilTexInfo.samples = gfx::SampleCount::MULTIPLE;
+        depthStencilTexInfo.samples = gfx::SampleCount::MULTIPLE_BALANCE;
         depthStencilTexInfo.format  = swapchain->getDepthStencilTexture()->getFormat();
         depthStencilTexInfo.width   = swapchain->getWidth();
         depthStencilTexInfo.height  = swapchain->getHeight();
@@ -103,8 +103,6 @@ struct MultisampledFramebuffer {
 gfx::Framebuffer *fbo;
 
 MultisampledFramebuffer *    msaaFBO;
-gfx::Framebuffer *           backBufferFBO;
-gfx::RenderPass *            backBufferRenderPass;
 vector<gfx::CommandBuffer *> commandBuffers;
 
 gfx::Shader *                shader{nullptr};
@@ -134,19 +132,9 @@ void Root::initialize() {
     gfx::Device *device = gfx::Device::getInstance();
     gfx::Swapchain *swapchain = TestBaseI::swapchain;
 
-    gfx::RenderPassInfo renderPassInfo;
-    renderPassInfo.colorAttachments.emplace_back().format = swapchain->getColorTexture()->getFormat();
-    renderPassInfo.depthStencilAttachment.format          = swapchain->getDepthStencilTexture()->getFormat();
-    backBufferRenderPass                                  = device->createRenderPass(renderPassInfo);
-
-    gfx::FramebufferInfo fboInfo;
-    fboInfo.colorTextures.resize(1);
-    fboInfo.renderPass = backBufferRenderPass;
-    backBufferFBO      = device->createFramebuffer(fboInfo);
-
     msaaFBO = CC_NEW(MultisampledFramebuffer(device, swapchain));
 
-    fbo = OFFSCREEN_MSAA ? msaaFBO->framebuffer : backBufferFBO;
+    fbo = OFFSCREEN_MSAA ? msaaFBO->framebuffer : TestBaseI::fbo;
 
     commandBuffers.push_back(device->getCommandBuffer());
 
@@ -479,8 +467,6 @@ void Root::destroy() {
 
     fbo = nullptr;
     CC_SAFE_DESTROY(msaaFBO)
-    CC_SAFE_DESTROY(backBufferFBO)
-    CC_SAFE_DESTROY(backBufferRenderPass)
     commandBuffers.clear();
 
     globalBarriers.clear();
@@ -563,7 +549,7 @@ void Root::render() {
         region.srcExtent.height = swapchain->getHeight();
         region.dstExtent.width  = swapchain->getWidth();
         region.dstExtent.height = swapchain->getHeight();
-        commandBuffer->blitTexture(msaaFBO->colorTex, nullptr, &region, 1, gfx::Filter::POINT);
+        commandBuffer->blitTexture(msaaFBO->colorTex, swapchain->getColorTexture(), &region, 1, gfx::Filter::POINT);
     }
 
     commandBuffer->end();
