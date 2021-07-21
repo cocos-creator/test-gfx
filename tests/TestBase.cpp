@@ -109,11 +109,11 @@ TestBaseI::TestBaseI(const WindowInfo &info) {
         swapchainInfo.height             = info.screen.height;
         swapchain                        = device->createSwapchain(swapchainInfo);
 
-        EventDispatcher::addCustomEventListener(EVENT_DESTROY_WINDOW, [this](const CustomEvent &/*e*/) -> void {
+        EventDispatcher::addCustomEventListener(EVENT_DESTROY_WINDOW, [](const CustomEvent &/*e*/) -> void {
             swapchain->destroySurface();
         });
 
-        EventDispatcher::addCustomEventListener(EVENT_RECREATE_WINDOW, [this](const CustomEvent &e) -> void {
+        EventDispatcher::addCustomEventListener(EVENT_RECREATE_WINDOW, [](const CustomEvent &e) -> void {
             swapchain->createSurface(e.args->ptrVal);
         });
 

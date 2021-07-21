@@ -162,7 +162,7 @@ void ComputeTest::createComputeBGPipeline() {
         gfx::Format::RGBA8,
         BG_WIDTH,
         BG_HEIGHT,
-        gfx::TextureFlagBit::IMMUTABLE | gfx::TextureFlagBit::GENERAL_LAYOUT,
+        gfx::TextureFlagBit::IMMUTABLE,
     }));
 
     _textures.push_back(nullptr);

@@ -24,7 +24,7 @@ struct MultisampledFramebuffer {
         colorResolveAttachment.endAccesses = {gfx::AccessType::TRANSFER_READ};
 
         gfx::DepthStencilAttachment &depthStencilAttachment{renderPassInfo.depthStencilAttachment};
-        depthStencilAttachment.format         = swapchain->getDepthStencilTexture()->getFormat();
+        depthStencilAttachment.format         = gfx::Format::DEPTH;
         depthStencilAttachment.sampleCount    = gfx::SampleCount::MULTIPLE_BALANCE;
         depthStencilAttachment.depthStoreOp   = gfx::StoreOp::DISCARD;
         depthStencilAttachment.stencilStoreOp = gfx::StoreOp::DISCARD;
@@ -57,7 +57,7 @@ struct MultisampledFramebuffer {
         depthStencilTexInfo.type    = gfx::TextureType::TEX2D;
         depthStencilTexInfo.usage   = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT;
         depthStencilTexInfo.samples = gfx::SampleCount::MULTIPLE_BALANCE;
-        depthStencilTexInfo.format  = swapchain->getDepthStencilTexture()->getFormat();
+        depthStencilTexInfo.format  = gfx::Format::DEPTH;
         depthStencilTexInfo.width   = swapchain->getWidth();
         depthStencilTexInfo.height  = swapchain->getHeight();
         depthStencilTex             = device->createTexture(depthStencilTexInfo);
@@ -473,8 +473,6 @@ void Root::destroy() {
 }
 
 void Root::render() {
-    static gfx::Texture *backBuffer{nullptr};
-
     TestBaseI::lookupTime(&TestBaseI::renderThread);
     TestBaseI::printTime(TestBaseI::renderThread, "Render thread");
 
