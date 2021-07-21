@@ -1,4 +1,5 @@
 #include "DepthTest.h"
+#include "gfx-base/GFXDef-common.h"
 #include "tiny_obj_loader.h"
 
 namespace cc {
@@ -12,7 +13,7 @@ struct DepthResolveFramebuffer {
         gfx::TextureInfo depthStecnilTexInfo;
         depthStecnilTexInfo.type   = gfx::TextureType::TEX2D;
         depthStecnilTexInfo.usage  = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT | gfx::TextureUsageBit::SAMPLED;
-        depthStecnilTexInfo.format = swapchain->getDepthStencilTexture()->getFormat();
+        depthStecnilTexInfo.format = gfx::Format::DEPTH;
         depthStecnilTexInfo.width  = swapchain->getWidth();
         depthStecnilTexInfo.height = swapchain->getHeight();
         depthStencilTex            = device->createTexture(depthStecnilTexInfo);
@@ -21,7 +22,7 @@ struct DepthResolveFramebuffer {
         depthStecnilTexMSAAInfo.type    = gfx::TextureType::TEX2D;
         depthStecnilTexMSAAInfo.usage   = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT;
         depthStecnilTexMSAAInfo.samples = gfx::SampleCount::MULTIPLE_BALANCE;
-        depthStecnilTexMSAAInfo.format  = swapchain->getDepthStencilTexture()->getFormat();
+        depthStecnilTexMSAAInfo.format  = gfx::Format::DEPTH;
         depthStecnilTexMSAAInfo.width   = swapchain->getWidth();
         depthStecnilTexMSAAInfo.height  = swapchain->getHeight();
         depthStencilTexMSAA             = device->createTexture(depthStecnilTexMSAAInfo);
@@ -30,13 +31,13 @@ struct DepthResolveFramebuffer {
             gfx::RenderPassInfo renderPassInfo;
 
             gfx::ColorAttachment &depthStencilAttachment{renderPassInfo.colorAttachments.emplace_back()};
-            depthStencilAttachment.format      = swapchain->getDepthStencilTexture()->getFormat();
+            depthStencilAttachment.format      = gfx::Format::DEPTH;
             depthStencilAttachment.sampleCount = gfx::SampleCount::MULTIPLE_BALANCE;
             depthStencilAttachment.storeOp     = gfx::StoreOp::DISCARD;
             depthStencilAttachment.endAccesses = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
 
             gfx::ColorAttachment &depthStencilResolveAttachment{renderPassInfo.colorAttachments.emplace_back()};
-            depthStencilResolveAttachment.format      = swapchain->getDepthStencilTexture()->getFormat();
+            depthStencilResolveAttachment.format      = gfx::Format::DEPTH;
             depthStencilResolveAttachment.loadOp      = gfx::LoadOp::DISCARD;
             depthStencilResolveAttachment.endAccesses = {gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE};
 
@@ -55,7 +56,7 @@ struct DepthResolveFramebuffer {
             framebuffer = device->createFramebuffer(fboInfo);
         } else {
             gfx::RenderPassInfo renderPassInfo;
-            renderPassInfo.depthStencilAttachment.format      = swapchain->getDepthStencilTexture()->getFormat();
+            renderPassInfo.depthStencilAttachment.format      = gfx::Format::DEPTH;
             renderPassInfo.depthStencilAttachment.endAccesses = {gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE};
             renderPass                                        = device->createRenderPass(renderPassInfo);
 

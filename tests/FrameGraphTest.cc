@@ -310,7 +310,7 @@ void FrameGraphTest::onTick() {
                 depthStencilAttachmentInfo.beginAccesses = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
             } else {
                 framegraph::Texture::Descriptor depthStencilTexInfo;
-                depthStencilTexInfo.format = swapchain->getDepthStencilTexture()->getFormat();
+                depthStencilTexInfo.format = gfx::Format::DEPTH_STENCIL;
                 depthStencilTexInfo.usage  = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT;
                 depthStencilTexInfo.width  = swapchain->getWidth();
                 depthStencilTexInfo.height = swapchain->getHeight();

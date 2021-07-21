@@ -689,14 +689,14 @@ void createStandardPipelineResources(gfx::Device *device, StandardDeferredPipeli
         deferredRenderPassInfo.colorAttachments.back().isGeneralLayout = isGeneralLayout;
     }
 
-    deferredRenderPassInfo.depthStencilAttachment.format         = swapchain->getDepthStencilTexture()->getFormat();
+    deferredRenderPassInfo.depthStencilAttachment.format         = gfx::Format::DEPTH_STENCIL;
     deferredRenderPassInfo.depthStencilAttachment.depthStoreOp   = gfx::StoreOp::DISCARD;
     deferredRenderPassInfo.depthStencilAttachment.stencilStoreOp = gfx::StoreOp::DISCARD;
 
     out->gbufferDepthStencilTexture.reset(device->createTexture({
         gfx::TextureType::TEX2D,
         gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT,
-        swapchain->getDepthStencilTexture()->getFormat(),
+        gfx::Format::DEPTH_STENCIL,
         swapchain->getWidth(),
         swapchain->getHeight(),
     }));
