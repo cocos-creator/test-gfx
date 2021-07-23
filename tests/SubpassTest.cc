@@ -47,7 +47,6 @@ bool SubpassTest::onInit() {
     constexpr float cameraDistance = 5.F;
 
     Vec4 cameraPos{cameraDistance, cameraDistance * 0.5F, cameraDistance * 0.3F, 0.F};
-    Vec4 color{252 / 255.F, 23 / 255.F, 3 / 255.F, 1.0F};
     Vec4 lightDir{0.F, -2.F, -1.F, 0.F};
     Vec4 lightColor{1.F, 1.F, 1.F, 1.7F};
     Vec4 skyColor{.2F, .5F, .8F, .5F};
@@ -58,7 +57,6 @@ bool SubpassTest::onInit() {
     lightDir.normalize();
 
     std::copy(view.m, view.m + 16, _ubos.getBuffer(standard::MVP) + 16);
-    std::copy(&color.x, &color.x + 4, _ubos.getBuffer(standard::COLOR));
     std::copy(&cameraPos.x, &cameraPos.x + 4, _ubos.getBuffer(standard::CAMERA));
     std::copy(&lightDir.x, &lightDir.x + 4, _ubos.getBuffer(standard::CAMERA) + 4);
     std::copy(&lightColor.x, &lightColor.x + 4, _ubos.getBuffer(standard::CAMERA) + 8);
@@ -94,6 +92,25 @@ bool SubpassTest::onInit() {
         },
     }));
 
+    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+    }));
+
+    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
+        {
+            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
+            gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
+        },
+        {
+            gfx::AccessType::TRANSFER_WRITE,
+        },
+    }));
+
     _clearColors.assign(4, {0.02F, 0.02F, 0.02F, 1});
 
     return true;
@@ -105,41 +122,55 @@ void SubpassTest::onSpacePressed() {
 }
 
 void SubpassTest::onTick() {
-    uint globalBarrierIdx = _frameCount ? 1 : 0;
+    uint  globalBarrierIdx = _frameCount ? 1 : 0;
+    auto *commandBuffer    = commandBuffers[0];
+    Vec4  colors[]{
+        {252 / 255.F, 23 / 255.F, 3 / 255.F, 1.0F},
+        {23 / 255.F, 252 / 255.F, 3 / 255.F, 1.0F},
+    };
 
-    gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize();
-    Mat4::createRotationY(_time, &_worldMatrix);
-    TestBaseI::createPerspective(60.0F,
-                                 static_cast<float>(orientedSize.width) / static_cast<float>(orientedSize.height),
-                                 0.01F, 1000.0F, &_projectionMatrix);
-
-    std::copy(_worldMatrix.m, _worldMatrix.m + 16, _ubos.getBuffer(standard::MVP));
-    std::copy(_projectionMatrix.m, _projectionMatrix.m + 16, _ubos.getBuffer(standard::MVP) + 32);
-
-    device->acquire(&swapchain, 1);
-
-    _ubos.update();
-    gfx::Rect renderArea = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
-
-    auto *commandBuffer = commandBuffers[0];
+    device->acquire(swapchains);
     commandBuffer->begin();
 
-    if (TestBaseI::MANUAL_BARRIER) {
-        commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx]);
-    }
+    for (size_t i = 0; i < swapchains.size(); ++i) {
+        auto *swapchain = swapchains[i];
+        auto *fbo       = fbos[i];
 
-    if (_useDeferred) {
-        _deferred.recordCommandBuffer(device, commandBuffer, renderArea, _clearColors.data(), [&]() {
-            commandBuffer->bindInputAssembler(_inputAssembler.get());
-            commandBuffer->bindDescriptorSet(0, _ubos.descriptorSet.get());
-            commandBuffer->draw(_inputAssembler.get());
-        });
-    } else {
-        _forward.recordCommandBuffer(device, commandBuffer, renderArea, _clearColors.data(), [&]() {
-            commandBuffer->bindInputAssembler(_inputAssembler.get());
-            commandBuffer->bindDescriptorSet(0, _ubos.descriptorSet.get());
-            commandBuffer->draw(_inputAssembler.get());
-        });
+        gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize(swapchain);
+        Mat4::createRotationY(_time, &_worldMatrix);
+        TestBaseI::createPerspective(60.0F,
+                                     static_cast<float>(orientedSize.width) / static_cast<float>(orientedSize.height),
+                                     0.01F, 1000.0F, &_projectionMatrix, swapchain);
+
+        std::copy(_worldMatrix.m, _worldMatrix.m + 16, _ubos.getBuffer(standard::MVP));
+        std::copy(_projectionMatrix.m, _projectionMatrix.m + 16, _ubos.getBuffer(standard::MVP) + 32);
+        std::copy(&colors[i].x, &colors[i].x + 4, _ubos.getBuffer(standard::COLOR));
+
+        if (i) {
+            commandBuffer->pipelineBarrier(_globalBarriers[2]);
+            commandBuffer->pipelineBarrier(_globalBarriers[3]);
+        }
+
+        _ubos.update(commandBuffer);
+        gfx::Rect renderArea = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
+
+        if (TestBaseI::MANUAL_BARRIER) {
+            commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx]);
+        }
+
+        if (_useDeferred) {
+            _deferred.recordCommandBuffer(device, swapchain, commandBuffer, renderArea, _clearColors.data(), [&]() {
+                commandBuffer->bindInputAssembler(_inputAssembler.get());
+                commandBuffer->bindDescriptorSet(0, _ubos.descriptorSet.get());
+                commandBuffer->draw(_inputAssembler.get());
+            });
+        } else {
+            _forward.recordCommandBuffer(device, commandBuffer, fbo, renderArea, _clearColors.data(), [&]() {
+                commandBuffer->bindInputAssembler(_inputAssembler.get());
+                commandBuffer->bindDescriptorSet(0, _ubos.descriptorSet.get());
+                commandBuffer->draw(_inputAssembler.get());
+            });
+        }
     }
 
     commandBuffer->end();

@@ -631,24 +631,11 @@ void createStandardUniformBuffers(gfx::Device *device, StandardUniformBuffers *o
 void createStandardPipelineResources(gfx::Device *device, StandardForwardPipeline *out, const StandardUniformBuffers & /*ubos*/) {
     createStandardShader(device, out);
 
-    gfx::Swapchain *swapchain = TestBaseI::swapchain;
-
-    gfx::RenderPassInfo forwardRenderPassInfo;
-    forwardRenderPassInfo.colorAttachments.emplace_back().format = swapchain->getColorTexture()->getFormat();
-    forwardRenderPassInfo.depthStencilAttachment.format          = swapchain->getDepthStencilTexture()->getFormat();
-    out->renderPass.reset(device->createRenderPass(forwardRenderPassInfo));
-
-    gfx::FramebufferInfo forwardFramebufferInfo;
-    forwardFramebufferInfo.colorTextures.push_back(swapchain->getColorTexture());
-    forwardFramebufferInfo.depthStencilTexture = swapchain->getDepthStencilTexture();
-    forwardFramebufferInfo.renderPass = out->renderPass.get();
-    out->framebuffer.reset(device->createFramebuffer(forwardFramebufferInfo));
-
     gfx::PipelineStateInfo pipelineStateInfo;
     pipelineStateInfo.primitive      = gfx::PrimitiveMode::TRIANGLE_LIST;
     pipelineStateInfo.shader         = out->shader.get();
     pipelineStateInfo.inputState     = {attributes};
-    pipelineStateInfo.renderPass     = out->renderPass.get();
+    pipelineStateInfo.renderPass     = TestBaseI::renderPass;
     pipelineStateInfo.pipelineLayout = StandardUniformBuffers::pipelineLayout.get();
     out->pipelineState.reset(device->createPipelineState(pipelineStateInfo));
 }
@@ -656,7 +643,7 @@ void createStandardPipelineResources(gfx::Device *device, StandardForwardPipelin
 void createStandardPipelineResources(gfx::Device *device, StandardDeferredPipeline *out, const StandardUniformBuffers &ubos) {
     createStandardShader(device, out);
 
-    gfx::Swapchain *swapchain = TestBaseI::swapchain;
+    gfx::Swapchain *swapchain = TestBaseI::swapchains[0];
 
     gfx::RenderPassInfo deferredRenderPassInfo;
     for (uint i = 0; i < 4; ++i) {
@@ -706,6 +693,22 @@ void createStandardPipelineResources(gfx::Device *device, StandardDeferredPipeli
     deferredRenderPassInfo.subpasses[1].colors = {3};
     deferredRenderPassInfo.subpasses[1].inputs = {0, 1, 2, 3};
 
+    // Wait for last round to finish
+    deferredRenderPassInfo.dependencies.push_back({
+        gfx::SUBPASS_EXTERNAL,
+        0,
+        {gfx::AccessType::TRANSFER_READ},
+        {gfx::AccessType::COLOR_ATTACHMENT_WRITE},
+    });
+
+    deferredRenderPassInfo.dependencies.push_back({
+        gfx::SUBPASS_EXTERNAL,
+        0,
+        {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE},
+        {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE},
+    });
+
+    // Second subpass reads after the writing finishes
     deferredRenderPassInfo.dependencies.push_back({
         0,
         1,
@@ -713,6 +716,7 @@ void createStandardPipelineResources(gfx::Device *device, StandardDeferredPipeli
         {gfx::AccessType::FRAGMENT_SHADER_READ_COLOR_INPUT_ATTACHMENT},
     });
 
+    // Should finish color output before transfer read
     deferredRenderPassInfo.dependencies.push_back({
         1,
         gfx::SUBPASS_EXTERNAL,

@@ -18,17 +18,17 @@ private:
     void initialize();
     void destroy();
 
+    void createWindow(const std::wstring &name, int width, int height, float x, float y);
+
     static GameApp *_instance;
 
     bool _running = true;
     bool _paused = false;
 
-    bool _fullScreen = false;
-    std::wstring _appName;
-    std::wstring _rootPath;
-
     HINSTANCE _hInstance = NULL;
-    HWND _hWnd = NULL;
+
+    vector<HWND> _hWnds;
+    vector<std::wstring> _windowNames;
 };
 
 } // namespace cc

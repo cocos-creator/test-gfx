@@ -187,7 +187,7 @@ void FrameGraphTest::createPipeline() {
     pipelineInfo.primitive      = gfx::PrimitiveMode::TRIANGLE_LIST;
     pipelineInfo.shader         = _shader;
     pipelineInfo.inputState     = {_inputAssembler->getAttributes()};
-    pipelineInfo.renderPass     = fbo->getRenderPass();
+    pipelineInfo.renderPass     = renderPass;
     pipelineInfo.pipelineLayout = _pipelineLayout;
 
     _pipelineState = device->createPipelineState(pipelineInfo);
@@ -233,7 +233,8 @@ void FrameGraphTest::createPipeline() {
 }
 
 void FrameGraphTest::onTick() {
-    uint globalBarrierIdx = _frameCount ? 1 : 0;
+    auto *swapchain        = swapchains[0];
+    uint  globalBarrierIdx = _frameCount ? 1 : 0;
 
     gfx::Color clearColor = {1.0F, 0, 0, 1.0F};
 
@@ -244,7 +245,7 @@ void FrameGraphTest::onTick() {
     uniformColor.w = 1.0F;
 
     Mat4 mvp;
-    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &mvp);
+    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &mvp, swapchain);
 
     device->acquire(&swapchain, 1);
 

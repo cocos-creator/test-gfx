@@ -23,7 +23,13 @@ struct StandardUniformBuffers {
     vector<std::unique_ptr<gfx::Buffer>> bufferViews;
 
     inline float *getBuffer(uint binding) { return &_rootBuffer[_bufferViewOffsets[binding] / sizeof(float)]; }
-    inline void   update() { _rootUBO->update(_rootBuffer.data(), _rootBuffer.size() * sizeof(float)); }
+    inline void   update(gfx::CommandBuffer *cmdBuff = nullptr) {
+        if (cmdBuff) {
+            cmdBuff->updateBuffer(_rootUBO.get(), _rootBuffer.data(), _rootBuffer.size() * sizeof(float));
+        } else {
+            _rootUBO->update(_rootBuffer.data(), _rootBuffer.size() * sizeof(float));
+        }
+    }
 
     std::unique_ptr<gfx::DescriptorSet> descriptorSet{nullptr};
 
@@ -42,12 +48,10 @@ private:
 
 struct StandardForwardPipeline {
     std::unique_ptr<gfx::Shader>        shader{nullptr};
-    std::unique_ptr<gfx::RenderPass>    renderPass{nullptr};
     std::unique_ptr<gfx::PipelineState> pipelineState{nullptr};
-    std::unique_ptr<gfx::Framebuffer>   framebuffer{nullptr};
 
     template <typename Fn>
-    void recordCommandBuffer(gfx::Device *device, gfx::CommandBuffer *commandBuffer,
+    void recordCommandBuffer(gfx::Device *device, gfx::CommandBuffer *commandBuffer, gfx::Framebuffer *framebuffer,
                              const gfx::Rect &renderArea, const gfx::Color *clearColors, Fn execute);
 };
 
@@ -71,7 +75,7 @@ struct StandardDeferredPipeline {
     std::unique_ptr<gfx::Sampler>             sampler{nullptr};
 
     template <typename Fn>
-    void recordCommandBuffer(gfx::Device *device, gfx::CommandBuffer *commandBuffer,
+    void recordCommandBuffer(gfx::Device *device, gfx::Swapchain *swapchain, gfx::CommandBuffer *commandBuffer,
                              const gfx::Rect &renderArea, const gfx::Color *clearColors, Fn execute);
 };
 
@@ -84,9 +88,9 @@ extern void createStandardPipelineResources(gfx::Device *device, StandardDeferre
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename Fn>
-void StandardForwardPipeline::recordCommandBuffer(gfx::Device * /*device*/, gfx::CommandBuffer *commandBuffer,
+void StandardForwardPipeline::recordCommandBuffer(gfx::Device * /*device*/, gfx::CommandBuffer *commandBuffer, gfx::Framebuffer *framebuffer,
                                                   const gfx::Rect &renderArea, const gfx::Color *clearColors, Fn execute) {
-    commandBuffer->beginRenderPass(renderPass.get(), framebuffer.get(), renderArea, clearColors, 1.0F, 0);
+    commandBuffer->beginRenderPass(TestBaseI::renderPass, framebuffer, renderArea, clearColors, 1.0F, 0);
     commandBuffer->bindPipelineState(pipelineState.get());
 
     execute();
@@ -95,10 +99,8 @@ void StandardForwardPipeline::recordCommandBuffer(gfx::Device * /*device*/, gfx:
 }
 
 template <typename Fn>
-void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::CommandBuffer *commandBuffer,
+void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Swapchain *swapchain, gfx::CommandBuffer *commandBuffer,
                                                    const gfx::Rect &renderArea, const gfx::Color *clearColors, Fn execute) {
-    gfx::Swapchain *swapchain = TestBaseI::swapchain;
-
 #if 0
     // Logic passes
     static const framegraph::StringHandle GBUFFER_PASS_NAME = framegraph::FrameGraph::stringToHandle("GBufferPass");

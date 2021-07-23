@@ -162,7 +162,6 @@ void ComputeTest::createComputeBGPipeline() {
         gfx::Format::RGBA8,
         BG_WIDTH,
         BG_HEIGHT,
-        gfx::TextureFlagBit::IMMUTABLE,
     }));
 
     _textures.push_back(nullptr);
@@ -371,7 +370,7 @@ void ComputeTest::createPipeline() {
     pipelineInfo.primitive      = gfx::PrimitiveMode::LINE_LIST;
     pipelineInfo.shader         = _shader;
     pipelineInfo.inputState     = {_inputAssembler->getAttributes()};
-    pipelineInfo.renderPass     = fbo->getRenderPass();
+    pipelineInfo.renderPass     = renderPass;
     pipelineInfo.pipelineLayout = _pipelineLayout;
 
     _pipelineState = device->createPipelineState(pipelineInfo);
@@ -413,6 +412,9 @@ void ComputeTest::createPipeline() {
 }
 
 void ComputeTest::onTick() {
+    auto *swapchain = swapchains[0];
+    auto *fbo       = fbos[0];
+
     gfx::DispatchInfo dispatchInfo{(VERTEX_COUNT - 1) / GROUP_SIZE + 1, 1, 1};
     gfx::DispatchInfo bgDispatchInfo{(BG_WIDTH - 1) / bgGroupSizeX + 1, (BG_HEIGHT - 1) / bgGroupSizeY + 1, 1};
 
@@ -420,7 +422,7 @@ void ComputeTest::onTick() {
     Vec4       constants{_time, VERTEX_COUNT, BG_WIDTH, BG_HEIGHT};
 
     Mat4 mvp;
-    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &mvp);
+    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &mvp, swapchain);
 
     device->acquire(&swapchain, 1);
 

@@ -39,7 +39,7 @@
 
 namespace cc {
 
-WindowInfo TestBaseI::windowInfo;
+vector<WindowInfo> TestBaseI::windowInfos;
 
 int         TestBaseI::curTestIndex           = -1;
 int         TestBaseI::nextDirection          = 0;
@@ -47,10 +47,8 @@ TestBaseI * TestBaseI::test                   = nullptr;
 const bool  TestBaseI::MANUAL_BARRIER         = true;
 const float TestBaseI::NANOSECONDS_PER_SECOND = 1000000000.F;
 
-gfx::Device *     TestBaseI::device     = nullptr;
-gfx::Swapchain *  TestBaseI::swapchain  = nullptr;
-gfx::Framebuffer *TestBaseI::fbo        = nullptr;
-gfx::RenderPass * TestBaseI::renderPass = nullptr;
+gfx::Device *    TestBaseI::device     = nullptr;
+gfx::RenderPass *TestBaseI::renderPass = nullptr;
 
 vector<TestBaseI::createFunc> TestBaseI::tests = {
     ScriptTest::create,
@@ -74,12 +72,14 @@ FrameRate                                  TestBaseI::logicThread;
 FrameRate                                  TestBaseI::renderThread;
 FrameRate                                  TestBaseI::deviceThread;
 vector<gfx::CommandBuffer *>               TestBaseI::commandBuffers;
+vector<gfx::Swapchain *>                   TestBaseI::swapchains;
+vector<gfx::Framebuffer *>                 TestBaseI::fbos;
 unordered_map<uint, gfx::GlobalBarrier *>  TestBaseI::globalBarrierMap;
 unordered_map<uint, gfx::TextureBarrier *> TestBaseI::textureBarrierMap;
 
 framegraph::FrameGraph TestBaseI::fg;
 
-TestBaseI::TestBaseI(const WindowInfo &info) {
+TestBaseI::TestBaseI() {
     if (!device) {
         EventDispatcher::init();
 
@@ -103,32 +103,42 @@ TestBaseI::TestBaseI(const WindowInfo &info) {
         gfx::DeviceInfo deviceInfo;
         device = gfx::DeviceManager::create(deviceInfo);
 
-        gfx::SwapchainInfo swapchainInfo;
-        swapchainInfo.windowHandle       = info.windowHandle;
-        swapchainInfo.width              = info.screen.width;
-        swapchainInfo.height             = info.screen.height;
-        swapchain                        = device->createSwapchain(swapchainInfo);
+        for (const auto &info : windowInfos) {
+            gfx::SwapchainInfo swapchainInfo;
+            swapchainInfo.windowHandle = info.windowHandle;
+            swapchainInfo.width        = info.screen.width;
+            swapchainInfo.height       = info.screen.height;
+            swapchains.push_back(device->createSwapchain(swapchainInfo));
 
-        EventDispatcher::addCustomEventListener(EVENT_DESTROY_WINDOW, [](const CustomEvent &/*e*/) -> void {
-            swapchain->destroySurface();
+            if (!renderPass) {
+                gfx::RenderPassInfo renderPassInfo;
+                renderPassInfo.colorAttachments.emplace_back().format = swapchains[0]->getColorTexture()->getFormat();
+                renderPassInfo.depthStencilAttachment.format          = swapchains[0]->getDepthStencilTexture()->getFormat();
+                renderPass                                            = device->createRenderPass(renderPassInfo);
+            }
+
+            gfx::FramebufferInfo fboInfo;
+            fboInfo.colorTextures.push_back(swapchains[0]->getColorTexture());
+            fboInfo.depthStencilTexture = swapchains[0]->getDepthStencilTexture();
+            fboInfo.renderPass          = renderPass;
+            fbos.push_back(device->createFramebuffer(fboInfo));
+        }
+        EventDispatcher::addCustomEventListener(EVENT_DESTROY_WINDOW, [](const CustomEvent &e) -> void {
+            for (auto *swapchain : swapchains) {
+                if (e.args->ptrVal == swapchain->getWindowHandle()) {
+                    swapchain->destroySurface();
+                }
+            }
         });
-
         EventDispatcher::addCustomEventListener(EVENT_RECREATE_WINDOW, [](const CustomEvent &e) -> void {
-            swapchain->createSurface(e.args->ptrVal);
+            for (auto *swapchain : swapchains) {
+                if (!swapchain->getWindowHandle()) {
+                    swapchain->createSurface(e.args->ptrVal);
+                }
+            }
         });
 
         CC_LOG_INFO(vmath::processorFeatures().c_str());
-
-        gfx::RenderPassInfo renderPassInfo;
-        renderPassInfo.colorAttachments.emplace_back().format = swapchain->getColorTexture()->getFormat();
-        renderPassInfo.depthStencilAttachment.format          = swapchain->getDepthStencilTexture()->getFormat();
-        renderPass                                            = device->createRenderPass(renderPassInfo);
-
-        gfx::FramebufferInfo fboInfo;
-        fboInfo.colorTextures.push_back(swapchain->getColorTexture());
-        fboInfo.depthStencilTexture = swapchain->getDepthStencilTexture();
-        fboInfo.renderPass = renderPass;
-        fbo                = device->createFramebuffer(fboInfo);
 
         commandBuffers.push_back(device->getCommandBuffer());
     }
@@ -140,8 +150,6 @@ void TestBaseI::tickScript() {
 
 void TestBaseI::destroyGlobal() {
     CC_SAFE_DESTROY(test)
-    CC_SAFE_DESTROY(fbo)
-    CC_SAFE_DESTROY(renderPass)
     framegraph::FrameGraph::gc(0);
 
     se::ScriptEngine::destroyInstance();
@@ -159,7 +167,15 @@ void TestBaseI::destroyGlobal() {
     }
     globalBarrierMap.clear();
 
-    CC_SAFE_DESTROY(swapchain)
+    for (auto *fbo : fbos) {
+        CC_SAFE_DESTROY(fbo)
+    }
+    CC_SAFE_DESTROY(renderPass)
+
+    for (auto *swapchain : swapchains) {
+        CC_SAFE_DESTROY(swapchain)
+    }
+
     CC_SAFE_DESTROY(device)
 }
 
@@ -189,7 +205,7 @@ void TestBaseI::update() {
         static auto testCount = static_cast<int>(tests.size());
         if (nextDirection < 0) curTestIndex += testCount;
         curTestIndex  = (curTestIndex + nextDirection) % testCount;
-        test          = tests[curTestIndex](windowInfo);
+        test          = tests[curTestIndex]();
         nextDirection = 0;
     }
     if (test) {
@@ -259,7 +275,7 @@ gfx::Texture *TestBaseI::createTextureWithFile(const gfx::TextureInfo &partialIn
     return texture;
 }
 
-void TestBaseI::modifyProjectionBasedOnDevice(Mat4 *projection) {
+void TestBaseI::modifyProjectionBasedOnDevice(Mat4 *projection, gfx::Swapchain *swapchain) {
     float minZ        = device->getCapabilities().clipSpaceMinZ;
     float signY       = device->getCapabilities().clipSpaceSignY;
     auto  orientation = static_cast<float>(swapchain->getSurfaceTransform());
@@ -282,10 +298,10 @@ constexpr float PRE_TRANSFORMS[4][4] = {
 };
 #endif
 
-void TestBaseI::createOrthographic(float left, float right, float bottom, float top, float zNear, float zFar, Mat4 *dst) {
+void TestBaseI::createOrthographic(float left, float right, float bottom, float top, float zNear, float zFar, Mat4 *dst, gfx::Swapchain *swapchain) {
 #ifdef DEFAULT_MATRIX_MATH
     Mat4::createOrthographic(left, right, bottom, top, zNear, zFar, dst);
-    TestBaseI::modifyProjectionBasedOnDevice(dst);
+    TestBaseI::modifyProjectionBasedOnDevice(dst, swapchain);
 #else
     float                 minZ         = device->getCapabilities().clipSpaceMinZ;
     float                 signY        = device->getCapabilities().clipSpaceSignY;
@@ -311,14 +327,14 @@ void TestBaseI::createOrthographic(float left, float right, float bottom, float 
 #endif
 }
 
-void TestBaseI::createPerspective(float fov, float aspect, float zNear, float zFar, Mat4 *dst) {
+void TestBaseI::createPerspective(float fov, float aspect, float zNear, float zFar, Mat4 *dst, gfx::Swapchain *swapchain) {
 #ifdef DEFAULT_MATRIX_MATH
     Mat4::createPerspective(MATH_DEG_TO_RAD(fov), aspect, zNear, zFar, dst);
-    TestBaseI::modifyProjectionBasedOnDevice(dst);
+    TestBaseI::modifyProjectionBasedOnDevice(dst, swapchain);
 #else
     float                 minZ         = device->getCapabilities().clipSpaceMinZ;
     float                 signY        = device->getCapabilities().clipSpaceSignY;
-    gfx::SurfaceTransform orientation  = device->getSurfaceTransform();
+    gfx::SurfaceTransform orientation  = swapchain->getSurfaceTransform();
     const float *         preTransform = PRE_TRANSFORMS[static_cast<uint>(orientation)];
 
     memset(dst->m, 0, 16 * sizeof(float));
@@ -339,7 +355,7 @@ void TestBaseI::createPerspective(float fov, float aspect, float zNear, float zF
 #endif
 }
 
-gfx::Extent TestBaseI::getOrientedSurfaceSize() {
+gfx::Extent TestBaseI::getOrientedSurfaceSize(gfx::Swapchain *swapchain) {
     switch (swapchain->getSurfaceTransform()) {
         case gfx::SurfaceTransform::ROTATE_90:
         case gfx::SurfaceTransform::ROTATE_270:
@@ -351,7 +367,7 @@ gfx::Extent TestBaseI::getOrientedSurfaceSize() {
     }
 }
 
-gfx::Viewport TestBaseI::getViewportBasedOnDevice(const Vec4 &relativeArea) {
+gfx::Viewport TestBaseI::getViewportBasedOnDevice(const Vec4 &relativeArea, gfx::Swapchain *swapchain) {
     float x = relativeArea.x;
     float y = device->getCapabilities().clipSpaceSignY < 0.0F ? 1.F - relativeArea.y - relativeArea.w : relativeArea.y;
     float w = relativeArea.z;
