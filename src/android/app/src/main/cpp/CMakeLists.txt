@@ -85,7 +85,7 @@ target_link_libraries(${APP_NAME}
     log
     ${ENGINE_BASE_LIBS}
     GFXGLESCommon
-    GFXGLES2
+    # GFXGLES2
     GFXGLES3
     GFXVulkan
     ${CC_EXTERNAL_LIBS}

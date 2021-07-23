@@ -106,7 +106,7 @@ void ComputeTest::createComputeVBPipeline() {
         layout(std140) uniform Constants { float time; float vertexCount; };
 
         struct AttribData { vec4 p; vec4 c; };
-        layout(std140) writeonly buffer DestBuffer { AttribData vertex[]; };
+        layout(std140, binding = 0) writeonly buffer DestBuffer { AttribData vertex[]; };
 
         void main() {
             if (gl_GlobalInvocationID.x >= uint(vertexCount)) return;

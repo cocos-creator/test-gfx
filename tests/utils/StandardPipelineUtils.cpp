@@ -1,6 +1,11 @@
 #pragma once
 
 #include "StandardPipelineUtils.h"
+//
+//#include "gfx-gles2/GLES2Device.h"
+//#include "gfx-gles2/GLES2GPUObjects.h"
+#include "gfx-gles3/GLES3Device.h"
+#include "gfx-gles3/GLES3GPUObjects.h"
 
 namespace cc {
 
@@ -113,8 +118,8 @@ String standardShading = R"(
 ShaderSources<String> cameraUBO = {
     R"(
         layout(set = 0, binding = 0) uniform CCCamera {
-            vec4 cc_cameraPos; // xyz: camera position
-            vec4 cc_mainLitDir; // xyz: main direcitonal light direction
+            vec4 cc_cameraPos; // xyz: camera position, w: lighting UV tiling x
+            vec4 cc_mainLitDir; // xyz: main direcitonal light direction, w: lighting UV tiling y
             vec4 cc_mainLitColor; // xyz: main direcitonal light color, w: intensity
             vec4 cc_ambientSky; //xyz: sky illumination color, w: intensity
             vec4 cc_ambientGround; // xyz: ground albedo color
@@ -122,16 +127,16 @@ ShaderSources<String> cameraUBO = {
     )",
     R"(
         layout(std140) uniform CCCamera {
-            vec4 cc_cameraPos; // xyz: camera position
-            vec4 cc_mainLitDir; // xyz: main direcitonal light direction
+            vec4 cc_cameraPos; // xyz: camera position, w: lighting UV tiling x
+            vec4 cc_mainLitDir; // xyz: main direcitonal light direction, w: lighting UV tiling y
             vec4 cc_mainLitColor; // xyz: main direcitonal light color, w: intensity
             vec4 cc_ambientSky; //xyz: sky illumination color, w: intensity
             vec4 cc_ambientGround; // xyz: ground albedo color
         };
     )",
     R"(
-        uniform vec4 cc_cameraPos; // xyz: camera position
-        uniform vec4 cc_mainLitDir; // xyz: main direcitonal light direction
+        uniform vec4 cc_cameraPos; // xyz: camera position, w: lighting UV tiling x
+        uniform vec4 cc_mainLitDir; // xyz: main direcitonal light direction, w: lighting UV tiling y
         uniform vec4 cc_mainLitColor; // xyz: main direcitonal light color, w: intensity
         uniform vec4 cc_ambientSky; //xyz: sky illumination color, w: intensity
         uniform vec4 cc_ambientGround; // xyz: ground albedo color
@@ -193,30 +198,44 @@ String surf = R"(
         s.occlusion = 1.0;
     }
 )";
+
+String extensions = R"(
+    #define GBUFFER_STORAGE_TEXTURE 0
+    #define GBUFFER_STORAGE_PLS 1
+    #define GBUFFER_STORAGE_FBF 2
+
+    #if GBUFFER_STORAGE == GBUFFER_STORAGE_FBF
+        #extension GL_EXT_shader_framebuffer_fetch: require
+    #elif GBUFFER_STORAGE == GBUFFER_STORAGE_PLS
+        #extension GL_EXT_shader_pixel_local_storage: require
+    #endif
+)";
 } // namespace
 
-String declExtensions(bool useSubpass = true) {
-    String str = R"(
-        #define GBUFFER_STORAGE_TEXTURE 0
-        #define GBUFFER_STORAGE_PLS 1
-        #define GBUFFER_STORAGE_FBF 2
-    )";
-    if (!useSubpass) {
-        return str + R"(
-            #define GBUFFER_STORAGE GBUFFER_STORAGE_TEXTURE
-        )";
+String getSubpassGLExtension() {
+    uint32_t subpassExtension = 0;
+
+    //gfx::GLES2Device *gles2Device = gfx::GLES2Device::getInstance();
+    //if (gles2Device) {
+    //    if (gles2Device->constantRegistry()->mFBF != gfx::FBFSupportLevel::NONE) {
+    //        subpassExtension = 2;
+    //    }
+    //}
+
+    gfx::GLES3Device *gles3Device = gfx::GLES3Device::getInstance();
+    if (gles3Device) {
+        if (gles3Device->constantRegistry()->mFBF != gfx::FBFSupportLevel::NONE) {
+            subpassExtension = 2;
+        } else if (gles3Device->constantRegistry()->mPLS != gfx::PLSSupportLevel::NONE) {
+            subpassExtension = 1;
+        }
     }
-    return str + R"(
-        #if defined(GL_EXT_shader_framebuffer_fetch)
-        #   extension GL_EXT_shader_framebuffer_fetch: enable
-        #   define GBUFFER_STORAGE GBUFFER_STORAGE_FBF
-        #elif __VERSION__ > 100 && defined(GL_EXT_shader_pixel_local_storage)
-        #   extension GL_EXT_shader_pixel_local_storage: enable
-        #   define GBUFFER_STORAGE GBUFFER_STORAGE_PLS
-        #else
-        #   define GBUFFER_STORAGE GBUFFER_STORAGE_TEXTURE
-        #endif
-    )";
+
+    return StringUtil::format(
+        R"(
+            #define GBUFFER_STORAGE %d
+        )",
+        subpassExtension);
 }
 
 String declPLSData(gfx::MemoryAccess access = gfx::MemoryAccessBit::READ_WRITE) {
@@ -364,7 +383,7 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
             o_color3 = vec4(s.emissive, s.occlusion);
         }
     )";
-    gbufferFrag.glsl3 = declExtensions() + gbufferFrag.glsl3;
+    gbufferFrag.glsl3 = getSubpassGLExtension() + extensions + gbufferFrag.glsl3;
     gbufferFrag.glsl3 += R"(
         #if GBUFFER_STORAGE == GBUFFER_STORAGE_PLS
     )" + declPLSData(gfx::MemoryAccessBit::WRITE_ONLY);
@@ -412,35 +431,26 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
             layout(location = 1) in vec2 a_texCoord;
 
             layout(location = 0) out vec2 v_texCoord;
-
-            void main() {
-                v_texCoord = a_texCoord;
-                gl_Position = vec4(a_position, 0, 1);
-            }
         )",
         R"(
             in vec2 a_position;
             in vec2 a_texCoord;
 
             out vec2 v_texCoord;
-
-            void main() {
-                v_texCoord = a_texCoord;
-                gl_Position = vec4(a_position, 0, 1);
-            }
         )",
         R"(
             attribute vec2 a_position;
             attribute vec2 a_texCoord;
 
             varying vec2 v_texCoord;
-
-            void main() {
-                v_texCoord = a_texCoord;
-                gl_Position = vec4(a_position, 0, 1);
-            }
         )",
     };
+    lightingVert += cameraUBO + R"(
+        void main() {
+            v_texCoord = a_texCoord * vec2(cc_cameraPos.w, cc_mainLitDir.w);
+            gl_Position = vec4(a_position, 0, 1);
+        }
+    )";
     ShaderSources<String> lightingFrag = {
         R"(
             precision highp float;
@@ -451,7 +461,7 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
             layout(input_attachment_index = 2, set = 0, binding = 3) uniform subpassInput gbuffer2;
             layout(input_attachment_index = 3, set = 0, binding = 4) uniform subpassInput gbuffer3;
         )",
-        declExtensions() + R"(
+        getSubpassGLExtension() + extensions + R"(
             precision highp float;
             in vec2 v_texCoord;
 
@@ -472,7 +482,7 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
                 layout(location = 0) out vec4 o_color;
             #endif
         )",
-        declExtensions() + R"(
+        getSubpassGLExtension() + extensions + R"(
             #if GBUFFER_STORAGE == GBUFFER_STORAGE_FBF
             #   ifdef GL_EXT_draw_buffers
             #       extension GL_EXT_draw_buffers: enable
@@ -748,7 +758,7 @@ void createStandardPipelineResources(gfx::Device *device, StandardDeferredPipeli
     ///////////////////////////////////////////////////////////////////////////
 
     gfx::DescriptorSetLayoutInfo lightingDescriptorSetLayoutInfo;
-    lightingDescriptorSetLayoutInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::FRAGMENT});
+    lightingDescriptorSetLayoutInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX | gfx::ShaderStageFlagBit::FRAGMENT});
     lightingDescriptorSetLayoutInfo.bindings.push_back({1, gfx::DescriptorType::INPUT_ATTACHMENT, 1, gfx::ShaderStageFlagBit::FRAGMENT});
     lightingDescriptorSetLayoutInfo.bindings.push_back({2, gfx::DescriptorType::INPUT_ATTACHMENT, 1, gfx::ShaderStageFlagBit::FRAGMENT});
     lightingDescriptorSetLayoutInfo.bindings.push_back({3, gfx::DescriptorType::INPUT_ATTACHMENT, 1, gfx::ShaderStageFlagBit::FRAGMENT});

@@ -500,7 +500,7 @@ void Root::render() {
         vmath::store(pDst + 4, vmath::slice(TransformView::buffer.mat, model.transform));
     }
 
-    device->acquire(TestBaseI::swapchains);
+    device->acquire(&swapchain, 1);
 
     if (ROTATE_VIEW) {
         Mat4         view;

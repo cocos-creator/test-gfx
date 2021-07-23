@@ -9,7 +9,7 @@ namespace cc {
 #define TEST_MODE              4
 
 #if TEST_MODE == 1
-constexpr uint WORKLOAD                    = 200;
+constexpr uint WORKLOAD                    = 10;
 constexpr uint PASS_COUNT                  = 1;
 constexpr uint MODELS_PER_LINE[PASS_COUNT] = {WORKLOAD};
 #elif TEST_MODE == 2

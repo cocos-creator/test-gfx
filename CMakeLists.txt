@@ -17,6 +17,7 @@ set(CC_PLATFORM_MAC_IOS 1)
 set(CC_PLATFORM_WINDOWS 2)
 set(CC_PLATFORM_ANDROID 3)
 set(CC_PLATFORM_MAC_OSX 4)
+set(CC_PLATFORM_OHOS    5)
 set(CC_PLATFORM 1)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
@@ -37,17 +38,23 @@ elseif(${CMAKE_SYSTEM_NAME} MATCHES "iOS")
     set(IOS TRUE)
     set(PLATFORM_FOLDER ios)
     set(CC_PLATFORM ${CC_PLATFORM_MAC_IOS})
+elseif(OHOS)
+    set(OHOS TRUE)
+    set(CC_PLATFORM ${CC_PLATFORM_OHOS})
+    add_definitions(-D__OHOS__=1)
+    set(PLATFORM_FOLDER ohos)
 else()
-    message(FATAL_ERROR "Unsupported platform, CMake will exit")
+    message(FATAL_ERROR "Unsupported platform '${CMAKE_SYSTEM_NAME}', CMake will exit!")
     return()
 endif()
 
 # platform macros
 
-add_definitions(-DCC_PLATFORM_WINDOWS=${CC_PLATFORM_WINDOWS} )
-add_definitions(-DCC_PLATFORM_MAC_OSX=${CC_PLATFORM_MAC_OSX} )
-add_definitions(-DCC_PLATFORM_MAC_IOS=${CC_PLATFORM_MAC_IOS} )
-add_definitions(-DCC_PLATFORM_ANDROID=${CC_PLATFORM_ANDROID} )
+add_definitions(-DCC_PLATFORM_WINDOWS=${CC_PLATFORM_WINDOWS})
+add_definitions(-DCC_PLATFORM_MAC_OSX=${CC_PLATFORM_MAC_OSX})
+add_definitions(-DCC_PLATFORM_MAC_IOS=${CC_PLATFORM_MAC_IOS})
+add_definitions(-DCC_PLATFORM_ANDROID=${CC_PLATFORM_ANDROID})
+add_definitions(-DCC_PLATFORM_OHOS=${CC_PLATFORM_OHOS})
 add_definitions(-DCC_PLATFORM=${CC_PLATFORM})
 
 message(STATUS "### Cocos 3D Build System ###")
@@ -89,7 +96,7 @@ if(MSVC)
 		# Flags used by the compiler during all build types.
 		set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /W4 /wd4819 /wd4100 /wd4201 /wd4127 /Zm256 /EHsc /GR- /fp:fast")
 		# Flags used by the compiler during debug builds.
-		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /D_DEBUG /MDd /Zi /Ob0 /Od /RTC1 /Oi")
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /MD /Zi /Ob0 /Od /RTC1 /Oi /D_ITERATOR_DEBUG_LEVEL=0")
 		# Flags used by the compiler during release minsize builds.
 		set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS} /MD /O1 /Ob1 /DNDEBUG")
 		# Flags used by the compiler during release builds (/MD /Ob1 /Oi /Ot /Oy /Gs will produce slightly less optimized but smaller files).
@@ -99,7 +106,7 @@ if(MSVC)
 		# Flags used by the compiler during all build types.
 		set(CMAKE_C_FLAGS "/DWIN32 /D_WINDOWS /W3 /wd4819 /Zm256")
 		# Flags used by the compiler during debug builds.
-		set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} /D_DEBUG /MDd /Zi /Ob0 /Od /RTC1")
+		set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} /MD /Zi /Ob0 /Od /RTC1")
 		# Flags used by the compiler during release minsize builds.
 		set(CMAKE_C_FLAGS_MINSIZEREL "${CMAKE_C_FLAGS} /MD /O1 /Ob1 /DNDEBUG")
 		# Flags used by the compiler during release builds (/MD /Ob1 /Oi /Ot /Oy /Gs will produce slightly less optimized but smaller files).

@@ -30,9 +30,6 @@
 
 #define DEFAULT_MATRIX_MATH
 
-//#undef CC_USE_VULKAN
-//#undef CC_USE_GLES3
-//#undef CC_USE_GLES2
 #include "GFXDeviceManager.h"
 #include "bindings/event/CustomEventTypes.h"
 #include "bindings/event/EventDispatcher.h"
@@ -54,8 +51,8 @@ vector<TestBaseI::createFunc> TestBaseI::tests = {
     SubpassTest::create,
     ScriptTest::create,
     ComputeTest::create,
-    FrameGraphTest::create,
     StressTest::create,
+    FrameGraphTest::create,
     ClearScreen::create,
     BasicTriangle::create,
     DepthTexture::create,
@@ -103,7 +100,8 @@ TestBaseI::TestBaseI() {
         gfx::DeviceInfo deviceInfo;
         device = gfx::DeviceManager::create(deviceInfo);
 
-        for (const auto &info : windowInfos) {
+        for (size_t i = 0; i < windowInfos.size(); ++i) {
+            const auto &       info = windowInfos[i];
             gfx::SwapchainInfo swapchainInfo;
             swapchainInfo.windowHandle = info.windowHandle;
             swapchainInfo.width        = info.screen.width;
@@ -118,8 +116,8 @@ TestBaseI::TestBaseI() {
             }
 
             gfx::FramebufferInfo fboInfo;
-            fboInfo.colorTextures.push_back(swapchains[0]->getColorTexture());
-            fboInfo.depthStencilTexture = swapchains[0]->getDepthStencilTexture();
+            fboInfo.colorTextures.push_back(swapchains[i]->getColorTexture());
+            fboInfo.depthStencilTexture = swapchains[i]->getDepthStencilTexture();
             fboInfo.renderPass          = renderPass;
             fbos.push_back(device->createFramebuffer(fboInfo));
         }
