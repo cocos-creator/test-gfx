@@ -189,6 +189,7 @@ void FrameGraphTest::createPipeline() {
     pipelineInfo.inputState     = {_inputAssembler->getAttributes()};
     pipelineInfo.renderPass     = renderPass;
     pipelineInfo.pipelineLayout = _pipelineLayout;
+    pipelineInfo.dynamicStates  = gfx::DynamicStateFlagBit::VIEWPORT | gfx::DynamicStateFlagBit::SCISSOR;
 
     _pipelineState = device->createPipelineState(pipelineInfo);
 

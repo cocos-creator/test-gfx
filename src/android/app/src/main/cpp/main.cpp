@@ -37,7 +37,7 @@ void engineHandleCmd(struct android_app* app, int32_t cmd) {
     switch (cmd) {
         case APP_CMD_INIT_WINDOW:
             if (state->app->window && !g_windowInfo.windowHandle) {
-                g_windowInfo.windowHandle  = (intptr_t)state->app->window;
+                g_windowInfo.windowHandle  = state->app->window;
                 g_windowInfo.screen.width = ANativeWindow_getWidth(app->window);
                 g_windowInfo.screen.height = ANativeWindow_getHeight(app->window);
                 g_windowInfo.screen.x = g_windowInfo.screen.y = 0;
@@ -82,7 +82,7 @@ int32_t engineHandleInput(struct android_app* app, AInputEvent* event) {
             case AMOTION_EVENT_ACTION_UP:
             case AMOTION_EVENT_ACTION_POINTER_UP: {
 
-                TestBaseI::nextTest(AMotionEvent_getX(event, 0) < TestBaseI::getDevice()->getWidth() / 2.F);
+                TestBaseI::nextTest(AMotionEvent_getX(event, 0) < TestBaseI::swapchains[0]->getWidth() / 2.F);
                 break;
             }
         }

@@ -126,24 +126,32 @@ void SubpassTest::onTick() {
     auto *commandBuffer    = commandBuffers[0];
     Vec4  colors[]{
         {252 / 255.F, 23 / 255.F, 3 / 255.F, 1.0F},
-        {23 / 255.F, 252 / 255.F, 3 / 255.F, 1.0F},
+        {3 / 255.F, 252 / 255.F, 23 / 255.F, 1.0F},
     };
 
     device->acquire(swapchains);
     commandBuffer->begin();
 
+    float gbufferWidth  = static_cast<float>(_deferred.gbufferTextures[0]->getWidth());
+    float gbufferHeight = static_cast<float>(_deferred.gbufferTextures[0]->getHeight());
+
     for (size_t i = 0; i < swapchains.size(); ++i) {
         auto *swapchain = swapchains[i];
         auto *fbo       = fbos[i];
 
+        Mat4::createRotationY(_time * (i ? -1.F : 1.F), &_worldMatrix);
+        std::copy(_worldMatrix.m, _worldMatrix.m + 16, _ubos.getBuffer(standard::MVP));
+
         gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize(swapchain);
-        Mat4::createRotationY(_time, &_worldMatrix);
         TestBaseI::createPerspective(60.0F,
                                      static_cast<float>(orientedSize.width) / static_cast<float>(orientedSize.height),
                                      0.01F, 1000.0F, &_projectionMatrix, swapchain);
-
-        std::copy(_worldMatrix.m, _worldMatrix.m + 16, _ubos.getBuffer(standard::MVP));
         std::copy(_projectionMatrix.m, _projectionMatrix.m + 16, _ubos.getBuffer(standard::MVP) + 32);
+
+        // scale the sampling UV if needed
+        _ubos.getBuffer(standard::CAMERA)[3] = swapchain->getWidth() / gbufferWidth;
+        _ubos.getBuffer(standard::CAMERA)[7] = swapchain->getHeight() / gbufferHeight;
+
         std::copy(&colors[i].x, &colors[i].x + 4, _ubos.getBuffer(standard::COLOR));
 
         if (i) {
