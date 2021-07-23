@@ -245,6 +245,8 @@ void StressTest::createShader() {
 }
 
 void StressTest::createVertexBuffer() {
+    auto *swapchain = swapchains[0];
+
     float y            = 1.F - QUAD_SIZE;
     float vertexData[] = {-1.F, -y,
                           -1.F, -1.F,
@@ -316,7 +318,7 @@ void StressTest::createVertexBuffer() {
     };
     _uniformBufferVP = device->createBuffer(uniformBufferVPInfo);
 
-    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &_uboVP.matViewProj);
+    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &_uboVP.matViewProj, swapchain);
 }
 
 void StressTest::createInputAssembler() {
@@ -357,7 +359,7 @@ void StressTest::createPipeline() {
     pipelineInfo.shader                   = _shader;
     pipelineInfo.rasterizerState.cullMode = gfx::CullMode::NONE;
     pipelineInfo.inputState               = {_inputAssembler->getAttributes()};
-    pipelineInfo.renderPass               = fbo->getRenderPass();
+    pipelineInfo.renderPass               = renderPass;
     pipelineInfo.pipelineLayout           = _pipelineLayout;
 
     _pipelineState = device->createPipelineState(pipelineInfo);
@@ -365,12 +367,15 @@ void StressTest::createPipeline() {
 
 #if PARALLEL_STRATEGY == PARALLEL_STRATEGY_SEQUENTIAL
 void StressTest::recordRenderPass(uint passIndex) {
+    auto *swapchain = swapchains[0];
+    auto *fbo       = fbos[0];
+
     gfx::Rect           renderArea    = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
     gfx::CommandBuffer *commandBuffer = commandBuffers[0];
 
     commandBuffer->begin();
     for (uint i = 0u; i < PASS_COUNT; ++i) {
-        commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea,
+        commandBuffer->beginRenderPass(renderPass, fbo, renderArea,
                                        &clearColors[i], 1.0f, 0);
         commandBuffer->bindInputAssembler(_inputAssembler);
         commandBuffer->bindPipelineState(_pipelineState);
@@ -392,6 +397,9 @@ void StressTest::recordRenderPass(uint passIndex) {
 }
 #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED_FINER_JOBS || PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED_FINER_JOBS_MULTI_PRIMARY
 void StressTest::recordRenderPass(uint jobIdx) {
+    auto *swapchain = swapchains[0];
+    auto *fbo       = fbos[0];
+
     gfx::Rect     scissor = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
     gfx::Viewport vp      = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
 
@@ -429,6 +437,9 @@ void StressTest::recordRenderPass(uint jobIdx) {
 }
 #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED
 void StressTest::recordRenderPass(uint threadIdx) {
+    auto *swapchain = swapchains[0];
+    auto *fbo       = fbos[0];
+
     gfx::Rect           scissor       = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
     gfx::Viewport       vp            = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
     gfx::CommandBuffer *commandBuffer = _parallelCBs[threadIdx];
@@ -465,8 +476,11 @@ void StressTest::recordRenderPass(uint threadIdx) {
 }
 #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_RP_BASED_SECONDARY
 void StressTest::recordRenderPass(uint passIndex) {
-    gfx::Rect     scissor = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
-    gfx::Viewport vp      = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
+    auto *swapchain = swapchains[0];
+    auto *fbo       = fbos[0];
+
+    gfx::Rect     scissor   = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
+    gfx::Viewport vp        = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
 
     gfx::CommandBuffer *commandBuffer = _parallelCBs[passIndex];
 
@@ -491,11 +505,14 @@ void StressTest::recordRenderPass(uint passIndex) {
 }
 #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_RP_BASED_PRIMARY
 void StressTest::recordRenderPass(uint passIndex) {
+    auto *swapchain = swapchains[0];
+    auto *fbo       = fbos[0];
+
     gfx::Rect renderArea = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
     gfx::CommandBuffer *commandBuffer = commandBuffers[passIndex];
 
     commandBuffer->begin();
-    commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea,
+    commandBuffer->beginRenderPass(renderPass, fbo, renderArea,
                                    &clearColors[passIndex], 1.0f, 0);
     commandBuffer->bindInputAssembler(_inputAssembler);
     commandBuffer->bindPipelineState(_pipelineState);
@@ -521,6 +538,9 @@ void StressTest::onSpacePressed() {
 }
 
 void StressTest::onTick() {
+    auto *swapchain = swapchains[0];
+    auto *fbo       = fbos[0];
+
     // simulate heavy logic operation
     std::this_thread::sleep_for(std::chrono::milliseconds(MAIN_THREAD_SLEEP));
 
@@ -568,7 +588,7 @@ void StressTest::onTick() {
     device->flushCommands(_parallelCBs);
 
     for (uint t = 0u; t < PASS_COUNT; ++t) {
-        commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea,
+        commandBuffer->beginRenderPass(renderPass, fbo, renderArea,
                                        &clearColors[t], 1.0f, 0,
                                        _threadCount, &_parallelCBs[t * _threadCount]);
         commandBuffer->execute(&_parallelCBs[t * _threadCount], _threadCount);
@@ -582,7 +602,7 @@ void StressTest::onTick() {
     for (uint t = 0U; t < PASS_COUNT; ++t) {
         gfx::CommandBuffer *commandBuffer = commandBuffers[t];
         commandBuffer->begin();
-        commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea,
+        commandBuffer->beginRenderPass(renderPass, fbo, renderArea,
                                        &CLEAR_COLORS[t], 1.0F, 0,
                                        &_parallelCBs[t * _threadCount], _threadCount);
         device->flushCommands(&commandBuffer, 1);
@@ -647,7 +667,7 @@ void StressTest::onTick() {
 
     #if PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED
     for (uint t = 0u; t < PASS_COUNT; ++t) {
-        commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea,
+        commandBuffer->beginRenderPass(renderPass, fbo, renderArea,
                                        &clearColors[t], 1.0f, 0,
                                        _parallelCBs.data(), _threadCount);
         commandBuffer->execute(_parallelCBs.data(), _threadCount);
@@ -656,7 +676,7 @@ void StressTest::onTick() {
     commandBuffer->end();
     #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_RP_BASED_SECONDARY
     for (uint t = 0u; t < PASS_COUNT; ++t) {
-        commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea,
+        commandBuffer->beginRenderPass(renderPass, fbo, renderArea,
                                        &clearColors[t], 1.0f, 0,
                                        &_parallelCBs[t], 1);
         commandBuffer->execute(&_parallelCBs[t], 1);

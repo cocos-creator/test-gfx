@@ -346,7 +346,7 @@ void ParticleTest::createPipeline() {
     pipelineInfo.primitive                           = gfx::PrimitiveMode::TRIANGLE_LIST;
     pipelineInfo.shader                              = _shader;
     pipelineInfo.inputState                          = {_inputAssembler->getAttributes()};
-    pipelineInfo.renderPass                          = fbo->getRenderPass();
+    pipelineInfo.renderPass                          = renderPass;
     pipelineInfo.blendState.targets[0].blend         = true;
     pipelineInfo.blendState.targets[0].blendEq       = gfx::BlendOp::ADD;
     pipelineInfo.blendState.targets[0].blendAlphaEq  = gfx::BlendOp::ADD;
@@ -390,6 +390,9 @@ void ParticleTest::createPipeline() {
 }
 
 void ParticleTest::onTick() {
+    auto *swapchain = swapchains[0];
+    auto *fbo       = fbos[0];
+
     printTime();
 
     uint globalBarrierIdx = _frameCount ? 1 : 0;
@@ -432,10 +435,10 @@ void ParticleTest::onTick() {
         }
     }
 
-    gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize();
+    gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize(swapchain);
     TestBaseI::createPerspective(60.0F,
                                  static_cast<float>(orientedSize.width) / static_cast<float>(orientedSize.height),
-                                 0.01F, 1000.0F, &_matrices[2]);
+                                 0.01F, 1000.0F, &_matrices[2], swapchain);
 
     device->acquire(&swapchain, 1);
 

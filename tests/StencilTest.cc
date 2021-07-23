@@ -218,7 +218,7 @@ void StencilTest::createPipelineState() {
     pipelineInfo[static_cast<uint8_t>(PipelineType::STENCIL)].primitive                          = gfx::PrimitiveMode::TRIANGLE_LIST;
     pipelineInfo[static_cast<uint8_t>(PipelineType::STENCIL)].shader                             = _shader;
     pipelineInfo[static_cast<uint8_t>(PipelineType::STENCIL)].inputState                         = {_inputAssembler->getAttributes()};
-    pipelineInfo[static_cast<uint8_t>(PipelineType::STENCIL)].renderPass                         = fbo->getRenderPass();
+    pipelineInfo[static_cast<uint8_t>(PipelineType::STENCIL)].renderPass                         = renderPass;
     pipelineInfo[static_cast<uint8_t>(PipelineType::STENCIL)].depthStencilState.depthTest        = false;
     pipelineInfo[static_cast<uint8_t>(PipelineType::STENCIL)].depthStencilState.stencilTestFront = false;
     pipelineInfo[static_cast<uint8_t>(PipelineType::STENCIL)].depthStencilState.stencilTestBack  = false;
@@ -230,7 +230,7 @@ void StencilTest::createPipelineState() {
     pipelineInfo[static_cast<uint8_t>(PipelineType::IMAGE)].primitive                          = gfx::PrimitiveMode::TRIANGLE_LIST;
     pipelineInfo[static_cast<uint8_t>(PipelineType::IMAGE)].shader                             = _shader;
     pipelineInfo[static_cast<uint8_t>(PipelineType::IMAGE)].inputState                         = {_inputAssembler->getAttributes()};
-    pipelineInfo[static_cast<uint8_t>(PipelineType::IMAGE)].renderPass                         = fbo->getRenderPass();
+    pipelineInfo[static_cast<uint8_t>(PipelineType::IMAGE)].renderPass                         = renderPass;
     pipelineInfo[static_cast<uint8_t>(PipelineType::IMAGE)].depthStencilState.depthTest        = false;
     pipelineInfo[static_cast<uint8_t>(PipelineType::IMAGE)].depthStencilState.stencilTestFront = false;
     pipelineInfo[static_cast<uint8_t>(PipelineType::IMAGE)].depthStencilState.stencilTestBack  = false;
@@ -242,7 +242,7 @@ void StencilTest::createPipelineState() {
     pipelineInfo[static_cast<uint8_t>(PipelineType::CANVAS)].primitive  = gfx::PrimitiveMode::TRIANGLE_LIST;
     pipelineInfo[static_cast<uint8_t>(PipelineType::CANVAS)].shader     = _shader;
     pipelineInfo[static_cast<uint8_t>(PipelineType::CANVAS)].inputState = {_inputAssembler->getAttributes()};
-    pipelineInfo[static_cast<uint8_t>(PipelineType::CANVAS)].renderPass = fbo->getRenderPass();
+    pipelineInfo[static_cast<uint8_t>(PipelineType::CANVAS)].renderPass = renderPass;
     gfx::DepthStencilState &dss2                                        = pipelineInfo[static_cast<uint8_t>(PipelineType::CANVAS)].depthStencilState;
     dss2.depthTest                                                      = true;
     dss2.depthWrite                                                     = false;
@@ -262,7 +262,7 @@ void StencilTest::createPipelineState() {
     pipelineInfo[static_cast<uint8_t>(PipelineType::FRONT_STENCIL)].primitive  = gfx::PrimitiveMode::TRIANGLE_LIST;
     pipelineInfo[static_cast<uint8_t>(PipelineType::FRONT_STENCIL)].shader     = _shader;
     pipelineInfo[static_cast<uint8_t>(PipelineType::FRONT_STENCIL)].inputState = {_inputAssembler->getAttributes()};
-    pipelineInfo[static_cast<uint8_t>(PipelineType::FRONT_STENCIL)].renderPass = fbo->getRenderPass();
+    pipelineInfo[static_cast<uint8_t>(PipelineType::FRONT_STENCIL)].renderPass = renderPass;
     gfx::DepthStencilState &dss3                                               = pipelineInfo[static_cast<uint8_t>(PipelineType::FRONT_STENCIL)].depthStencilState;
     dss3.depthTest                                                             = true;
     dss3.depthWrite                                                            = false;
@@ -283,7 +283,7 @@ void StencilTest::createPipelineState() {
     pipelineInfo[static_cast<uint8_t>(PipelineType::BACK_STENCIL)].primitive  = gfx::PrimitiveMode::TRIANGLE_LIST;
     pipelineInfo[static_cast<uint8_t>(PipelineType::BACK_STENCIL)].shader     = _shader;
     pipelineInfo[static_cast<uint8_t>(PipelineType::BACK_STENCIL)].inputState = {_inputAssembler->getAttributes()};
-    pipelineInfo[static_cast<uint8_t>(PipelineType::BACK_STENCIL)].renderPass = fbo->getRenderPass();
+    pipelineInfo[static_cast<uint8_t>(PipelineType::BACK_STENCIL)].renderPass = renderPass;
     gfx::DepthStencilState &dss4                                              = pipelineInfo[static_cast<uint8_t>(PipelineType::FRONT_STENCIL)].depthStencilState;
     dss4.depthTest                                                            = true;
     dss4.depthWrite                                                           = false;
@@ -304,7 +304,7 @@ void StencilTest::createPipelineState() {
     pipelineInfo[static_cast<uint8_t>(PipelineType::FRONT_BACK_STENCIL)].primitive  = gfx::PrimitiveMode::TRIANGLE_LIST;
     pipelineInfo[static_cast<uint8_t>(PipelineType::FRONT_BACK_STENCIL)].shader     = _shader;
     pipelineInfo[static_cast<uint8_t>(PipelineType::FRONT_BACK_STENCIL)].inputState = {_inputAssembler->getAttributes()};
-    pipelineInfo[static_cast<uint8_t>(PipelineType::FRONT_BACK_STENCIL)].renderPass = fbo->getRenderPass();
+    pipelineInfo[static_cast<uint8_t>(PipelineType::FRONT_BACK_STENCIL)].renderPass = renderPass;
     gfx::DepthStencilState &dss5                                                    = pipelineInfo[static_cast<uint8_t>(PipelineType::FRONT_BACK_STENCIL)].depthStencilState;
     dss5.depthTest                                                                  = true;
     dss5.depthWrite                                                                 = false;
@@ -354,18 +354,21 @@ void StencilTest::createPipelineState() {
 }
 
 void StencilTest::onTick() {
+    auto *swapchain = swapchains[0];
+    auto *fbo       = fbos[0];
+
     uint globalBarrierIdx = _frameCount ? 1 : 0;
     uint textureBarriers  = _frameCount ? 0 : _textureBarriers.size();
 
     gfx::Color clearColor = {1.0F, 0, 0, 1.0F};
 
     Mat4 proj;
-    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &proj);
+    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &proj, swapchain);
 
     device->acquire(&swapchain, 1);
 
     for (uint i = 0; i < BINDING_COUNT; i++) {
-        TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &_uboData[i].viewProj);
+        TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &_uboData[i].viewProj, swapchain);
         _uniformBuffer[i]->update(&_uboData[i], sizeof(MatrixUBO));
     }
 
@@ -384,14 +387,14 @@ void StencilTest::onTick() {
 
     // draw label
     Vec4 relativeViewport{1.F / 6.F, 0.5F, 1.F / 3.F, 0.5F};
-    commandBuffer->setViewport(TestBaseI::getViewportBasedOnDevice(relativeViewport));
+    commandBuffer->setViewport(TestBaseI::getViewportBasedOnDevice(relativeViewport, swapchain));
     commandBuffer->bindPipelineState(_pipelineState[static_cast<uint8_t>(PipelineType::STENCIL)]);
     commandBuffer->bindDescriptorSet(0, _descriptorSet[0]);
     commandBuffer->draw(_inputAssembler);
 
     // draw uv_image
     relativeViewport.x = 0.5F;
-    commandBuffer->setViewport(TestBaseI::getViewportBasedOnDevice(relativeViewport));
+    commandBuffer->setViewport(TestBaseI::getViewportBasedOnDevice(relativeViewport, swapchain));
     commandBuffer->bindPipelineState(_pipelineState[static_cast<uint8_t>(PipelineType::IMAGE)]);
     commandBuffer->bindDescriptorSet(0, _descriptorSet[1]);
     commandBuffer->draw(_inputAssembler);
@@ -399,7 +402,7 @@ void StencilTest::onTick() {
     // do back and front stencil test
     relativeViewport.x = 0.F;
     relativeViewport.y = 0.F;
-    commandBuffer->setViewport(TestBaseI::getViewportBasedOnDevice(relativeViewport));
+    commandBuffer->setViewport(TestBaseI::getViewportBasedOnDevice(relativeViewport, swapchain));
     commandBuffer->bindPipelineState(_pipelineState[static_cast<uint8_t>(PipelineType::CANVAS)]);
     commandBuffer->bindDescriptorSet(0, _descriptorSet[0]);
     commandBuffer->draw(_inputAssembler);
@@ -410,7 +413,7 @@ void StencilTest::onTick() {
 
     // do back stencil test
     relativeViewport.x = 1.F / 3.F;
-    commandBuffer->setViewport(TestBaseI::getViewportBasedOnDevice(relativeViewport));
+    commandBuffer->setViewport(TestBaseI::getViewportBasedOnDevice(relativeViewport, swapchain));
     commandBuffer->bindPipelineState(_pipelineState[static_cast<uint8_t>(PipelineType::CANVAS)]);
     commandBuffer->bindDescriptorSet(0, _descriptorSet[0]);
     commandBuffer->draw(_inputAssembler);
@@ -421,7 +424,7 @@ void StencilTest::onTick() {
 
     // do front stencil test
     relativeViewport.x = 2.F / 3.F;
-    commandBuffer->setViewport(TestBaseI::getViewportBasedOnDevice(relativeViewport));
+    commandBuffer->setViewport(TestBaseI::getViewportBasedOnDevice(relativeViewport, swapchain));
     commandBuffer->bindPipelineState(_pipelineState[static_cast<uint8_t>(PipelineType::CANVAS)]);
     commandBuffer->bindDescriptorSet(0, _descriptorSet[0]);
     commandBuffer->draw(_inputAssembler);

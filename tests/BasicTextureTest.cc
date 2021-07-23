@@ -210,7 +210,7 @@ void BasicTexture::createPipeline() {
     pipelineInfo.primitive      = gfx::PrimitiveMode::TRIANGLE_LIST;
     pipelineInfo.shader         = _shader;
     pipelineInfo.inputState     = {_inputAssembler->getAttributes()};
-    pipelineInfo.renderPass     = fbo->getRenderPass();
+    pipelineInfo.renderPass     = renderPass;
     pipelineInfo.pipelineLayout = _pipelineLayout;
 
     _pipelineState = device->createPipelineState(pipelineInfo);
@@ -249,13 +249,16 @@ void BasicTexture::createPipeline() {
 }
 
 void BasicTexture::onTick() {
+    auto *swapchain = swapchains[0];
+    auto *fbo       = fbos[0];
+
     uint globalBarrierIdx = _frameCount ? 1 : 0;
     uint textureBarriers  = _frameCount ? 0 : _textureBarriers.size();
 
     gfx::Color clearColor = {0, 0, 0, 1.0F};
 
     Mat4 mvpMatrix;
-    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &mvpMatrix);
+    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &mvpMatrix, swapchain);
 
     device->acquire(&swapchain, 1);
 

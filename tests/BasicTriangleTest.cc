@@ -201,7 +201,7 @@ void BasicTriangle::createPipeline() {
     pipelineInfo.primitive      = gfx::PrimitiveMode::TRIANGLE_LIST;
     pipelineInfo.shader         = _shader;
     pipelineInfo.inputState     = {_inputAssembler->getAttributes()};
-    pipelineInfo.renderPass     = fbo->getRenderPass();
+    pipelineInfo.renderPass     = renderPass;
     pipelineInfo.pipelineLayout = _pipelineLayout;
 
     _pipelineState = device->createPipelineState(pipelineInfo);
@@ -231,6 +231,9 @@ void BasicTriangle::createPipeline() {
 }
 
 void BasicTriangle::onTick() {
+    auto *swapchain = swapchains[0];
+    auto *fbo       = fbos[0];
+
     uint globalBarrierIdx = _frameCount ? 1 : 0;
 
     gfx::Color clearColor = {1.0F, 0, 0, 1.0F};
@@ -242,7 +245,7 @@ void BasicTriangle::onTick() {
     uniformColor.w = 1.0F;
 
     Mat4 mvp;
-    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &mvp);
+    TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &mvp, swapchain);
 
     device->acquire(&swapchain, 1);
 

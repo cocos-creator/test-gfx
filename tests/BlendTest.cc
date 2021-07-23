@@ -569,6 +569,8 @@ void BlendTest::onDestroy() {
 }
 
 bool BlendTest::onInit() {
+    auto *fbo = fbos[0];
+
     bigTriangle = CC_NEW(BigTriangle(device, fbo));
     quad        = CC_NEW(Quad(device, fbo));
 
@@ -612,18 +614,21 @@ bool BlendTest::onInit() {
 }
 
 void BlendTest::onTick() {
+    auto *swapchain = swapchains[0];
+    auto *fbo       = fbos[0];
+
     uint globalBarrierIdx = _frameCount ? 1 : 0;
     uint textureBarriers  = _frameCount ? 0 : _textureBarriers.size();
 
     device->acquire(&swapchain, 1);
 
-    gfx::Extent orientedSize  = TestBaseI::getOrientedSurfaceSize();
+    gfx::Extent orientedSize  = TestBaseI::getOrientedSurfaceSize(swapchain);
     bool        matricesDirty = renderArea.width != orientedSize.width || renderArea.height != orientedSize.height || swapchain->getSurfaceTransform() != orientation;
 
     if (matricesDirty) {
         Mat4 model;
         Mat4 projection;
-        TestBaseI::createOrthographic(0.F, static_cast<float>(orientedSize.width), static_cast<float>(orientedSize.height), 0.F, -1.0F, 1.F, &projection);
+        TestBaseI::createOrthographic(0.F, static_cast<float>(orientedSize.width), static_cast<float>(orientedSize.height), 0.F, -1.0F, 1.F, &projection, swapchain);
 
         float size     = static_cast<float>(std::min(orientedSize.width, orientedSize.height)) * 0.15F;
         float halfSize = size * 0.5F;

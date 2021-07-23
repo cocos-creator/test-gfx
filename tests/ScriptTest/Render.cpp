@@ -129,12 +129,14 @@ gfx::InputAssembler *inputAssemblerOutline{nullptr};
 } // namespace
 
 void Root::initialize() {
+    auto *swapchain = TestBaseI::swapchains[0];
+    auto *onScreenFBO = TestBaseI::fbos[0];
+
     gfx::Device *device = gfx::Device::getInstance();
-    gfx::Swapchain *swapchain = TestBaseI::swapchain;
 
     msaaFBO = CC_NEW(MultisampledFramebuffer(device, swapchain));
 
-    fbo = OFFSCREEN_MSAA ? msaaFBO->framebuffer : TestBaseI::fbo;
+    fbo = OFFSCREEN_MSAA ? msaaFBO->framebuffer : onScreenFBO;
 
     commandBuffers.push_back(device->getCommandBuffer());
 
@@ -334,7 +336,7 @@ void Root::initialize() {
     Mat4 view;
     Mat4 projection;
     Mat4::createLookAt({1.F, 1.F, 3.F}, {0.F, 0.F, .5F}, {0.F, 1.F, 0.F}, &view);
-    TestBaseI::createOrthographic(-1.5F, 1.5F, -1.5F, 1.5F, 1.F, 10.F, &projection);
+    TestBaseI::createOrthographic(-1.5F, 1.5F, -1.5F, 1.5F, 1.F, 10.F, &projection, swapchain);
     projection = projection * view;
     uniformBufferGlobal->update(projection.m, sizeof(projection));
 
@@ -477,7 +479,7 @@ void Root::render() {
     TestBaseI::printTime(TestBaseI::renderThread, "Render thread");
 
     gfx::Device *   device     = gfx::Device::getInstance();
-    gfx::Swapchain *swapchain  = TestBaseI::swapchain;
+    gfx::Swapchain *swapchain  = TestBaseI::swapchains[0];
     gfx::Color      clearColor = {.1F, .1F, .1F, 1.F};
 
     size_t modelCount = ModelView::views.size();
@@ -498,7 +500,7 @@ void Root::render() {
         vmath::store(pDst + 4, vmath::slice(TransformView::buffer.mat, model.transform));
     }
 
-    device->acquire(&swapchain, 1);
+    device->acquire(TestBaseI::swapchains);
 
     if (ROTATE_VIEW) {
         Mat4         view;
@@ -507,7 +509,7 @@ void Root::render() {
         time += TestBaseI::renderThread.dt * 0.1F;
         Mat4::createLookAt({std::cos(time) * 4.F + 1.F, 1.F, std::sin(time) * 3.F},
                            {0.F, 0.F, .5F}, {0.F, 1.F, 0.F}, &view);
-        TestBaseI::createOrthographic(-1.5F, 1.5F, -1.5F, 1.5F, 1.F, 10.F, &projection);
+        TestBaseI::createOrthographic(-1.5F, 1.5F, -1.5F, 1.5F, 1.F, 10.F, &projection, swapchain);
         projection = projection * view;
         uniformBufferGlobal->update(projection.m, sizeof(projection));
     }

@@ -76,20 +76,20 @@ struct FrameRate {
     float timeAcc  = 0.F;
 };
 
-#define DEFINE_CREATE_METHOD(className)                \
-    static TestBaseI *create(const WindowInfo &info) { \
-        TestBaseI *instance = CC_NEW(className(info)); \
-        if (instance->initialize())                    \
-            return instance;                           \
-        CC_SAFE_DESTROY(instance);                     \
-        return nullptr;                                \
+#define DEFINE_CREATE_METHOD(className)          \
+    static TestBaseI *create() {                 \
+        TestBaseI *instance = CC_NEW(className); \
+        if (instance->initialize())              \
+            return instance;                     \
+        CC_SAFE_DESTROY(instance);               \
+        return nullptr;                          \
     }
 
 class TestBaseI : public cc::Object {
 public:
-    explicit TestBaseI(const WindowInfo &info);
+    TestBaseI();
 
-    using createFunc = TestBaseI *(*)(const WindowInfo &info);
+    using createFunc = TestBaseI *(*)();
 
     static void lookupTime(FrameRate *statistics = &logicThread) {
         if (!statistics->frameAcc) {
@@ -119,10 +119,10 @@ public:
         }
     }
     static gfx::Device *getDevice() { return device; }
-    static void         resizeGlobal(uint width, uint height) {
-        if (test) test->resize(width, height);
+    static void         resizeGlobal(void *windowHandle, uint width, uint height) {
+        if (test) test->resize(windowHandle, width, height);
     }
-    static void setWindowInfo(const WindowInfo &info) { windowInfo = info; }
+    static void setWindowInfo(const WindowInfo &info) { windowInfos.push_back(info); }
     static void spacePressed() { test->onSpacePressed(); }
 
     static void nextTest(bool backward = false);
@@ -137,11 +137,11 @@ public:
     static void                 scriptEngineGC();
     static unsigned char *      rgb2rgba(Image *img);
     static gfx::Texture *       createTextureWithFile(const gfx::TextureInfo &partialInfo, const String &imageFile);
-    static void                 modifyProjectionBasedOnDevice(Mat4 *projection);
-    static void                 createOrthographic(float left, float right, float bottom, float top, float near, float zFar, Mat4 *dst);
-    static void                 createPerspective(float fov, float aspect, float near, float zFar, Mat4 *dst);
-    static gfx::Extent          getOrientedSurfaceSize();
-    static gfx::Viewport        getViewportBasedOnDevice(const Vec4 &relativeArea);
+    static void                 modifyProjectionBasedOnDevice(Mat4 *projection, gfx::Swapchain *swapchain);
+    static void                 createOrthographic(float left, float right, float bottom, float top, float near, float zFar, Mat4 *dst, gfx::Swapchain *swapchain);
+    static void                 createPerspective(float fov, float aspect, float near, float zFar, Mat4 *dst, gfx::Swapchain *swapchain);
+    static gfx::Extent          getOrientedSurfaceSize(gfx::Swapchain *swapchain);
+    static gfx::Viewport        getViewportBasedOnDevice(const Vec4 &relativeArea, gfx::Swapchain *swapchain);
     static uint                 getUBOSize(uint size);
     static uint                 getMipmapLevelCounts(uint width, uint height);
     static uint                 getAlignedUBOStride(uint stride);
@@ -173,10 +173,10 @@ public:
     static const bool MANUAL_BARRIER;
 
     static gfx::Device *                device;
-    static gfx::Swapchain *             swapchain;
-    static gfx::Framebuffer *           fbo;
     static gfx::RenderPass *            renderPass;
     static vector<gfx::CommandBuffer *> commandBuffers;
+    static vector<gfx::Swapchain *>     swapchains;
+    static vector<gfx::Framebuffer *>   fbos;
 
     static framegraph::FrameGraph fg;
 
@@ -201,10 +201,14 @@ public:
         ++_frameCount;
     }
 
-    inline void resize(uint width, uint height) {
+    inline void resize(void *windowHandle, uint width, uint height) {
         onResize(width, height);
 
-        swapchain->resize(width, height);
+        for (auto *swapchain : swapchains) {
+            if (windowHandle == swapchain->getWindowHandle()) {
+                swapchain->resize(width, height);
+            }
+        }
     }
 
     inline void destroy() {
@@ -217,7 +221,7 @@ public:
     }
 
 protected:
-    static WindowInfo         windowInfo;
+    static vector<WindowInfo> windowInfos;
     static int                curTestIndex;
     static vector<createFunc> tests;
     static TestBaseI *        test;

@@ -61,9 +61,9 @@ struct DepthResolveFramebuffer {
             renderPass                                        = device->createRenderPass(renderPassInfo);
 
             gfx::FramebufferInfo fboInfo;
-            fboInfo.renderPass = renderPass;
+            fboInfo.renderPass          = renderPass;
             fboInfo.depthStencilTexture = depthStencilTex;
-            framebuffer = device->createFramebuffer(fboInfo);
+            framebuffer                 = device->createFramebuffer(fboInfo);
         }
     }
 
@@ -541,6 +541,9 @@ void DepthTexture::onResize(uint width, uint height) {
 }
 
 bool DepthTexture::onInit() {
+    auto *swapchain = swapchains[0];
+    auto *fbo       = fbos[0];
+
     bunnyFBO = CC_NEW(DepthResolveFramebuffer(device, swapchain));
     bunny    = CC_NEW(Bunny(device, bunnyFBO->framebuffer));
     bg       = CC_NEW(BigTriangle(device, fbo));
@@ -573,6 +576,9 @@ bool DepthTexture::onInit() {
 }
 
 void DepthTexture::onTick() {
+    auto *swapchain = swapchains[0];
+    auto *fbo       = fbos[0];
+
     uint globalBarrierIdx = _frameCount ? 1 : 0;
 
     static constexpr float CAMERA_DISTANCE = 8.F;
@@ -580,10 +586,10 @@ void DepthTexture::onTick() {
     _center.set(0, 0.5F, 0);
     _up.set(0, 1.F, 0);
     Mat4::createLookAt(_eye, _center, _up, &_bunnyMatrices[1]);
-    gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize();
+    gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize(swapchain);
     TestBaseI::createPerspective(45.F,
                                  static_cast<float>(orientedSize.width) / static_cast<float>(orientedSize.height),
-                                 1.F, 10.F, &_bunnyMatrices[2]);
+                                 1.F, 10.F, &_bunnyMatrices[2], swapchain);
 
     gfx::Color clearColor[2] = {{1.0, 0, 0, 1.0F}};
 
