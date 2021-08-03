@@ -26,8 +26,6 @@ elseif(ANDROID)
     add_subdirectory(android/app/src/main/cpp)
 elseif(APPLE)
     add_subdirectory(mac)
-
-    # add_subdirectory(mac-gles)
 endif()
 
 target_compile_definitions(${APP_NAME}
