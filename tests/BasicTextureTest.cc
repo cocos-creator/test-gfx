@@ -11,7 +11,6 @@ void BasicTexture::onDestroy() {
     CC_SAFE_DESTROY(_pipelineLayout);
     CC_SAFE_DESTROY(_pipelineState);
     CC_SAFE_DESTROY(_uniformBuffer);
-    CC_SAFE_DESTROY(_sampler);
 }
 
 bool BasicTexture::onInit() {
@@ -183,10 +182,6 @@ void BasicTexture::createTexture() {
     _textures.resize(2);
     _textures[0] = TestBaseI::createTextureWithFile(textureInfo, "uv_checker_01.jpg");
     _textures[1] = TestBaseI::createTextureWithFile(textureInfo, "uv_checker_02.jpg");
-
-    //create sampler
-    gfx::SamplerInfo samplerInfo;
-    _sampler = device->createSampler(samplerInfo);
 }
 
 void BasicTexture::createPipeline() {
@@ -199,10 +194,13 @@ void BasicTexture::createPipeline() {
 
     _descriptorSet = device->createDescriptorSet({_descriptorSetLayout});
 
+    gfx::SamplerInfo samplerInfo;
+    auto *sampler = device->getSampler(samplerInfo);
+
     _descriptorSet->bindBuffer(0, _uniformBuffer);
-    _descriptorSet->bindSampler(1, _sampler);
+    _descriptorSet->bindSampler(1, sampler);
     _descriptorSet->bindTexture(1, _textures[1]);
-    _descriptorSet->bindSampler(1, _sampler, 1);
+    _descriptorSet->bindSampler(1, sampler, 1);
     _descriptorSet->bindTexture(1, _textures[0], 1);
     _descriptorSet->update();
 
@@ -215,7 +213,7 @@ void BasicTexture::createPipeline() {
 
     _pipelineState = device->createPipelineState(pipelineInfo);
 
-    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
+    _globalBarriers.push_back(device->getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -226,7 +224,7 @@ void BasicTexture::createPipeline() {
         },
     }));
 
-    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
+    _globalBarriers.push_back(device->getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -235,7 +233,7 @@ void BasicTexture::createPipeline() {
         },
     }));
 
-    _textureBarriers.push_back(TestBaseI::getTextureBarrier({
+    _textureBarriers.push_back(device->getTextureBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },

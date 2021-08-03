@@ -28,7 +28,6 @@ private:
     gfx::DescriptorSetLayout *_descriptorSetLayout = nullptr;
     gfx::PipelineLayout *     _pipelineLayout      = nullptr;
     gfx::PipelineState *      _pipelineState       = nullptr;
-    gfx::Sampler *            _sampler             = nullptr;
 };
 
 } // namespace cc

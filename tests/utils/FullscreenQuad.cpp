@@ -80,12 +80,12 @@ FullscreenQuad::FullscreenQuad(gfx::Device *device, gfx::RenderPass *renderPass,
     StandardShaderSource &source = TestBaseI::getAppropriateShaderSource(sources);
 
     gfx::ShaderStageList shaderStageList;
-    gfx::ShaderStage     &vertexShaderStage = shaderStageList.emplace_back();
-    vertexShaderStage.stage  = gfx::ShaderStageFlagBit::VERTEX;
-    vertexShaderStage.source = source.vert;
-    gfx::ShaderStage &fragmentShaderStage = shaderStageList.emplace_back();
-    fragmentShaderStage.stage  = gfx::ShaderStageFlagBit::FRAGMENT;
-    fragmentShaderStage.source = source.frag;
+    gfx::ShaderStage &   vertexShaderStage = shaderStageList.emplace_back();
+    vertexShaderStage.stage                = gfx::ShaderStageFlagBit::VERTEX;
+    vertexShaderStage.source               = source.vert;
+    gfx::ShaderStage &fragmentShaderStage  = shaderStageList.emplace_back();
+    fragmentShaderStage.stage              = gfx::ShaderStageFlagBit::FRAGMENT;
+    fragmentShaderStage.source             = source.frag;
 
     gfx::AttributeList attributeList = {
         {"a_position", gfx::Format::RG32F, false, 0, false, 0},
@@ -137,13 +137,12 @@ FullscreenQuad::FullscreenQuad(gfx::Device *device, gfx::RenderPass *renderPass,
 
     _pipelineState = device->createPipelineState(pipelineInfo);
 
-    // create sampler
     gfx::SamplerInfo samplerInfo;
-    _sampler = device->createSampler(samplerInfo);
+    auto *           sampler = device->getSampler(samplerInfo);
 
     _descriptorSet = device->createDescriptorSet({_descriptorSetLayout});
 
-    _descriptorSet->bindSampler(0, _sampler);
+    _descriptorSet->bindSampler(0, sampler);
     _descriptorSet->bindTexture(0, texture);
     _descriptorSet->update();
 }
@@ -155,7 +154,6 @@ FullscreenQuad::~FullscreenQuad() {
     CC_SAFE_DESTROY(_descriptorSetLayout)
     CC_SAFE_DESTROY(_pipelineLayout)
     CC_SAFE_DESTROY(_pipelineState)
-    CC_SAFE_DESTROY(_sampler)
     CC_SAFE_DESTROY(_descriptorSet)
 }
 

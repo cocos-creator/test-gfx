@@ -72,7 +72,6 @@ struct StandardDeferredPipeline {
     std::unique_ptr<gfx::Buffer>              lightingVertexBuffer{nullptr};
     std::unique_ptr<gfx::InputAssembler>      lightingInputAssembler{nullptr};
     std::unique_ptr<gfx::DescriptorSet>       lightingDescriptorSet{nullptr};
-    std::unique_ptr<gfx::Sampler>             sampler{nullptr};
 
     template <typename Fn>
     void recordCommandBuffer(gfx::Device *device, gfx::Swapchain *swapchain, gfx::CommandBuffer *commandBuffer,

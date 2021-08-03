@@ -97,7 +97,6 @@ struct BigTriangle : public cc::Object {
     BigTriangle(gfx::Device *device, gfx::Framebuffer *fbo) : fbo(fbo), device(device) {
         createShader();
         createBuffers();
-        createSampler();
         createInputAssembler();
         createPipeline();
     }
@@ -230,12 +229,6 @@ struct BigTriangle : public cc::Object {
         shader                     = device->createShader(shaderInfo);
     }
 
-    void createSampler() {
-        // create sampler
-        gfx::SamplerInfo samplerInfo;
-        sampler = device->createSampler(samplerInfo);
-    }
-
     void createBuffers() {
         // create vertex buffer
         // UV space origin is at top-left
@@ -280,6 +273,9 @@ struct BigTriangle : public cc::Object {
 
         descriptorSet = device->createDescriptorSet({descriptorSetLayout});
 
+        gfx::SamplerInfo samplerInfo;
+        auto *           sampler = device->getSampler(samplerInfo);
+
         descriptorSet->bindBuffer(0, nearFarUniformBuffer);
         descriptorSet->bindSampler(1, sampler);
         // don't update just yet for the texture is still missing
@@ -304,7 +300,6 @@ struct BigTriangle : public cc::Object {
         CC_SAFE_DESTROY(descriptorSet);
         CC_SAFE_DESTROY(descriptorSetLayout);
         CC_SAFE_DESTROY(pipelineLayout);
-        CC_SAFE_DESTROY(sampler);
         CC_SAFE_DESTROY(texture);
         CC_SAFE_DESTROY(pipelineState);
         CC_SAFE_DESTROY(nearFarUniformBuffer);
@@ -319,7 +314,6 @@ struct BigTriangle : public cc::Object {
     gfx::DescriptorSet *      descriptorSet        = nullptr;
     gfx::DescriptorSetLayout *descriptorSetLayout  = nullptr;
     gfx::PipelineLayout *     pipelineLayout       = nullptr;
-    gfx::Sampler *            sampler              = nullptr;
     gfx::Texture *            texture              = nullptr;
     gfx::PipelineState *      pipelineState        = nullptr;
 };
@@ -499,7 +493,6 @@ struct Bunny : public cc::Object {
         CC_SAFE_DESTROY(shader);
         CC_SAFE_DESTROY(vertexBuffer);
         CC_SAFE_DESTROY(indexBuffer);
-        CC_SAFE_DESTROY(sampler);
         CC_SAFE_DESTROY(depthTexture);
         CC_SAFE_DESTROY(inputAssembler);
         for (uint i = 0; i < BUNNY_NUM; i++) {
@@ -515,7 +508,6 @@ struct Bunny : public cc::Object {
     gfx::Shader *             shader                      = nullptr;
     gfx::Buffer *             vertexBuffer                = nullptr;
     gfx::Buffer *             indexBuffer                 = nullptr;
-    gfx::Sampler *            sampler                     = nullptr;
     gfx::Texture *            depthTexture                = nullptr;
     gfx::InputAssembler *     inputAssembler              = nullptr;
     gfx::DescriptorSetLayout *descriptorSetLayout         = nullptr;
@@ -551,7 +543,7 @@ bool DepthTexture::onInit() {
     bg->descriptorSet->bindTexture(1, bunnyFBO->depthStencilTex);
     bg->descriptorSet->update();
 
-    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
+    _globalBarriers.push_back(device->getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -563,7 +555,7 @@ bool DepthTexture::onInit() {
         },
     }));
 
-    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
+    _globalBarriers.push_back(device->getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },

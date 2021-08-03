@@ -29,7 +29,6 @@ private:
     gfx::DescriptorSet *      _descriptorSet       = nullptr;
     gfx::DescriptorSetLayout *_descriptorSetLayout = nullptr;
     gfx::PipelineLayout *     _pipelineLayout      = nullptr;
-    gfx::Sampler *            _sampler             = nullptr;
 
 #define MAX_QUAD_COUNT 1024
 #define VERTEX_STRIDE  9

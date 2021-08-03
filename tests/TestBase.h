@@ -146,8 +146,6 @@ public:
     static uint                 getMipmapLevelCounts(uint width, uint height);
     static uint                 getAlignedUBOStride(uint stride);
     static tinyobj::ObjReader   loadOBJ(const String &path);
-    static gfx::GlobalBarrier * getGlobalBarrier(const gfx::GlobalBarrierInfo &info);
-    static gfx::TextureBarrier *getTextureBarrier(const gfx::TextureBarrierInfo &info);
     static void                 createUberBuffer(const vector<uint> &sizes, gfx::Buffer **pBuffer,
                                                  vector<gfx::Buffer *> *pBufferViews, vector<uint> *pBufferViewOffsets);
 
@@ -226,9 +224,6 @@ protected:
     static vector<createFunc> tests;
     static TestBaseI *        test;
     static int                nextDirection;
-
-    static unordered_map<uint, gfx::GlobalBarrier *>  globalBarrierMap;
-    static unordered_map<uint, gfx::TextureBarrier *> textureBarrierMap;
 
     virtual void onSpacePressed() {}
 
