@@ -70,7 +70,7 @@ bool SubpassTest::onInit() {
     inputAssemblerInfo.indexBuffer = _indexBuffer.get();
     _inputAssembler.reset(device->createInputAssembler(inputAssemblerInfo));
 
-    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
+    _globalBarriers.push_back(device->getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -82,7 +82,7 @@ bool SubpassTest::onInit() {
         },
     }));
 
-    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
+    _globalBarriers.push_back(device->getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -92,7 +92,7 @@ bool SubpassTest::onInit() {
         },
     }));
 
-    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
+    _globalBarriers.push_back(device->getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -101,7 +101,7 @@ bool SubpassTest::onInit() {
         },
     }));
 
-    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
+    _globalBarriers.push_back(device->getGlobalBarrier({
         {
             gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
             gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,

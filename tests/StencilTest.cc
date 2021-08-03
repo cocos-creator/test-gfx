@@ -18,7 +18,6 @@ void StencilTest::onDestroy() {
     CC_SAFE_DESTROY(_shader);
     CC_SAFE_DESTROY(_vertexBuffer);
     CC_SAFE_DESTROY(_inputAssembler);
-    CC_SAFE_DESTROY(_sampler);
     for (uint i = 0; i < BINDING_COUNT; i++) {
         CC_SAFE_DESTROY(_uniformBuffer[i]);
         CC_SAFE_DESTROY(_descriptorSet[i]);
@@ -184,10 +183,6 @@ void StencilTest::createTextures() {
     _textures.resize(2);
     _textures[0] = TestBaseI::createTextureWithFile(textureInfo, "stencil.jpg");
     _textures[1] = TestBaseI::createTextureWithFile(textureInfo, "uv_checker_02.jpg");
-
-    // create sampler
-    gfx::SamplerInfo samplerInfo;
-    _sampler = device->createSampler(samplerInfo);
 }
 
 void StencilTest::createInputAssembler() {
@@ -206,10 +201,13 @@ void StencilTest::createPipelineState() {
 
     _pipelineLayout = device->createPipelineLayout({{_descriptorSetLayout}});
 
+    gfx::SamplerInfo samplerInfo;
+    auto *sampler = device->getSampler(samplerInfo);
+
     for (uint i = 0; i < BINDING_COUNT; i++) {
         _descriptorSet[i] = device->createDescriptorSet({_descriptorSetLayout});
         _descriptorSet[i]->bindBuffer(0, _uniformBuffer[i]);
-        _descriptorSet[i]->bindSampler(1, _sampler);
+        _descriptorSet[i]->bindSampler(1, sampler);
         _descriptorSet[i]->bindTexture(1, _textures[i]);
         _descriptorSet[i]->update();
     }
@@ -321,7 +319,7 @@ void StencilTest::createPipelineState() {
     pipelineInfo[static_cast<uint8_t>(PipelineType::FRONT_BACK_STENCIL)].pipelineLayout           = _pipelineLayout;
     _pipelineState[static_cast<uint8_t>(PipelineType::FRONT_BACK_STENCIL)]                        = device->createPipelineState(pipelineInfo[static_cast<uint8_t>(PipelineType::FRONT_BACK_STENCIL)]);
 
-    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
+    _globalBarriers.push_back(device->getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -331,7 +329,7 @@ void StencilTest::createPipelineState() {
         },
     }));
 
-    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
+    _globalBarriers.push_back(device->getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -340,7 +338,7 @@ void StencilTest::createPipelineState() {
         },
     }));
 
-    _textureBarriers.push_back(TestBaseI::getTextureBarrier({
+    _textureBarriers.push_back(device->getTextureBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },

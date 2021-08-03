@@ -62,7 +62,6 @@ void ParticleTest::onDestroy() {
     CC_SAFE_DESTROY(_descriptorSetLayout);
     CC_SAFE_DESTROY(_pipelineLayout);
     CC_SAFE_DESTROY(_uniformBuffer);
-    CC_SAFE_DESTROY(_sampler);
 }
 
 bool ParticleTest::onInit() {
@@ -318,13 +317,6 @@ void ParticleTest::createTexture() {
     gfx::BufferDataList imageBuffer = {imageData};
     device->copyBuffersToTexture(imageBuffer, _textures[0], regions);
     CC_SAFE_FREE(imageData);
-
-    // create sampler
-    gfx::SamplerInfo samplerInfo;
-    samplerInfo.addressU  = gfx::Address::WRAP;
-    samplerInfo.addressV  = gfx::Address::WRAP;
-    samplerInfo.mipFilter = gfx::Filter::LINEAR;
-    _sampler              = device->createSampler(samplerInfo);
 }
 
 void ParticleTest::createPipeline() {
@@ -337,8 +329,14 @@ void ParticleTest::createPipeline() {
 
     _descriptorSet = device->createDescriptorSet({_descriptorSetLayout});
 
+    gfx::SamplerInfo samplerInfo;
+    samplerInfo.addressU  = gfx::Address::WRAP;
+    samplerInfo.addressV  = gfx::Address::WRAP;
+    samplerInfo.mipFilter = gfx::Filter::LINEAR;
+    auto *sampler         = device->getSampler(samplerInfo);
+
     _descriptorSet->bindBuffer(0, _uniformBuffer);
-    _descriptorSet->bindSampler(1, _sampler);
+    _descriptorSet->bindSampler(1, sampler);
     _descriptorSet->bindTexture(1, _textures[0]);
     _descriptorSet->update();
 
@@ -358,7 +356,7 @@ void ParticleTest::createPipeline() {
 
     _pipelineState = device->createPipelineState(pipelineInfo);
 
-    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
+    _globalBarriers.push_back(device->getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -369,7 +367,7 @@ void ParticleTest::createPipeline() {
         },
     }));
 
-    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
+    _globalBarriers.push_back(device->getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -378,7 +376,7 @@ void ParticleTest::createPipeline() {
         },
     }));
 
-    _textureBarriers.push_back(TestBaseI::getTextureBarrier({
+    _textureBarriers.push_back(device->getTextureBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },

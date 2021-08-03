@@ -29,7 +29,6 @@ struct Quad : public cc::Object {
         CC_SAFE_DESTROY(inputAssembler);
         CC_SAFE_DESTROY(indexBuffer);
         CC_SAFE_DESTROY(texture);
-        CC_SAFE_DESTROY(sampler);
         CC_SAFE_DESTROY(descriptorSet);
         CC_SAFE_DESTROY(uniformBufferView);
         CC_SAFE_DESTROY(uniformBuffer);
@@ -208,13 +207,6 @@ struct Quad : public cc::Object {
         textureInfo.usage  = gfx::TextureUsage::SAMPLED | gfx::TextureUsage::TRANSFER_DST;
         textureInfo.format = gfx::Format::RGBA8;
         texture            = TestBaseI::createTextureWithFile(textureInfo, "sprite0.png");
-
-        // create sampler
-        gfx::SamplerInfo samplerInfo;
-        samplerInfo.addressU = gfx::Address::CLAMP;
-        samplerInfo.addressV = gfx::Address::CLAMP;
-        samplerInfo.addressW = gfx::Address::CLAMP;
-        sampler              = device->createSampler(samplerInfo);
     }
 
     void createPipeline() {
@@ -226,6 +218,12 @@ struct Quad : public cc::Object {
         pipelineLayout = device->createPipelineLayout({{descriptorSetLayout}});
 
         descriptorSet = device->createDescriptorSet({descriptorSetLayout});
+
+        gfx::SamplerInfo samplerInfo;
+        samplerInfo.addressU = gfx::Address::CLAMP;
+        samplerInfo.addressV = gfx::Address::CLAMP;
+        samplerInfo.addressW = gfx::Address::CLAMP;
+        auto *sampler        = device->getSampler(samplerInfo);
 
         descriptorSet->bindBuffer(0, uniformBufferView);
         descriptorSet->bindSampler(1, sampler);
@@ -321,7 +319,6 @@ struct Quad : public cc::Object {
     gfx::Buffer *             vertexBuffer               = nullptr;
     gfx::Buffer *             indexBuffer                = nullptr;
     gfx::InputAssembler *     inputAssembler             = nullptr;
-    gfx::Sampler *            sampler                    = nullptr;
     gfx::Texture *            texture                    = nullptr;
     gfx::DescriptorSetLayout *descriptorSetLayout        = nullptr;
     gfx::PipelineLayout *     pipelineLayout             = nullptr;
@@ -354,7 +351,6 @@ struct BigTriangle : public cc::Object {
         CC_SAFE_DESTROY(pipelineState);
         CC_SAFE_DESTROY(timeBuffer);
         CC_SAFE_DESTROY(texture);
-        CC_SAFE_DESTROY(sampler);
     }
 
     void createShader() {
@@ -500,13 +496,6 @@ struct BigTriangle : public cc::Object {
         textureInfo.format = gfx::Format::RGBA8;
         textureInfo.flags  = gfx::TextureFlagBit::GEN_MIPMAP;
         texture            = TestBaseI::createTextureWithFile(textureInfo, "background.png");
-
-        // create sampler
-        gfx::SamplerInfo samplerInfo;
-        samplerInfo.mipFilter = gfx::Filter::LINEAR;
-        samplerInfo.addressU  = gfx::Address::WRAP;
-        samplerInfo.addressV  = gfx::Address::WRAP;
-        sampler               = device->createSampler(samplerInfo);
     }
 
     void createPipeline() {
@@ -516,6 +505,12 @@ struct BigTriangle : public cc::Object {
         descriptorSetLayout = device->createDescriptorSetLayout(dslInfo);
 
         pipelineLayout = device->createPipelineLayout({{descriptorSetLayout}});
+
+        gfx::SamplerInfo samplerInfo;
+        samplerInfo.mipFilter = gfx::Filter::LINEAR;
+        samplerInfo.addressU  = gfx::Address::WRAP;
+        samplerInfo.addressV  = gfx::Address::WRAP;
+        auto *sampler         = device->getSampler(samplerInfo);
 
         descriptorSet = device->createDescriptorSet({descriptorSetLayout});
 
@@ -540,7 +535,6 @@ struct BigTriangle : public cc::Object {
     gfx::Buffer *             vertexBuffer        = nullptr;
     gfx::Buffer *             timeBuffer          = nullptr;
     gfx::InputAssembler *     inputAssembler      = nullptr;
-    gfx::Sampler *            sampler             = nullptr;
     gfx::Texture *            texture             = nullptr;
     gfx::DescriptorSet *      descriptorSet       = nullptr;
     gfx::DescriptorSetLayout *descriptorSetLayout = nullptr;
@@ -574,7 +568,7 @@ bool BlendTest::onInit() {
     bigTriangle = CC_NEW(BigTriangle(device, fbo));
     quad        = CC_NEW(Quad(device, fbo));
 
-    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
+    _globalBarriers.push_back(device->getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -586,7 +580,7 @@ bool BlendTest::onInit() {
         },
     }));
 
-    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
+    _globalBarriers.push_back(device->getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -596,7 +590,7 @@ bool BlendTest::onInit() {
         },
     }));
 
-    _textureBarriers.push_back(TestBaseI::getTextureBarrier({
+    _textureBarriers.push_back(device->getTextureBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },

@@ -193,7 +193,7 @@ void FrameGraphTest::createPipeline() {
 
     _pipelineState = device->createPipelineState(pipelineInfo);
 
-    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
+    _globalBarriers.push_back(device->getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -206,7 +206,7 @@ void FrameGraphTest::createPipeline() {
         },
     }));
 
-    _globalBarriers.push_back(TestBaseI::getGlobalBarrier({
+    _globalBarriers.push_back(device->getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
@@ -216,14 +216,14 @@ void FrameGraphTest::createPipeline() {
         },
     }));
 
-    _textureBarriers.push_back(TestBaseI::getTextureBarrier({
+    _textureBarriers.push_back(device->getTextureBarrier({
         {},
         {
             gfx::AccessType::TRANSFER_WRITE,
         },
     }));
 
-    _textureBarriers.push_back(TestBaseI::getTextureBarrier({
+    _textureBarriers.push_back(device->getTextureBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },

@@ -71,8 +71,6 @@ FrameRate                                  TestBaseI::deviceThread;
 vector<gfx::CommandBuffer *>               TestBaseI::commandBuffers;
 vector<gfx::Swapchain *>                   TestBaseI::swapchains;
 vector<gfx::Framebuffer *>                 TestBaseI::fbos;
-unordered_map<uint, gfx::GlobalBarrier *>  TestBaseI::globalBarrierMap;
-unordered_map<uint, gfx::TextureBarrier *> TestBaseI::textureBarrierMap;
 
 framegraph::FrameGraph TestBaseI::fg;
 
@@ -151,19 +149,6 @@ void TestBaseI::destroyGlobal() {
     framegraph::FrameGraph::gc(0);
 
     se::ScriptEngine::destroyInstance();
-
-    auto *agent = gfx::DeviceAgent::getInstance();
-    if (agent) agent->getMessageQueue()->kickAndWait();
-
-    for (auto textureBarrier : textureBarrierMap) {
-        CC_SAFE_DELETE(textureBarrier.second)
-    }
-    textureBarrierMap.clear();
-
-    for (auto globalBarrier : globalBarrierMap) {
-        CC_SAFE_DELETE(globalBarrier.second)
-    }
-    globalBarrierMap.clear();
 
     for (auto *fbo : fbos) {
         CC_SAFE_DESTROY(fbo)
@@ -451,22 +436,6 @@ tinyobj::ObjReader TestBaseI::loadOBJ(const String & /*path*/) {
     CCASSERT(obj.Valid(), "file failed to load");
 
     return obj;
-}
-
-gfx::GlobalBarrier *TestBaseI::getGlobalBarrier(const gfx::GlobalBarrierInfo &info) {
-    uint hash = gfx::GlobalBarrier::computeHash(info);
-    if (!globalBarrierMap.count(hash)) {
-        globalBarrierMap[hash] = device->createGlobalBarrier(info);
-    }
-    return globalBarrierMap[hash];
-}
-
-gfx::TextureBarrier *TestBaseI::getTextureBarrier(const gfx::TextureBarrierInfo &info) {
-    uint hash = gfx::TextureBarrier::computeHash(info);
-    if (!textureBarrierMap.count(hash)) {
-        textureBarrierMap[hash] = device->createTextureBarrier(info);
-    }
-    return textureBarrierMap[hash];
 }
 
 } // namespace cc

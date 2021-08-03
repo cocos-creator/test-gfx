@@ -30,7 +30,6 @@ private:
     gfx::DescriptorSetLayout *_descriptorSetLayout          = nullptr;
     gfx::PipelineLayout *     _pipelineLayout               = nullptr;
     gfx::PipelineState *      _pipelineState[PIPELIE_COUNT] = {nullptr};
-    gfx::Sampler *            _sampler                      = nullptr;
 
     struct MatrixUBO {
         Mat4 world;

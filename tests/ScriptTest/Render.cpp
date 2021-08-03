@@ -379,7 +379,7 @@ void Root::initialize() {
 
     pipelineState = device->createPipelineState(pipelineInfo);
 
-    globalBarriers.push_back(TestBaseI::getGlobalBarrier({
+    globalBarriers.push_back(device->getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
         },

@@ -798,7 +798,7 @@ void createStandardPipelineResources(gfx::Device *device, StandardDeferredPipeli
     out->lightingInputAssembler.reset(device->createInputAssembler(lightingInputAssemblerInfo));
 
     gfx::SamplerInfo samplerInfo;
-    out->sampler.reset(device->createSampler(samplerInfo));
+    auto *           sampler = device->getSampler(samplerInfo);
 
     out->lightingDescriptorSet.reset(device->createDescriptorSet({out->lightingDescriptorSetLayout.get()}));
 
@@ -807,10 +807,10 @@ void createStandardPipelineResources(gfx::Device *device, StandardDeferredPipeli
     out->lightingDescriptorSet->bindTexture(2, out->gbufferTextures[1].get());
     out->lightingDescriptorSet->bindTexture(3, out->gbufferTextures[2].get());
     out->lightingDescriptorSet->bindTexture(4, out->gbufferTextures[3].get());
-    out->lightingDescriptorSet->bindSampler(1, out->sampler.get());
-    out->lightingDescriptorSet->bindSampler(2, out->sampler.get());
-    out->lightingDescriptorSet->bindSampler(3, out->sampler.get());
-    out->lightingDescriptorSet->bindSampler(4, out->sampler.get());
+    out->lightingDescriptorSet->bindSampler(1, sampler);
+    out->lightingDescriptorSet->bindSampler(2, sampler);
+    out->lightingDescriptorSet->bindSampler(3, sampler);
+    out->lightingDescriptorSet->bindSampler(4, sampler);
     out->lightingDescriptorSet->update();
 }
 
