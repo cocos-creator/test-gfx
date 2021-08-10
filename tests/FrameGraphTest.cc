@@ -215,22 +215,6 @@ void FrameGraphTest::createPipeline() {
             gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
         },
     }));
-
-    _textureBarriers.push_back(device->getTextureBarrier({
-        {},
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-    }));
-
-    _textureBarriers.push_back(device->getTextureBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::PRESENT,
-        },
-    }));
 }
 
 void FrameGraphTest::onTick() {
@@ -351,6 +335,7 @@ void FrameGraphTest::onTick() {
 
     ////////////////////////////////////////////////////////
 
+    insertPresentBarrier(commandBuffer, &swapchain, 1);
     commandBuffer->end();
     device->flushCommands(commandBuffers);
     device->getQueue()->submit(commandBuffers);

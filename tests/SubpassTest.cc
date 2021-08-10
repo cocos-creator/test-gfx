@@ -181,6 +181,7 @@ void SubpassTest::onTick() {
         }
     }
 
+    TestBaseI::insertPresentBarrier(commandBuffer, swapchains.data(), swapchains.size());
     commandBuffer->end();
 
     device->flushCommands(commandBuffers);

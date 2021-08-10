@@ -153,7 +153,7 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Swa
         framegraph::Texture::Descriptor depthStencilInfo;
         depthStencilInfo.type   = gfx::TextureType::TEX2D;
         depthStencilInfo.usage  = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT;
-        depthStencilInfo.format = swapchain->getDepthStencilFormat();
+        depthStencilInfo.format = swapchain->getDepthStencilTexture()->getFormat();
         depthStencilInfo.width  = swapchain->getWidth();
         depthStencilInfo.height = swapchain->getHeight();
         data.depthStencil       = builder.create<framegraph::Texture>(DEPTH_STENCIL_NAME, depthStencilInfo);
@@ -187,23 +187,15 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Swa
 
         for (uint i = 0; i < 4; ++i) {
             data.gbuffers[i] = framegraph::TextureHandle(builder.readFromBlackboard(GBUFFER_NAMES[i]));
-            data.gbuffers[i] = builder.read(data.gbuffers[i]);
+            if (i != 3) data.gbuffers[i] = builder.read(data.gbuffers[i]);
         }
+
         framegraph::RenderTargetAttachment::Descriptor gbufferAttachmentInfo;
         gbufferAttachmentInfo.loadOp      = gfx::LoadOp::LOAD;
         gbufferAttachmentInfo.endAccesses = {gfx::AccessType::TRANSFER_READ};
 
         data.gbuffers[3] = builder.write(data.gbuffers[3], gbufferAttachmentInfo);
         builder.writeToBlackboard(GBUFFER_NAMES[3], data.gbuffers[3]);
-
-        framegraph::RenderTargetAttachment::Descriptor depthStencilAttachmentInfo;
-        depthStencilAttachmentInfo.loadOp = gfx::LoadOp::CLEAR;
-        depthStencilAttachmentInfo.endAccesses = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
-        depthStencilAttachmentInfo.usage  = framegraph::RenderTargetAttachment::Usage::DEPTH_STENCIL;
-
-        data.depthStencil = framegraph::TextureHandle(builder.readFromBlackboard(DEPTH_STENCIL_NAME));
-        data.depthStencil = builder.write(data.depthStencil, depthStencilAttachmentInfo);
-        builder.writeToBlackboard(DEPTH_STENCIL_NAME, data.depthStencil);
     };
 
     auto shadingPassExec = [=](ShadingData & /*data*/, const framegraph::DevicePassResourceTable & /*table*/) {
@@ -224,7 +216,7 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Swa
 
     fg.compile();
 
-    //fg.exportGraphViz("fg_vis.dot");
+    fg.exportGraphViz("fg_vis.dot");
 
     fg.execute();
 #else

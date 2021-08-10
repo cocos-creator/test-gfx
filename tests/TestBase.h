@@ -131,23 +131,24 @@ public:
     static void onTouchEnd();
     static void update();
 
-    static void                 evalString(const String &code);
-    static void                 runScript(const String &file);
-    static void                 tickScript();
-    static void                 scriptEngineGC();
-    static unsigned char *      rgb2rgba(Image *img);
-    static gfx::Texture *       createTextureWithFile(const gfx::TextureInfo &partialInfo, const String &imageFile);
-    static void                 modifyProjectionBasedOnDevice(Mat4 *projection, gfx::Swapchain *swapchain);
-    static void                 createOrthographic(float left, float right, float bottom, float top, float near, float zFar, Mat4 *dst, gfx::Swapchain *swapchain);
-    static void                 createPerspective(float fov, float aspect, float near, float zFar, Mat4 *dst, gfx::Swapchain *swapchain);
-    static gfx::Extent          getOrientedSurfaceSize(gfx::Swapchain *swapchain);
-    static gfx::Viewport        getViewportBasedOnDevice(const Vec4 &relativeArea, gfx::Swapchain *swapchain);
-    static uint                 getUBOSize(uint size);
-    static uint                 getMipmapLevelCounts(uint width, uint height);
-    static uint                 getAlignedUBOStride(uint stride);
-    static tinyobj::ObjReader   loadOBJ(const String &path);
-    static void                 createUberBuffer(const vector<uint> &sizes, gfx::Buffer **pBuffer,
-                                                 vector<gfx::Buffer *> *pBufferViews, vector<uint> *pBufferViewOffsets);
+    static void               evalString(const String &code);
+    static void               runScript(const String &file);
+    static void               tickScript();
+    static void               scriptEngineGC();
+    static unsigned char *    rgb2rgba(Image *img);
+    static gfx::Texture *     createTextureWithFile(const gfx::TextureInfo &partialInfo, const String &imageFile);
+    static void               modifyProjectionBasedOnDevice(Mat4 *projection, gfx::Swapchain *swapchain);
+    static void               createOrthographic(float left, float right, float bottom, float top, float near, float zFar, Mat4 *dst, gfx::Swapchain *swapchain);
+    static void               createPerspective(float fov, float aspect, float near, float zFar, Mat4 *dst, gfx::Swapchain *swapchain);
+    static gfx::Extent        getOrientedSurfaceSize(gfx::Swapchain *swapchain);
+    static gfx::Viewport      getViewportBasedOnDevice(const Vec4 &relativeArea, gfx::Swapchain *swapchain);
+    static uint               getUBOSize(uint size);
+    static uint               getMipmapLevelCounts(uint width, uint height);
+    static uint               getAlignedUBOStride(uint stride);
+    static void               insertPresentBarrier(gfx::CommandBuffer *cmdBuff, gfx::Swapchain *const *swapchains, uint count);
+    static tinyobj::ObjReader loadOBJ(const String &path);
+    static void               createUberBuffer(const vector<uint> &sizes, gfx::Buffer **pBuffer,
+                                               vector<gfx::Buffer *> *pBufferViews, vector<uint> *pBufferViewOffsets);
 
     template <typename T>
     static T &getAppropriateShaderSource(ShaderSources<T> &sources) {
