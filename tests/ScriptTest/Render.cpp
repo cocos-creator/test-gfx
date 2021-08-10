@@ -552,6 +552,7 @@ void Root::render() {
         commandBuffer->blitTexture(msaaFBO->colorTex, swapchain->getColorTexture(), &region, 1, gfx::Filter::POINT);
     }
 
+    TestBaseI::insertPresentBarrier(commandBuffer, &swapchain, 1);
     commandBuffer->end();
 
     device->flushCommands(commandBuffers);

@@ -393,6 +393,7 @@ void StressTest::recordRenderPass(uint passIndex) {
 
         commandBuffer->endRenderPass();
     }
+    insertPresentBarrier(commandBuffer, &swapchain, 1);
     commandBuffer->end();
 }
 #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED_FINER_JOBS || PARALLEL_STRATEGY == PARALLEL_STRATEGY_DC_BASED_FINER_JOBS_MULTI_PRIMARY
@@ -594,6 +595,7 @@ void StressTest::onTick() {
         commandBuffer->execute(&_parallelCBs[t * _threadCount], _threadCount);
         commandBuffer->endRenderPass();
     }
+    insertPresentBarrier(commandBuffer, &swapchain, 1);
     commandBuffer->end();
 
     device->flushCommands(commandBuffers);
@@ -639,6 +641,7 @@ void StressTest::onTick() {
         gfx::CommandBuffer *commandBuffer = commandBuffers[t];
         commandBuffer->execute(&_parallelCBs[t * _threadCount], _threadCount);
         commandBuffer->endRenderPass();
+        if (t == PASS_COUNT - 1) insertPresentBarrier(commandBuffer, &swapchain, 1);
         commandBuffer->end();
         device->flushCommands(&commandBuffer, 1);
     }
@@ -673,6 +676,7 @@ void StressTest::onTick() {
         commandBuffer->execute(_parallelCBs.data(), _threadCount);
         commandBuffer->endRenderPass();
     }
+    insertPresentBarrier(commandBuffer, &swapchain, 1);
     commandBuffer->end();
     #elif PARALLEL_STRATEGY == PARALLEL_STRATEGY_RP_BASED_SECONDARY
     for (uint t = 0u; t < PASS_COUNT; ++t) {
@@ -682,6 +686,7 @@ void StressTest::onTick() {
         commandBuffer->execute(&_parallelCBs[t], 1);
         commandBuffer->endRenderPass();
     }
+    insertPresentBarrier(commandBuffer, &swapchain, 1);
     commandBuffer->end();
     #endif
 

@@ -27,6 +27,7 @@ void ClearScreen::onTick() {
     commandBuffer->begin();
     commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0F, 0);
     commandBuffer->endRenderPass();
+    insertPresentBarrier(commandBuffer, &swapchain, 1);
     commandBuffer->end();
 
     device->flushCommands(commandBuffers);

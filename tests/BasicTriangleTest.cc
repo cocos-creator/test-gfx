@@ -267,6 +267,7 @@ void BasicTriangle::onTick() {
     commandBuffer->bindDescriptorSet(0, _descriptorSet);
     commandBuffer->draw(_inputAssembler);
     commandBuffer->endRenderPass();
+    insertPresentBarrier(commandBuffer, &swapchain, 1);
     commandBuffer->end();
 
     device->flushCommands(commandBuffers);
