@@ -658,17 +658,19 @@ void createStandardPipelineResources(gfx::Device *device, StandardDeferredPipeli
     gfx::RenderPassInfo deferredRenderPassInfo;
     for (uint i = 0; i < 4; ++i) {
         // RGBA8 is suffice for albedo, emission & occlusion
-        gfx::Format       format          = i % 3 ? gfx::Format::RGBA16F : gfx::Format::RGBA8;
-        gfx::TextureUsage usage           = gfx::TextureUsageBit::INPUT_ATTACHMENT | gfx::TextureUsageBit::COLOR_ATTACHMENT;
-        gfx::TextureFlags flags           = gfx::TextureFlagBit::NONE;
-        gfx::StoreOp      storeOp         = gfx::StoreOp::DISCARD;
-        gfx::AccessType   accessType      = gfx::AccessType::FRAGMENT_SHADER_READ_COLOR_INPUT_ATTACHMENT;
-        bool              isGeneralLayout = false;
+        gfx::Format             format     = i % 3 ? gfx::Format::RGBA16F : gfx::Format::RGBA8;
+        gfx::TextureUsage       usage      = gfx::TextureUsageBit::INPUT_ATTACHMENT | gfx::TextureUsageBit::COLOR_ATTACHMENT;
+        gfx::TextureFlags       flags      = gfx::TextureFlagBit::NONE;
+        gfx::StoreOp            storeOp    = gfx::StoreOp::DISCARD;
+        gfx::AccessType         accessType = gfx::AccessType::FRAGMENT_SHADER_READ_COLOR_INPUT_ATTACHMENT;
+        vector<gfx::AccessType> beginAccesses;
+        bool                    isGeneralLayout = false;
         if (i == 3) { // use the emission buffer as output
             usage |= gfx::TextureUsageBit::TRANSFER_SRC;
             flags |= gfx::TextureFlagBit::GENERAL_LAYOUT;
-            storeOp         = gfx::StoreOp::STORE;
-            accessType      = gfx::AccessType::TRANSFER_READ;
+            storeOp    = gfx::StoreOp::STORE;
+            accessType = gfx::AccessType::TRANSFER_READ;
+            beginAccesses.push_back(accessType);
             isGeneralLayout = true;
         }
         out->gbufferTextures.emplace_back(device->createTexture({
@@ -679,16 +681,19 @@ void createStandardPipelineResources(gfx::Device *device, StandardDeferredPipeli
             swapchain->getHeight(),
             flags,
         }));
-        deferredRenderPassInfo.colorAttachments.emplace_back();
-        deferredRenderPassInfo.colorAttachments.back().storeOp         = storeOp;
-        deferredRenderPassInfo.colorAttachments.back().format          = format;
-        deferredRenderPassInfo.colorAttachments.back().endAccesses     = {accessType};
-        deferredRenderPassInfo.colorAttachments.back().isGeneralLayout = isGeneralLayout;
+        auto &attachmentInfo           = deferredRenderPassInfo.colorAttachments.emplace_back();
+        attachmentInfo.storeOp         = storeOp;
+        attachmentInfo.format          = format;
+        attachmentInfo.beginAccesses   = beginAccesses;
+        attachmentInfo.endAccesses     = {accessType};
+        attachmentInfo.isGeneralLayout = isGeneralLayout;
     }
 
     deferredRenderPassInfo.depthStencilAttachment.format         = gfx::Format::DEPTH_STENCIL;
     deferredRenderPassInfo.depthStencilAttachment.depthStoreOp   = gfx::StoreOp::DISCARD;
     deferredRenderPassInfo.depthStencilAttachment.stencilStoreOp = gfx::StoreOp::DISCARD;
+    deferredRenderPassInfo.depthStencilAttachment.beginAccesses  = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
+    deferredRenderPassInfo.depthStencilAttachment.endAccesses    = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
 
     out->gbufferDepthStencilTexture.reset(device->createTexture({
         gfx::TextureType::TEX2D,
@@ -700,39 +705,9 @@ void createStandardPipelineResources(gfx::Device *device, StandardDeferredPipeli
 
     deferredRenderPassInfo.subpasses.resize(2);
     deferredRenderPassInfo.subpasses[0].colors = {0, 1, 2, 3};
+    deferredRenderPassInfo.subpasses[0].depthStencil = 4;
     deferredRenderPassInfo.subpasses[1].colors = {3};
     deferredRenderPassInfo.subpasses[1].inputs = {0, 1, 2, 3};
-
-    // Wait for last round to finish
-    deferredRenderPassInfo.dependencies.push_back({
-        gfx::SUBPASS_EXTERNAL,
-        0,
-        {gfx::AccessType::TRANSFER_READ},
-        {gfx::AccessType::COLOR_ATTACHMENT_WRITE},
-    });
-
-    deferredRenderPassInfo.dependencies.push_back({
-        gfx::SUBPASS_EXTERNAL,
-        0,
-        {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE},
-        {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE},
-    });
-
-    // Second subpass reads after the writing finishes
-    deferredRenderPassInfo.dependencies.push_back({
-        0,
-        1,
-        {gfx::AccessType::COLOR_ATTACHMENT_WRITE},
-        {gfx::AccessType::FRAGMENT_SHADER_READ_COLOR_INPUT_ATTACHMENT},
-    });
-
-    // Should finish color output before transfer read
-    deferredRenderPassInfo.dependencies.push_back({
-        1,
-        gfx::SUBPASS_EXTERNAL,
-        {gfx::AccessType::COLOR_ATTACHMENT_WRITE},
-        {gfx::AccessType::TRANSFER_READ},
-    });
 
     out->gbufferRenderPass.reset(device->createRenderPass(deferredRenderPassInfo));
     out->gbufferFramebuffer.reset(device->createFramebuffer({
