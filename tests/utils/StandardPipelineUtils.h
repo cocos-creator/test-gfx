@@ -100,7 +100,7 @@ void StandardForwardPipeline::recordCommandBuffer(gfx::Device * /*device*/, gfx:
 template <typename Fn>
 void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Swapchain *swapchain, gfx::CommandBuffer *commandBuffer,
                                                    const gfx::Rect &renderArea, const gfx::Color *clearColors, Fn execute) {
-#if 0
+#if 1
     // Logic passes
     static const framegraph::StringHandle GBUFFER_PASS_NAME = framegraph::FrameGraph::stringToHandle("GBufferPass");
     static const framegraph::StringHandle SHADING_PASS_NAME = framegraph::FrameGraph::stringToHandle("ShadingPass");
@@ -123,14 +123,16 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Swa
 
         for (uint i = 0; i < 4; ++i) {
             // RGBA8 is suffice for albedo, emission & occlusion
-            gfx::Format       format     = i % 3 ? gfx::Format::RGBA16F : gfx::Format::RGBA8;
-            gfx::TextureUsage usage      = gfx::TextureUsageBit::INPUT_ATTACHMENT | gfx::TextureUsageBit::COLOR_ATTACHMENT;
-            gfx::TextureFlags flags      = gfx::TextureFlagBit::NONE;
-            gfx::AccessType   accessType = gfx::AccessType::FRAGMENT_SHADER_READ_COLOR_INPUT_ATTACHMENT;
+            gfx::Format             format     = i % 3 ? gfx::Format::RGBA16F : gfx::Format::RGBA8;
+            gfx::TextureUsage       usage      = gfx::TextureUsageBit::INPUT_ATTACHMENT | gfx::TextureUsageBit::COLOR_ATTACHMENT;
+            gfx::TextureFlags       flags      = gfx::TextureFlagBit::NONE;
+            gfx::AccessType         accessType = gfx::AccessType::FRAGMENT_SHADER_READ_COLOR_INPUT_ATTACHMENT;
+            vector<gfx::AccessType> beginAccesses;
             if (i == 3) { // use the emission buffer as output
                 usage |= gfx::TextureUsageBit::TRANSFER_SRC;
                 flags |= gfx::TextureFlagBit::GENERAL_LAYOUT;
                 accessType = gfx::AccessType::TRANSFER_READ;
+                beginAccesses.push_back(accessType);
             }
             framegraph::Texture::Descriptor gbufferInfo;
             gbufferInfo.type   = gfx::TextureType::TEX2D;
@@ -143,9 +145,11 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Swa
 
             // Attachment Setup
             framegraph::RenderTargetAttachment::Descriptor gbufferAttachmentInfo;
-            gbufferAttachmentInfo.loadOp      = gfx::LoadOp::CLEAR;
-            gbufferAttachmentInfo.clearColor  = clearColors[i];
-            gbufferAttachmentInfo.endAccesses = {accessType};
+            gbufferAttachmentInfo.slot          = i;
+            gbufferAttachmentInfo.loadOp        = gfx::LoadOp::CLEAR;
+            gbufferAttachmentInfo.clearColor    = clearColors[i];
+            gbufferAttachmentInfo.beginAccesses = beginAccesses;
+            gbufferAttachmentInfo.endAccesses   = {accessType};
 
             data.gbuffers[i] = builder.write(data.gbuffers[i], gbufferAttachmentInfo);
             builder.writeToBlackboard(GBUFFER_NAMES[i], data.gbuffers[i]);
@@ -160,9 +164,10 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Swa
 
         // Attachment Setup
         framegraph::RenderTargetAttachment::Descriptor depthStencilAttachmentInfo;
-        depthStencilAttachmentInfo.loadOp = gfx::LoadOp::CLEAR;
-        depthStencilAttachmentInfo.endAccesses = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
-        depthStencilAttachmentInfo.usage       = framegraph::RenderTargetAttachment::Usage::DEPTH_STENCIL;
+        depthStencilAttachmentInfo.loadOp        = gfx::LoadOp::CLEAR;
+        depthStencilAttachmentInfo.beginAccesses = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
+        depthStencilAttachmentInfo.endAccesses   = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
+        depthStencilAttachmentInfo.usage         = framegraph::RenderTargetAttachment::Usage::DEPTH_STENCIL;
 
         data.depthStencil = builder.write(data.depthStencil, depthStencilAttachmentInfo);
         builder.writeToBlackboard(DEPTH_STENCIL_NAME, data.depthStencil);
@@ -187,18 +192,25 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Swa
 
         for (uint i = 0; i < 4; ++i) {
             data.gbuffers[i] = framegraph::TextureHandle(builder.readFromBlackboard(GBUFFER_NAMES[i]));
-            if (i != 3) data.gbuffers[i] = builder.read(data.gbuffers[i]);
+            data.gbuffers[i] = builder.read(data.gbuffers[i]);
         }
 
         framegraph::RenderTargetAttachment::Descriptor gbufferAttachmentInfo;
-        gbufferAttachmentInfo.loadOp      = gfx::LoadOp::LOAD;
-        gbufferAttachmentInfo.endAccesses = {gfx::AccessType::TRANSFER_READ};
+        gbufferAttachmentInfo.slot          = 3;
+        gbufferAttachmentInfo.loadOp        = gfx::LoadOp::LOAD;
+        gbufferAttachmentInfo.beginAccesses = {gfx::AccessType::TRANSFER_READ};
+        gbufferAttachmentInfo.endAccesses   = {gfx::AccessType::TRANSFER_READ};
 
-        data.gbuffers[3] = builder.write(data.gbuffers[3], gbufferAttachmentInfo);
-        builder.writeToBlackboard(GBUFFER_NAMES[3], data.gbuffers[3]);
+        builder.writeToBlackboard(GBUFFER_NAMES[3], builder.write(data.gbuffers[3], gbufferAttachmentInfo));
     };
 
-    auto shadingPassExec = [=](ShadingData & /*data*/, const framegraph::DevicePassResourceTable & /*table*/) {
+    auto shadingPassExec = [=](ShadingData &data, const framegraph::DevicePassResourceTable &table) {
+        lightingDescriptorSet->bindTexture(1, table.getRead(data.gbuffers[0]));
+        lightingDescriptorSet->bindTexture(2, table.getRead(data.gbuffers[1]));
+        lightingDescriptorSet->bindTexture(3, table.getRead(data.gbuffers[2]));
+        lightingDescriptorSet->bindTexture(4, table.getRead(data.gbuffers[3]));
+        lightingDescriptorSet->update();
+
         commandBuffer->bindPipelineState(lightingPipelineState.get());
         commandBuffer->bindDescriptorSet(0, lightingDescriptorSet.get());
         commandBuffer->bindInputAssembler(lightingInputAssembler.get());
