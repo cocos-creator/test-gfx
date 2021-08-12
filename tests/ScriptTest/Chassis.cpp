@@ -1,5 +1,6 @@
 #include "Chassis.h"
 #include "base/threading/MessageQueue.h"
+#include "gfx-agent/DeviceAgent.h"
 
 namespace cc {
 namespace experimental {
@@ -463,6 +464,10 @@ void RootAgent::render() {
 
 void RootAgent::setMultithreaded(bool multithreaded) {
     if (multithreaded == _multithreaded) return;
+
+    // Cannot detach if there is no device thread
+    if (!gfx::DeviceAgent::getInstance()) return;
+
     _multithreaded = multithreaded;
 
     if (multithreaded) {
