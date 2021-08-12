@@ -41,6 +41,7 @@ struct MultisampledFramebuffer {
         colorTexMSAAInfo.usage   = gfx::TextureUsageBit::COLOR_ATTACHMENT;
         colorTexMSAAInfo.samples = gfx::SampleCount::MULTIPLE_BALANCE;
         colorTexMSAAInfo.format  = swapchain->getColorTexture()->getFormat();
+        colorTexMSAAInfo.flags   = gfx::TextureFlagBit::RESIZABLE;
         colorTexMSAAInfo.width   = swapchain->getWidth();
         colorTexMSAAInfo.height  = swapchain->getHeight();
         colorTexMSAA             = device->createTexture(colorTexMSAAInfo);
@@ -49,6 +50,7 @@ struct MultisampledFramebuffer {
         colorTexInfo.type   = gfx::TextureType::TEX2D;
         colorTexInfo.usage  = gfx::TextureUsageBit::COLOR_ATTACHMENT | gfx::TextureUsageBit::TRANSFER_SRC;
         colorTexInfo.format = swapchain->getColorTexture()->getFormat();
+        colorTexInfo.flags  = gfx::TextureFlagBit::RESIZABLE;
         colorTexInfo.width  = swapchain->getWidth();
         colorTexInfo.height = swapchain->getHeight();
         colorTex            = device->createTexture(colorTexInfo);
@@ -58,6 +60,7 @@ struct MultisampledFramebuffer {
         depthStencilTexInfo.usage   = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT;
         depthStencilTexInfo.samples = gfx::SampleCount::MULTIPLE_BALANCE;
         depthStencilTexInfo.format  = gfx::Format::DEPTH;
+        depthStencilTexInfo.flags   = gfx::TextureFlagBit::RESIZABLE;
         depthStencilTexInfo.width   = swapchain->getWidth();
         depthStencilTexInfo.height  = swapchain->getHeight();
         depthStencilTex             = device->createTexture(depthStencilTexInfo);
@@ -71,6 +74,8 @@ struct MultisampledFramebuffer {
     }
 
     void resize(uint width, uint height) const {
+        if (colorTexMSAA->getWidth() == width && colorTexMSAA->getHeight() == height) return;
+
         framebuffer->destroy();
 
         colorTexMSAA->resize(width, height);
@@ -80,7 +85,7 @@ struct MultisampledFramebuffer {
         gfx::FramebufferInfo fboInfo;
         fboInfo.renderPass = renderPass;
         fboInfo.colorTextures.push_back(colorTexMSAA);
-        fboInfo.colorTextures.push_back(nullptr);
+        fboInfo.colorTextures.push_back(colorTex);
         fboInfo.depthStencilTexture = depthStencilTex;
         framebuffer->initialize(fboInfo);
     }
@@ -120,16 +125,40 @@ uint                         uboStride{0U};
 uint                         floatCountPerModel{0U};
 uint                         modelCapacity{Root::INITIAL_CAPACITY};
 vmath::IndexP                index;
-constexpr bool               ROTATE_VIEW{true};
 constexpr bool               OFFSCREEN_MSAA{true};
 
 gfx::Buffer *        vertexBufferOutline{nullptr};
 gfx::PipelineState * pipelineStateOutline{nullptr};
 gfx::InputAssembler *inputAssemblerOutline{nullptr};
+
+void updateCamera(gfx::Swapchain *swapchain) {
+    static constexpr float ORTHO_HEIGHT{1.3F};
+    static constexpr bool  ROTATE_VIEW{true};
+    static constexpr bool  FIXED_2D_VIEW{false};
+    static Mat4            view;
+    static Mat4            projection;
+    static float           time{M_PI * 0.5F};
+    static bool            inited{false};
+    if (inited && !ROTATE_VIEW) return;
+
+    if (FIXED_2D_VIEW) {
+        Mat4::createLookAt({0.F, 0.F, 3.F}, {0.F, 0.F, 0.F}, {0.F, 1.F, 0.F}, &view);
+    } else {
+        Mat4::createLookAt({std::cos(time) * 4.F + 1.F, 1.F, std::sin(time) * 3.F},
+                           {0.F, 0.F, .5F}, {0.F, 1.F, 0.F}, &view);
+        if (ROTATE_VIEW) time += TestBaseI::renderThread.dt * 0.1F;
+    }
+    float ratio = static_cast<float>(swapchain->getWidth()) / static_cast<float>(swapchain->getHeight());
+    float orthoWidth = ORTHO_HEIGHT * ratio;
+    TestBaseI::createOrthographic(-orthoWidth, orthoWidth, -ORTHO_HEIGHT, ORTHO_HEIGHT, 1.F, 10.F, &projection, swapchain);
+    projection = projection * view;
+    uniformBufferGlobal->update(projection.m, sizeof(projection));
+    inited = true;
+}
 } // namespace
 
 void Root::initialize() {
-    auto *swapchain = TestBaseI::swapchains[0];
+    auto *swapchain   = TestBaseI::swapchains[0];
     auto *onScreenFBO = TestBaseI::fbos[0];
 
     gfx::Device *device = gfx::Device::getInstance();
@@ -333,13 +362,6 @@ void Root::initialize() {
     };
     uniformBufferGlobal = device->createBuffer(uniformBufferGlobalInfo);
 
-    Mat4 view;
-    Mat4 projection;
-    Mat4::createLookAt({1.F, 1.F, 3.F}, {0.F, 0.F, .5F}, {0.F, 1.F, 0.F}, &view);
-    TestBaseI::createOrthographic(-1.5F, 1.5F, -1.5F, 1.5F, 1.F, 10.F, &projection, swapchain);
-    projection = projection * view;
-    uniformBufferGlobal->update(projection.m, sizeof(projection));
-
     gfx::InputAssemblerInfo inputAssemblerInfo;
     inputAssemblerInfo.attributes = shaderInfo.attributes;
     inputAssemblerInfo.vertexBuffers.emplace_back(vertexBuffer);
@@ -482,6 +504,8 @@ void Root::render() {
     gfx::Swapchain *swapchain  = TestBaseI::swapchains[0];
     gfx::Color      clearColor = {.1F, .1F, .1F, 1.F};
 
+    msaaFBO->resize(swapchain->getWidth(), swapchain->getHeight());
+
     size_t modelCount = ModelView::views.size();
 
     if (modelCount >= modelCapacity) {
@@ -502,17 +526,7 @@ void Root::render() {
 
     device->acquire(&swapchain, 1);
 
-    if (ROTATE_VIEW) {
-        Mat4         view;
-        Mat4         projection;
-        static float time = M_PI * 0.5F;
-        time += TestBaseI::renderThread.dt * 0.1F;
-        Mat4::createLookAt({std::cos(time) * 4.F + 1.F, 1.F, std::sin(time) * 3.F},
-                           {0.F, 0.F, .5F}, {0.F, 1.F, 0.F}, &view);
-        TestBaseI::createOrthographic(-1.5F, 1.5F, -1.5F, 1.5F, 1.F, 10.F, &projection, swapchain);
-        projection = projection * view;
-        uniformBufferGlobal->update(projection.m, sizeof(projection));
-    }
+    updateCamera(swapchain);
 
     instancedBuffer->update(uniformBufferData.data(), (modelCount + 1) * uboStride);
 
@@ -545,8 +559,8 @@ void Root::render() {
 
     if (OFFSCREEN_MSAA) {
         gfx::TextureBlit region;
-        region.srcExtent.width  = swapchain->getWidth();
-        region.srcExtent.height = swapchain->getHeight();
+        region.srcExtent.width  = msaaFBO->colorTex->getWidth();
+        region.srcExtent.height = msaaFBO->colorTex->getHeight();
         region.dstExtent.width  = swapchain->getWidth();
         region.dstExtent.height = swapchain->getHeight();
         commandBuffer->blitTexture(msaaFBO->colorTex, swapchain->getColorTexture(), &region, 1, gfx::Filter::POINT);
