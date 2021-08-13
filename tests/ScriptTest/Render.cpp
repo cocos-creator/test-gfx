@@ -132,7 +132,7 @@ gfx::PipelineState * pipelineStateOutline{nullptr};
 gfx::InputAssembler *inputAssemblerOutline{nullptr};
 
 void updateCamera(gfx::Swapchain *swapchain) {
-    static constexpr float ORTHO_HEIGHT{1.3F};
+    static constexpr float ORTHO_HEIGHT{1.65F};
     static constexpr bool  ROTATE_VIEW{true};
     static constexpr bool  FIXED_2D_VIEW{false};
     static Mat4            view;
@@ -144,11 +144,11 @@ void updateCamera(gfx::Swapchain *swapchain) {
     if (FIXED_2D_VIEW) {
         Mat4::createLookAt({0.F, 0.F, 3.F}, {0.F, 0.F, 0.F}, {0.F, 1.F, 0.F}, &view);
     } else {
-        Mat4::createLookAt({std::cos(time) * 4.F + 1.F, 1.F, std::sin(time) * 3.F},
-                           {0.F, 0.F, .5F}, {0.F, 1.F, 0.F}, &view);
+        Mat4::createLookAt({std::cos(time) * 4.F, 1.F, std::sin(time) * 4.F},
+                           {0.F, 0.F, 0.F}, {0.F, 1.F, 0.F}, &view);
         if (ROTATE_VIEW) time += TestBaseI::renderThread.dt * 0.1F;
     }
-    float ratio = static_cast<float>(swapchain->getWidth()) / static_cast<float>(swapchain->getHeight());
+    float ratio      = static_cast<float>(swapchain->getWidth()) / static_cast<float>(swapchain->getHeight());
     float orthoWidth = ORTHO_HEIGHT * ratio;
     TestBaseI::createOrthographic(-orthoWidth, orthoWidth, -ORTHO_HEIGHT, ORTHO_HEIGHT, 1.F, 10.F, &projection, swapchain);
     projection = projection * view;
@@ -417,14 +417,14 @@ void Root::initialize() {
 
     // bounding box outline
 
-    float vertexDataOutline[] = {-1.F, -1.F, 0.F,
-                                 -1.F, 1.F, 0.F,
-                                 -1.F, 1.F, 0.F,
-                                 1.F, 1.F, 0.F,
-                                 1.F, 1.F, 0.F,
-                                 1.F, -1.F, 0.F,
-                                 1.F, -1.F, 0.F,
-                                 -1.F, -1.F, 0.F,
+    float vertexDataOutline[] = {-1.F, -1.F, -1.F,
+                                 -1.F, 1.F, -1.F,
+                                 -1.F, 1.F, -1.F,
+                                 1.F, 1.F, -1.F,
+                                 1.F, 1.F, -1.F,
+                                 1.F, -1.F, -1.F,
+                                 1.F, -1.F, -1.F,
+                                 -1.F, -1.F, -1.F,
 
                                  -1.F, -1.F, 1.F,
                                  -1.F, 1.F, 1.F,
@@ -436,13 +436,13 @@ void Root::initialize() {
                                  -1.F, -1.F, 1.F,
 
                                  -1.F, -1.F, 1.F,
-                                 -1.F, -1.F, 0.F,
+                                 -1.F, -1.F, -1.F,
                                  -1.F, 1.F, 1.F,
-                                 -1.F, 1.F, 0.F,
+                                 -1.F, 1.F, -1.F,
                                  1.F, 1.F, 1.F,
-                                 1.F, 1.F, 0.F,
+                                 1.F, 1.F, -1.F,
                                  1.F, -1.F, 1.F,
-                                 1.F, -1.F, 0.F};
+                                 1.F, -1.F, -1.F};
 
     gfx::BufferInfo vertexBufferOutlineInfo = {
         gfx::BufferUsage::VERTEX,
@@ -502,7 +502,7 @@ void Root::render() {
 
     gfx::Device *   device     = gfx::Device::getInstance();
     gfx::Swapchain *swapchain  = TestBaseI::swapchains[0];
-    gfx::Color      clearColor = {.1F, .1F, .1F, 1.F};
+    gfx::Color      clearColor = {.1, .1, .1, 1.F};
 
     msaaFBO->resize(swapchain->getWidth(), swapchain->getHeight());
 
@@ -541,18 +541,17 @@ void Root::render() {
 
     commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.F, 0);
 
+    // outline wireframe
     commandBuffer->bindPipelineState(pipelineStateOutline);
     commandBuffer->bindInputAssembler(inputAssemblerOutline);
     commandBuffer->bindDescriptorSet(0, descriptorSet);
     commandBuffer->draw(inputAssemblerOutline);
 
     if (modelCount) {
-        for (uint i = 0; i < 1; ++i) {
-            inputAssembler->setInstanceCount(modelCount);
-            commandBuffer->bindPipelineState(pipelineState);
-            commandBuffer->bindInputAssembler(inputAssembler);
-            commandBuffer->draw(inputAssembler);
-        }
+        inputAssembler->setInstanceCount(modelCount);
+        commandBuffer->bindPipelineState(pipelineState);
+        commandBuffer->bindInputAssembler(inputAssembler);
+        commandBuffer->draw(inputAssembler);
     }
 
     commandBuffer->endRenderPass();

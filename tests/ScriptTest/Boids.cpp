@@ -53,8 +53,8 @@ static Vec3<Value> sampleUniformSphere(PCG32<Value> &rng) {
 
 template <typename Value_, typename Value = expr_t<Value_>>
 static float getBoundaryFade(Vec3<Value_> v, float clamp) {
-    static const Vec3<Value> OFFSET{0.F, 0.F, -0.5F};
-    static const Vec3<Value> SCALE{1.F, 1.F, 2.F};
+    static const Vec3<Value> OFFSET{0.F, 0.F, 0.0F};
+    static const Vec3<Value> SCALE{1.F, 1.F, 1.F};
 
     return hmin(concat(1.F - abs(v + OFFSET) * SCALE, clamp)) / clamp;
 }
@@ -85,8 +85,8 @@ static Vec3<Value> &&wrapBound(Vec3<Value_> &&v) {
     v.x()[v.x() < -1.F] += 2.F;
     v.y()[v.y() > 1.F] -= 2.F;
     v.y()[v.y() < -1.F] += 2.F;
-    v.z()[v.z() > 1.F] -= 1.F;
-    v.z()[v.z() < 0.F] += 1.F;
+    v.z()[v.z() > 1.F] -= 2.F;
+    v.z()[v.z() < -1.F] += 2.F;
     return std::move(v);
 }
 
@@ -130,7 +130,7 @@ void BoidsManager::init(const BoidsOptions &newOptions) {
     for (size_t i = 0; i < packets(boids); ++i) {
         auto &&p       = packet(boids, i);
         p.position     = sampleUniformSphere(rng);
-        p.position.z() = abs(p.position.z());
+        //p.position.z() = abs(p.position.z());
         p.velocity     = sampleUniformSphere(rng) * options.maxVelocity;
         update(p);
     }
