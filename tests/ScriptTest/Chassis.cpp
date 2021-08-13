@@ -304,18 +304,15 @@ void TransformAgent::setPosition(float x, float y, float z) {
 }
 
 void TransformAgent::setRotation(float x, float y, float z, float w) {
-    auto *actorQuat = RootAgent::getInstance()->getMessageQueue()->allocate<float>(4);
-    actorQuat[0]    = x;
-    actorQuat[1]    = y;
-    actorQuat[2]    = z;
-    actorQuat[3]    = w;
-
-    ENQUEUE_MESSAGE_2(
+    ENQUEUE_MESSAGE_5(
         RootAgent::getInstance()->getMessageQueue(), TransformSetRotation,
         actor, getActor(),
-        q, actorQuat,
+        x, x,
+        y, y,
+        z, z,
+        w, w,
         {
-            actor->setRotation(q);
+            actor->setRotation(x, y, z, w);
         })
 }
 
@@ -456,10 +453,10 @@ void RootAgent::render() {
     if (_multithreaded) {
         _mainMessageQueue->finishWriting();
         _pendingTickCount.increment();
-        cc::MessageQueue::freeChunksInFreeQueue(_mainMessageQueue);
     } else {
         _actor->render();
     }
+    cc::MessageQueue::freeChunksInFreeQueue(_mainMessageQueue);
 }
 
 void RootAgent::setMultithreaded(bool multithreaded) {

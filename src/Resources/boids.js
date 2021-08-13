@@ -3,7 +3,7 @@
 
     const NATIVE_COMPUTATION = JSB && 1;
     const options = {
-        boidCount: 512,
+        boidCount: 8196,
         maxVelocity: 0.4,
         alignmentForce: 0.002,
         cohesionForce: 0.002,
@@ -46,7 +46,7 @@
             return Math.min(clamp,
                 1 - Math.abs(v[0]),
                 1 - Math.abs(v[1]),
-                1 - 2 * Math.abs(v[2] - 0.5)) / clamp;
+                1 - Math.abs(v[2])) / clamp;
         };
 
         const wrapBound = (v) => {
@@ -54,8 +54,8 @@
             else if (v[0] < -1) { v[0] += 2; }
             if (v[1] > 1) { v[1] -= 2; }
             else if (v[1] < -1) { v[1] += 2; }
-            if (v[2] > 1) { v[2] -= 1; }
-            else if (v[2] < 0) { v[2] += 1; }
+            if (v[2] > 1) { v[2] -= 2; }
+            else if (v[2] < -1) { v[2] += 2; }
         };
 
         const clampLength = (v, max) => {
@@ -81,7 +81,7 @@
                 this.model.setTransform(this.transform);
 
                 vec3.random(tempVec3a);
-                tempVec3a[2] = Math.abs(tempVec3a[2]);
+                // tempVec3a[2] = Math.abs(tempVec3a[2]);
                 this.transform.setPosition(tempVec3a);
                 vec3.random(this.velocity, Math.random() * options.maxVelocity);
 
