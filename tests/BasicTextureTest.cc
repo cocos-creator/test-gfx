@@ -182,6 +182,15 @@ void BasicTexture::createTexture() {
     _textures.resize(2);
     _textures[0] = TestBaseI::createTextureWithFile(textureInfo, "uv_checker_01.jpg");
     _textures[1] = TestBaseI::createTextureWithFile(textureInfo, "uv_checker_02.jpg");
+
+    vector<uint8_t> buffer(_textures[0]->getWidth() * _textures[0]->getHeight() * gfx::GFX_FORMAT_INFOS[toNumber(_textures[0]->getFormat())].size);
+    uint8_t *       data = buffer.data();
+    gfx::BufferTextureCopy region;
+    region.texExtent.width = _textures[0]->getWidth();
+    region.texExtent.height = _textures[0]->getHeight();
+    device->copyTextureToBuffers(_textures[0], &data, &region, 1);
+
+    device->copyBuffersToTexture(&data, _textures[0], &region, 1);
 }
 
 void BasicTexture::createPipeline() {
