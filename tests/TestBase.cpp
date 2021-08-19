@@ -49,8 +49,8 @@ gfx::Framebuffer *TestBaseI::fbo                    = nullptr;
 gfx::RenderPass * TestBaseI::renderPass             = nullptr;
 
 vector<TestBaseI::createFunc> TestBaseI::tests = {
-    SubpassTest::create,
     ScriptTest::create,
+    SubpassTest::create,
     ComputeTest::create,
     FrameGraphTest::create,
     StressTest::create,
