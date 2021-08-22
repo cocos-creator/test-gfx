@@ -325,7 +325,7 @@ void FrameGraphTest::onTick() {
     fg.addPass<DrawData>(100, leftName, drawSetupFactory(0), drawExecFactory);
     fg.addPass<DrawData>(200, rightName, drawSetupFactory(1), drawExecFactory);
 
-    fg.presentFromBlackboard(colorTexName, swapchain);
+    fg.presentFromBlackboard(colorTexName, swapchain->getColorTexture());
 
     fg.compile();
 
@@ -335,7 +335,6 @@ void FrameGraphTest::onTick() {
 
     ////////////////////////////////////////////////////////
 
-    insertPresentBarrier(commandBuffer, &swapchain, 1);
     commandBuffer->end();
     device->flushCommands(commandBuffers);
     device->getQueue()->submit(commandBuffers);
