@@ -145,7 +145,6 @@ public:
     static uint               getUBOSize(uint size);
     static uint               getMipmapLevelCounts(uint width, uint height);
     static uint               getAlignedUBOStride(uint stride);
-    static void               insertPresentBarrier(gfx::CommandBuffer *cmdBuff, gfx::Swapchain *const *swapchains, uint count);
     static tinyobj::ObjReader loadOBJ(const String &path);
     static void               createUberBuffer(const vector<uint> &sizes, gfx::Buffer **pBuffer,
                                                vector<gfx::Buffer *> *pBufferViews, vector<uint> *pBufferViewOffsets);

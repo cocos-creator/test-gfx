@@ -468,7 +468,6 @@ void ComputeTest::onTick() {
     commandBuffer->draw(_inputAssembler);
     commandBuffer->endRenderPass();
 
-    insertPresentBarrier(commandBuffer, &swapchain, 1);
     commandBuffer->end();
 
     device->flushCommands(commandBuffers);

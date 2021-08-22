@@ -689,7 +689,6 @@ void BlendTest::onTick() {
     commandBuffer->draw(quad->inputAssembler);
 
     commandBuffer->endRenderPass();
-    insertPresentBarrier(commandBuffer, &swapchain, 1);
     commandBuffer->end();
 
     device->flushCommands(commandBuffers);

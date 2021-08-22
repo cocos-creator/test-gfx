@@ -281,21 +281,6 @@ constexpr float PRE_TRANSFORMS[4][4] = {
 };
 #endif
 
-void TestBaseI::insertPresentBarrier(gfx::CommandBuffer *cmdBuff, gfx::Swapchain *const *swapchains, uint count) {
-    static gfx::TextureBarrier *         barrier = device->getTextureBarrier({{gfx::AccessType::COLOR_ATTACHMENT_WRITE}, {gfx::AccessType::PRESENT}});
-    static vector<gfx::Texture *>        backBuffers;
-    static vector<gfx::TextureBarrier *> presentBarriers;
-    backBuffers.clear();
-    presentBarriers.clear();
-
-    for (uint i = 0; i < count; ++i) {
-        backBuffers.push_back(swapchains[i]->getColorTexture());
-        presentBarriers.push_back(barrier);
-    }
-
-    cmdBuff->pipelineBarrier(nullptr, presentBarriers, backBuffers);
-}
-
 void TestBaseI::createOrthographic(float left, float right, float bottom, float top, float zNear, float zFar, Mat4 *dst, gfx::Swapchain *swapchain) {
 #ifdef DEFAULT_MATRIX_MATH
     Mat4::createOrthographic(left, right, bottom, top, zNear, zFar, dst);

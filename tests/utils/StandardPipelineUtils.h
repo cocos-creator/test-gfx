@@ -224,7 +224,7 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Swa
     fg.addPass<GBufferData>(100, GBUFFER_PASS_NAME, gbufferPassSetup, gbufferPassExec);
     fg.addPass<ShadingData>(200, SHADING_PASS_NAME, shadingPassSetup, shadingPassExec);
 
-    fg.presentFromBlackboard(GBUFFER_NAMES[3], swapchain);
+    fg.presentFromBlackboard(GBUFFER_NAMES[3], swapchain->getColorTexture());
 
     fg.compile();
 

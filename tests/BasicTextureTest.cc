@@ -176,7 +176,7 @@ void BasicTexture::createInputAssembler() {
 
 void BasicTexture::createTexture() {
     gfx::TextureInfo textureInfo;
-    textureInfo.usage  = gfx::TextureUsage::SAMPLED | gfx::TextureUsage::TRANSFER_DST;
+    textureInfo.usage  = gfx::TextureUsage::SAMPLED | gfx::TextureUsage::TRANSFER_DST | gfx::TextureUsage::TRANSFER_SRC;
     textureInfo.format = gfx::Format::RGBA8;
 
     _textures.resize(2);
@@ -285,7 +285,6 @@ void BasicTexture::onTick() {
     commandBuffer->bindDescriptorSet(0, _descriptorSet);
     commandBuffer->draw(_inputAssembler);
     commandBuffer->endRenderPass();
-    insertPresentBarrier(commandBuffer, &swapchain, 1);
     commandBuffer->end();
 
     device->flushCommands(commandBuffers);

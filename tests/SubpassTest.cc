@@ -132,8 +132,8 @@ void SubpassTest::onTick() {
     device->acquire(swapchains);
     commandBuffer->begin();
 
-    float gbufferWidth  = static_cast<float>(_deferred.gbufferTextures[0]->getWidth());
-    float gbufferHeight = static_cast<float>(_deferred.gbufferTextures[0]->getHeight());
+    auto gbufferWidth  = static_cast<float>(_deferred.gbufferTextures[0]->getWidth());
+    auto gbufferHeight = static_cast<float>(_deferred.gbufferTextures[0]->getHeight());
 
     for (size_t i = 0; i < swapchains.size(); ++i) {
         auto *swapchain = swapchains[i];
@@ -149,8 +149,8 @@ void SubpassTest::onTick() {
         std::copy(_projectionMatrix.m, _projectionMatrix.m + 16, _ubos.getBuffer(standard::MVP) + 32);
 
         // scale the sampling UV if needed
-        _ubos.getBuffer(standard::CAMERA)[3] = swapchain->getWidth() / gbufferWidth;
-        _ubos.getBuffer(standard::CAMERA)[7] = swapchain->getHeight() / gbufferHeight;
+        _ubos.getBuffer(standard::CAMERA)[3] = static_cast<float>(swapchain->getWidth()) / gbufferWidth;
+        _ubos.getBuffer(standard::CAMERA)[7] = static_cast<float>(swapchain->getHeight()) / gbufferHeight;
 
         std::copy(&colors[i].x, &colors[i].x + 4, _ubos.getBuffer(standard::COLOR));
 
@@ -181,7 +181,6 @@ void SubpassTest::onTick() {
         }
     }
 
-    TestBaseI::insertPresentBarrier(commandBuffer, swapchains.data(), swapchains.size());
     commandBuffer->end();
 
     device->flushCommands(commandBuffers);
