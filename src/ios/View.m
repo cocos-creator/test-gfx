@@ -9,20 +9,12 @@
 
 @implementation View
 
-#ifdef CC_USE_METAL
 + (Class)layerClass
 {
     return [CAMetalLayer class];
 }
-#else
-+ (Class)layerClass
-{
-    return [CAEAGLLayer class];
-}
-#endif
 
 - (id)initWithFrame:(CGRect)frame {
-#ifdef CC_USE_METAL
     if (self = [super initWithFrame:frame]) {
         float scale = [[UIScreen mainScreen] scale];
         self.contentScaleFactor = scale;
@@ -36,9 +28,6 @@
 
         self.device = MTLCreateSystemDefaultDevice();
     }
-#else
-    self = [super initWithFrame:frame];
-#endif
 
     return self;
 }
