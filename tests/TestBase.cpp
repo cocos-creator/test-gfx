@@ -413,7 +413,7 @@ void TestBaseI::createUberBuffer(const vector<uint> &sizes, gfx::Buffer **pBuffe
     }
     *pBuffer = device->createBuffer({
         gfx::BufferUsage::UNIFORM,
-        gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
+        gfx::MemoryUsage::DEVICE,
         TestBaseI::getUBOSize(pBufferViewOffsets->back()),
     });
     for (uint i = 0U; i < sizes.size(); ++i) {
