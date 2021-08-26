@@ -165,7 +165,7 @@ void BasicTriangle::createVertexBuffer() {
 
     gfx::BufferInfo indirectBufferInfo = {
         gfx::BufferUsageBit::INDIRECT,
-        gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
+        gfx::MemoryUsage::DEVICE,
         sizeof(gfx::DrawInfo),
         sizeof(gfx::DrawInfo),
     };
