@@ -8,6 +8,9 @@
 
 #import "AppDelegate.h"
 #import "ViewController.h"
+#import "TestViewController.h"
+
+#define MULTI_WINDOW 1
 
 @interface AppDelegate ()
 
@@ -16,14 +19,22 @@
 @implementation AppDelegate
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
-    // Insert code here to initialize your application
+    //windowController
+    
+    NSStoryboard *storyBoard = [NSStoryboard storyboardWithName:@"Main" bundle:nil]; // get a reference to the storyboard
+    
+#if MULTI_WINDOW
+    self.testController = [storyBoard instantiateControllerWithIdentifier:@"TestWindowController"]; // instantiate your window controller
+    [self.testController showWindow:self]; // show the window
+    [self.testController retainCount];
+#endif
 }
 
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
     // Insert code here to tear down your application
-    ViewController *controller = (ViewController *)NSApplication.sharedApplication.mainWindow.windowController.contentViewController;
-    [controller onTerminate];
+//    ViewController *controller = (ViewController *)NSApplication.sharedApplication.mainWindow.windowController.contentViewController;
+//    [controller onTerminate];
 }
 
 -(BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)sender{

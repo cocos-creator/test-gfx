@@ -21,7 +21,7 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  THE SOFTWARE.
  ****************************************************************************/
-#import "View.h"
+#import "TestView.h"
 #import "tests/TestBase.h"
 
 #if CC_PLATFORM == CC_PLATFORM_MAC_OSX
@@ -40,7 +40,7 @@ namespace
     cc::WindowInfo g_windowInfo;
 }
 
-@implementation View {
+@implementation TestView {
 
 }
 
@@ -69,6 +69,7 @@ namespace
         layer.device = self.device = MTLCreateSystemDefaultDevice();
         layer.drawableSize = size;
         self.depthStencilPixelFormat = MTLPixelFormatDepth24Unorm_Stencil8;
+        self.mtlCommandQueue = [self.device newCommandQueue];
 
         g_windowInfo.windowHandle = self;
         g_windowInfo.screen.x = frameRect.origin.x;
@@ -85,27 +86,25 @@ namespace
                                                 repeats:YES];
 
         cc::TestBaseI::setWindowInfo(g_windowInfo);
-        cc::TestBaseI::nextTest();
+        
     }
     return self;
 }
 
 - (void)keyUp:(NSEvent *)event {
-    if (event.keyCode == 49) { // space
-        cc::TestBaseI::spacePressed();
-    }
+
 }
 
 - (void)tick {
-    cc::TestBaseI::update();
+
 }
 
 - (void)mouseUp:(NSEvent *)event {
-    cc::TestBaseI::onTouchEnd();
+
 }
 
 - (void)rightMouseUp:(NSEvent *)event {
-    cc::TestBaseI::onTouchEnd();
+
 }
 
 - (BOOL)acceptsFirstResponder
@@ -121,7 +120,6 @@ namespace
 
 - (void)onTerminate
 {
-    cc::TestBaseI::destroyGlobal();
 }
 
 @end
