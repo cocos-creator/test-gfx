@@ -177,7 +177,7 @@ struct Quad : public cc::Object {
 
         uniformBuffer     = device->createBuffer({
             gfx::BufferUsage::UNIFORM,
-            gfx::MemoryUsage::DEVICE | gfx::MemoryUsage::HOST,
+            gfx::MemoryUsage::DEVICE,
             uboStride * TOTAL_BLEND,
             uboStride,
         });
@@ -468,7 +468,7 @@ struct BigTriangle : public cc::Object {
         // vertex buffer
         vertexBuffer = device->createBuffer({
             gfx::BufferUsage::VERTEX | gfx::BufferUsage::TRANSFER_DST,
-            gfx::MemoryUsage::HOST,
+            gfx::MemoryUsage::DEVICE,
             sizeof(vertexData),
             4 * sizeof(float),
         });
@@ -641,10 +641,10 @@ void BlendTest::onTick() {
         orientation       = swapchain->getSurfaceTransform();
     }
 
+    bigTriangle->timeBuffer->update(&_time, sizeof(_time));
+
     auto *commandBuffer = commandBuffers[0];
     commandBuffer->begin();
-
-    commandBuffer->updateBuffer(bigTriangle->timeBuffer, &_time, sizeof(_time));
 
     if (matricesDirty) {
         commandBuffer->updateBuffer(quad->uniformBuffer, quad->models.data(), quad->models.size() * sizeof(float));

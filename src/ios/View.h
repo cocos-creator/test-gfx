@@ -8,9 +8,7 @@
 #pragma once
 
 #import <UIKit/UIView.h>
-#ifdef CC_USE_METAL
 #import <MetalKit/MetalKit.h>
-#endif
 
 @interface View : UIView
 

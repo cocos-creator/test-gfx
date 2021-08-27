@@ -1,11 +1,14 @@
-#pragma once
-
 #include "StandardPipelineUtils.h"
-//
-#include "gfx-gles2/GLES2Device.h"
-#include "gfx-gles2/GLES2GPUObjects.h"
+
+#if CC_USE_GLES3
 #include "gfx-gles3/GLES3Device.h"
 #include "gfx-gles3/GLES3GPUObjects.h"
+#endif
+
+#if CC_USE_GLES2
+#include "gfx-gles2/GLES2Device.h"
+#include "gfx-gles2/GLES2GPUObjects.h"
+#endif
 
 namespace cc {
 
@@ -215,13 +218,7 @@ String extensions = R"(
 String getSubpassGLExtension() {
     uint32_t subpassExtension = 0;
 
-    gfx::GLES2Device *gles2Device = gfx::GLES2Device::getInstance();
-    if (gles2Device) {
-       if (gles2Device->constantRegistry()->mFBF != gfx::FBFSupportLevel::NONE) {
-           subpassExtension = 2;
-       }
-    }
-
+#if CC_USE_GLES3
     gfx::GLES3Device *gles3Device = gfx::GLES3Device::getInstance();
     if (gles3Device) {
         if (gles3Device->constantRegistry()->mFBF != gfx::FBFSupportLevel::NONE) {
@@ -230,6 +227,16 @@ String getSubpassGLExtension() {
             subpassExtension = 1;
         }
     }
+#endif
+
+#if CC_USE_GLES2
+    gfx::GLES2Device *gles2Device = gfx::GLES2Device::getInstance();
+    if (gles2Device) {
+       if (gles2Device->constantRegistry()->mFBF != gfx::FBFSupportLevel::NONE) {
+           subpassExtension = 2;
+       }
+    }
+#endif
 
     return StringUtil::format(
         R"(

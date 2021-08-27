@@ -3,10 +3,6 @@ macro (set_xcode_property TARGET XCODE_PROPERTY XCODE_VALUE)
                  ${XCODE_VALUE})
 endmacro (set_xcode_property)
 
-macro (use_gles)
-    set(USE_METAL OFF)
-endmacro (use_gles)
-
 macro (use_molten_vk)
     set(USE_METAL OFF)
     set(USE_VULKAN ON)
@@ -17,7 +13,6 @@ message(STATUS "App: ${APP_NAME}...")
 option(USE_METAL "USE METAL" ON)
 option(USE_VULKAN "USE METAL" OFF)
 
-# use_gles()
 # use_molten_vk()
 
 # ---------------------------------------------------------------------
@@ -41,14 +36,10 @@ set(ALL_FILES
 
 if (USE_VULKAN)
     add_definitions("-DCC_USE_VULKAN")
-    # MoltenVK need MTKView too
-    add_definitions("-DCC_USE_METAL")
     set(LIB_MOLTEN_VK "${GFX_EXTERNAL_PATH}/MoltenVK/ios/release/libMoltenVK.dylib")
     list(APPEND ALL_FILES ${LIB_MOLTEN_VK})
 elseif (USE_METAL)
     add_definitions("-DCC_USE_METAL")
-else ()
-    add_definitions("-DCC_USE_GLES3")
 endif()
 
 if(COCOS_UNICODE)
@@ -85,10 +76,6 @@ elseif (USE_METAL)
     find_library(METALKIT_LIBRARY MetalKit)
     list(APPEND PLATFORM_SPECIFIC_LIBS ${METAL_LIBRARY} ${METALKIT_LIBRARY})
     set(GRAPHIC_LIBS GFXMetal)
-else ()
-    find_library(OPENGLES_LIBRARY OpenGLES)
-    list(APPEND PLATFORM_SPECIFIC_LIBS ${OPENGLES_LIBRARY})
-    set(GRAPHIC_LIBS GFXGLESCommon GFXGLES2 GFXGLES3)
 endif()
 
 target_link_libraries(${APP_NAME}
