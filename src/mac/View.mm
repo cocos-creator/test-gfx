@@ -71,9 +71,9 @@ namespace
         self.depthStencilPixelFormat = MTLPixelFormatDepth24Unorm_Stencil8;
 
 #if CC_USE_METAL
-        g_windowInfo.windowHandle = (intptr_t)self;
+        g_windowInfo.windowHandle = self;
 #else
-        g_windowInfo.windowHandle = (intptr_t)layer;
+        g_windowInfo.windowHandle = layer;
 #endif
 
         g_windowInfo.screen.x = frameRect.origin.x;
