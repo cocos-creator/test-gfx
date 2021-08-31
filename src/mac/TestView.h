@@ -23,9 +23,10 @@
  ****************************************************************************/
 #import <MetalKit/MetalKit.h>
 
-@interface View : NSView
+@interface TestView : NSView
 @property(nonatomic, assign) NSTimer *timer;
 @property(nonatomic, assign) id<MTLDevice> device;
+@property(nonatomic, assign) id<MTLCommandQueue> mtlCommandQueue;
 @property MTLPixelFormat depthStencilPixelFormat;
 @property(nonatomic, strong) NSWindow* _companionWindow;
 - (void)onTerminate;
