@@ -1,15 +1,5 @@
 #include "StandardPipelineUtils.h"
 
-#if CC_USE_GLES3
-#include "gfx-gles3/GLES3Device.h"
-#include "gfx-gles3/GLES3GPUObjects.h"
-#endif
-
-#if CC_USE_GLES2
-#include "gfx-gles2/GLES2Device.h"
-#include "gfx-gles2/GLES2GPUObjects.h"
-#endif
-
 namespace cc {
 
 namespace {
@@ -215,28 +205,14 @@ String extensions = R"(
 )";
 } // namespace
 
-String getSubpassGLExtension() {
+String getSubpassGLExtension(gfx::Device *device) {
     uint32_t subpassExtension = 0;
 
-#if CC_USE_GLES3
-    gfx::GLES3Device *gles3Device = gfx::GLES3Device::getInstance();
-    if (gles3Device) {
-        if (gles3Device->constantRegistry()->mFBF != gfx::FBFSupportLevel::NONE) {
-            subpassExtension = 2;
-        } else if (gles3Device->constantRegistry()->mPLS != gfx::PLSSupportLevel::NONE) {
-            subpassExtension = 1;
-        }
+    if (device->hasFeature(gfx::Feature::GL_FRAMEBUFFER_FETCH)) {
+        subpassExtension = 2;
+    } else if (device->hasFeature(gfx::Feature::GL_PIXEL_LOCAL_STORAGE)) {
+        subpassExtension = 1;
     }
-#endif
-
-#if CC_USE_GLES2
-    gfx::GLES2Device *gles2Device = gfx::GLES2Device::getInstance();
-    if (gles2Device) {
-       if (gles2Device->constantRegistry()->mFBF != gfx::FBFSupportLevel::NONE) {
-           subpassExtension = 2;
-       }
-    }
-#endif
 
     return StringUtil::format(
         R"(
@@ -390,7 +366,7 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
             o_color3 = vec4(s.emissive, s.occlusion);
         }
     )";
-    gbufferFrag.glsl3 = getSubpassGLExtension() + extensions + gbufferFrag.glsl3;
+    gbufferFrag.glsl3 = getSubpassGLExtension(device) + extensions + gbufferFrag.glsl3;
     gbufferFrag.glsl3 += R"(
         #if GBUFFER_STORAGE == GBUFFER_STORAGE_PLS
     )" + declPLSData(gfx::MemoryAccessBit::WRITE_ONLY);
@@ -468,7 +444,7 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
             layout(input_attachment_index = 2, set = 0, binding = 3) uniform subpassInput gbuffer2;
             layout(input_attachment_index = 3, set = 0, binding = 4) uniform subpassInput gbuffer3;
         )",
-        getSubpassGLExtension() + extensions + R"(
+        getSubpassGLExtension(device) + extensions + R"(
             precision highp float;
             in vec2 v_texCoord;
 
@@ -489,7 +465,7 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
                 layout(location = 0) out vec4 o_color;
             #endif
         )",
-        getSubpassGLExtension() + extensions + R"(
+        getSubpassGLExtension(device) + extensions + R"(
             #if GBUFFER_STORAGE == GBUFFER_STORAGE_FBF
             #   ifdef GL_EXT_draw_buffers
             #       extension GL_EXT_draw_buffers: enable
@@ -657,6 +633,16 @@ void createStandardPipelineResources(gfx::Device *device, StandardForwardPipelin
     out->pipelineState.reset(device->createPipelineState(pipelineStateInfo));
 }
 
+void StandardForwardPipeline::recordCommandBuffer(gfx::Device * /*device*/, gfx::CommandBuffer *commandBuffer, gfx::Framebuffer *framebuffer,
+                                                  const gfx::Rect &renderArea, const gfx::Color *clearColors, const std::function<void()> &execute) const {
+    commandBuffer->beginRenderPass(TestBaseI::renderPass, framebuffer, renderArea, clearColors, 1.0F, 0);
+    commandBuffer->bindPipelineState(pipelineState.get());
+
+    execute();
+
+    commandBuffer->endRenderPass();
+}
+
 void createStandardPipelineResources(gfx::Device *device, StandardDeferredPipeline *out, const StandardUniformBuffers &ubos) {
     createStandardShader(device, out);
 
@@ -711,10 +697,10 @@ void createStandardPipelineResources(gfx::Device *device, StandardDeferredPipeli
     }));
 
     deferredRenderPassInfo.subpasses.resize(2);
-    deferredRenderPassInfo.subpasses[0].colors = {0, 1, 2, 3};
+    deferredRenderPassInfo.subpasses[0].colors       = {0, 1, 2, 3};
     deferredRenderPassInfo.subpasses[0].depthStencil = 4;
-    deferredRenderPassInfo.subpasses[1].colors = {3};
-    deferredRenderPassInfo.subpasses[1].inputs = {0, 1, 2, 3};
+    deferredRenderPassInfo.subpasses[1].colors       = {3};
+    deferredRenderPassInfo.subpasses[1].inputs       = {0, 1, 2, 3};
 
     out->gbufferRenderPass.reset(device->createRenderPass(deferredRenderPassInfo));
     out->gbufferFramebuffer.reset(device->createFramebuffer({
@@ -794,6 +780,206 @@ void createStandardPipelineResources(gfx::Device *device, StandardDeferredPipeli
     out->lightingDescriptorSet->bindSampler(3, sampler);
     out->lightingDescriptorSet->bindSampler(4, sampler);
     out->lightingDescriptorSet->update();
+}
+
+gfx::DescriptorSet *StandardDeferredPipeline::getDescriptorSet(gfx::Device *device, uint32_t hash) {
+    if (!_descriptorSetPool.count(hash)) {
+        auto *descriptorSet = device->createDescriptorSet({lightingDescriptorSetLayout.get()});
+        descriptorSet->bindBuffer(standard::CAMERA, lightingDescriptorSet->getBuffer(standard::CAMERA));
+        descriptorSet->bindSampler(1, lightingDescriptorSet->getSampler(1));
+        descriptorSet->bindSampler(2, lightingDescriptorSet->getSampler(2));
+        descriptorSet->bindSampler(3, lightingDescriptorSet->getSampler(3));
+        descriptorSet->bindSampler(4, lightingDescriptorSet->getSampler(4));
+        _descriptorSetPool[hash].reset(descriptorSet);
+    }
+    return _descriptorSetPool[hash].get();
+}
+
+gfx::PipelineState *StandardDeferredPipeline::getPipelineState(gfx::Device *device, const gfx::PipelineStateInfo &info) {
+    uint32_t hash = info.shader->getTypedID(); // over-simplification, should never do this
+    if (!_pipelineStatePool.count(hash)) {
+        _pipelineStatePool[hash].reset(device->createPipelineState(info));
+    }
+    return _pipelineStatePool[hash].get();
+}
+
+void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Swapchain *swapchain, gfx::CommandBuffer *commandBuffer,
+                                                   const gfx::Rect &renderArea, const gfx::Color *clearColors, const std::function<void()> &execute) {
+    if constexpr (USE_FRAMEGRAPH) {
+        // Logic passes
+        static const framegraph::StringHandle GBUFFER_PASS_NAME = framegraph::FrameGraph::stringToHandle("GBufferPass");
+        static const framegraph::StringHandle SHADING_PASS_NAME = framegraph::FrameGraph::stringToHandle("ShadingPass");
+        // Transient Resources
+        static const framegraph::StringHandle GBUFFER_NAMES[]{
+            framegraph::FrameGraph::stringToHandle("GBuffer0"),
+            framegraph::FrameGraph::stringToHandle("GBuffer1"),
+            framegraph::FrameGraph::stringToHandle("GBuffer2"),
+            framegraph::FrameGraph::stringToHandle("GBuffer3"),
+        };
+        static const framegraph::StringHandle DEPTH_STENCIL_NAME = framegraph::FrameGraph::stringToHandle("DepthStencil");
+
+        struct GBufferData {
+            framegraph::TextureHandle gbuffers[4];
+            framegraph::TextureHandle depthStencil;
+        };
+
+        auto gbufferPassSetup = [&](framegraph::PassNodeBuilder &builder, GBufferData &data) {
+            builder.subpass(false, false);
+
+            for (uint i = 0; i < 4; ++i) {
+                // RGBA8 is suffice for albedo, emission & occlusion
+                gfx::Format             format     = i % 3 ? gfx::Format::RGBA16F : gfx::Format::RGBA8;
+                gfx::TextureUsage       usage      = gfx::TextureUsageBit::INPUT_ATTACHMENT | gfx::TextureUsageBit::COLOR_ATTACHMENT;
+                gfx::TextureFlags       flags      = gfx::TextureFlagBit::NONE;
+                gfx::AccessType         accessType = gfx::AccessType::FRAGMENT_SHADER_READ_COLOR_INPUT_ATTACHMENT;
+                vector<gfx::AccessType> beginAccesses;
+                if (i == 3) { // use the emission buffer as output
+                    usage |= gfx::TextureUsageBit::TRANSFER_SRC;
+                    flags |= gfx::TextureFlagBit::GENERAL_LAYOUT;
+                    accessType = gfx::AccessType::TRANSFER_READ;
+                    beginAccesses.push_back(accessType);
+                }
+                framegraph::Texture::Descriptor gbufferInfo;
+                gbufferInfo.type   = gfx::TextureType::TEX2D;
+                gbufferInfo.usage  = usage;
+                gbufferInfo.format = format;
+                gbufferInfo.width  = swapchain->getWidth();
+                gbufferInfo.height = swapchain->getHeight();
+                gbufferInfo.flags  = flags;
+                data.gbuffers[i]   = builder.create<framegraph::Texture>(GBUFFER_NAMES[i], gbufferInfo);
+
+                // Attachment Setup
+                framegraph::RenderTargetAttachment::Descriptor gbufferAttachmentInfo;
+                gbufferAttachmentInfo.slot          = i;
+                gbufferAttachmentInfo.loadOp        = gfx::LoadOp::CLEAR;
+                gbufferAttachmentInfo.clearColor    = clearColors[i];
+                gbufferAttachmentInfo.beginAccesses = beginAccesses;
+                gbufferAttachmentInfo.endAccesses   = {accessType};
+
+                data.gbuffers[i] = builder.write(data.gbuffers[i], gbufferAttachmentInfo);
+                builder.writeToBlackboard(GBUFFER_NAMES[i], data.gbuffers[i]);
+            }
+            framegraph::Texture::Descriptor depthStencilInfo;
+            depthStencilInfo.type   = gfx::TextureType::TEX2D;
+            depthStencilInfo.usage  = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT;
+            depthStencilInfo.format = gfx::Format::DEPTH_STENCIL;
+            depthStencilInfo.width  = swapchain->getWidth();
+            depthStencilInfo.height = swapchain->getHeight();
+            data.depthStencil       = builder.create<framegraph::Texture>(DEPTH_STENCIL_NAME, depthStencilInfo);
+
+            // Attachment Setup
+            framegraph::RenderTargetAttachment::Descriptor depthStencilAttachmentInfo;
+            depthStencilAttachmentInfo.loadOp        = gfx::LoadOp::CLEAR;
+            depthStencilAttachmentInfo.beginAccesses = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
+            depthStencilAttachmentInfo.endAccesses   = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
+            depthStencilAttachmentInfo.usage         = framegraph::RenderTargetAttachment::Usage::DEPTH_STENCIL;
+
+            data.depthStencil = builder.write(data.depthStencil, depthStencilAttachmentInfo);
+            builder.writeToBlackboard(DEPTH_STENCIL_NAME, data.depthStencil);
+
+            gfx::Viewport vp   = {renderArea.x, renderArea.y, renderArea.width, renderArea.height, 0, 1};
+            gfx::Rect     rect = {renderArea.x, renderArea.y, renderArea.width, renderArea.height};
+            builder.setViewport(vp, rect);
+        };
+
+        auto gbufferPassExec = [=](GBufferData & /*data*/, const framegraph::DevicePassResourceTable &table) {
+            static gfx::PipelineStateInfo pipelineStateInfo;
+            pipelineStateInfo.shader         = gbufferShader.get();
+            pipelineStateInfo.pipelineLayout = StandardUniformBuffers::pipelineLayout.get();
+            pipelineStateInfo.inputState     = {attributes};
+            pipelineStateInfo.primitive      = gfx::PrimitiveMode::TRIANGLE_LIST;
+
+            pipelineStateInfo.renderPass = table.getRenderPass();
+            commandBuffer->bindPipelineState(getPipelineState(device, pipelineStateInfo));
+
+            execute();
+        };
+
+        struct ShadingData {
+            framegraph::TextureHandle gbuffers[4];
+            framegraph::TextureHandle depthStencil;
+        };
+
+        auto shadingPassSetup = [&](framegraph::PassNodeBuilder &builder, ShadingData &data) {
+            builder.subpass(false, true);
+
+            for (uint i = 0; i < 4; ++i) {
+                data.gbuffers[i] = framegraph::TextureHandle(builder.readFromBlackboard(GBUFFER_NAMES[i]));
+                data.gbuffers[i] = builder.read(data.gbuffers[i]);
+            }
+
+            framegraph::RenderTargetAttachment::Descriptor gbufferAttachmentInfo;
+            gbufferAttachmentInfo.slot          = 3;
+            gbufferAttachmentInfo.loadOp        = gfx::LoadOp::LOAD;
+            gbufferAttachmentInfo.beginAccesses = {gfx::AccessType::TRANSFER_READ};
+            gbufferAttachmentInfo.endAccesses   = {gfx::AccessType::TRANSFER_READ};
+
+            builder.writeToBlackboard(GBUFFER_NAMES[3], builder.write(data.gbuffers[3], gbufferAttachmentInfo));
+        };
+
+        auto *descriptorSet = getDescriptorSet(device, (swapchain->getWidth() << 16) | swapchain->getHeight());
+
+        auto shadingPassExec = [=](ShadingData &data, const framegraph::DevicePassResourceTable &table) {
+            static gfx::PipelineStateInfo pipelineStateInfo;
+            pipelineStateInfo.shader                       = lightingShader.get();
+            pipelineStateInfo.pipelineLayout               = lightingPipelineLayout.get();
+            pipelineStateInfo.inputState                   = {lightingAttributes};
+            pipelineStateInfo.rasterizerState.cullMode     = gfx::CullMode::NONE;
+            pipelineStateInfo.depthStencilState.depthTest  = false;
+            pipelineStateInfo.depthStencilState.depthWrite = false;
+            pipelineStateInfo.primitive                    = gfx::PrimitiveMode::TRIANGLE_STRIP;
+            pipelineStateInfo.subpass                      = 1;
+
+            descriptorSet->bindTexture(1, table.getRead(data.gbuffers[0]));
+            descriptorSet->bindTexture(2, table.getRead(data.gbuffers[1]));
+            descriptorSet->bindTexture(3, table.getRead(data.gbuffers[2]));
+            descriptorSet->bindTexture(4, table.getRead(data.gbuffers[3]));
+            descriptorSet->update();
+
+            pipelineStateInfo.renderPass = table.getRenderPass();
+            commandBuffer->bindPipelineState(getPipelineState(device, pipelineStateInfo));
+            commandBuffer->bindDescriptorSet(0, descriptorSet);
+
+            commandBuffer->bindInputAssembler(lightingInputAssembler.get());
+            commandBuffer->draw(lightingInputAssembler.get());
+        };
+
+        auto &fg = TestBaseI::fg;
+
+        fg.reset();
+
+        fg.addPass<GBufferData>(100, GBUFFER_PASS_NAME, gbufferPassSetup, gbufferPassExec);
+        fg.addPass<ShadingData>(200, SHADING_PASS_NAME, shadingPassSetup, shadingPassExec);
+
+        fg.presentFromBlackboard(GBUFFER_NAMES[3], swapchain->getColorTexture());
+
+        fg.compile();
+
+        //fg.exportGraphViz("fg_vis.dot");
+
+        fg.execute();
+    } else {
+        commandBuffer->beginRenderPass(gbufferRenderPass.get(), gbufferFramebuffer.get(), renderArea, clearColors, 1.0F, 0);
+        commandBuffer->bindPipelineState(gbufferPipelineState.get());
+
+        execute();
+
+        commandBuffer->nextSubpass();
+
+        commandBuffer->bindInputAssembler(lightingInputAssembler.get());
+        commandBuffer->bindPipelineState(lightingPipelineState.get());
+        commandBuffer->bindDescriptorSet(0, lightingDescriptorSet.get());
+        commandBuffer->draw(lightingInputAssembler.get());
+
+        commandBuffer->endRenderPass();
+
+        gfx::TextureBlit region;
+        region.srcExtent.width  = swapchain->getWidth();
+        region.srcExtent.height = swapchain->getHeight();
+        region.dstExtent.width  = swapchain->getWidth();
+        region.dstExtent.height = swapchain->getHeight();
+        commandBuffer->blitTexture(gbufferTextures[3].get(), swapchain->getColorTexture(), &region, 1, gfx::Filter::POINT);
+    }
 }
 
 } // namespace cc

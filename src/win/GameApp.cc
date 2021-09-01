@@ -91,7 +91,7 @@ void GameApp::initialize() {
     info.screen.width  = testWidth;
     info.screen.height = testHeight;
     TestBaseI::setWindowInfo(info);
-    /* */
+    // */
 
     TestBaseI::nextTest();
 }
@@ -99,7 +99,7 @@ void GameApp::initialize() {
 void GameApp::destroy() {
     for (HWND hWnd : _hWnds) {
         DestroyWindow(hWnd);
-    } 
+    }
     _hWnds.clear();
 
     for (auto &name : _windowNames) {

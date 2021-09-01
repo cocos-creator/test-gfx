@@ -149,8 +149,8 @@ void SubpassTest::onTick() {
         std::copy(_projectionMatrix.m, _projectionMatrix.m + 16, _ubos.getBuffer(standard::MVP) + 32);
 
         // scale the sampling UV if needed
-        _ubos.getBuffer(standard::CAMERA)[3] = static_cast<float>(swapchain->getWidth()) / gbufferWidth;
-        _ubos.getBuffer(standard::CAMERA)[7] = static_cast<float>(swapchain->getHeight()) / gbufferHeight;
+        _ubos.getBuffer(standard::CAMERA)[3] = StandardDeferredPipeline::USE_FRAMEGRAPH ? 1 : static_cast<float>(swapchain->getWidth()) / gbufferWidth;
+        _ubos.getBuffer(standard::CAMERA)[7] = StandardDeferredPipeline::USE_FRAMEGRAPH ? 1 : static_cast<float>(swapchain->getHeight()) / gbufferHeight;
 
         std::copy(&colors[i].x, &colors[i].x + 4, _ubos.getBuffer(standard::COLOR));
 

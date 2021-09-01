@@ -48,8 +48,8 @@ gfx::Device *    TestBaseI::device     = nullptr;
 gfx::RenderPass *TestBaseI::renderPass = nullptr;
 
 vector<TestBaseI::createFunc> TestBaseI::tests = {
-    ScriptTest::create,
     SubpassTest::create,
+    ScriptTest::create,
     ComputeTest::create,
     StressTest::create,
     FrameGraphTest::create,
