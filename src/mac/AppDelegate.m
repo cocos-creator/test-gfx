@@ -10,7 +10,7 @@
 #import "ViewController.h"
 #import "TestViewController.h"
 
-#define MULTI_WINDOW 1
+#define MULTI_WINDOW 0
 
 @interface AppDelegate ()
 

@@ -95,6 +95,37 @@ namespace
     return self;
 }
 
+- (void)setFrameSize:(NSSize)newSize {
+    CAMetalLayer *layer = (CAMetalLayer *)self.layer;
+
+    CGSize nativeSize = [self convertSizeToBacking:newSize];
+    [super setFrameSize:newSize];
+    layer.drawableSize = nativeSize;
+    [self viewDidChangeBackingProperties];
+
+    // Add tracking area to receive mouse move events.
+    NSRect          rect         = {0, 0, nativeSize.width, nativeSize.height};
+    NSTrackingArea *trackingArea = [[NSTrackingArea alloc] initWithRect:rect
+                                                                options:(NSTrackingMouseEnteredAndExited | NSTrackingMouseMoved | NSTrackingActiveInKeyWindow)
+                                                                  owner:self
+                                                               userInfo:nil];
+    [self addTrackingArea:trackingArea];
+
+    void* windowHandle = nullptr;
+#if CC_USE_METAL
+    windowHandle = self;
+#else
+    windowHandle = layer;
+#endif
+    cc::TestBaseI::resizeGlobal(windowHandle, nativeSize.width, nativeSize.height);
+}
+
+- (void)viewDidChangeBackingProperties {
+    [super viewDidChangeBackingProperties];
+    CAMetalLayer *layer = (CAMetalLayer *)self.layer;
+    layer.contentsScale = self.window.backingScaleFactor;
+}
+
 - (void)keyUp:(NSEvent *)event {
     if (event.keyCode == 49) { // space
         cc::TestBaseI::spacePressed();
