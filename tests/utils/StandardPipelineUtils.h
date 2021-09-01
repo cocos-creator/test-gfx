@@ -98,7 +98,7 @@ void StandardForwardPipeline::recordCommandBuffer(gfx::Device * /*device*/, gfx:
 }
 
 template <typename Fn>
-void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Swapchain *swapchain, gfx::CommandBuffer *commandBuffer,
+void StandardDeferredPipeline::recordCommandBuffer(gfx::Device * /*device*/, gfx::Swapchain *swapchain, gfx::CommandBuffer *commandBuffer,
                                                    const gfx::Rect &renderArea, const gfx::Color *clearColors, Fn execute) {
 #if 1
     // Logic passes
@@ -228,7 +228,7 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Swa
 
     fg.compile();
 
-    fg.exportGraphViz("fg_vis.dot");
+    //fg.exportGraphViz("fg_vis.dot");
 
     fg.execute();
 #else
