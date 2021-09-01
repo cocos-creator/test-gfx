@@ -20,9 +20,9 @@
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
     //windowController
-
+    
     NSStoryboard *storyBoard = [NSStoryboard storyboardWithName:@"Main" bundle:nil]; // get a reference to the storyboard
-
+    
 #if MULTI_WINDOW
     self.testController = [storyBoard instantiateControllerWithIdentifier:@"TestWindowController"]; // instantiate your window controller
     [self.testController showWindow:self]; // show the window
