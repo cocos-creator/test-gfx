@@ -12,7 +12,7 @@ public:
     bool onInit() override;
     void onDestroy() override;
     void onTick() override;
-    void onResize(uint width, uint height) override;
+    void onResize(gfx::Swapchain *swapchain) override;
 
 private:
     Mat4 _bunnyMatrices[3];

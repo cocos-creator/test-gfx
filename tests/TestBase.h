@@ -119,8 +119,8 @@ public:
         }
     }
     static gfx::Device *getDevice() { return device; }
-    static void         resizeGlobal(void *windowHandle, uint width, uint height) {
-        if (test) test->resize(windowHandle, width, height);
+    static void         resizeGlobal(void *windowHandle, uint width, uint height, gfx::SurfaceTransform transform) {
+        if (test) test->resize(windowHandle, width, height, transform);
     }
     static void setWindowInfo(const WindowInfo &info) { windowInfos.push_back(info); }
     static void spacePressed() { test->onSpacePressed(); }
@@ -182,7 +182,7 @@ public:
 
     virtual bool onInit() { return true; }
     virtual void onTick() {}
-    virtual void onResize(uint width, uint height) {}
+    virtual void onResize(gfx::Swapchain *swapchain) {}
     virtual void onDestroy() {}
 
     inline bool initialize() {
@@ -199,12 +199,12 @@ public:
         ++_frameCount;
     }
 
-    inline void resize(void *windowHandle, uint width, uint height) {
-        onResize(width, height);
-
+    inline void resize(void *windowHandle, uint width, uint height, gfx::SurfaceTransform transform) {
         for (auto *swapchain : swapchains) {
             if (windowHandle == swapchain->getWindowHandle()) {
-                swapchain->resize(width, height);
+                swapchain->resize(width, height, transform);
+                onResize(swapchain);
+                break;
             }
         }
     }

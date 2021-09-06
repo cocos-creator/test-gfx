@@ -195,7 +195,7 @@ void ComputeTest::createComputeBGPipeline() {
 
         layout(std140) uniform Constants { float time; float vertexCount; vec2 texSize; };
 
-        layout(rgba8) writeonly uniform lowp image2D background;
+        layout(binding = 0, rgba8) writeonly uniform lowp image2D background;
 
         void main() {
             if (any(greaterThanEqual(vec2(gl_GlobalInvocationID.xy), texSize))) return;

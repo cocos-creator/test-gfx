@@ -141,7 +141,7 @@ LRESULT CALLBACK GameApp::MessageHandler(HWND hWnd, DWORD msg, WPARAM wParam, LP
             width = (uint)LOWORD(lParam);
             height = (uint)HIWORD(lParam);
             _paused = !width || !height;
-            TestBaseI::resizeGlobal(hWnd, width, height);
+            TestBaseI::resizeGlobal(hWnd, width, height, gfx::SurfaceTransform::IDENTITY);
             break;
         // WM_CLOSE is sent when the user presses the 'X' button in the
         // caption bar menu.

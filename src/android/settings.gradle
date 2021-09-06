@@ -1,2 +1,2 @@
-include ':app'
-
+include ':app', ':libcocos'
+project(':libcocos').projectDir = new File(COCOS_ENGINE_PATH,'cocos/platform/android/libcocos2dx')

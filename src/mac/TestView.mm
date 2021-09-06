@@ -86,7 +86,7 @@ namespace
                                                 repeats:YES];
 
         cc::TestBaseI::setWindowInfo(g_windowInfo);
-        
+
     }
     return self;
 }
@@ -106,14 +106,14 @@ namespace
                                                                   owner:self
                                                                userInfo:nil];
     [self addTrackingArea:trackingArea];
-    
+
     void* windowHandle = nullptr;
 #if CC_USE_METAL
     windowHandle = self;
 #else
     windowHandle = layer;
 #endif
-    cc::TestBaseI::resizeGlobal(windowHandle, nativeSize.width, nativeSize.height);
+    cc::TestBaseI::resizeGlobal(windowHandle, nativeSize.width, nativeSize.height, gfx::SurfaceTransform::IDENTITY);
 }
 
 - (void)viewDidChangeBackingProperties {

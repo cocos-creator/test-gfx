@@ -882,7 +882,7 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Swa
             builder.setViewport(vp, rect);
         };
 
-        auto gbufferPassExec = [=](GBufferData & /*data*/, const framegraph::DevicePassResourceTable &table) {
+        auto gbufferPassExec = [=](const GBufferData & /*data*/, const framegraph::DevicePassResourceTable &table) {
             static gfx::PipelineStateInfo pipelineStateInfo;
             pipelineStateInfo.shader         = gbufferShader.get();
             pipelineStateInfo.pipelineLayout = StandardUniformBuffers::pipelineLayout.get();
@@ -919,7 +919,7 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Swa
 
         auto *descriptorSet = getDescriptorSet(device, (swapchain->getWidth() << 16) | swapchain->getHeight());
 
-        auto shadingPassExec = [=](ShadingData &data, const framegraph::DevicePassResourceTable &table) {
+        auto shadingPassExec = [=](const ShadingData &data, const framegraph::DevicePassResourceTable &table) {
             static gfx::PipelineStateInfo pipelineStateInfo;
             pipelineStateInfo.shader                       = lightingShader.get();
             pipelineStateInfo.pipelineLayout               = lightingPipelineLayout.get();

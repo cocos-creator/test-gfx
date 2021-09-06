@@ -36,8 +36,10 @@ set(ALL_FILES
     ${GFX_TESTCASE_SOURCE}
     ${CC_EXTERNAL_SOURCES}
     main.cpp
-    JniImp.cpp
-    JniImp.h
+    ${COCOS_SRC_PATH}/platform/java/jni/JniImp.cpp
+    ${COCOS_SRC_PATH}/platform/java/jni/JniImp.h
+    ${COCOS_SRC_PATH}/platform/java/jni/JniHelper.cpp
+    ${COCOS_SRC_PATH}/platform/java/jni/JniHelper.h
 )
 
 if(COCOS_UNICODE)

@@ -68,6 +68,8 @@ struct DepthResolveFramebuffer {
     }
 
     void resize(uint width, uint height) const {
+        if (depthStencilTexMSAA->getWidth() == width && depthStencilTexMSAA->getHeight() == height) return;
+
         framebuffer->destroy();
 
         depthStencilTexMSAA->resize(width, height);
@@ -528,8 +530,8 @@ void DepthTexture::onDestroy() {
     CC_SAFE_DESTROY(bunnyFBO);
 }
 
-void DepthTexture::onResize(uint width, uint height) {
-    bunnyFBO->resize(width, height);
+void DepthTexture::onResize(gfx::Swapchain *swapchain) {
+    bunnyFBO->resize(swapchain->getWidth(), swapchain->getHeight());
 }
 
 bool DepthTexture::onInit() {
