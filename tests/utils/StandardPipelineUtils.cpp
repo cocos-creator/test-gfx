@@ -193,27 +193,18 @@ String surf = R"(
 )";
 
 String extensions = R"(
-    #define GBUFFER_STORAGE_TEXTURE 0
-    #define GBUFFER_STORAGE_FBF 1
-
-    #if GBUFFER_STORAGE == GBUFFER_STORAGE_FBF
+    #if CC_USE_INPUT_ATTACHMENT
         #extension GL_EXT_shader_framebuffer_fetch: require
     #endif
 )";
 } // namespace
 
-String getSubpassGLExtension(gfx::Device *device) {
-    uint32_t subpassExtension = 0;
-
-    if (device->hasFeature(gfx::Feature::GL_FRAMEBUFFER_FETCH)) {
-        subpassExtension = 1;
-    }
-
+String getInputAttachmentMacro(gfx::Device *device) {
     return StringUtil::format(
         R"(
-            #define GBUFFER_STORAGE %d
+            #define CC_USE_INPUT_ATTACHMENT %d
         )",
-        subpassExtension);
+        StandardDeferredPipeline::USE_SUBPASS && device->hasFeature(gfx::Feature::INPUT_ATTACHMENT_BENEFIT));
 }
 
 gfx::ShaderInfo getForwardShaderInfo() {
@@ -341,7 +332,7 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
             o_color3 = vec4(s.emissive, s.occlusion);
         }
     )";
-    gbufferFrag.glsl3 = getSubpassGLExtension(device) + extensions + gbufferFrag.glsl3;
+    gbufferFrag.glsl3 = getInputAttachmentMacro(device) + extensions + gbufferFrag.glsl3;
     gbufferFrag.glsl3 += R"(
         layout(location = 0) out vec4 gbuffer0;
         layout(location = 1) out vec4 gbuffer1;
@@ -399,24 +390,33 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
     lightingVert += cameraUBO + R"(
         void main() {
             v_texCoord = a_texCoord * vec2(cc_cameraPos.w, cc_mainLitDir.w);
-            gl_Position = vec4(a_position, 0, 1);
+            gl_Position = vec4(a_position, 1, 1);
         }
     )";
-    ShaderSources<String> lightingFrag = {
-        R"(
+    auto lightingFrag =
+        getInputAttachmentMacro(device) +
+        ShaderSources<String>{
+            R"(
             precision highp float;
             layout(location = 0) in vec2 v_texCoord;
 
-            layout(input_attachment_index = 0, set = 0, binding = 1) uniform subpassInput gbuffer0;
-            layout(input_attachment_index = 1, set = 0, binding = 2) uniform subpassInput gbuffer1;
-            layout(input_attachment_index = 2, set = 0, binding = 3) uniform subpassInput gbuffer2;
-            layout(input_attachment_index = 3, set = 0, binding = 4) uniform subpassInput gbuffer3;
+            #if CC_USE_INPUT_ATTACHMENT
+                layout(input_attachment_index = 0, set = 0, binding = 1) uniform subpassInput gbuffer0;
+                layout(input_attachment_index = 1, set = 0, binding = 2) uniform subpassInput gbuffer1;
+                layout(input_attachment_index = 2, set = 0, binding = 3) uniform subpassInput gbuffer2;
+                layout(input_attachment_index = 3, set = 0, binding = 4) uniform subpassInput gbuffer3;
+            #else
+                layout(set = 0, binding = 1) uniform sampler2D gbuffer0;
+                layout(set = 0, binding = 2) uniform sampler2D gbuffer1;
+                layout(set = 0, binding = 3) uniform sampler2D gbuffer2;
+                layout(set = 0, binding = 4) uniform sampler2D gbuffer3;
+            #endif
         )",
-        getSubpassGLExtension(device) + extensions + R"(
+            extensions + R"(
             precision highp float;
             in vec2 v_texCoord;
 
-            #if GBUFFER_STORAGE == GBUFFER_STORAGE_FBF
+            #if CC_USE_INPUT_ATTACHMENT
                 layout(location = 0) inout vec4 gbuffer0;
                 layout(location = 1) inout vec4 gbuffer1;
                 layout(location = 2) inout vec4 gbuffer2;
@@ -429,40 +429,47 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
                 layout(location = 0) out vec4 o_color;
             #endif
         )",
-        getSubpassGLExtension(device) + extensions + R"(
-            #if GBUFFER_STORAGE == GBUFFER_STORAGE_FBF
+            extensions + R"(
+            #if CC_USE_INPUT_ATTACHMENT
                 #extension GL_EXT_draw_buffers: require
             #endif
 
             precision highp float;
             varying vec2 v_texCoord;
 
-            #if !GBUFFER_STORAGE
+            #if !CC_USE_INPUT_ATTACHMENT
                 uniform sampler2D gbuffer0;
                 uniform sampler2D gbuffer1;
                 uniform sampler2D gbuffer2;
                 uniform sampler2D gbuffer3;
             #endif
         )",
-    };
+        };
     lightingFrag += cameraUBO + standardStruct + standardShading;
     lightingFrag.glsl4 += R"(
         layout(location = 0) out vec4 o_color;
         void main() {
 
-            vec4 g1 = subpassLoad(gbuffer0);
-            vec4 g2 = subpassLoad(gbuffer1);
-            vec4 g3 = subpassLoad(gbuffer2);
-            vec4 g4 = subpassLoad(gbuffer3);
+            #if CC_USE_INPUT_ATTACHMENT
+                vec4 g0 = subpassLoad(gbuffer0);
+                vec4 g1 = subpassLoad(gbuffer1);
+                vec4 g2 = subpassLoad(gbuffer2);
+                vec4 g3 = subpassLoad(gbuffer3);
+            #else
+                vec4 g0 = texture(gbuffer0, v_texCoord);
+                vec4 g1 = texture(gbuffer1, v_texCoord);
+                vec4 g2 = texture(gbuffer2, v_texCoord);
+                vec4 g3 = texture(gbuffer3, v_texCoord);
+            #endif
 
             StandardSurface s;
-            s.albedo = g1;
-            s.position = g2.xyz;
-            s.roughness = g2.w;
-            s.normal = g3.xyz;
-            s.metallic = g3.w;
-            s.emissive = g4.xyz;
-            s.occlusion = g4.w;
+            s.albedo = g0;
+            s.position = g1.xyz;
+            s.roughness = g1.w;
+            s.normal = g2.xyz;
+            s.metallic = g2.w;
+            s.emissive = g3.xyz;
+            s.occlusion = g3.w;
 
             o_color = CCStandardShadingBase(s);
         }
@@ -470,7 +477,7 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
     lightingFrag.glsl3 += R"(
         void main() {
 
-            #if GBUFFER_STORAGE
+            #if CC_USE_INPUT_ATTACHMENT
                 vec4 g0 = gbuffer0;
                 vec4 g1 = gbuffer1;
                 vec4 g2 = gbuffer2;
@@ -491,7 +498,7 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
             s.emissive = g3.xyz;
             s.occlusion = g3.w;
 
-            #if GBUFFER_STORAGE == GBUFFER_STORAGE_FBF
+            #if CC_USE_INPUT_ATTACHMENT
                 gbuffer3 = CCStandardShadingBase(s);
             #else
                 o_color = CCStandardShadingBase(s);
@@ -501,7 +508,7 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
     lightingFrag.glsl1 += R"(
         void main() {
 
-            #if GBUFFER_STORAGE == GBUFFER_STORAGE_FBF
+            #if CC_USE_INPUT_ATTACHMENT
                 vec4 g0 = gl_LastFragData[0];
                 vec4 g1 = gl_LastFragData[1];
                 vec4 g2 = gl_LastFragData[2];
@@ -522,7 +529,7 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
             s.emissive = g3.xyz;
             s.occlusion = g3.w;
 
-            #if GBUFFER_STORAGE == GBUFFER_STORAGE_FBF
+            #if CC_USE_INPUT_ATTACHMENT
                 gl_FragData[3] = CCStandardShadingBase(s);
             #else
                 gl_FragColor = CCStandardShadingBase(s);
@@ -536,10 +543,17 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
     lightingShaderInfo.stages.push_back({gfx::ShaderStageFlagBit::VERTEX, TestBaseI::getAppropriateShaderSource(lightingVert)});
     lightingShaderInfo.stages.push_back({gfx::ShaderStageFlagBit::FRAGMENT, TestBaseI::getAppropriateShaderSource(lightingFrag)});
     lightingShaderInfo.blocks.push_back(cameraUBOInfo);
-    lightingShaderInfo.subpassInputs.push_back({0, 1, "gbuffer0", 1});
-    lightingShaderInfo.subpassInputs.push_back({0, 2, "gbuffer1", 1});
-    lightingShaderInfo.subpassInputs.push_back({0, 3, "gbuffer2", 1});
-    lightingShaderInfo.subpassInputs.push_back({0, 4, "gbuffer3", 1});
+    if constexpr (StandardDeferredPipeline::USE_SUBPASS) {
+        lightingShaderInfo.subpassInputs.push_back({0, 1, "gbuffer0", 1});
+        lightingShaderInfo.subpassInputs.push_back({0, 2, "gbuffer1", 1});
+        lightingShaderInfo.subpassInputs.push_back({0, 3, "gbuffer2", 1});
+        lightingShaderInfo.subpassInputs.push_back({0, 4, "gbuffer3", 1});
+    } else {
+        lightingShaderInfo.samplerTextures.push_back({0, 1, "gbuffer0", gfx::Type::SAMPLER2D, 1});
+        lightingShaderInfo.samplerTextures.push_back({0, 2, "gbuffer1", gfx::Type::SAMPLER2D, 1});
+        lightingShaderInfo.samplerTextures.push_back({0, 3, "gbuffer2", gfx::Type::SAMPLER2D, 1});
+        lightingShaderInfo.samplerTextures.push_back({0, 4, "gbuffer3", gfx::Type::SAMPLER2D, 1});
+    }
     out->lightingShader.reset(device->createShader(lightingShaderInfo));
 }
 
@@ -595,8 +609,8 @@ void createStandardPipelineResources(gfx::Device *device, StandardForwardPipelin
 }
 
 void StandardForwardPipeline::recordCommandBuffer(gfx::Device * /*device*/, gfx::CommandBuffer *commandBuffer, gfx::Framebuffer *framebuffer,
-                                                  const gfx::Rect &renderArea, const gfx::Color *clearColors, const std::function<void()> &execute) const {
-    commandBuffer->beginRenderPass(TestBaseI::renderPass, framebuffer, renderArea, clearColors, 1.0F, 0);
+                                                  const gfx::Rect &renderArea, const gfx::Color &clearColor, const std::function<void()> &execute) const {
+    commandBuffer->beginRenderPass(TestBaseI::renderPass, framebuffer, renderArea, &clearColor, 1.0F, 0);
     commandBuffer->bindPipelineState(pipelineState.get());
 
     execute();
@@ -607,106 +621,17 @@ void StandardForwardPipeline::recordCommandBuffer(gfx::Device * /*device*/, gfx:
 void createStandardPipelineResources(gfx::Device *device, StandardDeferredPipeline *out, const StandardUniformBuffers &ubos) {
     createStandardShader(device, out);
 
-    gfx::Swapchain *swapchain = TestBaseI::swapchains[0];
-
-    gfx::RenderPassInfo deferredRenderPassInfo;
-    for (uint i = 0; i < 4; ++i) {
-        // RGBA8 is suffice for albedo, emission & occlusion
-        gfx::Format             format     = i % 3 ? gfx::Format::RGBA16F : gfx::Format::RGBA8;
-        gfx::TextureUsage       usage      = gfx::TextureUsageBit::INPUT_ATTACHMENT | gfx::TextureUsageBit::COLOR_ATTACHMENT;
-        gfx::TextureFlags       flags      = gfx::TextureFlagBit::NONE;
-        gfx::StoreOp            storeOp    = gfx::StoreOp::DISCARD;
-        gfx::AccessType         accessType = gfx::AccessType::FRAGMENT_SHADER_READ_COLOR_INPUT_ATTACHMENT;
-        vector<gfx::AccessType> beginAccesses;
-        bool                    isGeneralLayout = false;
-        if (i == 3) { // use the emission buffer as output
-            usage |= gfx::TextureUsageBit::TRANSFER_SRC;
-            flags |= gfx::TextureFlagBit::GENERAL_LAYOUT;
-            storeOp    = gfx::StoreOp::STORE;
-            accessType = gfx::AccessType::TRANSFER_READ;
-            beginAccesses.push_back(accessType);
-            isGeneralLayout = true;
-        }
-        out->gbufferTextures.emplace_back(device->createTexture({
-            gfx::TextureType::TEX2D,
-            usage,
-            format,
-            swapchain->getWidth(),
-            swapchain->getHeight(),
-            flags,
-        }));
-        auto &attachmentInfo           = deferredRenderPassInfo.colorAttachments.emplace_back();
-        attachmentInfo.storeOp         = storeOp;
-        attachmentInfo.format          = format;
-        attachmentInfo.beginAccesses   = beginAccesses;
-        attachmentInfo.endAccesses     = {accessType};
-        attachmentInfo.isGeneralLayout = isGeneralLayout;
-    }
-
-    deferredRenderPassInfo.depthStencilAttachment.format         = gfx::Format::DEPTH_STENCIL;
-    deferredRenderPassInfo.depthStencilAttachment.depthStoreOp   = gfx::StoreOp::DISCARD;
-    deferredRenderPassInfo.depthStencilAttachment.stencilStoreOp = gfx::StoreOp::DISCARD;
-    deferredRenderPassInfo.depthStencilAttachment.beginAccesses  = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
-    deferredRenderPassInfo.depthStencilAttachment.endAccesses    = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
-
-    out->gbufferDepthStencilTexture.reset(device->createTexture({
-        gfx::TextureType::TEX2D,
-        gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT,
-        gfx::Format::DEPTH_STENCIL,
-        swapchain->getWidth(),
-        swapchain->getHeight(),
-    }));
-
-    deferredRenderPassInfo.subpasses.resize(2);
-    deferredRenderPassInfo.subpasses[0].colors       = {0, 1, 2, 3};
-    deferredRenderPassInfo.subpasses[0].depthStencil = 4;
-    deferredRenderPassInfo.subpasses[1].colors       = {3};
-    deferredRenderPassInfo.subpasses[1].inputs       = {0, 1, 2, 3};
-
-    out->gbufferRenderPass.reset(device->createRenderPass(deferredRenderPassInfo));
-    out->gbufferFramebuffer.reset(device->createFramebuffer({
-        out->gbufferRenderPass.get(),
-        {
-            out->gbufferTextures[0].get(),
-            out->gbufferTextures[1].get(),
-            out->gbufferTextures[2].get(),
-            out->gbufferTextures[3].get(),
-        },
-        out->gbufferDepthStencilTexture.get(),
-    }));
-
-    gfx::PipelineStateInfo gbufferPipelineStateInfo;
-    gbufferPipelineStateInfo.primitive             = gfx::PrimitiveMode::TRIANGLE_LIST;
-    gbufferPipelineStateInfo.shader                = out->gbufferShader.get();
-    gbufferPipelineStateInfo.renderPass            = out->gbufferRenderPass.get();
-    gbufferPipelineStateInfo.pipelineLayout        = StandardUniformBuffers::pipelineLayout.get();
-    gbufferPipelineStateInfo.inputState.attributes = attributes;
-    gbufferPipelineStateInfo.blendState.targets.resize(4);
-    out->gbufferPipelineState.reset(device->createPipelineState(gbufferPipelineStateInfo));
-
-    ///////////////////////////////////////////////////////////////////////////
-
     gfx::DescriptorSetLayoutInfo lightingDescriptorSetLayoutInfo;
+
+    auto descriptorType{StandardDeferredPipeline::USE_SUBPASS ? gfx::DescriptorType::INPUT_ATTACHMENT : gfx::DescriptorType::SAMPLER_TEXTURE};
     lightingDescriptorSetLayoutInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX | gfx::ShaderStageFlagBit::FRAGMENT});
-    lightingDescriptorSetLayoutInfo.bindings.push_back({1, gfx::DescriptorType::INPUT_ATTACHMENT, 1, gfx::ShaderStageFlagBit::FRAGMENT});
-    lightingDescriptorSetLayoutInfo.bindings.push_back({2, gfx::DescriptorType::INPUT_ATTACHMENT, 1, gfx::ShaderStageFlagBit::FRAGMENT});
-    lightingDescriptorSetLayoutInfo.bindings.push_back({3, gfx::DescriptorType::INPUT_ATTACHMENT, 1, gfx::ShaderStageFlagBit::FRAGMENT});
-    lightingDescriptorSetLayoutInfo.bindings.push_back({4, gfx::DescriptorType::INPUT_ATTACHMENT, 1, gfx::ShaderStageFlagBit::FRAGMENT});
+    lightingDescriptorSetLayoutInfo.bindings.push_back({1, descriptorType, 1, gfx::ShaderStageFlagBit::FRAGMENT});
+    lightingDescriptorSetLayoutInfo.bindings.push_back({2, descriptorType, 1, gfx::ShaderStageFlagBit::FRAGMENT});
+    lightingDescriptorSetLayoutInfo.bindings.push_back({3, descriptorType, 1, gfx::ShaderStageFlagBit::FRAGMENT});
+    lightingDescriptorSetLayoutInfo.bindings.push_back({4, descriptorType, 1, gfx::ShaderStageFlagBit::FRAGMENT});
     out->lightingDescriptorSetLayout.reset(device->createDescriptorSetLayout(lightingDescriptorSetLayoutInfo));
 
     out->lightingPipelineLayout.reset(device->createPipelineLayout({{out->lightingDescriptorSetLayout.get()}}));
-
-    gfx::PipelineStateInfo lightingPipelineStateInfo;
-    lightingPipelineStateInfo.primitive                    = gfx::PrimitiveMode::TRIANGLE_STRIP;
-    lightingPipelineStateInfo.shader                       = out->lightingShader.get();
-    lightingPipelineStateInfo.inputState                   = {lightingAttributes};
-    lightingPipelineStateInfo.pipelineLayout               = out->lightingPipelineLayout.get();
-    lightingPipelineStateInfo.renderPass                   = out->gbufferRenderPass.get();
-    lightingPipelineStateInfo.subpass                      = 1;
-    lightingPipelineStateInfo.depthStencilState.depthTest  = false;
-    lightingPipelineStateInfo.depthStencilState.depthWrite = false;
-    lightingPipelineStateInfo.rasterizerState.cullMode     = gfx::CullMode::NONE;
-    out->lightingPipelineState.reset(device->createPipelineState(lightingPipelineStateInfo));
 
     vector<float> lightingVertexBufferData{
         -1.F, -1.F, 0.F, 0.F,
@@ -732,215 +657,199 @@ void createStandardPipelineResources(gfx::Device *device, StandardDeferredPipeli
     out->lightingDescriptorSet.reset(device->createDescriptorSet({out->lightingDescriptorSetLayout.get()}));
 
     out->lightingDescriptorSet->bindBuffer(standard::CAMERA, ubos.bufferViews[standard::CAMERA].get());
-    out->lightingDescriptorSet->bindTexture(1, out->gbufferTextures[0].get());
-    out->lightingDescriptorSet->bindTexture(2, out->gbufferTextures[1].get());
-    out->lightingDescriptorSet->bindTexture(3, out->gbufferTextures[2].get());
-    out->lightingDescriptorSet->bindTexture(4, out->gbufferTextures[3].get());
     out->lightingDescriptorSet->bindSampler(1, sampler);
     out->lightingDescriptorSet->bindSampler(2, sampler);
     out->lightingDescriptorSet->bindSampler(3, sampler);
     out->lightingDescriptorSet->bindSampler(4, sampler);
-    out->lightingDescriptorSet->update();
 }
 
-gfx::DescriptorSet *StandardDeferredPipeline::getDescriptorSet(gfx::Device *device, uint32_t hash) {
-    if (!_descriptorSetPool.count(hash)) {
-        auto *descriptorSet = device->createDescriptorSet({lightingDescriptorSetLayout.get()});
-        descriptorSet->bindBuffer(standard::CAMERA, lightingDescriptorSet->getBuffer(standard::CAMERA));
-        descriptorSet->bindSampler(1, lightingDescriptorSet->getSampler(1));
-        descriptorSet->bindSampler(2, lightingDescriptorSet->getSampler(2));
-        descriptorSet->bindSampler(3, lightingDescriptorSet->getSampler(3));
-        descriptorSet->bindSampler(4, lightingDescriptorSet->getSampler(4));
-        _descriptorSetPool[hash].reset(descriptorSet);
-    }
-    return _descriptorSetPool[hash].get();
-}
-
-gfx::PipelineState *StandardDeferredPipeline::getPipelineState(gfx::Device *device, const gfx::PipelineStateInfo &info) {
+gfx::PipelineState *StandardDeferredPipeline::getPipelineState(gfx::Device *device, gfx::PipelineStateInfo &info) {
     uint32_t hash = info.shader->getTypedID(); // over-simplification, should never do this
     if (!_pipelineStatePool.count(hash)) {
+        info.dynamicStates = gfx::DynamicStateFlagBit::VIEWPORT | gfx::DynamicStateFlagBit::SCISSOR;
         _pipelineStatePool[hash].reset(device->createPipelineState(info));
     }
     return _pipelineStatePool[hash].get();
 }
 
-void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Swapchain *swapchain, gfx::CommandBuffer *commandBuffer,
-                                                   const gfx::Rect &renderArea, const gfx::Color *clearColors, const std::function<void()> &execute) {
-    if constexpr (USE_FRAMEGRAPH) {
-        // Logic passes
-        static const framegraph::StringHandle GBUFFER_PASS_NAME = framegraph::FrameGraph::stringToHandle("GBufferPass");
-        static const framegraph::StringHandle SHADING_PASS_NAME = framegraph::FrameGraph::stringToHandle("ShadingPass");
-        // Transient Resources
-        static const framegraph::StringHandle GBUFFER_NAMES[]{
-            framegraph::FrameGraph::stringToHandle("GBuffer0"),
-            framegraph::FrameGraph::stringToHandle("GBuffer1"),
-            framegraph::FrameGraph::stringToHandle("GBuffer2"),
-            framegraph::FrameGraph::stringToHandle("GBuffer3"),
-        };
-        static const framegraph::StringHandle DEPTH_STENCIL_NAME = framegraph::FrameGraph::stringToHandle("DepthStencil");
+void StandardDeferredPipeline::ensureEnoughSize(const vector<gfx::Swapchain *> &swapchains) {
+    for (auto *swapchain : swapchains) {
+        currentExtent.width  = std::max(swapchain->getWidth(), currentExtent.width);
+        currentExtent.height = std::max(swapchain->getHeight(), currentExtent.height);
+    }
+}
 
-        struct GBufferData {
-            framegraph::TextureHandle gbuffers[4];
-            framegraph::TextureHandle depthStencil;
-        };
+void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::CommandBuffer *commandBuffer, gfx::Framebuffer *framebuffer,
+                                                   const gfx::Rect &renderArea, const gfx::Color &clearColor, const std::function<void()> &execute) {
+    // Logic passes
+    static const framegraph::StringHandle GBUFFER_PASS_NAME = framegraph::FrameGraph::stringToHandle("GBufferPass");
+    static const framegraph::StringHandle SHADING_PASS_NAME = framegraph::FrameGraph::stringToHandle("ShadingPass");
+    // Transient Resources
+    static const framegraph::StringHandle GBUFFER_NAMES[]{
+        framegraph::FrameGraph::stringToHandle("GBuffer0"),
+        framegraph::FrameGraph::stringToHandle("GBuffer1"),
+        framegraph::FrameGraph::stringToHandle("GBuffer2"),
+        framegraph::FrameGraph::stringToHandle("GBuffer3"),
+    };
+    static const framegraph::StringHandle DEPTH_STENCIL_NAME   = framegraph::FrameGraph::stringToHandle("DepthStencil");
+    static const framegraph::StringHandle LIGHTING_OUTPUT_NAME = framegraph::FrameGraph::stringToHandle("LightingOutput");
 
-        auto gbufferPassSetup = [&](framegraph::PassNodeBuilder &builder, GBufferData &data) {
-            builder.subpass(false, false);
+    struct GBufferData {
+        framegraph::TextureHandle gbuffers[4];
+        framegraph::TextureHandle depthStencil;
+    };
 
-            for (uint i = 0; i < 4; ++i) {
-                // RGBA8 is suffice for albedo, emission & occlusion
-                gfx::Format             format     = i % 3 ? gfx::Format::RGBA16F : gfx::Format::RGBA8;
-                gfx::TextureUsage       usage      = gfx::TextureUsageBit::INPUT_ATTACHMENT | gfx::TextureUsageBit::COLOR_ATTACHMENT;
-                gfx::TextureFlags       flags      = gfx::TextureFlagBit::NONE;
-                gfx::AccessType         accessType = gfx::AccessType::FRAGMENT_SHADER_READ_COLOR_INPUT_ATTACHMENT;
-                vector<gfx::AccessType> beginAccesses;
-                if (i == 3) { // use the emission buffer as output
-                    usage |= gfx::TextureUsageBit::TRANSFER_SRC;
-                    flags |= gfx::TextureFlagBit::GENERAL_LAYOUT;
-                    accessType = gfx::AccessType::TRANSFER_READ;
-                    beginAccesses.push_back(accessType);
-                }
-                framegraph::Texture::Descriptor gbufferInfo;
-                gbufferInfo.type   = gfx::TextureType::TEX2D;
-                gbufferInfo.usage  = usage;
-                gbufferInfo.format = format;
-                gbufferInfo.width  = swapchain->getWidth();
-                gbufferInfo.height = swapchain->getHeight();
-                gbufferInfo.flags  = flags;
-                data.gbuffers[i]   = builder.create<framegraph::Texture>(GBUFFER_NAMES[i], gbufferInfo);
+    auto gbufferPassSetup = [&](framegraph::PassNodeBuilder &builder, GBufferData &data) {
+        auto usages = gfx::TextureUsageBit::COLOR_ATTACHMENT | gfx::TextureUsageBit::SAMPLED;
+        auto accessType = gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE;
 
-                // Attachment Setup
-                framegraph::RenderTargetAttachment::Descriptor gbufferAttachmentInfo;
-                gbufferAttachmentInfo.slot          = i;
-                gbufferAttachmentInfo.loadOp        = gfx::LoadOp::CLEAR;
-                gbufferAttachmentInfo.clearColor    = clearColors[i];
-                gbufferAttachmentInfo.beginAccesses = beginAccesses;
-                gbufferAttachmentInfo.endAccesses   = {accessType};
+        if constexpr (USE_SUBPASS) {
+            builder.subpass();
+            usages = gfx::TextureUsageBit::COLOR_ATTACHMENT | gfx::TextureUsageBit::INPUT_ATTACHMENT;
+            accessType = gfx::AccessType::FRAGMENT_SHADER_READ_COLOR_INPUT_ATTACHMENT;
+        }
 
-                data.gbuffers[i] = builder.write(data.gbuffers[i], gbufferAttachmentInfo);
-                builder.writeToBlackboard(GBUFFER_NAMES[i], data.gbuffers[i]);
-            }
-            framegraph::Texture::Descriptor depthStencilInfo;
-            depthStencilInfo.type   = gfx::TextureType::TEX2D;
-            depthStencilInfo.usage  = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT;
-            depthStencilInfo.format = gfx::Format::DEPTH_STENCIL;
-            depthStencilInfo.width  = swapchain->getWidth();
-            depthStencilInfo.height = swapchain->getHeight();
-            data.depthStencil       = builder.create<framegraph::Texture>(DEPTH_STENCIL_NAME, depthStencilInfo);
+        for (uint i = 0; i < 4; ++i) {
+            framegraph::Texture::Descriptor gbufferInfo;
+            // RGBA8 is suffice for albedo, emission & occlusion
+            gbufferInfo.format = i % 3 ? gfx::Format::RGBA16F : gfx::Format::RGBA8;
+            gbufferInfo.usage  = usages;
+            gbufferInfo.width  = currentExtent.width;
+            gbufferInfo.height = currentExtent.height;
+            data.gbuffers[i]   = builder.create<framegraph::Texture>(GBUFFER_NAMES[i], gbufferInfo);
 
             // Attachment Setup
-            framegraph::RenderTargetAttachment::Descriptor depthStencilAttachmentInfo;
-            depthStencilAttachmentInfo.loadOp        = gfx::LoadOp::CLEAR;
-            depthStencilAttachmentInfo.beginAccesses = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
-            depthStencilAttachmentInfo.endAccesses   = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
-            depthStencilAttachmentInfo.usage         = framegraph::RenderTargetAttachment::Usage::DEPTH_STENCIL;
-
-            data.depthStencil = builder.write(data.depthStencil, depthStencilAttachmentInfo);
-            builder.writeToBlackboard(DEPTH_STENCIL_NAME, data.depthStencil);
-
-            gfx::Viewport vp   = {renderArea.x, renderArea.y, renderArea.width, renderArea.height, 0, 1};
-            gfx::Rect     rect = {renderArea.x, renderArea.y, renderArea.width, renderArea.height};
-            builder.setViewport(vp, rect);
-        };
-
-        auto gbufferPassExec = [=](const GBufferData & /*data*/, const framegraph::DevicePassResourceTable &table) {
-            static gfx::PipelineStateInfo pipelineStateInfo;
-            pipelineStateInfo.shader         = gbufferShader.get();
-            pipelineStateInfo.pipelineLayout = StandardUniformBuffers::pipelineLayout.get();
-            pipelineStateInfo.inputState     = {attributes};
-            pipelineStateInfo.primitive      = gfx::PrimitiveMode::TRIANGLE_LIST;
-
-            pipelineStateInfo.renderPass = table.getRenderPass();
-            commandBuffer->bindPipelineState(getPipelineState(device, pipelineStateInfo));
-
-            execute();
-        };
-
-        struct ShadingData {
-            framegraph::TextureHandle gbuffers[4];
-            framegraph::TextureHandle depthStencil;
-        };
-
-        auto shadingPassSetup = [&](framegraph::PassNodeBuilder &builder, ShadingData &data) {
-            builder.subpass(false, true);
-
-            for (uint i = 0; i < 4; ++i) {
-                data.gbuffers[i] = framegraph::TextureHandle(builder.readFromBlackboard(GBUFFER_NAMES[i]));
-                data.gbuffers[i] = builder.read(data.gbuffers[i]);
-            }
-
             framegraph::RenderTargetAttachment::Descriptor gbufferAttachmentInfo;
-            gbufferAttachmentInfo.slot          = 3;
-            gbufferAttachmentInfo.loadOp        = gfx::LoadOp::LOAD;
-            gbufferAttachmentInfo.beginAccesses = {gfx::AccessType::TRANSFER_READ};
-            gbufferAttachmentInfo.endAccesses   = {gfx::AccessType::TRANSFER_READ};
+            gbufferAttachmentInfo.slot          = i;
+            gbufferAttachmentInfo.loadOp        = gfx::LoadOp::CLEAR;
+            gbufferAttachmentInfo.beginAccesses = {accessType};
+            gbufferAttachmentInfo.endAccesses   = {accessType};
 
-            builder.writeToBlackboard(GBUFFER_NAMES[3], builder.write(data.gbuffers[3], gbufferAttachmentInfo));
-        };
+            data.gbuffers[i] = builder.write(data.gbuffers[i], gbufferAttachmentInfo);
+            builder.writeToBlackboard(GBUFFER_NAMES[i], data.gbuffers[i]);
+        }
+        framegraph::Texture::Descriptor depthStencilInfo;
+        depthStencilInfo.type   = gfx::TextureType::TEX2D;
+        depthStencilInfo.usage  = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT;
+        depthStencilInfo.format = gfx::Format::DEPTH_STENCIL;
+        depthStencilInfo.width  = currentExtent.width;
+        depthStencilInfo.height = currentExtent.height;
+        data.depthStencil       = builder.create<framegraph::Texture>(DEPTH_STENCIL_NAME, depthStencilInfo);
 
-        auto *descriptorSet = getDescriptorSet(device, (swapchain->getWidth() << 16) | swapchain->getHeight());
+        // Attachment Setup
+        framegraph::RenderTargetAttachment::Descriptor depthStencilAttachmentInfo;
+        depthStencilAttachmentInfo.loadOp        = gfx::LoadOp::CLEAR;
+        depthStencilAttachmentInfo.beginAccesses = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
+        depthStencilAttachmentInfo.endAccesses   = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
+        depthStencilAttachmentInfo.usage         = framegraph::RenderTargetAttachment::Usage::DEPTH_STENCIL;
 
-        auto shadingPassExec = [=](const ShadingData &data, const framegraph::DevicePassResourceTable &table) {
-            static gfx::PipelineStateInfo pipelineStateInfo;
-            pipelineStateInfo.shader                       = lightingShader.get();
-            pipelineStateInfo.pipelineLayout               = lightingPipelineLayout.get();
-            pipelineStateInfo.inputState                   = {lightingAttributes};
-            pipelineStateInfo.rasterizerState.cullMode     = gfx::CullMode::NONE;
-            pipelineStateInfo.depthStencilState.depthTest  = false;
-            pipelineStateInfo.depthStencilState.depthWrite = false;
-            pipelineStateInfo.primitive                    = gfx::PrimitiveMode::TRIANGLE_STRIP;
-            pipelineStateInfo.subpass                      = 1;
+        data.depthStencil = builder.write(data.depthStencil, depthStencilAttachmentInfo);
+        builder.writeToBlackboard(DEPTH_STENCIL_NAME, data.depthStencil);
 
-            descriptorSet->bindTexture(1, table.getRead(data.gbuffers[0]));
-            descriptorSet->bindTexture(2, table.getRead(data.gbuffers[1]));
-            descriptorSet->bindTexture(3, table.getRead(data.gbuffers[2]));
-            descriptorSet->bindTexture(4, table.getRead(data.gbuffers[3]));
-            descriptorSet->update();
+        gfx::Viewport vp   = {renderArea.x, renderArea.y, renderArea.width, renderArea.height, 0, 1};
+        gfx::Rect     rect = {renderArea.x, renderArea.y, renderArea.width, renderArea.height};
+        builder.setViewport(vp, rect);
+    };
 
-            pipelineStateInfo.renderPass = table.getRenderPass();
-            commandBuffer->bindPipelineState(getPipelineState(device, pipelineStateInfo));
-            commandBuffer->bindDescriptorSet(0, descriptorSet);
+    auto gbufferPassExec = [=](const GBufferData & /*data*/, const framegraph::DevicePassResourceTable &table) {
+        static gfx::PipelineStateInfo pipelineStateInfo;
+        pipelineStateInfo.shader         = gbufferShader.get();
+        pipelineStateInfo.pipelineLayout = StandardUniformBuffers::pipelineLayout.get();
+        pipelineStateInfo.inputState     = {attributes};
+        pipelineStateInfo.primitive      = gfx::PrimitiveMode::TRIANGLE_LIST;
 
-            commandBuffer->bindInputAssembler(lightingInputAssembler.get());
-            commandBuffer->draw(lightingInputAssembler.get());
-        };
-
-        auto &fg = TestBaseI::fg;
-
-        fg.reset();
-
-        fg.addPass<GBufferData>(100, GBUFFER_PASS_NAME, gbufferPassSetup, gbufferPassExec);
-        fg.addPass<ShadingData>(200, SHADING_PASS_NAME, shadingPassSetup, shadingPassExec);
-
-        fg.presentFromBlackboard(GBUFFER_NAMES[3], swapchain->getColorTexture());
-
-        fg.compile();
-
-        //fg.exportGraphViz("fg_vis.dot");
-
-        fg.execute();
-    } else {
-        commandBuffer->beginRenderPass(gbufferRenderPass.get(), gbufferFramebuffer.get(), renderArea, clearColors, 1.0F, 0);
-        commandBuffer->bindPipelineState(gbufferPipelineState.get());
+        pipelineStateInfo.renderPass = table.getRenderPass();
+        commandBuffer->bindPipelineState(getPipelineState(device, pipelineStateInfo));
 
         execute();
+    };
 
-        commandBuffer->nextSubpass();
+    struct ShadingData {
+        framegraph::TextureHandle gbuffers[4];
+        framegraph::TextureHandle lightingOutput;
+        framegraph::TextureHandle depthStencil;
+    };
+
+    auto shadingPassSetup = [&](framegraph::PassNodeBuilder &builder, ShadingData &data) {
+        if constexpr (USE_SUBPASS) builder.subpass(true);
+
+        for (uint i = 0; i < 4; ++i) {
+            data.gbuffers[i] = framegraph::TextureHandle(builder.readFromBlackboard(GBUFFER_NAMES[i]));
+            data.gbuffers[i] = builder.read(data.gbuffers[i]);
+        }
+
+        framegraph::Texture::Descriptor lightingOutputInfo;
+        lightingOutputInfo.type   = gfx::TextureType::TEX2D;
+        lightingOutputInfo.usage  = gfx::TextureUsageBit::COLOR_ATTACHMENT | gfx::TextureUsageBit::TRANSFER_SRC;
+        lightingOutputInfo.format = gfx::Format::RGBA8;
+        lightingOutputInfo.width  = currentExtent.width;
+        lightingOutputInfo.height = currentExtent.height;
+        data.lightingOutput       = builder.create<framegraph::Texture>(LIGHTING_OUTPUT_NAME, lightingOutputInfo);
+
+        framegraph::RenderTargetAttachment::Descriptor lightingAttachmentInfo;
+        lightingAttachmentInfo.loadOp        = gfx::LoadOp::CLEAR;
+        lightingAttachmentInfo.clearColor    = clearColor;
+        lightingAttachmentInfo.beginAccesses = {gfx::AccessType::TRANSFER_READ};
+        lightingAttachmentInfo.endAccesses   = {gfx::AccessType::TRANSFER_READ};
+
+        builder.writeToBlackboard(LIGHTING_OUTPUT_NAME, builder.write(data.lightingOutput, lightingAttachmentInfo));
+
+        framegraph::RenderTargetAttachment::Descriptor depthStencilAttachmentInfo;
+        depthStencilAttachmentInfo.loadOp        = gfx::LoadOp::LOAD;
+        depthStencilAttachmentInfo.beginAccesses = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
+        depthStencilAttachmentInfo.endAccesses   = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
+        depthStencilAttachmentInfo.usage         = framegraph::RenderTargetAttachment::Usage::DEPTH_STENCIL;
+
+        data.depthStencil = framegraph::TextureHandle(builder.readFromBlackboard(DEPTH_STENCIL_NAME));
+        data.depthStencil = builder.write(data.depthStencil, depthStencilAttachmentInfo);
+        builder.writeToBlackboard(DEPTH_STENCIL_NAME, data.depthStencil);
+
+        gfx::Viewport vp   = {renderArea.x, renderArea.y, renderArea.width, renderArea.height, 0, 1};
+        gfx::Rect     rect = {renderArea.x, renderArea.y, renderArea.width, renderArea.height};
+        builder.setViewport(vp, rect);
+    };
+
+    auto shadingPassExec = [=](const ShadingData &data, const framegraph::DevicePassResourceTable &table) {
+        static gfx::PipelineStateInfo pipelineStateInfo;
+        pipelineStateInfo.shader                       = lightingShader.get();
+        pipelineStateInfo.pipelineLayout               = lightingPipelineLayout.get();
+        pipelineStateInfo.inputState                   = {lightingAttributes};
+        pipelineStateInfo.rasterizerState.cullMode     = gfx::CullMode::NONE;
+        pipelineStateInfo.depthStencilState.depthFunc  = gfx::ComparisonFunc::GREATER;
+        pipelineStateInfo.depthStencilState.depthWrite = false;
+        pipelineStateInfo.primitive                    = gfx::PrimitiveMode::TRIANGLE_STRIP;
+        pipelineStateInfo.subpass                      = table.getSubpassIndex();
+
+        // the GBuffer resources are guaranteed to be the same in one frame
+        // so we can get away with only one descriptor set
+        lightingDescriptorSet->bindTexture(1, table.getRead(data.gbuffers[0]));
+        lightingDescriptorSet->bindTexture(2, table.getRead(data.gbuffers[1]));
+        lightingDescriptorSet->bindTexture(3, table.getRead(data.gbuffers[2]));
+        lightingDescriptorSet->bindTexture(4, table.getRead(data.gbuffers[3]));
+        lightingDescriptorSet->update();
+
+        pipelineStateInfo.renderPass = table.getRenderPass();
+        commandBuffer->bindPipelineState(getPipelineState(device, pipelineStateInfo));
+        commandBuffer->bindDescriptorSet(0, lightingDescriptorSet.get());
 
         commandBuffer->bindInputAssembler(lightingInputAssembler.get());
-        commandBuffer->bindPipelineState(lightingPipelineState.get());
-        commandBuffer->bindDescriptorSet(0, lightingDescriptorSet.get());
         commandBuffer->draw(lightingInputAssembler.get());
+    };
 
-        commandBuffer->endRenderPass();
+    auto &fg = TestBaseI::fg;
 
-        gfx::TextureBlit region;
-        region.srcExtent.width  = swapchain->getWidth();
-        region.srcExtent.height = swapchain->getHeight();
-        region.dstExtent.width  = swapchain->getWidth();
-        region.dstExtent.height = swapchain->getHeight();
-        commandBuffer->blitTexture(gbufferTextures[3].get(), swapchain->getColorTexture(), &region, 1, gfx::Filter::POINT);
-    }
+    fg.reset();
+
+    fg.addPass<GBufferData>(100, GBUFFER_PASS_NAME, gbufferPassSetup, gbufferPassExec);
+    fg.addPass<ShadingData>(200, SHADING_PASS_NAME, shadingPassSetup, shadingPassExec);
+
+    fg.presentFromBlackboard(LIGHTING_OUTPUT_NAME, framebuffer->getColorTextures()[0]);
+
+    fg.compile();
+
+    //fg.exportGraphViz("fg_vis.dot");
+
+    fg.execute();
 }
 
 } // namespace cc

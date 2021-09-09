@@ -111,8 +111,6 @@ bool SubpassTest::onInit() {
         },
     }));
 
-    _clearColors.assign(4, {0.02F, 0.02F, 0.02F, 1});
-
     return true;
 }
 
@@ -132,8 +130,9 @@ void SubpassTest::onTick() {
     device->acquire(swapchains);
     commandBuffer->begin();
 
-    auto gbufferWidth  = static_cast<float>(_deferred.gbufferTextures[0]->getWidth());
-    auto gbufferHeight = static_cast<float>(_deferred.gbufferTextures[0]->getHeight());
+    _deferred.ensureEnoughSize(swapchains);
+    auto gbufferWidth  = static_cast<float>(_deferred.currentExtent.width);
+    auto gbufferHeight = static_cast<float>(_deferred.currentExtent.height);
 
     for (size_t i = 0; i < swapchains.size(); ++i) {
         auto *swapchain = swapchains[i];
@@ -149,8 +148,8 @@ void SubpassTest::onTick() {
         std::copy(_projectionMatrix.m, _projectionMatrix.m + 16, _ubos.getBuffer(standard::MVP) + 32);
 
         // scale the sampling UV if needed
-        _ubos.getBuffer(standard::CAMERA)[3] = StandardDeferredPipeline::USE_FRAMEGRAPH ? 1 : static_cast<float>(swapchain->getWidth()) / gbufferWidth;
-        _ubos.getBuffer(standard::CAMERA)[7] = StandardDeferredPipeline::USE_FRAMEGRAPH ? 1 : static_cast<float>(swapchain->getHeight()) / gbufferHeight;
+        _ubos.getBuffer(standard::CAMERA)[3] = static_cast<float>(swapchain->getWidth()) / gbufferWidth;
+        _ubos.getBuffer(standard::CAMERA)[7] = static_cast<float>(swapchain->getHeight()) / gbufferHeight;
 
         std::copy(&colors[i].x, &colors[i].x + 4, _ubos.getBuffer(standard::COLOR));
 
@@ -167,13 +166,13 @@ void SubpassTest::onTick() {
         }
 
         if (_useDeferred) {
-            _deferred.recordCommandBuffer(device, swapchain, commandBuffer, renderArea, _clearColors.data(), [&]() {
+            _deferred.recordCommandBuffer(device, commandBuffer, fbo, renderArea, _clearColor, [&]() {
                 commandBuffer->bindInputAssembler(_inputAssembler.get());
                 commandBuffer->bindDescriptorSet(0, _ubos.descriptorSet.get());
                 commandBuffer->draw(_inputAssembler.get());
             });
         } else {
-            _forward.recordCommandBuffer(device, commandBuffer, fbo, renderArea, _clearColors.data(), [&]() {
+            _forward.recordCommandBuffer(device, commandBuffer, fbo, renderArea, _clearColor, [&]() {
                 commandBuffer->bindInputAssembler(_inputAssembler.get());
                 commandBuffer->bindDescriptorSet(0, _ubos.descriptorSet.get());
                 commandBuffer->draw(_inputAssembler.get());

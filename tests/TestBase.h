@@ -67,6 +67,15 @@ struct ShaderSources {
     }
 };
 
+template <typename T>
+ShaderSources<T> operator+(const T &str, const ShaderSources<T> &b) {
+    ShaderSources<T> res;
+    res.glsl4 = str + b.glsl4;
+    res.glsl3 = str + b.glsl3;
+    res.glsl1 = str + b.glsl1;
+    return res;
+}
+
 struct FrameRate {
     std::chrono::steady_clock::time_point prevTime;
     std::chrono::steady_clock::time_point curTime;

@@ -28,9 +28,9 @@ protected:
     Mat4 _worldMatrix;
     Mat4 _projectionMatrix;
 
-    gfx::ColorList _clearColors;
+    gfx::Color _clearColor{0.1F, 0.1F, 0.1F, 1.F};
 
-    bool _useDeferred = true;
+    bool _useDeferred{true};
 };
 
 } // namespace cc
