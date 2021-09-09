@@ -194,13 +194,10 @@ String surf = R"(
 
 String extensions = R"(
     #define GBUFFER_STORAGE_TEXTURE 0
-    #define GBUFFER_STORAGE_PLS 1
-    #define GBUFFER_STORAGE_FBF 2
+    #define GBUFFER_STORAGE_FBF 1
 
     #if GBUFFER_STORAGE == GBUFFER_STORAGE_FBF
         #extension GL_EXT_shader_framebuffer_fetch: require
-    #elif GBUFFER_STORAGE == GBUFFER_STORAGE_PLS
-        #extension GL_EXT_shader_pixel_local_storage: require
     #endif
 )";
 } // namespace
@@ -209,8 +206,6 @@ String getSubpassGLExtension(gfx::Device *device) {
     uint32_t subpassExtension = 0;
 
     if (device->hasFeature(gfx::Feature::GL_FRAMEBUFFER_FETCH)) {
-        subpassExtension = 2;
-    } else if (device->hasFeature(gfx::Feature::GL_PIXEL_LOCAL_STORAGE)) {
         subpassExtension = 1;
     }
 
@@ -219,26 +214,6 @@ String getSubpassGLExtension(gfx::Device *device) {
             #define GBUFFER_STORAGE %d
         )",
         subpassExtension);
-}
-
-String declPLSData(gfx::MemoryAccess access = gfx::MemoryAccessBit::READ_WRITE) {
-    String prefix;
-    switch (access) {
-        case gfx::MemoryAccess::READ_ONLY: prefix = "_in"; break;
-        case gfx::MemoryAccess::WRITE_ONLY: prefix = "_out"; break;
-        default: break;
-    }
-    return StringUtil::format(
-        R"(
-            // The guaranteed minimum available PLS size is 16 bytes
-            layout(rgba8) __pixel_local%sEXT FragColor {
-                vec4 gbuffer0;
-                vec4 gbuffer1;
-                vec4 gbuffer2;
-                vec4 gbuffer3;
-            };
-        )",
-        prefix.c_str());
 }
 
 gfx::ShaderInfo getForwardShaderInfo() {
@@ -368,15 +343,10 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
     )";
     gbufferFrag.glsl3 = getSubpassGLExtension(device) + extensions + gbufferFrag.glsl3;
     gbufferFrag.glsl3 += R"(
-        #if GBUFFER_STORAGE == GBUFFER_STORAGE_PLS
-    )" + declPLSData(gfx::MemoryAccessBit::WRITE_ONLY);
-    gbufferFrag.glsl3 += R"(
-        #else
-            layout(location = 0) out vec4 gbuffer0;
-            layout(location = 1) out vec4 gbuffer1;
-            layout(location = 2) out vec4 gbuffer2;
-            layout(location = 3) out vec4 gbuffer3;
-        #endif
+        layout(location = 0) out vec4 gbuffer0;
+        layout(location = 1) out vec4 gbuffer1;
+        layout(location = 2) out vec4 gbuffer2;
+        layout(location = 3) out vec4 gbuffer3;
 
         void main () {
             StandardSurface s; surf(s);
@@ -388,9 +358,7 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
         }
     )";
     gbufferFrag.glsl1 = R"(
-        #ifdef GL_EXT_draw_buffers
-            #extension GL_EXT_draw_buffers: enable
-        #endif
+        #extension GL_EXT_draw_buffers: require
     )" + gbufferFrag.glsl1;
     gbufferFrag.glsl1 += R"(
         void main () {
@@ -453,10 +421,6 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
                 layout(location = 1) inout vec4 gbuffer1;
                 layout(location = 2) inout vec4 gbuffer2;
                 layout(location = 3) inout vec4 gbuffer3;
-            #elif GBUFFER_STORAGE == GBUFFER_STORAGE_PLS
-        )" + declPLSData(gfx::MemoryAccessBit::READ_ONLY) +
-            R"(
-                layout(location = 0) out vec4 o_color;
             #else
                 uniform sampler2D gbuffer0;
                 uniform sampler2D gbuffer1;
@@ -467,9 +431,7 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
         )",
         getSubpassGLExtension(device) + extensions + R"(
             #if GBUFFER_STORAGE == GBUFFER_STORAGE_FBF
-            #   ifdef GL_EXT_draw_buffers
-            #       extension GL_EXT_draw_buffers: enable
-            #   endif
+                #extension GL_EXT_draw_buffers: require
             #endif
 
             precision highp float;
@@ -509,7 +471,6 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
         void main() {
 
             #if GBUFFER_STORAGE
-                // [PVRVFrame driver bug] Don't use PLS data inside vector constructors
                 vec4 g0 = gbuffer0;
                 vec4 g1 = gbuffer1;
                 vec4 g2 = gbuffer2;
