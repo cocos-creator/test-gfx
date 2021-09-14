@@ -69,7 +69,7 @@ struct StandardDeferredPipeline {
                              const gfx::Rect &renderArea, const gfx::Color &clearColor, const std::function<void()> &execute);
 
 private:
-    gfx::PipelineState *getPipelineState(gfx::Device *device, gfx::PipelineStateInfo &info);
+    gfx::PipelineState *getPipelineState(gfx::Device *device, const gfx::PipelineStateInfo &info);
 
     std::unordered_map<uint32_t, std::unique_ptr<gfx::PipelineState>> _pipelineStatePool;
 };

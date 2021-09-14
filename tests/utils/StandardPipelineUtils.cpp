@@ -663,10 +663,9 @@ void createStandardPipelineResources(gfx::Device *device, StandardDeferredPipeli
     out->lightingDescriptorSet->bindSampler(4, sampler);
 }
 
-gfx::PipelineState *StandardDeferredPipeline::getPipelineState(gfx::Device *device, gfx::PipelineStateInfo &info) {
+gfx::PipelineState *StandardDeferredPipeline::getPipelineState(gfx::Device *device, const gfx::PipelineStateInfo &info) {
     uint32_t hash = info.shader->getTypedID(); // over-simplification, should never do this
     if (!_pipelineStatePool.count(hash)) {
-        info.dynamicStates = gfx::DynamicStateFlagBit::VIEWPORT | gfx::DynamicStateFlagBit::SCISSOR;
         _pipelineStatePool[hash].reset(device->createPipelineState(info));
     }
     return _pipelineStatePool[hash].get();
