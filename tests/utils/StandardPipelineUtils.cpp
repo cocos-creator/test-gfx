@@ -193,7 +193,7 @@ String surf = R"(
 )";
 
 String extensions = R"(
-    #if CC_USE_INPUT_ATTACHMENT
+    #if CC_DEVICE_CAN_BENEFIT_FROM_INPUT_ATTACHMENT
         #extension GL_EXT_shader_framebuffer_fetch: require
     #endif
 )";
@@ -202,7 +202,7 @@ String extensions = R"(
 String getInputAttachmentMacro(gfx::Device *device) {
     return StringUtil::format(
         R"(
-            #define CC_USE_INPUT_ATTACHMENT %d
+            #define CC_DEVICE_CAN_BENEFIT_FROM_INPUT_ATTACHMENT %d
         )",
         StandardDeferredPipeline::USE_SUBPASS && device->hasFeature(gfx::Feature::INPUT_ATTACHMENT_BENEFIT));
 }
@@ -400,7 +400,7 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
             precision highp float;
             layout(location = 0) in vec2 v_texCoord;
 
-            #if CC_USE_INPUT_ATTACHMENT
+            #if CC_DEVICE_CAN_BENEFIT_FROM_INPUT_ATTACHMENT
                 layout(input_attachment_index = 0, set = 0, binding = 1) uniform subpassInput gbuffer0;
                 layout(input_attachment_index = 1, set = 0, binding = 2) uniform subpassInput gbuffer1;
                 layout(input_attachment_index = 2, set = 0, binding = 3) uniform subpassInput gbuffer2;
@@ -416,7 +416,7 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
             precision highp float;
             in vec2 v_texCoord;
 
-            #if CC_USE_INPUT_ATTACHMENT
+            #if CC_DEVICE_CAN_BENEFIT_FROM_INPUT_ATTACHMENT
                 layout(location = 0) inout vec4 gbuffer0;
                 layout(location = 1) inout vec4 gbuffer1;
                 layout(location = 2) inout vec4 gbuffer2;
@@ -430,14 +430,14 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
             #endif
         )",
             extensions + R"(
-            #if CC_USE_INPUT_ATTACHMENT
+            #if CC_DEVICE_CAN_BENEFIT_FROM_INPUT_ATTACHMENT
                 #extension GL_EXT_draw_buffers: require
             #endif
 
             precision highp float;
             varying vec2 v_texCoord;
 
-            #if !CC_USE_INPUT_ATTACHMENT
+            #if !CC_DEVICE_CAN_BENEFIT_FROM_INPUT_ATTACHMENT
                 uniform sampler2D gbuffer0;
                 uniform sampler2D gbuffer1;
                 uniform sampler2D gbuffer2;
@@ -450,7 +450,7 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
         layout(location = 0) out vec4 o_color;
         void main() {
 
-            #if CC_USE_INPUT_ATTACHMENT
+            #if CC_DEVICE_CAN_BENEFIT_FROM_INPUT_ATTACHMENT
                 vec4 g0 = subpassLoad(gbuffer0);
                 vec4 g1 = subpassLoad(gbuffer1);
                 vec4 g2 = subpassLoad(gbuffer2);
@@ -477,7 +477,7 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
     lightingFrag.glsl3 += R"(
         void main() {
 
-            #if CC_USE_INPUT_ATTACHMENT
+            #if CC_DEVICE_CAN_BENEFIT_FROM_INPUT_ATTACHMENT
                 vec4 g0 = gbuffer0;
                 vec4 g1 = gbuffer1;
                 vec4 g2 = gbuffer2;
@@ -498,7 +498,7 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
             s.emissive = g3.xyz;
             s.occlusion = g3.w;
 
-            #if CC_USE_INPUT_ATTACHMENT
+            #if CC_DEVICE_CAN_BENEFIT_FROM_INPUT_ATTACHMENT
                 gbuffer3 = CCStandardShadingBase(s);
             #else
                 o_color = CCStandardShadingBase(s);
@@ -508,7 +508,7 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
     lightingFrag.glsl1 += R"(
         void main() {
 
-            #if CC_USE_INPUT_ATTACHMENT
+            #if CC_DEVICE_CAN_BENEFIT_FROM_INPUT_ATTACHMENT
                 vec4 g0 = gl_LastFragData[0];
                 vec4 g1 = gl_LastFragData[1];
                 vec4 g2 = gl_LastFragData[2];
@@ -529,7 +529,7 @@ void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out) {
             s.emissive = g3.xyz;
             s.occlusion = g3.w;
 
-            #if CC_USE_INPUT_ATTACHMENT
+            #if CC_DEVICE_CAN_BENEFIT_FROM_INPUT_ATTACHMENT
                 gl_FragData[3] = CCStandardShadingBase(s);
             #else
                 gl_FragColor = CCStandardShadingBase(s);
@@ -694,11 +694,21 @@ gfx::PipelineState *StandardDeferredPipeline::getPipelineState(gfx::Device *devi
     return _pipelineStatePool[hash].get();
 }
 
-void StandardDeferredPipeline::ensureEnoughSize(const vector<gfx::Swapchain *> &swapchains) {
-    for (auto *swapchain : swapchains) {
-        currentExtent.width  = std::max(swapchain->getWidth(), currentExtent.width);
-        currentExtent.height = std::max(swapchain->getHeight(), currentExtent.height);
+gfx::DescriptorSet *StandardDeferredPipeline::getDescriptorSet(gfx::Device *device, uint32_t hash) {
+    static gfx::SamplerInfo samplerInfo;
+    static gfx::Sampler *   sampler{device->getSampler(samplerInfo)};
+
+    if (!_descriptorSetPool.count(hash)) {
+        auto *descriptorSet = device->createDescriptorSet({lightingDescriptorSetLayout.get()});
+        descriptorSet->bindBuffer(standard::CAMERA, lightingDescriptorSet->getBuffer(standard::CAMERA));
+        descriptorSet->bindSampler(1, sampler);
+        descriptorSet->bindSampler(2, sampler);
+        descriptorSet->bindSampler(3, sampler);
+        descriptorSet->bindSampler(4, sampler);
+        _descriptorSetPool[hash].reset(descriptorSet);
     }
+
+    return _descriptorSetPool[hash].get();
 }
 
 void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::CommandBuffer *commandBuffer, gfx::Framebuffer *framebuffer,
@@ -721,6 +731,8 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Com
         framegraph::TextureHandle depthStencil;
     };
 
+    auto *output = framebuffer->getColorTextures()[0];
+
     auto gbufferPassSetup = [&](framegraph::PassNodeBuilder &builder, GBufferData &data) {
         auto usages     = gfx::TextureUsageBit::COLOR_ATTACHMENT | gfx::TextureUsageBit::SAMPLED;
         auto accessType = gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE;
@@ -736,8 +748,8 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Com
             // RGBA8 is suffice for albedo, emission & occlusion
             gbufferInfo.format = i % 3 ? gfx::Format::RGBA16F : gfx::Format::RGBA8;
             gbufferInfo.usage  = usages;
-            gbufferInfo.width  = currentExtent.width;
-            gbufferInfo.height = currentExtent.height;
+            gbufferInfo.width  = output->getWidth();
+            gbufferInfo.height = output->getHeight();
             data.gbuffers[i]   = builder.create<framegraph::Texture>(GBUFFER_NAMES[i], gbufferInfo);
 
             // Attachment Setup
@@ -754,8 +766,8 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Com
         depthStencilInfo.type   = gfx::TextureType::TEX2D;
         depthStencilInfo.usage  = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT;
         depthStencilInfo.format = gfx::Format::DEPTH_STENCIL;
-        depthStencilInfo.width  = currentExtent.width;
-        depthStencilInfo.height = currentExtent.height;
+        depthStencilInfo.width  = output->getWidth();
+        depthStencilInfo.height = output->getHeight();
         data.depthStencil       = builder.create<framegraph::Texture>(DEPTH_STENCIL_NAME, depthStencilInfo);
 
         // Attachment Setup
@@ -804,8 +816,8 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Com
         lightingOutputInfo.type   = gfx::TextureType::TEX2D;
         lightingOutputInfo.usage  = gfx::TextureUsageBit::COLOR_ATTACHMENT | gfx::TextureUsageBit::TRANSFER_SRC;
         lightingOutputInfo.format = gfx::Format::RGBA8;
-        lightingOutputInfo.width  = currentExtent.width;
-        lightingOutputInfo.height = currentExtent.height;
+        lightingOutputInfo.width  = output->getWidth();
+        lightingOutputInfo.height = output->getHeight();
         data.lightingOutput       = builder.create<framegraph::Texture>(LIGHTING_OUTPUT_NAME, lightingOutputInfo);
 
         framegraph::RenderTargetAttachment::Descriptor lightingAttachmentInfo;
@@ -842,17 +854,16 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Com
         pipelineStateInfo.primitive                    = gfx::PrimitiveMode::TRIANGLE_STRIP;
         pipelineStateInfo.subpass                      = table.getSubpassIndex();
 
-        // the GBuffer resources are guaranteed to be the same in one frame
-        // so we can get away with only one descriptor set
-        lightingDescriptorSet->bindTexture(1, table.getRead(data.gbuffers[0]));
-        lightingDescriptorSet->bindTexture(2, table.getRead(data.gbuffers[1]));
-        lightingDescriptorSet->bindTexture(3, table.getRead(data.gbuffers[2]));
-        lightingDescriptorSet->bindTexture(4, table.getRead(data.gbuffers[3]));
-        lightingDescriptorSet->update();
+        auto *descriptorSet = getDescriptorSet(device, table.getRead(data.gbuffers[0])->getTypedID());
+        descriptorSet->bindTexture(1, table.getRead(data.gbuffers[0]));
+        descriptorSet->bindTexture(2, table.getRead(data.gbuffers[1]));
+        descriptorSet->bindTexture(3, table.getRead(data.gbuffers[2]));
+        descriptorSet->bindTexture(4, table.getRead(data.gbuffers[3]));
+        descriptorSet->update();
 
         pipelineStateInfo.renderPass = table.getRenderPass();
         commandBuffer->bindPipelineState(getPipelineState(device, pipelineStateInfo));
-        commandBuffer->bindDescriptorSet(0, lightingDescriptorSet.get());
+        commandBuffer->bindDescriptorSet(0, descriptorSet);
 
         commandBuffer->bindInputAssembler(lightingInputAssembler.get());
         commandBuffer->draw(lightingInputAssembler.get());
@@ -864,7 +875,7 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Com
     fg.addPass<GBufferData>(99 + USE_SUBPASS, GBUFFER_PASS_NAME, gbufferPassSetup, gbufferPassExec);
     fg.addPass<ShadingData>(100, SHADING_PASS_NAME, shadingPassSetup, shadingPassExec);
 
-    fg.presentFromBlackboard(LIGHTING_OUTPUT_NAME, framebuffer->getColorTextures()[0]);
+    fg.presentFromBlackboard(LIGHTING_OUTPUT_NAME, output);
 }
 
 } // namespace cc

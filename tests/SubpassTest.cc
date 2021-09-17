@@ -46,7 +46,7 @@ bool SubpassTest::onInit() {
 
     constexpr float cameraDistance = 5.F;
 
-    Vec4 cameraPos{cameraDistance, cameraDistance * 0.5F, cameraDistance * 0.3F, 0.F};
+    Vec4 cameraPos{cameraDistance, cameraDistance * 0.5F, cameraDistance * 0.3F, 1.F};
     Vec4 lightDir{0.F, -2.F, -1.F, 0.F};
     Vec4 lightColor{1.F, 1.F, 1.F, 1.7F};
     Vec4 skyColor{.2F, .5F, .8F, .5F};
@@ -55,6 +55,7 @@ bool SubpassTest::onInit() {
     Mat4::createLookAt(Vec3(cameraPos.x, cameraPos.y, cameraPos.z),
                        Vec3(0.0F, 1.F, 0.0F), Vec3(0.0F, 1.0F, 0.F), &view);
     lightDir.normalize();
+    lightDir.w = 1.F;
 
     for (size_t i = 0; i < swapchains.size(); ++i) {
         std::copy(view.m, view.m + 16, _ubos.getBuffer(standard::MVP, i) + 16);
@@ -110,10 +111,6 @@ void SubpassTest::onTick() {
         {3 / 255.F, 252 / 255.F, 23 / 255.F, 1.0F},
     };
 
-    _deferred.ensureEnoughSize(swapchains);
-    auto gbufferWidth  = static_cast<float>(_deferred.currentExtent.width);
-    auto gbufferHeight = static_cast<float>(_deferred.currentExtent.height);
-
     device->acquire(swapchains);
     commandBuffer->begin();
 
@@ -127,10 +124,6 @@ void SubpassTest::onTick() {
                                      static_cast<float>(orientedSize.width) / static_cast<float>(orientedSize.height),
                                      0.01F, 1000.0F, &_projectionMatrix, swapchain);
         std::copy(_projectionMatrix.m, _projectionMatrix.m + 16, _ubos.getBuffer(standard::MVP, i) + 32);
-
-        // scale the sampling UV if needed
-        _ubos.getBuffer(standard::CAMERA, i)[3] = static_cast<float>(swapchain->getWidth()) / gbufferWidth;
-        _ubos.getBuffer(standard::CAMERA, i)[7] = static_cast<float>(swapchain->getHeight()) / gbufferHeight;
 
         std::copy(&colors[i].x, &colors[i].x + 4, _ubos.getBuffer(standard::COLOR, i));
     }

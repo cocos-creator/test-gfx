@@ -59,17 +59,16 @@ struct StandardDeferredPipeline {
     std::unique_ptr<gfx::Buffer>              lightingVertexBuffer{nullptr};
     std::unique_ptr<gfx::InputAssembler>      lightingInputAssembler{nullptr};
     std::unique_ptr<gfx::DescriptorSet>       lightingDescriptorSet{nullptr};
-    gfx::Extent                               currentExtent;
-
-    void ensureEnoughSize(const vector<gfx::Swapchain *> &swapchains);
 
     void recordCommandBuffer(gfx::Device *device, gfx::CommandBuffer *commandBuffer, gfx::Framebuffer *framebuffer,
                              const gfx::Rect &renderArea, const gfx::Color &clearColor, const std::function<void()> &execute);
 
 private:
     gfx::PipelineState *getPipelineState(gfx::Device *device, const gfx::PipelineStateInfo &info);
+    gfx::DescriptorSet *getDescriptorSet(gfx::Device *device, uint32_t hash);
 
     std::unordered_map<uint32_t, std::unique_ptr<gfx::PipelineState>> _pipelineStatePool;
+    std::unordered_map<uint32_t, std::unique_ptr<gfx::DescriptorSet>> _descriptorSetPool;
 };
 
 extern void createStandardShader(gfx::Device *device, StandardForwardPipeline *out);

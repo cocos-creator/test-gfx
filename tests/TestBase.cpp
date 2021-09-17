@@ -409,7 +409,7 @@ void TestBaseI::createUberBuffer(const vector<uint> &sizes, gfx::Buffer **pBuffe
     pBufferViewOffsets->assign(sizes.size() + 1, 0);
     if (pAlignedBufferSizes) pAlignedBufferSizes->resize(sizes.size());
     for (uint i = 0U; i < sizes.size(); ++i) {
-        uint alignedSize = i == sizes.size() - 1 ? sizes[i] : getAlignedUBOStride(sizes[i]);
+        uint alignedSize = getAlignedUBOStride(sizes[i]);
         if (pAlignedBufferSizes) pAlignedBufferSizes->at(i) = alignedSize;
         pBufferViewOffsets->at(i + 1) = pBufferViewOffsets->at(i) + alignedSize * instances;
     }
