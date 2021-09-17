@@ -82,7 +82,7 @@ void GameApp::initialize() {
 
     TestBaseI::setWindowInfo(info);
 
-    /* Second Test Window *
+    /* Second Test Window */
     int testWidth = 800;
     int testHeight = 450;
     createWindow(L"Cocos GFX Test 2", testWidth, testHeight, 0.5, 0.5);

@@ -4,7 +4,7 @@
 namespace cc {
 
 bool SubpassTest::onInit() {
-    createStandardUniformBuffers(device, &_ubos);
+    createStandardUniformBuffers(device, &_ubos, swapchains.size());
     createStandardPipelineResources(device, &_forward, _ubos);
     createStandardPipelineResources(device, &_deferred, _ubos);
 
@@ -56,12 +56,14 @@ bool SubpassTest::onInit() {
                        Vec3(0.0F, 1.F, 0.0F), Vec3(0.0F, 1.0F, 0.F), &view);
     lightDir.normalize();
 
-    std::copy(view.m, view.m + 16, _ubos.getBuffer(standard::MVP) + 16);
-    std::copy(&cameraPos.x, &cameraPos.x + 4, _ubos.getBuffer(standard::CAMERA));
-    std::copy(&lightDir.x, &lightDir.x + 4, _ubos.getBuffer(standard::CAMERA) + 4);
-    std::copy(&lightColor.x, &lightColor.x + 4, _ubos.getBuffer(standard::CAMERA) + 8);
-    std::copy(&skyColor.x, &skyColor.x + 4, _ubos.getBuffer(standard::CAMERA) + 12);
-    std::copy(&groundColor.x, &groundColor.x + 4, _ubos.getBuffer(standard::CAMERA) + 16);
+    for (size_t i = 0; i < swapchains.size(); ++i) {
+        std::copy(view.m, view.m + 16, _ubos.getBuffer(standard::MVP, i) + 16);
+        std::copy(&cameraPos.x, &cameraPos.x + 4, _ubos.getBuffer(standard::CAMERA, i));
+        std::copy(&lightDir.x, &lightDir.x + 4, _ubos.getBuffer(standard::CAMERA, i) + 4);
+        std::copy(&lightColor.x, &lightColor.x + 4, _ubos.getBuffer(standard::CAMERA, i) + 8);
+        std::copy(&skyColor.x, &skyColor.x + 4, _ubos.getBuffer(standard::CAMERA, i) + 12);
+        std::copy(&groundColor.x, &groundColor.x + 4, _ubos.getBuffer(standard::CAMERA, i) + 16);
+    }
 
     gfx::InputAssemblerInfo inputAssemblerInfo;
     inputAssemblerInfo.attributes = _deferred.gbufferShader->getAttributes();
@@ -92,25 +94,6 @@ bool SubpassTest::onInit() {
         },
     }));
 
-    _globalBarriers.push_back(device->getGlobalBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-    }));
-
-    _globalBarriers.push_back(device->getGlobalBarrier({
-        {
-            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-            gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
-        },
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-    }));
-
     return true;
 }
 
@@ -127,58 +110,61 @@ void SubpassTest::onTick() {
         {3 / 255.F, 252 / 255.F, 23 / 255.F, 1.0F},
     };
 
-    device->acquire(swapchains);
-    commandBuffer->begin();
-
     _deferred.ensureEnoughSize(swapchains);
     auto gbufferWidth  = static_cast<float>(_deferred.currentExtent.width);
     auto gbufferHeight = static_cast<float>(_deferred.currentExtent.height);
 
+    device->acquire(swapchains);
+    commandBuffer->begin();
+
     for (size_t i = 0; i < swapchains.size(); ++i) {
         auto *swapchain = swapchains[i];
-        auto *fbo       = fbos[i];
-
         Mat4::createRotationY(_time * (i ? -1.F : 1.F), &_worldMatrix);
-        std::copy(_worldMatrix.m, _worldMatrix.m + 16, _ubos.getBuffer(standard::MVP));
+        std::copy(_worldMatrix.m, _worldMatrix.m + 16, _ubos.getBuffer(standard::MVP, i));
 
         gfx::Extent orientedSize = TestBaseI::getOrientedSurfaceSize(swapchain);
         TestBaseI::createPerspective(60.0F,
                                      static_cast<float>(orientedSize.width) / static_cast<float>(orientedSize.height),
                                      0.01F, 1000.0F, &_projectionMatrix, swapchain);
-        std::copy(_projectionMatrix.m, _projectionMatrix.m + 16, _ubos.getBuffer(standard::MVP) + 32);
+        std::copy(_projectionMatrix.m, _projectionMatrix.m + 16, _ubos.getBuffer(standard::MVP, i) + 32);
 
         // scale the sampling UV if needed
-        _ubos.getBuffer(standard::CAMERA)[3] = static_cast<float>(swapchain->getWidth()) / gbufferWidth;
-        _ubos.getBuffer(standard::CAMERA)[7] = static_cast<float>(swapchain->getHeight()) / gbufferHeight;
+        _ubos.getBuffer(standard::CAMERA, i)[3] = static_cast<float>(swapchain->getWidth()) / gbufferWidth;
+        _ubos.getBuffer(standard::CAMERA, i)[7] = static_cast<float>(swapchain->getHeight()) / gbufferHeight;
 
-        std::copy(&colors[i].x, &colors[i].x + 4, _ubos.getBuffer(standard::COLOR));
+        std::copy(&colors[i].x, &colors[i].x + 4, _ubos.getBuffer(standard::COLOR, i));
+    }
 
-        if (i) {
-            commandBuffer->pipelineBarrier(_globalBarriers[2]);
-            commandBuffer->pipelineBarrier(_globalBarriers[3]);
-        }
+    _ubos.update();
+    if (TestBaseI::MANUAL_BARRIER) {
+        commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx]);
+    }
 
-        _ubos.update(commandBuffer);
-        gfx::Rect renderArea = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
+    fg.reset();
 
-        if (TestBaseI::MANUAL_BARRIER) {
-            commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx]);
-        }
+    for (size_t i = 0; i < swapchains.size(); ++i) {
+        auto *    swapchain = swapchains[i];
+        auto *    fbo       = fbos[i];
+        gfx::Rect renderArea{0, 0, swapchain->getWidth(), swapchain->getHeight()};
 
         if (_useDeferred) {
-            _deferred.recordCommandBuffer(device, commandBuffer, fbo, renderArea, _clearColor, [&]() {
+            _deferred.recordCommandBuffer(device, commandBuffer, fbo, renderArea, _clearColor, [=]() {
                 commandBuffer->bindInputAssembler(_inputAssembler.get());
-                commandBuffer->bindDescriptorSet(0, _ubos.descriptorSet.get());
+                _ubos.bindDescriptorSet(commandBuffer, 0, i);
                 commandBuffer->draw(_inputAssembler.get());
             });
         } else {
-            _forward.recordCommandBuffer(device, commandBuffer, fbo, renderArea, _clearColor, [&]() {
+            _forward.recordCommandBuffer(device, commandBuffer, fbo, renderArea, _clearColor, [=]() {
                 commandBuffer->bindInputAssembler(_inputAssembler.get());
-                commandBuffer->bindDescriptorSet(0, _ubos.descriptorSet.get());
+                _ubos.bindDescriptorSet(commandBuffer, 0, i);
                 commandBuffer->draw(_inputAssembler.get());
             });
         }
     }
+
+    fg.compile();
+    //fg.exportGraphViz("fg_vis.dot");
+    fg.execute();
 
     commandBuffer->end();
 

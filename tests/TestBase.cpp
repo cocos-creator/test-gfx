@@ -404,12 +404,14 @@ uint TestBaseI::getAlignedUBOStride(uint stride) {
     return (stride + alignment - 1) / alignment * alignment;
 }
 
-void TestBaseI::createUberBuffer(const vector<uint> &sizes, gfx::Buffer **pBuffer,
-                                 vector<gfx::Buffer *> *pBufferViews, vector<uint> *pBufferViewOffsets) {
+void TestBaseI::createUberBuffer(const vector<uint> &sizes, gfx::Buffer **pBuffer, vector<gfx::Buffer *> *pBufferViews,
+                                 vector<uint> *pBufferViewOffsets, vector<uint> *pAlignedBufferSizes, uint instances) {
     pBufferViewOffsets->assign(sizes.size() + 1, 0);
+    if (pAlignedBufferSizes) pAlignedBufferSizes->resize(sizes.size());
     for (uint i = 0U; i < sizes.size(); ++i) {
-        uint alignedSize              = i == sizes.size() - 1 ? sizes[i] : getAlignedUBOStride(sizes[i]);
-        pBufferViewOffsets->at(i + 1) = pBufferViewOffsets->at(i) + alignedSize;
+        uint alignedSize = i == sizes.size() - 1 ? sizes[i] : getAlignedUBOStride(sizes[i]);
+        if (pAlignedBufferSizes) pAlignedBufferSizes->at(i) = alignedSize;
+        pBufferViewOffsets->at(i + 1) = pBufferViewOffsets->at(i) + alignedSize * instances;
     }
     *pBuffer = device->createBuffer({
         gfx::BufferUsage::UNIFORM,

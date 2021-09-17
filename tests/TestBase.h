@@ -155,8 +155,8 @@ public:
     static uint               getMipmapLevelCounts(uint width, uint height);
     static uint               getAlignedUBOStride(uint stride);
     static tinyobj::ObjReader loadOBJ(const String &path);
-    static void               createUberBuffer(const vector<uint> &sizes, gfx::Buffer **pBuffer,
-                                               vector<gfx::Buffer *> *pBufferViews, vector<uint> *pBufferViewOffsets);
+    static void               createUberBuffer(const vector<uint> &sizes, gfx::Buffer **pBuffer, vector<gfx::Buffer *> *pBufferViews,
+                                               vector<uint> *pBufferViewOffsets, vector<uint> *pAlignedBufferSizes = nullptr, uint instances = 1);
 
     template <typename T>
     static T &getAppropriateShaderSource(ShaderSources<T> &sources) {

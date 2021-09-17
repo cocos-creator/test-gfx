@@ -18,14 +18,9 @@ struct StandardUniformBuffers {
 
     vector<std::unique_ptr<gfx::Buffer>> bufferViews;
 
-    inline float *getBuffer(uint binding) { return &_rootBuffer[_bufferViewOffsets[binding] / sizeof(float)]; }
-    inline void   update(gfx::CommandBuffer *cmdBuff = nullptr) {
-        if (cmdBuff) {
-            cmdBuff->updateBuffer(_rootUBO.get(), _rootBuffer.data(), _rootBuffer.size() * sizeof(float));
-        } else {
-            _rootUBO->update(_rootBuffer.data(), _rootBuffer.size() * sizeof(float));
-        }
-    }
+    float *getBuffer(uint binding, uint instance = 0);
+    void   update(gfx::CommandBuffer *cmdBuff = nullptr);
+    void   bindDescriptorSet(gfx::CommandBuffer *cmdBuff, uint set, uint instance = 0);
 
     std::unique_ptr<gfx::DescriptorSet> descriptorSet{nullptr};
 
@@ -33,11 +28,14 @@ struct StandardUniformBuffers {
     static std::unique_ptr<gfx::PipelineLayout>      pipelineLayout;
 
 private:
-    friend void createStandardUniformBuffers(gfx::Device *device, StandardUniformBuffers *out);
+    friend void createStandardUniformBuffers(gfx::Device *device, StandardUniformBuffers *out, uint instances);
 
     std::unique_ptr<gfx::Buffer> _rootUBO{nullptr};
     vector<float>                _rootBuffer;
     vector<uint>                 _bufferViewOffsets;
+    vector<uint>                 _alignedBufferSizes;
+    vector<uint>                 _dynamicOffsets;
+    uint                         _instances{0U};
 
     static uint refCount;
 };
@@ -76,7 +74,7 @@ private:
 
 extern void createStandardShader(gfx::Device *device, StandardForwardPipeline *out);
 extern void createStandardShader(gfx::Device *device, StandardDeferredPipeline *out);
-extern void createStandardUniformBuffers(gfx::Device *device, StandardUniformBuffers *out);
+extern void createStandardUniformBuffers(gfx::Device *device, StandardUniformBuffers *out, uint instances);
 extern void createStandardPipelineResources(gfx::Device *device, StandardForwardPipeline *out, const StandardUniformBuffers &ubos);
 extern void createStandardPipelineResources(gfx::Device *device, StandardDeferredPipeline *out, const StandardUniformBuffers &ubos);
 

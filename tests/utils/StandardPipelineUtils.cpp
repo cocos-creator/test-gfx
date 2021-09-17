@@ -14,9 +14,9 @@ gfx::AttributeList lightingAttributes{
 
 gfx::DescriptorSetLayoutInfo descriptorSetLayoutInfo{
     {
-        {0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::FRAGMENT},
-        {1, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::FRAGMENT},
-        {2, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX},
+        {0, gfx::DescriptorType::DYNAMIC_UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::FRAGMENT},
+        {1, gfx::DescriptorType::DYNAMIC_UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::FRAGMENT},
+        {2, gfx::DescriptorType::DYNAMIC_UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX},
     },
 };
 
@@ -572,16 +572,39 @@ StandardUniformBuffers::~StandardUniformBuffers() {
     }
 }
 
-void createStandardUniformBuffers(gfx::Device *device, StandardUniformBuffers *out) {
+float *StandardUniformBuffers::getBuffer(uint binding, uint instance) {
+    uint offset = _bufferViewOffsets[binding];
+    offset += instance * _alignedBufferSizes[binding];
+    return &_rootBuffer[offset / sizeof(float)];
+}
+
+void StandardUniformBuffers::update(gfx::CommandBuffer *cmdBuff) {
+    if (cmdBuff) {
+        cmdBuff->updateBuffer(_rootUBO.get(), _rootBuffer.data(), _rootBuffer.size() * sizeof(float));
+    } else {
+        _rootUBO->update(_rootBuffer.data(), _rootBuffer.size() * sizeof(float));
+    }
+}
+
+void StandardUniformBuffers::bindDescriptorSet(gfx::CommandBuffer *cmdBuff, uint set, uint instance) {
+    for (uint i = 0; i < _alignedBufferSizes.size(); ++i) {
+        _dynamicOffsets[i] = _alignedBufferSizes[i] * instance;
+    }
+    cmdBuff->bindDescriptorSet(set, descriptorSet.get(), _dynamicOffsets);
+}
+
+void createStandardUniformBuffers(gfx::Device *device, StandardUniformBuffers *out, uint instances) {
     static vector<uint>          sizes{5 * sizeof(Vec4), sizeof(Vec4), 3 * sizeof(Mat4)};
     static vector<gfx::Buffer *> views;
 
     gfx::Buffer *rootUBO = nullptr;
     views.clear();
-    TestBaseI::createUberBuffer(sizes, &rootUBO, &views, &out->_bufferViewOffsets);
+    TestBaseI::createUberBuffer(sizes, &rootUBO, &views, &out->_bufferViewOffsets, &out->_alignedBufferSizes, instances);
 
+    out->_instances = instances;
     out->_rootUBO.reset(rootUBO);
     out->_rootBuffer.resize(out->_bufferViewOffsets.back() / sizeof(float));
+    out->_dynamicOffsets.resize(out->_bufferViewOffsets.size());
     for (auto *bufferView : views) out->bufferViews.emplace_back(bufferView);
 
     if (!StandardUniformBuffers::descriptorSetLayout) {
@@ -699,12 +722,12 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Com
     };
 
     auto gbufferPassSetup = [&](framegraph::PassNodeBuilder &builder, GBufferData &data) {
-        auto usages = gfx::TextureUsageBit::COLOR_ATTACHMENT | gfx::TextureUsageBit::SAMPLED;
+        auto usages     = gfx::TextureUsageBit::COLOR_ATTACHMENT | gfx::TextureUsageBit::SAMPLED;
         auto accessType = gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE;
 
         if constexpr (USE_SUBPASS) {
             builder.subpass();
-            usages = gfx::TextureUsageBit::COLOR_ATTACHMENT | gfx::TextureUsageBit::INPUT_ATTACHMENT;
+            usages     = gfx::TextureUsageBit::COLOR_ATTACHMENT | gfx::TextureUsageBit::INPUT_ATTACHMENT;
             accessType = gfx::AccessType::FRAGMENT_SHADER_READ_COLOR_INPUT_ATTACHMENT;
         }
 
@@ -745,8 +768,8 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Com
         data.depthStencil = builder.write(data.depthStencil, depthStencilAttachmentInfo);
         builder.writeToBlackboard(DEPTH_STENCIL_NAME, data.depthStencil);
 
-        gfx::Viewport vp   = {renderArea.x, renderArea.y, renderArea.width, renderArea.height, 0, 1};
-        gfx::Rect     rect = {renderArea.x, renderArea.y, renderArea.width, renderArea.height};
+        gfx::Viewport vp{renderArea.x, renderArea.y, renderArea.width, renderArea.height, 0, 1};
+        gfx::Rect     rect{renderArea.x, renderArea.y, renderArea.width, renderArea.height};
         builder.setViewport(vp, rect);
     };
 
@@ -803,8 +826,8 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Com
         data.depthStencil = builder.write(data.depthStencil, depthStencilAttachmentInfo);
         builder.writeToBlackboard(DEPTH_STENCIL_NAME, data.depthStencil);
 
-        gfx::Viewport vp   = {renderArea.x, renderArea.y, renderArea.width, renderArea.height, 0, 1};
-        gfx::Rect     rect = {renderArea.x, renderArea.y, renderArea.width, renderArea.height};
+        gfx::Viewport vp{renderArea.x, renderArea.y, renderArea.width, renderArea.height, 0, 1};
+        gfx::Rect     rect{renderArea.x, renderArea.y, renderArea.width, renderArea.height};
         builder.setViewport(vp, rect);
     };
 
@@ -837,18 +860,11 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Com
 
     auto &fg = TestBaseI::fg;
 
-    fg.reset();
-
-    fg.addPass<GBufferData>(100, GBUFFER_PASS_NAME, gbufferPassSetup, gbufferPassExec);
-    fg.addPass<ShadingData>(200, SHADING_PASS_NAME, shadingPassSetup, shadingPassExec);
+    // same insertion point if the same render pass
+    fg.addPass<GBufferData>(99 + USE_SUBPASS, GBUFFER_PASS_NAME, gbufferPassSetup, gbufferPassExec);
+    fg.addPass<ShadingData>(100, SHADING_PASS_NAME, shadingPassSetup, shadingPassExec);
 
     fg.presentFromBlackboard(LIGHTING_OUTPUT_NAME, framebuffer->getColorTextures()[0]);
-
-    fg.compile();
-
-    //fg.exportGraphViz("fg_vis.dot");
-
-    fg.execute();
 }
 
 } // namespace cc
