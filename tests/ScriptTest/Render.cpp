@@ -41,7 +41,6 @@ struct MultisampledFramebuffer {
         colorTexMSAAInfo.usage   = gfx::TextureUsageBit::COLOR_ATTACHMENT;
         colorTexMSAAInfo.samples = gfx::SampleCount::MULTIPLE_BALANCE;
         colorTexMSAAInfo.format  = swapchain->getColorTexture()->getFormat();
-        colorTexMSAAInfo.flags   = gfx::TextureFlagBit::RESIZABLE;
         colorTexMSAAInfo.width   = swapchain->getWidth();
         colorTexMSAAInfo.height  = swapchain->getHeight();
         colorTexMSAA             = device->createTexture(colorTexMSAAInfo);
@@ -50,7 +49,6 @@ struct MultisampledFramebuffer {
         colorTexInfo.type   = gfx::TextureType::TEX2D;
         colorTexInfo.usage  = gfx::TextureUsageBit::COLOR_ATTACHMENT | gfx::TextureUsageBit::TRANSFER_SRC;
         colorTexInfo.format = swapchain->getColorTexture()->getFormat();
-        colorTexInfo.flags  = gfx::TextureFlagBit::RESIZABLE;
         colorTexInfo.width  = swapchain->getWidth();
         colorTexInfo.height = swapchain->getHeight();
         colorTex            = device->createTexture(colorTexInfo);
@@ -60,7 +58,6 @@ struct MultisampledFramebuffer {
         depthStencilTexInfo.usage   = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT;
         depthStencilTexInfo.samples = gfx::SampleCount::MULTIPLE_BALANCE;
         depthStencilTexInfo.format  = gfx::Format::DEPTH;
-        depthStencilTexInfo.flags   = gfx::TextureFlagBit::RESIZABLE;
         depthStencilTexInfo.width   = swapchain->getWidth();
         depthStencilTexInfo.height  = swapchain->getHeight();
         depthStencilTex             = device->createTexture(depthStencilTexInfo);
