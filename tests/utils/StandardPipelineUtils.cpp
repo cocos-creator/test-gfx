@@ -823,8 +823,8 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Com
         framegraph::RenderTargetAttachment::Descriptor lightingAttachmentInfo;
         lightingAttachmentInfo.loadOp        = gfx::LoadOp::CLEAR;
         lightingAttachmentInfo.clearColor    = clearColor;
-        lightingAttachmentInfo.beginAccesses = {gfx::AccessType::TRANSFER_READ};
-        lightingAttachmentInfo.endAccesses   = {gfx::AccessType::TRANSFER_READ};
+        lightingAttachmentInfo.beginAccesses   = {gfx::AccessType::COLOR_ATTACHMENT_WRITE};
+        lightingAttachmentInfo.endAccesses   = {gfx::AccessType::COLOR_ATTACHMENT_WRITE};
 
         builder.writeToBlackboard(LIGHTING_OUTPUT_NAME, builder.write(data.lightingOutput, lightingAttachmentInfo));
 
