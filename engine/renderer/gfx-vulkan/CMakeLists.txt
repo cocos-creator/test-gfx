@@ -49,7 +49,7 @@ else()
 	add_library(${TARGET_NAME} SHARED ${HEADER_FILES} ${ALL_FILES})
 endif()
 
-target_link_libraries(${TARGET_NAME} Core GFXBase ${glslang_libs_name} tbb tbbmalloc tbbmalloc_proxy)
+target_link_libraries(${TARGET_NAME} Core GFXBase ${glslang_libs_name} tbb)
 target_compile_definitions(${TARGET_NAME} PRIVATE ${CC_EXTERNAL_PRIVATE_DEFINITIONS})
 
 set_target_properties(${TARGET_NAME} PROPERTIES OUTPUT_NAME CCGFXVulkan)
