@@ -261,17 +261,17 @@ void FrameGraphTest::onTick() {
             colorAttachmentInfo.usage       = framegraph::RenderTargetAttachment::Usage::COLOR;
             colorAttachmentInfo.loadOp      = gfx::LoadOp::CLEAR;
             colorAttachmentInfo.clearColor  = clearColor;
-            colorAttachmentInfo.endAccesses = {gfx::AccessType::TRANSFER_READ};
+            colorAttachmentInfo.endAccesses = {gfx::AccessType::COLOR_ATTACHMENT_WRITE};
 
             data.colorTex = framegraph::TextureHandle(builder.readFromBlackboard(colorTexName));
 
             if (data.colorTex.isValid()) {
                 colorAttachmentInfo.loadOp        = gfx::LoadOp::LOAD;
-                colorAttachmentInfo.beginAccesses = {gfx::AccessType::TRANSFER_READ};
+                colorAttachmentInfo.beginAccesses = {gfx::AccessType::COLOR_ATTACHMENT_WRITE};
             } else {
                 framegraph::Texture::Descriptor colorTexInfo;
                 colorTexInfo.format = swapchain->getColorTexture()->getFormat();
-                colorTexInfo.usage  = gfx::TextureUsageBit::COLOR_ATTACHMENT | gfx::TextureUsageBit::TRANSFER_SRC;
+                colorTexInfo.usage  = gfx::TextureUsageBit::COLOR_ATTACHMENT;
                 colorTexInfo.width  = swapchain->getWidth();
                 colorTexInfo.height = swapchain->getHeight();
                 data.colorTex = builder.create<framegraph::Texture>(colorTexName, colorTexInfo);
