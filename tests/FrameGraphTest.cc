@@ -274,7 +274,7 @@ void FrameGraphTest::onTick() {
                 colorTexInfo.usage  = gfx::TextureUsageBit::COLOR_ATTACHMENT;
                 colorTexInfo.width  = swapchain->getWidth();
                 colorTexInfo.height = swapchain->getHeight();
-                data.colorTex = builder.create<framegraph::Texture>(colorTexName, colorTexInfo);
+                data.colorTex = builder.create(colorTexName, colorTexInfo);
             }
 
             data.colorTex = builder.write(data.colorTex, colorAttachmentInfo);
@@ -299,7 +299,7 @@ void FrameGraphTest::onTick() {
                 depthStencilTexInfo.usage  = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT;
                 depthStencilTexInfo.width  = swapchain->getWidth();
                 depthStencilTexInfo.height = swapchain->getHeight();
-                data.depthStencilTex = builder.create<framegraph::Texture>(depthStencilTexName, depthStencilTexInfo);
+                data.depthStencilTex = builder.create(depthStencilTexName, depthStencilTexInfo);
             }
 
             data.depthStencilTex = builder.write(data.depthStencilTex, depthStencilAttachmentInfo);

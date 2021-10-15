@@ -750,7 +750,7 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Com
             gbufferInfo.usage  = usages;
             gbufferInfo.width  = output->getWidth();
             gbufferInfo.height = output->getHeight();
-            data.gbuffers[i]   = builder.create<framegraph::Texture>(GBUFFER_NAMES[i], gbufferInfo);
+            data.gbuffers[i]   = builder.create(GBUFFER_NAMES[i], gbufferInfo);
 
             // Attachment Setup
             framegraph::RenderTargetAttachment::Descriptor gbufferAttachmentInfo;
@@ -768,7 +768,7 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Com
         depthStencilInfo.format = gfx::Format::DEPTH_STENCIL;
         depthStencilInfo.width  = output->getWidth();
         depthStencilInfo.height = output->getHeight();
-        data.depthStencil       = builder.create<framegraph::Texture>(DEPTH_STENCIL_NAME, depthStencilInfo);
+        data.depthStencil       = builder.create(DEPTH_STENCIL_NAME, depthStencilInfo);
 
         // Attachment Setup
         framegraph::RenderTargetAttachment::Descriptor depthStencilAttachmentInfo;
@@ -818,7 +818,7 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Com
         lightingOutputInfo.format = gfx::Format::RGBA8;
         lightingOutputInfo.width  = output->getWidth();
         lightingOutputInfo.height = output->getHeight();
-        data.lightingOutput       = builder.create<framegraph::Texture>(LIGHTING_OUTPUT_NAME, lightingOutputInfo);
+        data.lightingOutput       = builder.create(LIGHTING_OUTPUT_NAME, lightingOutputInfo);
 
         framegraph::RenderTargetAttachment::Descriptor lightingAttachmentInfo;
         lightingAttachmentInfo.loadOp        = gfx::LoadOp::CLEAR;
