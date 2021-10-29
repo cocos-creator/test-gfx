@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "system",
+    "sourceMap": true,
+    "outFile": "./dist/cocos.js",
+    "rootDir": "../..",
+    "baseUrl": "../../engine/cocos/core",
+    "types": [
+      "../../engine/@types/globals",
+      "../../engine/@types/consts",
+      "../../engine/@types/webGL.extras",
+      "../../engine/@types/webGL2.extras",
+    ],
+
+    "strict": true,
+  },
+  "include": [
+    "./index.ts",
+  ]
+}
