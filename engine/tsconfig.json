@@ -2,15 +2,17 @@
   "compilerOptions": {
     "target": "es6",
     "module": "system",
-    "sourceMap": true,
+    "inlineSourceMap": true,
     "outFile": "./dist/cocos.js",
     "rootDir": "../..",
     "baseUrl": "../../engine/cocos/core",
+    "moduleResolution": "node",
     "types": [
       "../../engine/@types/globals",
       "../../engine/@types/consts",
       "../../engine/@types/webGL.extras",
       "../../engine/@types/webGL2.extras",
+      "../../engine/@types/pal/system-info",
     ],
 
     "strict": true,
