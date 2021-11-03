@@ -5,7 +5,7 @@ export class ClearScreen extends TestBase {
     private _clearColor = new Color(1, 0, 0, 1);
 
     public onTick () {
-        const { accumulatedTime } = TestBase;
+        const { cumulativeTime: accumulatedTime } = TestBase;
         this._clearColor.y = Math.abs(Math.sin(accumulatedTime));
 
         TestBase._acquire();

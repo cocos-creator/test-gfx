@@ -4,7 +4,7 @@ import { CommandBuffer } from 'gfx/base/command-buffer';
 import { RenderPass } from 'gfx/base/render-pass';
 import { Framebuffer } from 'gfx/base/framebuffer';
 import { API, Color, Rect } from 'gfx/base/define';
-import { Mat4 } from './math';
+import { IMat4Like, Mat4 } from './math';
 
 export interface IStandardShaderSource {
     vert: string;
@@ -24,7 +24,7 @@ export class TestBase {
     public static defaultRenderArea = new Rect(0, 0, 1, 1);
     // in seconds
     public static deltaTime = 0;
-    public static accumulatedTime = 0;
+    public static cumulativeTime = 0;
 
     private static _previousTime = 0;
 
@@ -37,7 +37,7 @@ export class TestBase {
         const curTime = Date.now();
         if (TestBase._previousTime) {
             TestBase.deltaTime = (curTime - TestBase._previousTime) / 1000;
-            TestBase.accumulatedTime += TestBase.deltaTime;
+            TestBase.cumulativeTime += TestBase.deltaTime;
         }
 
         this.onTick();
@@ -79,21 +79,21 @@ export class TestBase {
 
     protected static _acquire () {
         TestBase.device.acquire(TestBase.swapchains);
+        TestBase.commandBuffers[0].begin();
     }
 
     protected static _beginOnscreenPass (clearColor = TestBase._defaultClearColor, clearDepth = 1, clearStencil = 0) {
         TestBase._clearColors[0] = clearColor;
-        TestBase.commandBuffers[0].begin();
         TestBase.commandBuffers[0].beginRenderPass(TestBase.defaultRenderPass, TestBase.defaultFramebuffer,
             TestBase.defaultRenderArea, TestBase._clearColors, clearDepth, clearStencil);
     }
 
     protected static _endOnscreenPass () {
         TestBase.commandBuffers[0].endRenderPass();
-        TestBase.commandBuffers[0].end();
     }
 
     protected static _present () {
+        TestBase.commandBuffers[0].end();
         TestBase.device.flushCommands(TestBase.commandBuffers);
         TestBase.device.queue.submit(TestBase.commandBuffers);
         TestBase.device.present();
@@ -115,21 +115,19 @@ export class TestBase {
         return sources.glsl4;
     }
 
-    protected static _createPerspective (fov: number, aspect: number, near: number, far: number,
-        dst: Float32Array, offset = 0, swapchain = TestBase.swapchains[0]) {
-        Mat4.perspective(TestBase._m4_1, fov, aspect, near, far, true,
+    protected static _getPerspectiveMat4 (fov: number, aspect: number, near: number, far: number,
+        dst: IMat4Like = TestBase._m4_1, swapchain = TestBase.swapchains[0]) {
+        return Mat4.perspective(dst, fov, aspect, near, far, true,
             TestBase.device.capabilities.clipSpaceMinZ,
             TestBase.device.capabilities.clipSpaceSignY,
             swapchain.surfaceTransform);
-        Mat4.toArray(dst, TestBase._m4_1, offset);
     }
 
-    protected static _createOrthographic (left: number, right: number, bottom: number, top: number, near: number, far: number,
-        dst: Float32Array, offset = 0, swapchain = TestBase.swapchains[0]) {
-        Mat4.ortho(TestBase._m4_1, left, right, bottom, top, near, far,
+    protected static _getOrthographicMat4 (left: number, right: number, bottom: number, top: number, near: number, far: number,
+        dst: IMat4Like = TestBase._m4_1, swapchain = TestBase.swapchains[0]) {
+        return Mat4.ortho(dst, left, right, bottom, top, near, far,
             TestBase.device.capabilities.clipSpaceMinZ,
             TestBase.device.capabilities.clipSpaceSignY,
             swapchain.surfaceTransform);
-        Mat4.toArray(dst, TestBase._m4_1, offset);
     }
 }
