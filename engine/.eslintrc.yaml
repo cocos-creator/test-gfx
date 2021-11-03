@@ -35,6 +35,9 @@ env:
 globals:
     cc: false
 
+ignorePatterns:
+    - web-desktop/**/*.js
+
 rules:
 
     # https://eslint.org/docs/rules/

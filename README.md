@@ -1,4 +1,5 @@
-Should be put alongside the native engine repo:
+Should be put alongside the engine repos:
 
     |-gfx-test-case
     |-engine-native
+    |-engine

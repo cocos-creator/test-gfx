@@ -17,29 +17,16 @@ export interface IShaderSources<T> {
     glsl1: T;
 }
 
-export abstract class TestBase {
+export class TestBase {
     public static device: Device;
     public static swapchains: Swapchain[] = [];
     public static commandBuffers: CommandBuffer[] = [];
-    public static defaultRenderPass: RenderPass;
-    public static defaultFramebuffer: Framebuffer;
-
     public static defaultRenderArea = new Rect(0, 0, 1, 1);
     // in seconds
     public static deltaTime = 0;
     public static accumulatedTime = 0;
 
-    public static assert (cond: boolean, msg = '') {
-        if (!cond) {
-            console.assert(cond, msg);
-            // (null! as Record<string, number>).x = 1;
-        }
-    }
-
     private static _previousTime = 0;
-    private static _defaultClearColor = new Color(0.2, 0.2, 0.2, 1);
-    private static _clearColors: Color[] = [this._defaultClearColor];
-    private static _m4_1 = new Mat4();
 
     constructor () {
         TestBase.defaultRenderArea.width = TestBase.swapchains[0].width;
@@ -69,11 +56,26 @@ export abstract class TestBase {
         this.onResize(swapchain);
     }
 
-    // by default no-op
+    // by default no-ops
     protected onResize (swapchain: Swapchain) {}
     protected onDestroy () {}
+    protected onTick () {}
 
-    protected abstract onTick (): void;
+    // static utilities
+
+    public static defaultRenderPass: RenderPass;
+    public static defaultFramebuffer: Framebuffer;
+
+    private static _defaultClearColor = new Color(0.2, 0.2, 0.2, 1);
+    private static _clearColors: Color[] = [this._defaultClearColor];
+    private static _m4_1 = new Mat4();
+
+    public static assert (cond: boolean, msg = '') {
+        if (!cond) {
+            console.assert(cond, msg);
+            // (null! as Record<string, number>).x = 1;
+        }
+    }
 
     protected static _acquire () {
         TestBase.device.acquire(TestBase.swapchains);
@@ -114,7 +116,7 @@ export abstract class TestBase {
     }
 
     protected static _createPerspective (fov: number, aspect: number, near: number, far: number,
-        dst: Float32Array, offset: number, swapchain: Swapchain) {
+        dst: Float32Array, offset = 0, swapchain = TestBase.swapchains[0]) {
         Mat4.perspective(TestBase._m4_1, fov, aspect, near, far, true,
             TestBase.device.capabilities.clipSpaceMinZ,
             TestBase.device.capabilities.clipSpaceSignY,
@@ -123,7 +125,7 @@ export abstract class TestBase {
     }
 
     protected static _createOrthographic (left: number, right: number, bottom: number, top: number, near: number, far: number,
-        dst: Float32Array, offset: number, swapchain: Swapchain) {
+        dst: Float32Array, offset = 0, swapchain = TestBase.swapchains[0]) {
         Mat4.ortho(TestBase._m4_1, left, right, bottom, top, near, far,
             TestBase.device.capabilities.clipSpaceMinZ,
             TestBase.device.capabilities.clipSpaceSignY,

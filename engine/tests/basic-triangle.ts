@@ -187,7 +187,7 @@ export class BasicTriangle extends TestBase {
         this._triangleColor[0] = Math.abs(Math.sin(TestBase.accumulatedTime));
         this._uniformColorBuffer.update(this._triangleColor);
 
-        TestBase._createOrthographic(-1, 1, -1, 1, -1, 1, this._mvpBuffer, 0, TestBase.swapchains[0]);
+        TestBase._createOrthographic(-1, 1, -1, 1, -1, 1, this._mvpBuffer);
         this._uniformMVPBuffer.update(this._mvpBuffer);
 
         TestBase._acquire();
