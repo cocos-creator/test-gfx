@@ -74,14 +74,6 @@ System.register([], function (_export, _context) {
     }
   }
 
-  function getCanvasRect (canvas) {
-    const box = canvas?.getBoundingClientRect();
-    if (box) {
-        return new Rect(box.x, box.y, box.width, box.height);
-    }
-    return new Rect(0, 0, 0, 0);
-  }
-
   function getLocation (touch, canvas) {
       const box = canvas?.getBoundingClientRect();
       let x = touch.clientX - box.x;
