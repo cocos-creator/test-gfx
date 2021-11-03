@@ -67,7 +67,7 @@ export class TestBase {
     public static defaultFramebuffer: Framebuffer;
 
     private static _defaultClearColor = new Color(0.2, 0.2, 0.2, 1);
-    private static _clearColors: Color[] = [this._defaultClearColor];
+    private static _clearColors: Color[] = [TestBase._defaultClearColor];
     private static _m4_1 = new Mat4();
 
     public static assert (cond: boolean, msg = '') {
