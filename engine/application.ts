@@ -52,17 +52,16 @@ export class Application {
             TestBase.swapchains[0].depthStencilTexture,
         ));
 
-        this._currentIndex = testlist.length - 1;
+        this._currentIndex = -1;
         this.nextTest();
     }
 
     public nextTest (backward = false) {
         this._currentIndex += backward ? -1 : 1;
-        this._currentIndex %= testlist.length;
+        this._currentIndex -= Math.floor(this._currentIndex / testlist.length) * testlist.length;
 
         this._test?.destroy();
         this._test = new testlist[this._currentIndex]();
-        this._test.initialize();
     }
 
     public tick () {

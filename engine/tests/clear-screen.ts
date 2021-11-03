@@ -8,8 +8,9 @@ export class ClearScreen extends TestBase {
         const { accumulatedTime } = TestBase;
         this._clearColor.y = Math.abs(Math.sin(accumulatedTime));
 
-        this._beginOnscreenPass(this._clearColor);
-        this._endOnscreenPass();
-        this._present();
+        TestBase._acquire();
+        TestBase._beginOnscreenPass(this._clearColor);
+        TestBase._endOnscreenPass();
+        TestBase._present();
     }
 }
