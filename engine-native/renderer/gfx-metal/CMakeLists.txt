@@ -35,8 +35,6 @@ find_library(COREFOUNDATION_FRAMEWORK CoreFoundation)
 find_library(FOUNDATION_FRAMEWORK Foundation)
 find_library(METAL_LIBRARY Metal)
 find_library(METALKIT_LIBRARY MetalKit)
-set(glslang_libs_name glslang OGLCompiler OSDependent SPIRV glslang-default-resource-limits)
-set(spirv-cross_libs_name spirv-cross-core spirv-cross-glsl spirv-cross-msl)
 target_link_libraries(${TARGET_NAME} Core GFXBase ${COREFOUNDATION_FRAMEWORK} ${FOUNDATION_FRAMEWORK} ${METAL_LIBRARY} ${METALKIT_LIBRARY} ${glslang_libs_name} ${spirv-cross_libs_name})
 
 target_include_directories(${TARGET_NAME} PUBLIC ${COCOS_EXTERNAL_PATH}/mac/include)

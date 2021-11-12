@@ -66,7 +66,7 @@ void GameApp::createWindow(const std::wstring &name, int width, int height, floa
 
 void GameApp::initialize() {
     // Initialize the windows API.
-    int screenWidth = 1024;
+    int screenWidth  = 1024;
     int screenHeight = 768;
 
     // Get the instance of this application.
@@ -76,13 +76,13 @@ void GameApp::initialize() {
     createWindow(L"Cocos GFX Test", screenWidth, screenHeight, 0.1, 0.1);
 
     WindowInfo info;
-    info.windowHandle = _hWnds[0];
-    info.screen.width = screenWidth;
+    info.windowHandle  = _hWnds[0];
+    info.screen.width  = screenWidth;
     info.screen.height = screenHeight;
 
     TestBaseI::setWindowInfo(info);
 
-    /* Second Test Window */
+    /* Second Test Window *
     int testWidth = 800;
     int testHeight = 450;
     createWindow(L"Cocos GFX Test 2", testWidth, testHeight, 0.5, 0.5);
@@ -108,7 +108,7 @@ void GameApp::destroy() {
     _windowNames.clear();
 
     _hInstance = NULL;
-    _instance = nullptr;
+    _instance  = nullptr;
 }
 
 void GameApp::Run() {
@@ -132,14 +132,14 @@ void GameApp::Run() {
 LRESULT CALLBACK GameApp::MessageHandler(HWND hWnd, DWORD msg, WPARAM wParam, LPARAM lParam) {
     // Is the application in a minimized or maximized state?
     static bool minOrMaxed = false;
-    uint width = 0u;
-    uint height = 0u;
+    uint        width      = 0u;
+    uint        height     = 0u;
 
     switch (msg) {
         // WM_SIZE is sent when the user resizes the window.
         case WM_SIZE:
-            width = (uint)LOWORD(lParam);
-            height = (uint)HIWORD(lParam);
+            width   = (uint)LOWORD(lParam);
+            height  = (uint)HIWORD(lParam);
             _paused = !width || !height;
             TestBaseI::resizeGlobal(hWnd, width, height, gfx::SurfaceTransform::IDENTITY);
             break;
@@ -148,7 +148,7 @@ LRESULT CALLBACK GameApp::MessageHandler(HWND hWnd, DWORD msg, WPARAM wParam, LP
         case WM_CLOSE:
             TestBaseI::destroyGlobal();
             _running = false;
-            _paused = true;
+            _paused  = true;
             break;
         case WM_KEYDOWN:
             if (wParam == VK_SPACE) {

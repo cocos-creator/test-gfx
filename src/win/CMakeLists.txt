@@ -25,6 +25,10 @@ add_definitions("-DCC_USE_VULKAN")
 add_definitions("-DCC_USE_GLES3")
 add_definitions("-DCC_USE_GLES2")
 
+if(DEFINED ENV{NINTENDO_SDK_ROOT})
+  add_definitions("-DCC_USE_NVN")
+endif()
+
 add_executable(${TARGET_NAME} ${ALL_FILES})
 
 target_include_directories(${TARGET_NAME} PUBLIC
@@ -45,6 +49,7 @@ target_link_libraries(${TARGET_NAME}
   GFXGLES2
   GFXGLES3
   GFXVulkan
+  GFXNVN
   ${CC_EXTERNAL_LIBS}
 )
 
@@ -68,6 +73,8 @@ if(MSVC)
   else()
     file(GLOB_RECURSE WIN_DLLS ${COCOS_EXTERNAL_PATH}/win64/libs/*.dll)
   endif()
+
+  list(APPEND WIN_DLLS ${GFX_DEPENDENT_DLLS})
 
   foreach(item ${WIN_DLLS})
     get_filename_component(filename ${item} NAME)
