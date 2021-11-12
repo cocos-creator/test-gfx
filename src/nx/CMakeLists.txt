@@ -24,15 +24,18 @@ endif()
 add_definitions("-DCC_USE_VULKAN")
 add_definitions("-DCC_USE_GLES3")
 add_definitions("-DCC_USE_GLES2")
+add_definitions("-DCC_USE_NVN")
 
 add_executable(${TARGET_NAME} ${ALL_FILES})
 
 target_include_directories(${TARGET_NAME} PUBLIC
-  ${PROJECT_SOURCE_DIR}/src/win
+  ${PROJECT_SOURCE_DIR}/src/nx
   ${PROJECT_SOURCE_DIR}
   ${COCOS_EXTERNAL_PATH}/sources
   ${CC_EXTERNAL_INCLUDES}
   ${COCOS_SRC_PATH}/platform
+  $ENV{NINTENDO_SDK_ROOT}/Include
+  $ENV{NINTENDO_SDK_ROOT}/Common/Configs/Targets/${NN_SDK_PLATFORM_FOLDER}/Include
 )
 
 list(APPEND CC_EXTERNAL_LIBS
@@ -45,11 +48,14 @@ target_link_libraries(${TARGET_NAME}
   GFXGLES2
   GFXGLES3
   GFXVulkan
+  GFXNVN
   ${CC_EXTERNAL_LIBS}
 )
 
 target_compile_definitions(${TARGET_NAME}
   PUBLIC _USE_MATH_DEFINES
+  PUBLIC $<$<CONFIG:Debug>:NN_SDK_BUILD_DEBUG>
+  PUBLIC $<$<CONFIG:Release>:NN_SDK_BUILD_RELEASE>
 )
 
 set(bin_dir ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${CMAKE_CFG_INTDIR})
