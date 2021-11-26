@@ -49,7 +49,7 @@ target_link_libraries(${TARGET_NAME}
   GFXGLES2
   GFXGLES3
   GFXVulkan
-  GFXNVN
+  #GFXNVN
   ${CC_EXTERNAL_LIBS}
 )
 

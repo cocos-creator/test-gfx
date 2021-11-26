@@ -6,5 +6,5 @@ import { BasicTriangle } from './basic-triangle-ref';
 
 export const testlist: Constructor<TestBase>[] = [
     ClearScreen,
-    BasicTriangle,
+    reserved,
 ];

@@ -1,13 +1,17 @@
 import { CommandBuffer } from 'gfx/base/command-buffer';
-import { Format, IndirectBuffer, PrimitiveMode, Type } from 'gfx/base/define';
+import {
+    Attribute, BufferInfo, BufferUsageBit, Format, IndirectBuffer, InputAssemblerInfo, InputState, MemoryUsageBit, PrimitiveMode, RenderPassInfo, ShaderInfo, ShaderStage,
+    ShaderStageFlagBit, Type, Uniform, UniformBlock,
+} from 'gfx/base/define';
 import { DescriptorSet } from 'gfx/base/descriptor-set';
 import { InputAssembler } from 'gfx/base/input-assembler';
 import { PipelineLayout } from 'gfx/base/pipeline-layout';
-import { BlendState, DepthStencilState, RasterizerState } from 'gfx/base/pipeline-state';
+import { BlendState, DepthStencilState, PipelineState, PipelineStateInfo, RasterizerState } from 'gfx/base/pipeline-state';
 import { Shader } from 'gfx/base/shader';
 import { Sampler } from 'gfx/base/states/sampler';
 import { Texture } from 'gfx/base/texture';
 import { IMat4Like, IVec2Like, IVec4Like } from './math';
+import { TestBase } from './test-base';
 
 export interface IShaderAttribute {
     name: string;
@@ -80,14 +84,36 @@ export const NULL_HANDLE: IProgramHandle = 0 as unknown as IProgramHandle;
 export class Program {
     private _shader: Shader;
     private _layout: PipelineLayout;
+    private _pipelineState: PipelineState;
 
     constructor (info: IProgramInfo) {
-        this._shader = null!;
+        this._shader = TestBase.device.createShader(new ShaderInfo(
+            info.name,
+            [
+                new ShaderStage(ShaderStageFlagBit.VERTEX, info.vert),
+                new ShaderStage(ShaderStageFlagBit.FRAGMENT, info.frag),
+            ],
+            info.attributes?.map((attribute, index) => new Attribute(
+                attribute.name,
+                attribute.format,
+                attribute.isNormalized,
+                attribute.stream,
+                attribute.isInstanced,
+                index,
+            )),
+            info.blocks?.map((block, index) => new UniformBlock(0,
+                index,
+                block.name,
+                block.members.map((member) => new Uniform(member.name, member.type, member.count)),
+                1)),
+        ));
         this._layout = null!;
         this.setPipelineState(info.defaultStates || {});
     }
 
     destroy () {
+        this._shader.destroy();
+        this._layout.destroy();
     }
 
     createBindings (info: IProgramBindingInfo) {
@@ -106,9 +132,19 @@ export class Program {
     // update current state settings
     setPipelineState (info: IPipelineStateInfo) {
         // render pass & input states are hard-coded for now
+        this._pipelineState = TestBase.device.createPipelineState(new PipelineStateInfo(
+            this._shader,
+            this._layout,
+            TestBase.defaultRenderPass,
+            new InputState(this._shader.attributes),
+        ));
     }
 
-    draw (commandBuffer: CommandBuffer, bindings: ProgramBindings, inputs: ProgramInputs) {
+    draw(commandBuffer: CommandBuffer, bindings: ProgramBindings, inputs: ProgramInputs) {
+        commandBuffer.bindPipelineState(this.);
+        commandBuffer.bindDescriptorSet(bindings.descriptorSets[bindings.currentInstance]);
+        commandBuffer.bindInputAssembler(inputs.inputAssembler);
+        commandBuffer.draw(inputs.inputAssembler);
     }
 }
 
@@ -142,18 +178,38 @@ export class ProgramInputs {
     inputAssembler: InputAssembler;
 
     constructor (program: Program, info: IProgramInputInfo) {
-        this.inputAssembler = null!;
+        this.inputAssembler = TestBase.device.createInputAssembler(new InputAssemblerInfo(
+            [],
+            [],
+            TestBase.device.createBuffer(new BufferInfo(
+                BufferUsageBit.INDEX,
+                MemoryUsageBit.DEVICE,
+            )),
+            TestBase.device.createBuffer(new BufferInfo(
+                BufferUsageBit.INDIRECT,
+                MemoryUsageBit.DEVICE,
+                1,
+            )),
+        ));
     }
 
-    destroy () {
+    destroy() {
+        for (let i = 0; ; i++) {
+            if (this.inputAssembler.getVertexBuffer(i) !== null)
+                this.inputAssembler.getVertexBuffer(i).destroy();
+        }
+        inputAssembler.destroy();
     }
 
-    updateVertexBuffer (buffer: Float32Array, index = 0) {
+    updateVertexBuffer(buffer: Float32Array, index = 0) {
+        this.inputAssembler.getVertexBuffer(0).update(buffer);
     }
 
-    updateIndexBuffer (buffer: Uint16Array | Uint32Array) {
+    updateIndexBuffer(buffer: Uint16Array | Uint32Array) {
+        this.inputAssembler.indexBuffer.update(buffer);
     }
 
-    updateIndirectBuffer (buffer: IndirectBuffer) {
+    updateIndirectBuffer(buffer: IndirectBuffer) {
+        this.inputAssembler.indirectBuffer.update(buffer);
     }
 }
