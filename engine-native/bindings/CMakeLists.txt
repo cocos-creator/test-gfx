@@ -40,18 +40,17 @@ set(GENERAL_FILES
   ${COCOS_SRC_PATH}/bindings/event/EventDispatcher.h
 )
 
-if(COCOS_PLATFORM_WIN32)
+if(WINDOWS)
   set(PLATFORM_SPECIFIC_FILES
     ${COCOS_SRC_PATH}/bindings/manual/jsb_platfrom_win32.cpp
-    ${COCOS_ROOT_PATH}/src/ViewHack.cpp
   )
-elseif(COCOS_PLATFORM_ANDROID)
+elseif(ANDROID)
   set(PLATFORM_SPECIFIC_FILES
     ${COCOS_SRC_PATH}/bindings/manual/jsb_platform_android.cpp
     ${COCOS_SRC_PATH}/bindings/manual/JavaScriptJavaBridge.cpp
     ${COCOS_SRC_PATH}/bindings/manual/JavaScriptJavaBridge.h
   )
-elseif(COCOS_PLATFORM_IOS OR COCOS_PLATFORM_OSX)
+elseif(APPLE)
   set(PLATFORM_SPECIFIC_FILES
     ${COCOS_SRC_PATH}/bindings/manual/jsb_platfrom_apple.mm
     ${COCOS_SRC_PATH}/bindings/manual/JavaScriptObjCBridge.h
@@ -73,10 +72,6 @@ set(ALL_FILES
     ${GENERAL_FILES}
     ${PLATFORM_SPECIFIC_FILES}
 )
-
-if(COCOS_UNICODE)
-    add_definitions("-DUNICODE -D_UNICODE")
-endif()
 
 if (COCOS_STATIC)
     add_library(${TARGET_NAME} STATIC ${HEADER_FILES} ${ALL_FILES})

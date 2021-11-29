@@ -42,10 +42,6 @@ set(ALL_FILES
     ${COCOS_SRC_PATH}/platform/java/jni/JniHelper.h
 )
 
-if(COCOS_UNICODE)
-    add_definitions("-DUNICODE -D_UNICODE")
-endif()
-
 add_definitions("-DCC_USE_VULKAN")
 add_definitions("-DCC_USE_GLES3")
 add_definitions("-DCC_USE_GLES2")

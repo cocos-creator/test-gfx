@@ -10,8 +10,7 @@ class FullscreenQuad : public cc::Object {
 public:
     FullscreenQuad(gfx::Device *device, gfx::RenderPass *renderPass, gfx::Texture *texture);
     ~FullscreenQuad() override;
-    DISABLE_COPY_SEMANTICS(FullscreenQuad)
-    DISABLE_MOVE_SEMANTICS(FullscreenQuad)
+    CC_DISABLE_COPY_AND_MOVE_SEMANTICS(FullscreenQuad)
 
     void draw(gfx::CommandBuffer *commandBuffer);
 

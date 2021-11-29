@@ -9,10 +9,6 @@ add_subdirectory(gfx-gles2)
 add_subdirectory(gfx-gles3)
 add_subdirectory(gfx-vulkan)
 
-if(NINTENDO)
-    add_subdirectory(gfx-nvn)
-endif()
-
 if(APPLE)
     add_subdirectory(gfx-metal)
 endif()

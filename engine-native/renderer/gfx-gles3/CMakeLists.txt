@@ -6,37 +6,11 @@ file(GLOB_RECURSE HEADER_FILES ${CURRENT_DIR}/*.h)
 file(GLOB_RECURSE SOURCE_CPP_FILES ${CURRENT_DIR}/*.cpp ${CURRENT_DIR}/*.cc)
 file(GLOB_RECURSE SOURCE_C_FILES ${CURRENT_DIR}/*.c)
 
-if(COCOS_PLATFORM_IOS OR COCOS_PLATFORM_OSX)
-	file(GLOB_RECURSE SOURCE_MM_FILES ${CURRENT_DIR}/*.m ${CURRENT_DIR}/*.mm)
-endif()
-
 set(ALL_FILES
   ${HEADER_FILES}
   ${SOURCE_CPP_FILES}
   ${SOURCE_C_FILES}
   )
-
-if(COCOS_PLATFORM_IOS OR COCOS_PLATFORM_OSX)
-	set(ALL_FILES ${ALL_FILES} ${SOURCE_MM_FILES})
-endif()
-
-if(COCOS_PLATFORM_IOS OR COCOS_PLATFORM_OSX)
-	list(REMOVE_ITEM ALL_FILES "${COCOS_SRC_PATH}/renderer/gfx-gles3/GLES3Wrangler.cpp")
-else()
-	list(REMOVE_ITEM ALL_FILES "${COCOS_SRC_PATH}/renderer/gfx-gles3/GLES3Wrangler.mm")
-endif()
-
-if(COCOS_PLATFORM_OSX)
-  list(REMOVE_ITEM ALL_FILES "${COCOS_SRC_PATH}/renderer/gfx-gles3/GLES3Context.mm")
-endif()
-
-add_definitions("-DCC_GLES3_EXPORTS")
-if(WIN32)
-	add_definitions("-DGLEW_BUILD")
-endif()
-if(COCOS_UNICODE)
-	add_definitions("-DUNICODE -D_UNICODE")
-endif()
 
 if (COCOS_STATIC)
 	add_library(${TARGET_NAME} STATIC ${HEADER_FILES} ${ALL_FILES})

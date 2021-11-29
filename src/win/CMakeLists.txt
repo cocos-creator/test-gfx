@@ -5,21 +5,18 @@ message(STATUS "Target: ${TARGET_NAME}...")
 # ---------------------------------------------------------------------
 
 file(GLOB_RECURSE HEADER_FILES *.h)
-file(GLOB_RECURSE SOURCE_CPP_FILES *.cpp *.cc)
-file(GLOB_RECURSE SOURCE_C_FILES *.c)
+file(GLOB_RECURSE SOURCE_CPP_FILES *.cpp)
+file(GLOB COMMON_CPP_FILES ${PROJECT_SOURCE_DIR}/src/*.cpp)
 
 set(ALL_FILES
   ${HEADER_FILES}
+  ${COMMON_CPP_FILES}
   ${SOURCE_CPP_FILES}
   ${SOURCE_C_FILES}
   ${GFX_TESTCASE_HEADER}
   ${GFX_TESTCASE_SOURCE}
   ${CC_EXTERNAL_SOURCES}
 )
-
-if(COCOS_UNICODE)
-	add_definitions("-DUNICODE -D_UNICODE")
-endif()
 
 add_definitions("-DCC_USE_VULKAN")
 add_definitions("-DCC_USE_GLES3")
@@ -48,9 +45,7 @@ target_link_libraries(${TARGET_NAME}
   ${CC_EXTERNAL_LIBS}
 )
 
-target_compile_definitions(${TARGET_NAME}
-  PUBLIC _USE_MATH_DEFINES
-)
+cc_win32_definations(${TARGET_NAME})
 
 set(bin_dir ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${CMAKE_CFG_INTDIR})
 add_custom_target(copy_resource ALL

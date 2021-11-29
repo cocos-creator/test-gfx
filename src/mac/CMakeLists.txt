@@ -34,10 +34,6 @@ set(ALL_FILES
     ${cc_common_res}
     )
 
-if(COCOS_UNICODE)
-	add_definitions("-DUNICODE -D_UNICODE")
-endif()
-
 if (USE_METAL)
     add_definitions("-DCC_USE_METAL")
     set(GFX_LIB GFXMetal)

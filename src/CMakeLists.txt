@@ -17,11 +17,9 @@ set(ENGINE_BASE_LIBS
     FrameGraph
 )
 
-if(NINTENDO)
-    add_definitions("-DCC_STATIC")
-    add_subdirectory(nx)
+if(NX)
+    add_subdirectory(${COCOS_SRC_PATH}/../platform-nx/gfx-test-case nx)
 elseif(WIN32)
-    add_definitions("-DCC_STATIC")
     add_subdirectory(win)
 elseif(IOS)
 	add_subdirectory(ios)

@@ -42,10 +42,6 @@ elseif (USE_METAL)
     add_definitions("-DCC_USE_METAL")
 endif()
 
-if(COCOS_UNICODE)
-	add_definitions("-DUNICODE -D_UNICODE")
-endif()
-
 add_executable(${APP_NAME} ${ALL_FILES})
 
 set_target_properties(${APP_NAME} PROPERTIES RESOURCE "${APP_UI_RES}")

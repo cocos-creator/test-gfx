@@ -13,8 +13,7 @@ constexpr uint MVP    = 2;
 struct StandardUniformBuffers {
     StandardUniformBuffers();
     ~StandardUniformBuffers();
-    DISABLE_COPY_SEMANTICS(StandardUniformBuffers)
-    ENABLE_MOVE_SEMANTICS(StandardUniformBuffers)
+    CC_DISABLE_COPY_AND_MOVE_SEMANTICS(StandardUniformBuffers)
 
     vector<std::unique_ptr<gfx::Buffer>> bufferViews;
 
