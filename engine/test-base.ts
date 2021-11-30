@@ -18,6 +18,7 @@ export interface IShaderSources<T> {
 }
 
 export class TestBase {
+    public static running = true;
     public static device: Device;
     public static swapchains: Swapchain[] = [];
     public static commandBuffers: CommandBuffer[] = [];
@@ -72,8 +73,8 @@ export class TestBase {
 
     public static assert (cond: boolean, msg = '') {
         if (!cond) {
-            console.assert(cond, msg);
-            // (null! as Record<string, number>).x = 1;
+            console.assert(false, msg);
+            TestBase.running = false;
         }
     }
 

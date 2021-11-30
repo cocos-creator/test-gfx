@@ -66,6 +66,7 @@ export class Application {
 
     public tick () {
         this._test?.tick();
+        return TestBase.running;
     }
 
     public onResize (width: number, height: number) {
