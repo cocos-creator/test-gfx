@@ -105,7 +105,7 @@ System.register([], function (_export, _context) {
       app.nextTest(pos.x < gameOptions.adapter.canvas.width / 2);
     };
     const tick = () => {
-      app.tick();
+      if (!app.tick()) return;
       requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);

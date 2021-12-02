@@ -12,33 +12,21 @@ set(ALL_FILES
   ${SOURCE_C_FILES}
 )
 
-if(${CMAKE_SIZEOF_VOID_P} STREQUAL "4")
-  if(${MSVC_VERSION} LESS 1920)
-    set(PLATFORM_FOLDER win32-v141)
-  else()
-    set(PLATFORM_FOLDER win32-v142)
-  endif()
-else()
-  if(${MSVC_VERSION} LESS 1920)
-    set(PLATFORM_FOLDER x64-v141)
-  else()
-    set(PLATFORM_FOLDER x64-v142)
-  endif()
-endif()
-
-if(CC_PLATFORM EQUAL ${CC_PLATFORM_NINTENDO})
-  set(PLATFORM_FOLDER NX-${PLATFORM_FOLDER})
-endif()
-
 include_directories(
   $ENV{NINTENDO_SDK_ROOT}/Include
-  $ENV{NINTENDO_SDK_ROOT}/Common/Configs/Targets/${PLATFORM_FOLDER}/Include
+  $ENV{NINTENDO_SDK_ROOT}/Common/Configs/Targets/${NN_SDK_PLATFORM_FOLDER}/Include
 )
 
 add_library(NN_SDK STATIC IMPORTED GLOBAL)
 set_target_properties(NN_SDK PROPERTIES
-  IMPORTED_LOCATION_DEBUG $ENV{NINTENDO_SDK_ROOT}/Libraries/${PLATFORM_FOLDER}/Debug/libnnSdk.lib
-  IMPORTED_LOCATION_RELEASE $ENV{NINTENDO_SDK_ROOT}/Libraries/${PLATFORM_FOLDER}/Release/libnnSdk.lib
+  IMPORTED_LOCATION_DEBUG $ENV{NINTENDO_SDK_ROOT}/Libraries/${NN_SDK_PLATFORM_FOLDER}/Debug/libnnSdk.lib
+  IMPORTED_LOCATION_RELEASE $ENV{NINTENDO_SDK_ROOT}/Libraries/${NN_SDK_PLATFORM_FOLDER}/Release/libnnSdk.lib
+)
+
+add_library(NN_SDK_DIAG STATIC IMPORTED GLOBAL)
+set_target_properties(NN_SDK_DIAG PROPERTIES
+  IMPORTED_LOCATION_DEBUG $ENV{NINTENDO_SDK_ROOT}/Libraries/${NN_SDK_PLATFORM_FOLDER}/Debug/libnn_diagTextPublicEn.lib
+  IMPORTED_LOCATION_RELEASE $ENV{NINTENDO_SDK_ROOT}/Libraries/${NN_SDK_PLATFORM_FOLDER}/Release/libnn_diagTextPublicEn.lib
 )
 
 add_library(NVN_LOADER STATIC IMPORTED GLOBAL)
@@ -57,7 +45,7 @@ else()
 	add_library(${TARGET_NAME} SHARED ${HEADER_FILES} ${ALL_FILES})
 endif()
 
-target_link_libraries(${TARGET_NAME} Core GFXBase NN_SDK NVN_LOADER)
+target_link_libraries(${TARGET_NAME} Core GFXBase NN_SDK NN_SDK_DIAG NVN_LOADER)
 target_compile_definitions(${TARGET_NAME} PRIVATE ${CC_EXTERNAL_PRIVATE_DEFINITIONS})
 
 set_target_properties(${TARGET_NAME} PROPERTIES OUTPUT_NAME CCGFXNVN)
@@ -68,5 +56,5 @@ use_precompiled_header("${CMAKE_CURRENT_SOURCE_DIR}/NVNStd.h" "${CMAKE_CURRENT_S
 message(STATUS "${TARGET_NAME} configuration completed.")
 
 target_compile_definitions(${TARGET_NAME} PUBLIC
-    $<$<CONFIG:Debug>:CC_DEBUG=1>
+  $<$<CONFIG:Debug>:CC_DEBUG=1>
 )

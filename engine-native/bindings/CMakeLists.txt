@@ -43,7 +43,7 @@ set(GENERAL_FILES
 if(COCOS_PLATFORM_WIN32)
   set(PLATFORM_SPECIFIC_FILES
     ${COCOS_SRC_PATH}/bindings/manual/jsb_platfrom_win32.cpp
-    ${COCOS_ROOT_PATH}/src/win/ViewHack.cpp
+    ${COCOS_ROOT_PATH}/src/ViewHack.cpp
   )
 elseif(COCOS_PLATFORM_ANDROID)
   set(PLATFORM_SPECIFIC_FILES

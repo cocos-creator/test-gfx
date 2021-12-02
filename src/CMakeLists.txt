@@ -17,7 +17,10 @@ set(ENGINE_BASE_LIBS
     FrameGraph
 )
 
-if(WIN32)
+if(NINTENDO)
+    add_definitions("-DCC_STATIC")
+    add_subdirectory(nx)
+elseif(WIN32)
     add_definitions("-DCC_STATIC")
     add_subdirectory(win)
 elseif(IOS)
