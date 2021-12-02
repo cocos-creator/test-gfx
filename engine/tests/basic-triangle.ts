@@ -1,4 +1,4 @@
-import { Color, DrawInfo, Format, IndirectBuffer, Type } from 'gfx/base/define';
+import { Color, DrawInfo, Format, IndirectBuffer, ShaderStageFlagBit, Type } from 'gfx/base/define';
 import { NULL_HANDLE, Program, ProgramBindings, ProgramInputs } from '../chassis';
 import { TestBase } from '../test-base';
 import { Vec4 } from '../math';
@@ -31,8 +31,8 @@ export class BasicTriangle extends TestBase {
                 { name: 'a_position', format: Format.RG32F },
             ],
             blocks: [
-                { name: 'Color', members: [{ name: 'u_color', type: Type.FLOAT4 }] },
-                { name: 'MVP', members: [{ name: 'u_mvp', type: Type.MAT4 }] },
+                { name: 'Color', members: [{ name: 'u_color', type: Type.FLOAT4 }], set: 0 },
+                { name: 'MVP', members: [{ name: 'u_mvp', type: Type.MAT4 }], set: 0 },
             ],
         });
         this._bindings = this._program.createBindings({});
