@@ -4,8 +4,13 @@ import {
     Attribute, BufferInfo, BufferUsageBit, DescriptorSetLayoutBinding, PipelineLayoutInfo,
     DescriptorType, Format, IndirectBuffer, InputAssemblerInfo, InputState, MemoryUsageBit,
     PrimitiveMode, RenderPassInfo, ShaderInfo, ShaderStage,
-    ShaderStageFlagBit, Type, Uniform, UniformBlock, DescriptorSetLayoutInfo, DescriptorSetInfo, FormatInfos, API,
+    ShaderStageFlagBit, Type, Uniform, UniformBlock, DescriptorSetLayoutInfo, DescriptorSetInfo, FormatInfos, API, GetTypeSize,
 } from 'gfx/base/define';
+
+// import {
+//     genHandle, getTypeFromHandle, getBindingFromHandle, getCountFromHandle,
+//     getOffsetFromHandle, customizeType,
+// } from 'renderer/core/pass-utils';
 import { DescriptorSet } from 'gfx/base/descriptor-set';
 import { DescriptorSetLayout } from 'gfx/base/descriptor-set-layout';
 import { InputAssembler } from 'gfx/base/input-assembler';
@@ -15,13 +20,14 @@ import { Shader } from 'gfx/base/shader';
 import { Sampler } from 'gfx/base/states/sampler';
 import { Texture } from 'gfx/base/texture';
 import { assert } from 'platform/debug';
+import { murmurhash2_32_gc } from 'utils/murmurhash2_gc';
 import { IMat4Like, IVec2Like, IVec4Like } from './math';
 import { IShaderSources, IStandardShaderSource, TestBase } from './test-base';
 
 export class TypeInfo {
     declare private _token: never; // to make sure all usages must be an instance of this exact class, not assembled from plain object
 
-    constructor(
+    constructor (
         public readonly name: string = '',
         public readonly glslName: string = '',
         public readonly size: number = 0, // not used
@@ -163,35 +169,30 @@ export interface IProgramHandle extends Number {
     _: never;
 }
 export const NULL_HANDLE: IProgramHandle = 0 as unknown as IProgramHandle;
+const setMask = 0xC0000000; // 2 bit => 4 sets
+const bindingMask = 0x3f000000; //  6 bits => 64 types
+const typeMask = 0x00fc0000; //  6 bits => 64 bindings
+const countMask = 0x0003fc00; //  8 bits => 256 vectors
+const offsetMask = 0x000003ff; // 10 bits => 1024 vectors
+
+export const genHandle = (set: number, binding: number, type: Type, count: number, offset = 0): number => ((set << 30) & setMask)
+    | ((binding << 24) & typeMask) | ((type << 18) & bindingMask) | (count << 10) & countMask | (offset & offsetMask);
+export const getSetFromHandle = (handle: number): number => (handle & bindingMask) >>> 30;
+export const getBindingFromHandle = (handle: number): number => (handle & bindingMask) >>> 24;
+export const getTypeFromHandle = (handle: number): number => (handle & typeMask) >>> 18;
+export const getCountFromHandle = (handle: number): number => (handle & countMask) >>> 10;
+export const getOffsetFromHandle = (handle: number): number => (handle & offsetMask);
+export const customizeType = (handle: number, type: Type): number => (handle & ~typeMask) | ((type << 18) & typeMask);
 
 export class Program {
     private _shader: Shader;
     private _layout: PipelineLayout;
-    private _pipelineState: PipelineState; // hash map
+    private _bindingMap: Record<string, number>;
+    private _pipelineState: Map<number, PipelineState>; // hash map
 
     constructor (info: IProgramInfo) {
-        // const shaderSources: IStandardShaderSource = this._getAppropriateShaderSource(info);
-        const shaderSources: IStandardShaderSource = {
-            vert: `
-                    in vec2 a_position;
-                    layout(std140) uniform MVP { mat4 u_mvp; };
-
-                    void main() {
-                        gl_Position = u_mvp * vec4(a_position, 0.0, 1.0);
-                    }
-                `,
-            frag: `
-                    precision mediump float;
-                    layout(std140) uniform Color {
-                        vec4 u_color;
-                    };
-
-                    out vec4 o_color;
-                    void main() {
-                        o_color = u_color;
-                    }
-                `,
-        };
+        // generate shader sources
+        const shaderSources: IStandardShaderSource = this._getAppropriateShaderSource(info);
 
         const shaderName = info.name;
         // set render stages
@@ -222,25 +223,41 @@ export class Program {
         // There can be more than one descriptorSet for each instance/pass
         const descriptorSetIds = this._descriptorSetIds(info.blocks, info.samplerTextures);
         const descriptorSetLayouts: DescriptorSetLayout[] = [];
+        this._bindingMap = {};
+        // functions to determine by which shader stage these uniform buffers are used
+        const vert_search = (member: IShaderBlockMember) => info.vert.search(member.name) !== -1;
+        const frag_search = (member: IShaderBlockMember) => info.frag.search(member.name) !== -1;
 
+        // creates layout bindings and fill bindingMap.
         for (const descriptorSetId of descriptorSetIds) {
             const bindings: DescriptorSetLayoutBinding[] = [];
-            for (const block of info.blocks || []) {
-                if (block.set === descriptorSetId) {
-                    for (const member of block.members) {
-                        bindings.push(new DescriptorSetLayoutBinding(
-                            bindings.length,
-                            DescriptorType.UNIFORM_BUFFER,
-                            member.count,
-                            info.vert.search(member.name) === -1
-                                ? ShaderStageFlagBit.FRAGMENT : ShaderStageFlagBit.VERTEX,
-                        ));
+            const blocks = info.blocks?.filter((block) => block.set === descriptorSetId) || [];
+            const textures = info.samplerTextures?.filter((texture) => texture.set === descriptorSetId) || [];
+
+            for (const block of blocks) {
+                let shaderStageFlag = ShaderStageFlagBit.NONE;
+                if (block.members.some(vert_search)) shaderStageFlag |= ShaderStageFlagBit.VERTEX;
+                else if (block.members.some(frag_search)) shaderStageFlag |= ShaderStageFlagBit.FRAGMENT;
+
+                if (shaderStageFlag !== ShaderStageFlagBit.NONE) {
+                    let offset = 0;
+                    for (const uniform of block.members) {
+                        this._bindingMap[uniform.name] = genHandle(descriptorSetId, bindings.length, uniform.type, uniform.count || 1, offset);
+                        // no bit shift needed
+                        offset += GetTypeSize(uniform.type) * (uniform.count || 1);
                     }
+                    bindings.push(new DescriptorSetLayoutBinding(
+                        bindings.length,
+                        DescriptorType.UNIFORM_BUFFER,
+                        1,
+                        shaderStageFlag,
+                    ));
                 }
             }
-
-            for (const samplerTexture of info.samplerTextures || []) {
+            for (const samplerTexture of textures) {
                 if (samplerTexture.set === descriptorSetId) {
+                    this._bindingMap[samplerTexture.name] = genHandle(descriptorSetId,
+                        bindings.length, samplerTexture.type, samplerTexture.count || 1);
                     bindings.push(new DescriptorSetLayoutBinding(bindings.length, DescriptorType.SAMPLER_TEXTURE, 1));
                 }
             }
@@ -248,8 +265,7 @@ export class Program {
         }
 
         this._layout = TestBase.device.createPipelineLayout(new PipelineLayoutInfo(descriptorSetLayouts));
-        this._pipelineState = null!;
-
+        this._pipelineState = new Map<number, PipelineState>();
         this.setPipelineState(info.defaultStates || {});
     }
 
@@ -270,12 +286,9 @@ export class Program {
     }
 
     private _shaderGenGlsl4 (info: IProgramInfo) {
-        // shader's header
         let vert_shader = 'precision highp float;\n';
         let frag_shader = 'precision highp float;\n';
 
-        // shader's vertex buffer input
-        //! the old version which also considered the stream binding
         const streamIds: number[] = this._bufferStreamIds(info.attributes);
         for (const streamId of streamIds) {
             let i = 0;
@@ -287,37 +300,35 @@ export class Program {
             }
         }
 
-        // shader's uniform input
-        const descriptorSets: number[] = this._descriptorSetIds(info.blocks, info.samplerTextures);
+        const descriptorSetIds: number[] = this._descriptorSetIds(info.blocks, info.samplerTextures);
         const vert_search = (member: IShaderBlockMember) => info.vert.search(member.name) !== -1;
         const frag_search = (member: IShaderBlockMember) => info.frag.search(member.name) !== -1;
 
-        for (const descriptorSet of descriptorSets) {
+        for (const descriptorSetId of descriptorSetIds) {
             let i = 0;
-            const blocks = info.blocks?.filter((block) => block.set === descriptorSet) || [];
-            const textures = info.samplerTextures?.filter((texture) => texture.set === descriptorSet) || [];
+            const blocks = info.blocks?.filter((block) => block.set === descriptorSetId) || [];
+            const textures = info.samplerTextures?.filter((texture) => texture.set === descriptorSetId) || [];
 
             for (const block of blocks) {
                 if (block.members.some(vert_search)) {
-                    vert_shader += `layout(set = ${descriptorSet}, binding = ${i}) uniform ${block.name} {\n`;
+                    vert_shader += `layout(set = ${descriptorSetId}, binding = ${i}) uniform ${block.name} {\n`;
                     for (const member of block.members) { vert_shader += `    ${TypeInfos[member.type].glslName} ${member.name};\n`; }
                     vert_shader += `};\n`;
                 }
                 if (block.members.some(frag_search)) {
-                    frag_shader += `layout(set = ${descriptorSet}, binding = ${i}) uniform ${block.name} {\n`;
+                    frag_shader += `layout(set = ${descriptorSetId}, binding = ${i}) uniform ${block.name} {\n`;
                     for (const member of block.members) { frag_shader += `    ${TypeInfos[member.type].glslName} ${member.name};\n`; }
                     frag_shader += `};\n`;
                 }
                 i++;
             }
             for (const texture of textures) {
-                frag_shader += `layout(set = ${descriptorSet}, binding = ${i}) `
+                frag_shader += `layout(set = ${descriptorSetId}, binding = ${i}) `
                     + `uniform ${TypeInfos[texture.type].glslName} ${texture.name};\n`;
                 i++;
             }
         }
 
-        // shader's varying input&output
         let i = 0;
         for (const varying of info.varyings || []) {
             vert_shader += `layout(location = ${i}) out ${TypeInfos[varying.type].glslName} ${varying.name};\n`;
@@ -325,19 +336,92 @@ export class Program {
             i++;
         }
 
-        // shader's functions and eof
         vert_shader += info.vert.replace(/vert/g, 'main');
         frag_shader += info.frag.replace(/frag/g, 'main');
-
         return { vert: vert_shader, frag: frag_shader };
     }
 
     private _shaderGenGlsl3 (info: IProgramInfo) {
-        return { vert: 'vert_shader', frag: 'frag_shader' };
+        let vert_shader = '';
+        let frag_shader = 'precision mediump float;\n';
+
+        for (const attribute of info.attributes || []) {
+            vert_shader += `in vec${FormatInfos[attribute.format].count} ${attribute.name};\n`;
+        }
+
+        const descriptorSetIds: number[] = this._descriptorSetIds(info.blocks, info.samplerTextures);
+        const vert_search = (member: IShaderBlockMember) => info.vert.search(member.name) !== -1;
+        const frag_search = (member: IShaderBlockMember) => info.frag.search(member.name) !== -1;
+
+        for (const descriptorSetId of descriptorSetIds) {
+            let i = 0;
+            const blocks = info.blocks?.filter((block) => block.set === descriptorSetId) || [];
+            const textures = info.samplerTextures?.filter((texture) => texture.set === descriptorSetId) || [];
+
+            for (const block of blocks) {
+                if (block.members.some(vert_search)) {
+                    vert_shader += `layout(std140) uniform ${block.name} {\n`;
+                    for (const member of block.members) { vert_shader += `    ${TypeInfos[member.type].glslName} ${member.name};\n`; }
+                    vert_shader += `};\n`;
+                }
+                if (block.members.some(frag_search)) {
+                    frag_shader += `layout(std140) uniform ${block.name} {\n`;
+                    for (const member of block.members) { frag_shader += `    ${TypeInfos[member.type].glslName} ${member.name};\n`; }
+                    frag_shader += `};\n`;
+                }
+                i++;
+            }
+            for (const texture of textures) {
+                frag_shader += `layout(std140) uniform ${TypeInfos[texture.type].glslName} ${texture.name};\n`;
+                i++;
+            }
+        }
+
+        for (const varying of info.varyings || []) {
+            vert_shader += `out ${TypeInfos[varying.type].glslName} ${varying.name};\n`;
+            frag_shader += `in ${TypeInfos[varying.type].glslName} ${varying.name};\n`;
+        }
+
+        vert_shader += info.vert.replace(/vert/g, 'main');
+        frag_shader += info.frag.replace(/frag/g, 'main');
+        return { vert: vert_shader, frag: frag_shader };
     }
 
     private _shaderGenGlsl1 (info: IProgramInfo) {
-        return { vert: 'vert_shader', frag: 'frag_shader' };
+        let vert_shader = '';
+        let frag_shader = 'precision mediump float;\n';
+
+        for (const attribute of info.attributes || []) {
+            vert_shader += `attribute vec${FormatInfos[attribute.format].count} ${attribute.name};\n`;
+        }
+
+        const descriptorSetIds: number[] = this._descriptorSetIds(info.blocks, info.samplerTextures);
+        const vert_search = (member: IShaderBlockMember) => info.vert.search(member.name) !== -1;
+        const frag_search = (member: IShaderBlockMember) => info.frag.search(member.name) !== -1;
+
+        for (const descriptorSetId of descriptorSetIds) {
+            const blocks = info.blocks?.filter((block) => block.set === descriptorSetId) || [];
+            const textures = info.samplerTextures?.filter((texture) => texture.set === descriptorSetId) || [];
+
+            for (const block of blocks) {
+                const vert_block_members = block.members.filter(vert_search);
+                const frag_block_members = block.members.filter(frag_search);
+                for (const member of vert_block_members) { vert_shader += `uniform ${TypeInfos[member.type].glslName} ${member.name};\n`; }
+                for (const member of frag_block_members) { frag_shader += `uniform ${TypeInfos[member.type].glslName} ${member.name};\n`; }
+            }
+            for (const texture of textures) {
+                frag_shader += `uniform ${TypeInfos[texture.type].glslName} ${texture.name};\n`;
+            }
+        }
+
+        for (const varying of info.varyings || []) {
+            vert_shader += `varying ${TypeInfos[varying.type].glslName} ${varying.name};\n`;
+            frag_shader += `varying ${TypeInfos[varying.type].glslName} ${varying.name};\n`;
+        }
+
+        vert_shader += info.vert.replace(/vert/g, 'main');
+        frag_shader += info.frag.replace(/frag/g, 'main');
+        return { vert: vert_shader, frag: frag_shader };
     }
 
     private _getAppropriateShaderSource (info: IProgramInfo) {
@@ -370,28 +454,37 @@ export class Program {
     }
     // related to uniform buffer
     getHandle (name: string, offset = 0, type = Type.UNKNOWN): IProgramHandle {
-        const handle = 0;
+        let handle = this._bindingMap[name];
+        if (!handle) { return 0 as unknown as IProgramHandle; }
+        if (type) {
+            handle = customizeType(handle, type);
+        } else if (offset) {
+            handle = customizeType(handle, getTypeFromHandle(handle) - offset);
+        }
+        handle += offset;
         return handle as unknown as IProgramHandle;
     }
 
     // update current state settings
     setPipelineState (info: IPipelineStateInfo) {
-        // create renderPass
+        const stateHash = 0;// murmurhash2_32_gc(, 666);
 
-        this._pipelineState = TestBase.device.createPipelineState(new PipelineStateInfo(
-            this._shader,
-            this._layout,
-            TestBase.defaultRenderPass,
-            new InputState(this._shader.attributes),
-            info.rasterizerState,
-            info.depthStencilState,
-            info.blendState,
-            info.primitive,
-        ));
+        if (!this._pipelineState.has(stateHash)) {
+            this._pipelineState.set(stateHash, TestBase.device.createPipelineState(new PipelineStateInfo(
+                this._shader,
+                this._layout,
+                TestBase.defaultRenderPass,
+                new InputState(this._shader.attributes),
+                info.rasterizerState,
+                info.depthStencilState,
+                info.blendState,
+                info.primitive,
+            )));
+        }
     }
 
     draw (commandBuffer: CommandBuffer, bindings: ProgramBindings, inputs: ProgramInputs) {
-        commandBuffer.bindPipelineState(this._pipelineState);
+        // commandBuffer.bindPipelineState(this._pipelineState);
         const descriptorSetBundle = bindings.descriptorSets[bindings.currentInstance];
         for (let i = 0; i < descriptorSetBundle.length; i++) {
             commandBuffer.bindDescriptorSet(i, descriptorSetBundle[i]);
@@ -407,8 +500,8 @@ export class ProgramBindings {
     descriptorSets: DescriptorSet[][] = [];
     currentInstance = 0;
 
-    private _uniform_buffer: Buffer[] = [];
-    private _sampler_buffer: Buffer[] = [];
+    private _uniform_buffer: Buffer[][] = [];
+    private _sampler_buffer: Buffer[][] = [];
 
     constructor (program: Program, info: IProgramBindingInfo) {
         // @ts-expect-error(2341) friend class access
@@ -420,6 +513,7 @@ export class ProgramBindings {
                 (setLayout) => TestBase.device.createDescriptorSet(new DescriptorSetInfo(setLayout)),
             );
             this.descriptorSets.push(descriptorSetBundle);
+            // const _uniformBufferBundle: Buffer[] = ;
         }
     }
 
@@ -431,9 +525,15 @@ export class ProgramBindings {
 
     // pass -1 as idx to apply to all applicable fields
     setUniform (handle: IProgramHandle, v: ProgramBindingProperties, instanceIdx = 0, arrayIdx = 0) {
+        const handleNum = handle as unknown as number;
         if (instanceIdx === -1) {
             // set for all
             for (const descriptorSetBundle of this.descriptorSets) {
+                const setId = getSetFromHandle(handleNum);
+                const bindingId = getBindingFromHandle(handleNum);
+                const type = getTypeFromHandle(handleNum);
+                const offset = getOffsetFromHandle(handleNum);
+                const count = getCountFromHandle(handleNum);
                 // descriptorSet.bindBuffer(1, v, handle as unknown as number);
             }
         }
@@ -450,7 +550,7 @@ export class ProgramBindings {
 }
 
 // ----------------------------------------------------------------
-// not really understand the usage of indirectBuffer
+// not really understand how to use indirect buffer
 
 export class ProgramInputs {
     inputAssembler: InputAssembler;
