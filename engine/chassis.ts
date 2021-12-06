@@ -4,7 +4,7 @@ import {
     Attribute, BufferInfo, BufferUsageBit, DescriptorSetLayoutBinding, PipelineLayoutInfo,
     DescriptorType, Format, IndirectBuffer, InputAssemblerInfo, InputState, MemoryUsageBit,
     PrimitiveMode, RenderPassInfo, ShaderInfo, ShaderStage,
-    ShaderStageFlagBit, Type, Uniform, UniformBlock, DescriptorSetLayoutInfo, DescriptorSetInfo, FormatInfos, API, GetTypeSize,
+    ShaderStageFlagBit, Type, Uniform, UniformBlock, DescriptorSetLayoutInfo, DescriptorSetInfo, FormatInfos, API, GetTypeSize, UniformSamplerTexture, UniformInputAttachment,
 } from 'gfx/base/define';
 
 // import {
@@ -21,6 +21,7 @@ import { Sampler } from 'gfx/base/states/sampler';
 import { Texture } from 'gfx/base/texture';
 import { assert } from 'platform/debug';
 import { murmurhash2_32_gc } from 'utils/murmurhash2_gc';
+import { RenderPass } from 'gfx/base/render-pass';
 import { IMat4Like, IVec2Like, IVec4Like } from './math';
 import { IShaderSources, IStandardShaderSource, TestBase } from './test-base';
 
@@ -189,6 +190,7 @@ export class Program {
     private _layout: PipelineLayout;
     private _bindingMap: Record<string, number>;
     private _pipelineState: Map<number, PipelineState>; // hash map
+    private _currentPipelineState: number;
 
     constructor (info: IProgramInfo) {
         // generate shader sources
@@ -210,13 +212,29 @@ export class Program {
             index,
         )) || [];
         // set the uniform buffer
-        const shaderBlocks = info.blocks?.map((block, index) => new UniformBlock(0,
+        const shaderBlocks = info.blocks?.map((block, index) => new UniformBlock(
+            block.set,
             index,
             block.name,
             block.members.map((member) => new Uniform(member.name, member.type, member.count)),
-            1)) || [];
+            1,
+        )) || []; // block counts
+        const samplerTextures = info.samplerTextures?.map((samplerTexture, index) => new UniformSamplerTexture(
+            samplerTexture.set,
+            index + (info.blocks?.length || 0),
+            samplerTexture.name,
+            samplerTexture.type,
+            samplerTexture.count || 1,
+        )) || [];
 
-        this._shader = TestBase.device.createShader(new ShaderInfo(shaderName, shaderStages, shaderAttributes, shaderBlocks));
+        this._shader = TestBase.device.createShader(new ShaderInfo(
+            shaderName,
+            shaderStages,
+            shaderAttributes,
+            shaderBlocks,
+            [],
+            samplerTextures, // what about other arguments?
+        ));
 
         // create bindings
         // the number of layout should be the same as the required sets by one frame.
@@ -266,6 +284,7 @@ export class Program {
 
         this._layout = TestBase.device.createPipelineLayout(new PipelineLayoutInfo(descriptorSetLayouts));
         this._pipelineState = new Map<number, PipelineState>();
+        this._currentPipelineState = 0;
         this.setPipelineState(info.defaultStates || {});
     }
 
@@ -467,24 +486,111 @@ export class Program {
 
     // update current state settings
     setPipelineState (info: IPipelineStateInfo) {
-        const stateHash = 0;// murmurhash2_32_gc(, 666);
+        const pipelineStateInfo = new PipelineStateInfo(
+            this._shader,
+            this._layout,
+            TestBase.defaultRenderPass,
+            new InputState(this._shader.attributes),
+            info.rasterizerState,
+            info.depthStencilState,
+            info.blendState,
+            info.primitive,
+        );
+
+        // const stateHash = murmurhash2_32_gc(this._serializePipelineState(pipelineStateInfo), 666);
+        const stateHash = hashObject(pipelineStateInfo as unknown as Record<string, unknown>);
 
         if (!this._pipelineState.has(stateHash)) {
-            this._pipelineState.set(stateHash, TestBase.device.createPipelineState(new PipelineStateInfo(
-                this._shader,
-                this._layout,
-                TestBase.defaultRenderPass,
-                new InputState(this._shader.attributes),
-                info.rasterizerState,
-                info.depthStencilState,
-                info.blendState,
-                info.primitive,
-            )));
+            this._pipelineState.set(stateHash, TestBase.device.createPipelineState(pipelineStateInfo));
         }
+
+        this._currentPipelineState = stateHash;
+    }
+
+    private _serializePipelineState (info: PipelineStateInfo) {
+        let res = `shader,${this._serializeShader(info.shader)}`; // shader
+        res += `,pl,${this._serializePipelineLayout(info.pipelineLayout)}`; // pipelineLayout
+        res += `,rp,${this._serializeRenderPass(info.renderPass)}`; // renderPass
+        res += `,is,${this._serializeInputState(info.inputState)}`; // inputState
+        res += `,rs,${this._serializeRasterizerState(info.rasterizerState)}`; // rasterizerState
+        res += `,dss,${this._serializeDepthStencilState(info.depthStencilState)}`; // depthStencilState
+        res += `,bs,${this._serializeBlendState(info.blendState)}`; // blendState
+        res += `,pr,${info.primitive}`;
+
+        return res;
+    }
+    private _serializeShader (shader: Shader) {
+        let res = '';
+        res += ``;
+        return res;
+    }
+    private _serializeDescriptorSetLayout (setLayout: DescriptorSetLayout) {
+        let res = ``; // descriptor layout bindings
+        res += `,bi,{`;
+        for (const num of setLayout.bindingIndices) { res += `,${num}`; }
+        res += `},di,{`;
+        for (const num of setLayout.descriptorIndices) { res += `,${num}`; }
+        res += `}`;
+        return res;
+    }
+    private _serializePipelineLayout (pipelineLayout: PipelineLayout) {
+        let res = ',sl,{';
+        for (const setLayout of pipelineLayout.setLayouts) {
+            res += `,${this._serializeDescriptorSetLayout(setLayout)}`;
+        }
+        res += '}';
+        return res;
+    }
+    private _serializeRenderPass (pass: RenderPass) {
+        const res = `,hs,${pass.hash}`;
+        return res;
+    }
+    private _serializeAttribute (attribute: Attribute) {
+        let res = `,nm,${attribute.name},fmt,${attribute.format}`;
+        res += `,inm,${attribute.isNormalized},stm,${attribute.stream}`;
+        res += `,ii,${attribute.isInstanced},loc,${attribute.location}`;
+        return res;
+    }
+    private _serializeInputState (state: InputState) {
+        let res = ',at,{';
+        for (const attribute of state.attributes) {
+            res += `,${this._serializeAttribute(attribute)}`;
+        }
+        res += '}';
+        return res;
+    }
+    private _serializeRasterizerState (state: RasterizerState) {
+        let res = `,id,${state.isDiscard},pm,${state.polygonMode},sm,${state.shadeModel},cm,${state.cullMode}`;
+        res += `,iffccw,${state.isFrontFaceCCW},dbe,${state.depthBiasEnabled},db,${state.depthBias}`;
+        res += `,dbc,${state.depthBiasClamp},dbs,${state.depthBiasSlop},idc,${state.isDepthClip}`;
+        res += `,ism,${state.isMultisample},lw,${state.lineWidth}`;
+        return res;
+    }
+    private _serializeDepthStencilState (state: DepthStencilState) {
+        let res = `,dt,${state.depthTest},dw,${state.depthWrite},df,${state.depthFunc},stf,${state.stencilTestFront}`;
+        res += `,sff,${state.stencilFuncFront},srmf,${state.stencilReadMaskFront},swmf,${state.stencilWriteMaskFront}`;
+        res += `sfof,${state.stencilFailOpFront},szfof,${state.stencilZFailOpFront}`;
+        res += `spof,${state.stencilPassOpFront},srf,${state.stencilRefFront},stb,${state.stencilTestBack}`;
+        res += `,sfb${state.stencilFuncBack},srmb,${state.stencilReadMaskBack},swmb,${state.stencilWriteMaskBack}`;
+        res += `,sfob,${state.stencilFailOpBack},szfob,${state.stencilZFailOpBack},spob,${state.stencilPassOpBack}`;
+        res += `,srb,${state.stencilRefBack}`;
+        return res;
+    }
+    private _serializeBlendState (state: BlendState) {
+        let res = `,a2c,${state.isA2C},ind,${state.isIndepend},bc,{${state.blendColor.x}`;
+        res += `,${state.blendColor.y},${state.blendColor.z},${state.blendColor.w}},tg,[`;
+        for (const target of state.targets) {
+            res += `,{${target.blend},${target.blendEq},${target.blendAlphaEq},${target.blendColorMask}`;
+            res += `,${target.blendSrc},${target.blendDst},${target.blendSrcAlpha},${target.blendDstAlpha}}`;
+        }
+        res += ']';
+        return res;
     }
 
     draw (commandBuffer: CommandBuffer, bindings: ProgramBindings, inputs: ProgramInputs) {
-        // commandBuffer.bindPipelineState(this._pipelineState);
+        const pipelineState = this._pipelineState.get(this._currentPipelineState);
+        assert(pipelineState, `no such pipelineState found: ${this._currentPipelineState}`);
+        commandBuffer.bindPipelineState(pipelineState);
         const descriptorSetBundle = bindings.descriptorSets[bindings.currentInstance];
         for (let i = 0; i < descriptorSetBundle.length; i++) {
             commandBuffer.bindDescriptorSet(i, descriptorSetBundle[i]);
@@ -500,12 +606,18 @@ export class ProgramBindings {
     descriptorSets: DescriptorSet[][] = [];
     currentInstance = 0;
 
+    private _rootBuffer: Buffer[];
+
     private _uniform_buffer: Buffer[][] = [];
     private _sampler_buffer: Buffer[][] = [];
 
     constructor (program: Program, info: IProgramBindingInfo) {
         // @ts-expect-error(2341) friend class access
-        const { _layout: layout } = program; // destructuring assignment
+        const { _shader: shader, _layout: layout } = program; // destructuring assignment
+
+        const bufferInfo = new BufferInfo(BufferUsageBit.UNIFORM | BufferUsageBit.TRANSFER_DST,
+            MemoryUsageBit.DEVICE);
+        // bufferInfo.size =
 
         const instanceCount = info.maxInstanceCount || 1;
         for (let i = 0; i < instanceCount; i++) {
@@ -513,7 +625,8 @@ export class ProgramBindings {
                 (setLayout) => TestBase.device.createDescriptorSet(new DescriptorSetInfo(setLayout)),
             );
             this.descriptorSets.push(descriptorSetBundle);
-            // const _uniformBufferBundle: Buffer[] = ;
+
+            const rootBuffer = TestBase.device.createBuffer();
         }
     }
 
@@ -615,4 +728,15 @@ export class ProgramInputs {
         assert(this.inputAssembler.indirectBuffer, 'no indirect buffer specified');
         this.inputAssembler.indirectBuffer?.update(buffer);
     }
+}
+
+function hashObject (o: Record<string, unknown>) {
+    let hash = 0;
+    for (const _ in o)++hash;
+    for (const k in o) {
+        const v = (o[k] || 0) as Record<string, unknown> | number; // convert undefined to 0
+        const value = typeof v === 'object' ? hashObject(v) : v;
+        hash ^= value + 0x9e3779b9 + (hash << 6) + (hash >> 2); // boost::hash_combine
+    }
+    return hash;
 }
