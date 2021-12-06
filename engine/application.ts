@@ -1,3 +1,4 @@
+import { Device } from 'gfx/base/device';
 import { API, ColorAttachment, DepthStencilAttachment, DeviceInfo, FramebufferInfo,
     RenderPassInfo, SurfaceTransform, SwapchainInfo } from 'gfx/base/define';
 import { EmptyDevice } from 'gfx/empty/empty-device';
@@ -18,6 +19,8 @@ export class Application {
     private _currentIndex = 0;
 
     public initialize (info: IApplicationInfo) {
+        Device.canvas = info.canvas;
+
         const deviceInfo = new DeviceInfo();
         switch (info.api) {
         case API.WEBGL:

@@ -77,6 +77,17 @@ export interface IProgramHandle extends Number {
 }
 export const NULL_HANDLE: IProgramHandle = 0 as unknown as IProgramHandle;
 
+function hashObject (o: object) {
+    let hash = 0;
+    for (const _ in o) ++hash;
+    for (const k in o) {
+        const v = ((o as Record<string, unknown>)[k] || 0) as object | number; // convert null/undefined to 0
+        const value = typeof v === 'object' ? hashObject(v) : v;
+        hash ^= value + 0x9e3779b9 + (hash << 6) + (hash >> 2); // boost::hash_combine
+    }
+    return hash;
+}
+
 export class Program {
     private _shader: Shader;
     private _layout: PipelineLayout;
@@ -106,6 +117,7 @@ export class Program {
     // update current state settings
     setPipelineState (info: IPipelineStateInfo) {
         // render pass & input states are hard-coded for now
+        const hash = hashObject(info);
     }
 
     draw (commandBuffer: CommandBuffer, bindings: ProgramBindings, inputs: ProgramInputs) {
