@@ -22,7 +22,7 @@ import { Texture } from 'gfx/base/texture';
 import { assert } from 'platform/debug';
 import { murmurhash2_32_gc } from 'utils/murmurhash2_gc';
 import { RenderPass } from 'gfx/base/render-pass';
-import { IMat4Like, IVec2Like, IVec4Like } from './math';
+import { IMat4Like, IVec2Like, IVec4Like, Mat4, Vec2, Vec4 } from './math';
 import { IShaderSources, IStandardShaderSource, TestBase } from './test-base';
 
 export class TypeInfo {
@@ -184,6 +184,17 @@ export const getTypeFromHandle = (handle: number): number => (handle & typeMask)
 export const getCountFromHandle = (handle: number): number => (handle & countMask) >>> 10;
 export const getOffsetFromHandle = (handle: number): number => (handle & offsetMask);
 export const customizeType = (handle: number, type: Type): number => (handle & ~typeMask) | ((type << 18) & typeMask);
+
+function hashObject (o: object) {
+    let hash = 0;
+    for (const _ in o) ++hash;
+    for (const k in o) {
+        const v = ((o as Record<string, unknown>)[k] || 0) as object | number; // convert null/undefined to 0
+        const value = typeof v === 'object' ? hashObject(v) : v;
+        hash ^= value + 0x9e3779b9 + (hash << 6) + (hash >> 2); // boost::hash_combine
+    }
+    return hash;
+}
 
 export class Program {
     private _shader: Shader;
@@ -486,105 +497,8 @@ export class Program {
 
     // update current state settings
     setPipelineState (info: IPipelineStateInfo) {
-        const pipelineStateInfo = new PipelineStateInfo(
-            this._shader,
-            this._layout,
-            TestBase.defaultRenderPass,
-            new InputState(this._shader.attributes),
-            info.rasterizerState,
-            info.depthStencilState,
-            info.blendState,
-            info.primitive,
-        );
-
-        // const stateHash = murmurhash2_32_gc(this._serializePipelineState(pipelineStateInfo), 666);
-        const stateHash = hashObject(pipelineStateInfo as unknown as Record<string, unknown>);
-
-        if (!this._pipelineState.has(stateHash)) {
-            this._pipelineState.set(stateHash, TestBase.device.createPipelineState(pipelineStateInfo));
-        }
-
-        this._currentPipelineState = stateHash;
-    }
-
-    private _serializePipelineState (info: PipelineStateInfo) {
-        let res = `shader,${this._serializeShader(info.shader)}`; // shader
-        res += `,pl,${this._serializePipelineLayout(info.pipelineLayout)}`; // pipelineLayout
-        res += `,rp,${this._serializeRenderPass(info.renderPass)}`; // renderPass
-        res += `,is,${this._serializeInputState(info.inputState)}`; // inputState
-        res += `,rs,${this._serializeRasterizerState(info.rasterizerState)}`; // rasterizerState
-        res += `,dss,${this._serializeDepthStencilState(info.depthStencilState)}`; // depthStencilState
-        res += `,bs,${this._serializeBlendState(info.blendState)}`; // blendState
-        res += `,pr,${info.primitive}`;
-
-        return res;
-    }
-    private _serializeShader (shader: Shader) {
-        let res = '';
-        res += ``;
-        return res;
-    }
-    private _serializeDescriptorSetLayout (setLayout: DescriptorSetLayout) {
-        let res = ``; // descriptor layout bindings
-        res += `,bi,{`;
-        for (const num of setLayout.bindingIndices) { res += `,${num}`; }
-        res += `},di,{`;
-        for (const num of setLayout.descriptorIndices) { res += `,${num}`; }
-        res += `}`;
-        return res;
-    }
-    private _serializePipelineLayout (pipelineLayout: PipelineLayout) {
-        let res = ',sl,{';
-        for (const setLayout of pipelineLayout.setLayouts) {
-            res += `,${this._serializeDescriptorSetLayout(setLayout)}`;
-        }
-        res += '}';
-        return res;
-    }
-    private _serializeRenderPass (pass: RenderPass) {
-        const res = `,hs,${pass.hash}`;
-        return res;
-    }
-    private _serializeAttribute (attribute: Attribute) {
-        let res = `,nm,${attribute.name},fmt,${attribute.format}`;
-        res += `,inm,${attribute.isNormalized},stm,${attribute.stream}`;
-        res += `,ii,${attribute.isInstanced},loc,${attribute.location}`;
-        return res;
-    }
-    private _serializeInputState (state: InputState) {
-        let res = ',at,{';
-        for (const attribute of state.attributes) {
-            res += `,${this._serializeAttribute(attribute)}`;
-        }
-        res += '}';
-        return res;
-    }
-    private _serializeRasterizerState (state: RasterizerState) {
-        let res = `,id,${state.isDiscard},pm,${state.polygonMode},sm,${state.shadeModel},cm,${state.cullMode}`;
-        res += `,iffccw,${state.isFrontFaceCCW},dbe,${state.depthBiasEnabled},db,${state.depthBias}`;
-        res += `,dbc,${state.depthBiasClamp},dbs,${state.depthBiasSlop},idc,${state.isDepthClip}`;
-        res += `,ism,${state.isMultisample},lw,${state.lineWidth}`;
-        return res;
-    }
-    private _serializeDepthStencilState (state: DepthStencilState) {
-        let res = `,dt,${state.depthTest},dw,${state.depthWrite},df,${state.depthFunc},stf,${state.stencilTestFront}`;
-        res += `,sff,${state.stencilFuncFront},srmf,${state.stencilReadMaskFront},swmf,${state.stencilWriteMaskFront}`;
-        res += `sfof,${state.stencilFailOpFront},szfof,${state.stencilZFailOpFront}`;
-        res += `spof,${state.stencilPassOpFront},srf,${state.stencilRefFront},stb,${state.stencilTestBack}`;
-        res += `,sfb${state.stencilFuncBack},srmb,${state.stencilReadMaskBack},swmb,${state.stencilWriteMaskBack}`;
-        res += `,sfob,${state.stencilFailOpBack},szfob,${state.stencilZFailOpBack},spob,${state.stencilPassOpBack}`;
-        res += `,srb,${state.stencilRefBack}`;
-        return res;
-    }
-    private _serializeBlendState (state: BlendState) {
-        let res = `,a2c,${state.isA2C},ind,${state.isIndepend},bc,{${state.blendColor.x}`;
-        res += `,${state.blendColor.y},${state.blendColor.z},${state.blendColor.w}},tg,[`;
-        for (const target of state.targets) {
-            res += `,{${target.blend},${target.blendEq},${target.blendAlphaEq},${target.blendColorMask}`;
-            res += `,${target.blendSrc},${target.blendDst},${target.blendSrcAlpha},${target.blendDstAlpha}}`;
-        }
-        res += ']';
-        return res;
+        // render pass & input states are hard-coded for now
+        const hash = hashObject(info);
     }
 
     draw (commandBuffer: CommandBuffer, bindings: ProgramBindings, inputs: ProgramInputs) {
@@ -600,7 +514,21 @@ export class Program {
     }
 }
 
-type ProgramBindingProperties = IMat4Like | IVec4Like | IVec2Like | number;
+type ProgramBindingProperties = IMat4Like | IVec4Like | IVec2Like | number | boolean;
+
+type UniformWriter = (a: Int32Array | Float32Array, v: ProgramBindingProperties, idx?: number) => void;
+
+// @ts-expect-error(2740) not all types are relevant here
+const type2writer: Record<Type, UniformWriter> = {
+    [Type.UNKNOWN]: ((a: Int32Array, v: number, idx = 0): void => { console.warn('illegal uniform handle'); }) as UniformWriter,
+    [Type.INT]: ((a: Int32Array, v: number, idx = 0): void => { a[idx] = v; }) as UniformWriter,
+    [Type.INT2]: ((a: Int32Array, v: IVec2Like, idx = 0): void => { Vec2.toArray(a, v, idx); }) as UniformWriter,
+    [Type.INT4]: ((a: Int32Array, v: IVec4Like, idx = 0): void => { Vec4.toArray(a, v, idx); }) as UniformWriter,
+    [Type.FLOAT]: ((a: Float32Array, v: number, idx = 0): void => { a[idx] = v; }) as UniformWriter,
+    [Type.FLOAT2]: ((a: Float32Array, v: IVec2Like, idx = 0): void => { Vec2.toArray(a, v, idx); }) as UniformWriter,
+    [Type.FLOAT4]: ((a: Float32Array, v: IVec4Like, idx = 0): void => { Vec4.toArray(a, v, idx); }) as UniformWriter,
+    [Type.MAT4]: ((a: Float32Array, v: IMat4Like, idx = 0): void => { Mat4.toArray(a, v, idx); }) as UniformWriter,
+};
 
 export class ProgramBindings {
     descriptorSets: DescriptorSet[][] = [];
@@ -728,15 +656,4 @@ export class ProgramInputs {
         assert(this.inputAssembler.indirectBuffer, 'no indirect buffer specified');
         this.inputAssembler.indirectBuffer?.update(buffer);
     }
-}
-
-function hashObject (o: Record<string, unknown>) {
-    let hash = 0;
-    for (const _ in o)++hash;
-    for (const k in o) {
-        const v = (o[k] || 0) as Record<string, unknown> | number; // convert undefined to 0
-        const value = typeof v === 'object' ? hashObject(v) : v;
-        hash ^= value + 0x9e3779b9 + (hash << 6) + (hash >> 2); // boost::hash_combine
-    }
-    return hash;
 }
