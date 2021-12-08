@@ -7,7 +7,7 @@ import { BlendState, DepthStencilState, RasterizerState } from 'gfx/base/pipelin
 import { Shader } from 'gfx/base/shader';
 import { Sampler } from 'gfx/base/states/sampler';
 import { Texture } from 'gfx/base/texture';
-import { IMat4Like, IVec2Like, IVec4Like } from './math';
+import { IMat4Like, IVec2Like, IVec4Like, Mat4, Vec2, Vec4 } from './math';
 
 export interface IShaderAttribute {
     name: string;
@@ -124,7 +124,21 @@ export class Program {
     }
 }
 
-type ProgramBindingProperties = IMat4Like | IVec4Like | IVec2Like | number;
+type ProgramBindingProperties = IMat4Like | IVec4Like | IVec2Like | number | boolean;
+
+type UniformWriter = (a: Int32Array | Float32Array, v: ProgramBindingProperties, idx?: number) => void;
+
+// @ts-expect-error(2740) not all types are relevant here
+const type2writer: Record<Type, UniformWriter> = {
+    [Type.UNKNOWN]: ((a: Int32Array, v: number, idx = 0): void => { console.warn('illegal uniform handle'); }) as UniformWriter,
+    [Type.INT]: ((a: Int32Array, v: number, idx = 0): void => { a[idx] = v; }) as UniformWriter,
+    [Type.INT2]: ((a: Int32Array, v: IVec2Like, idx = 0): void => { Vec2.toArray(a, v, idx); }) as UniformWriter,
+    [Type.INT4]: ((a: Int32Array, v: IVec4Like, idx = 0): void => { Vec4.toArray(a, v, idx); }) as UniformWriter,
+    [Type.FLOAT]: ((a: Float32Array, v: number, idx = 0): void => { a[idx] = v; }) as UniformWriter,
+    [Type.FLOAT2]: ((a: Float32Array, v: IVec2Like, idx = 0): void => { Vec2.toArray(a, v, idx); }) as UniformWriter,
+    [Type.FLOAT4]: ((a: Float32Array, v: IVec4Like, idx = 0): void => { Vec4.toArray(a, v, idx); }) as UniformWriter,
+    [Type.MAT4]: ((a: Float32Array, v: IMat4Like, idx = 0): void => { Mat4.toArray(a, v, idx); }) as UniformWriter,
+};
 
 export class ProgramBindings {
     descriptorSets: DescriptorSet[] = [];
