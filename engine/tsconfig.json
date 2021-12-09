@@ -3,6 +3,7 @@
     "target": "es6",
     "module": "system",
     "inlineSourceMap": true,
+    "sourceRoot": "../../../../",
     "outFile": "./dist/cocos.js",
     "rootDir": "../..",
     "baseUrl": "../../engine/cocos/core",
