@@ -3,7 +3,7 @@ import { Buffer } from 'gfx/base/buffer';
 import {
     Attribute, BufferInfo, BufferUsageBit, DescriptorSetLayoutBinding, PipelineLayoutInfo,
     DescriptorType, Format, IndirectBuffer, InputAssemblerInfo, InputState, MemoryUsageBit,
-    PrimitiveMode, RenderPassInfo, ShaderInfo, ShaderStage, ShaderStageFlagBit, Type,
+    PrimitiveMode, ShaderInfo, ShaderStage, ShaderStageFlagBit, Type,
     Uniform, UniformBlock, DescriptorSetLayoutInfo, DescriptorSetInfo, FormatInfos,
     API, GetTypeSize, UniformSamplerTexture, BufferViewInfo,
 } from 'gfx/base/define';
@@ -15,9 +15,7 @@ import { BlendState, DepthStencilState, PipelineState, PipelineStateInfo, Raster
 import { Shader } from 'gfx/base/shader';
 import { Sampler } from 'gfx/base/states/sampler';
 import { Texture } from 'gfx/base/texture';
-import { assert, errorID } from 'platform/debug';
-import { RenderPass } from 'gfx/base/render-pass';
-import { IMat4Like, IVec2Like, IVec4Like, Mat4, Vec2, Vec4 } from './math';
+import { IMat4Like, IVec2Like, IVec3Like, IVec4Like, Mat4, Vec2, Vec3, Vec4 } from './math';
 import { IStandardShaderSource, TestBase } from './test-base';
 
 import { SourceGenerator } from './generator';
@@ -97,6 +95,25 @@ export const TypeInfos = Object.freeze([
     // COUNT,
 ]);
 
+export enum IShaderExtensionType {
+    ENABLE,
+    REQUIRE,
+    WARN,
+    DISABLE,
+}
+
+export const IShaderExtensionTypeName = [
+    'enable',
+    'require',
+    'warn',
+    'disable',
+];
+
+export interface IShaderExtension {
+    name: string;
+    type: IShaderExtensionType;
+}
+
 export interface IShaderAttribute {
     name: string;
     format: Format;
@@ -134,6 +151,7 @@ export interface IProgramInfo {
     name: string;
     vert: string; // implementation only, entry function 'vec4 vert()'
     frag: string; // implementation only, entry function 'vec4 frag()'
+    extensions?: IShaderExtension[];           // default to empty array
     attributes?: IShaderAttribute[];           // default to empty array
     blocks?: IShaderBlock[];                   // default to empty array
     samplerTextures?: IShaderSamplerTexture[]; // default to empty array
@@ -166,6 +184,7 @@ export interface IPipelineStateInfo {
 export interface IProgramHandle extends Number {
     _: never;
 }
+
 export const NULL_HANDLE: IProgramHandle = 0 as unknown as IProgramHandle;
 const setMask = 0xC0000000; // 2 bit => 4 sets
 const bindingMask = 0x3f000000; //  6 bits => 64 types
@@ -193,11 +212,15 @@ function hashObject (o: object) {
     return hash;
 }
 
+// 5, 3, 8
+export const TEST_UBO_COUNTS = [5, 3, -1];
+export const TEST_SAMPLER_COUNTS = [5, 3, -1];
+
 export class Program {
     private _shader: Shader;
     private _layout: PipelineLayout;
     private _propertyMap: Record<string, number>;
-    private _pipelineState: Map<number, PipelineState>; // hash map
+    private _pipelineStateMap: Map<number, PipelineState>; // hash map
     private _currentPipelineState: PipelineState;
 
     constructor (info: IProgramInfo) {
@@ -213,108 +236,148 @@ export class Program {
 
         const streamIds: number[] = this._bufferStreamIds(info.attributes || []);
         const descriptorSetIds: number[] = this._descriptorSetIds(info.blocks || [], info.samplerTextures || []);
+        TestBase.assert(descriptorSetIds.length < 4, 'too many descriptor set for one draw call, you can use 3 at most.');
 
-        // creates layout bindings and fill bindingMap.
+        const layoutBindings: Record<number, DescriptorSetLayoutBinding[]> = descriptorSetIds.map((id) => []);
+        const reg = '[^a-zA-Z\\d\\:_]';
+
+        for (const block of info.blocks || []) {
+            const bindings = layoutBindings[block.set];
+            let shaderStageFlag = ShaderStageFlagBit.NONE;
+            const descriptorType = DescriptorType.UNIFORM_BUFFER
+                | (block.dynamic ? DescriptorType.DYNAMIC_UNIFORM_BUFFER : DescriptorType.UNKNOWN);
+
+            const blockUniforms: Uniform[] = [];
+
+            for (const member of block.members) {
+                const memberRegex = new RegExp(`${reg}${member.name}${reg}`, `g`);
+                let exist = false;
+
+                if (info.vert.search(memberRegex) !== -1) {
+                    shaderStageFlag |= ShaderStageFlagBit.VERTEX;
+                    exist = true;
+                }
+                if (info.frag.search(memberRegex) !== -1) {
+                    shaderStageFlag |= ShaderStageFlagBit.FRAGMENT;
+                    exist = true;
+                }
+                if (exist) {
+                    blockUniforms.push(new Uniform(member.name, member.type, member.count));
+                }
+            }
+
+            if (blockUniforms.length > 0) {
+                shaderBlocks.push(new UniformBlock(
+                    block.set,
+                    bindings.length,
+                    block.name,
+                    blockUniforms,
+                    1,
+                ));
+                bindings.push(new DescriptorSetLayoutBinding(
+                    bindings.length,
+                    descriptorType,
+                    1,
+                    shaderStageFlag,
+                ));
+            }
+        }
+
+        for (const samplerTexture of info.samplerTextures || []) {
+            const bindings = layoutBindings[samplerTexture.set];
+            const regex = new RegExp(`${reg}${samplerTexture.name}${reg}`, `g`);
+            let shaderStageFlag = ShaderStageFlagBit.NONE;
+            if (info.frag.search(regex)) shaderStageFlag |= ShaderStageFlagBit.FRAGMENT;
+            if (info.vert.search(regex)) shaderStageFlag |= ShaderStageFlagBit.VERTEX;
+
+            if (shaderStageFlag === ShaderStageFlagBit.NONE) continue;
+            samplerTextures.push(new UniformSamplerTexture(
+                samplerTexture.set,
+                bindings.length,
+                samplerTexture.name,
+                samplerTexture.type,
+                samplerTexture.count || 1,
+            ));
+            // immutableSampler?
+            bindings.push(new DescriptorSetLayoutBinding(
+                bindings.length,
+                DescriptorType.SAMPLER_TEXTURE,
+                1,
+                shaderStageFlag,
+            ));
+        }
+
+        for (const block of shaderBlocks || []) {
+            let offset = 0;
+            for (const member of block.members) {
+                this._propertyMap[member.name] = genHandle(
+                    block.set,
+                    block.binding,
+                    member.type,
+                    member.count || 1,
+                    offset,
+                );
+                TestBase.assert(GetTypeSize(member.type) >= GetTypeSize(Type.UINT4) || (member.count || 1) <= 1,
+                    `the width of ${TypeInfos[member.type].glslName} will be like vec4 in glsl std140, don't use array`);
+                // convert unit to int/float/uint
+                offset += (TypeInfos[member.type].size >> 2) * (member.count || 1);
+            }
+        }
+
+        for (const samplerTexture of samplerTextures) {
+            this._propertyMap[samplerTexture.name] = genHandle(
+                samplerTexture.set,
+                samplerTexture.binding,
+                samplerTexture.type,
+                samplerTexture.count || 1,
+            );
+        }
+
         for (const descriptorSetId of descriptorSetIds) {
-            let i = 0;
-            const bindings: DescriptorSetLayoutBinding[] = [];
-            const blocks = info.blocks?.filter((block) => block.set === descriptorSetId) || [];
-            const textures = info.samplerTextures?.filter((texture) => texture.set === descriptorSetId) || [];
+            const blocks = shaderBlocks?.filter((block) => block.set === descriptorSetId) || [];
+            const textures = samplerTextures?.filter((texture) => texture.set === descriptorSetId) || [];
 
-            for (const block of blocks) {
-                let shaderStageFlag = ShaderStageFlagBit.NONE;
-                let offset = 0;
-                const descriptorType = DescriptorType.UNIFORM_BUFFER
-                    | (block.dynamic ? DescriptorType.DYNAMIC_UNIFORM_BUFFER : DescriptorType.UNKNOWN);
-                const blockUniforms: Uniform[] = [];
+            TestBase.assert(blocks.length < TEST_UBO_COUNTS[descriptorSetId] || TEST_UBO_COUNTS[descriptorSetId] === -1,
+                `too many UBOs in set ${descriptorSetId}, only ${TEST_UBO_COUNTS[descriptorSetId]} seats exist.`);
+            TestBase.assert(blocks.length < 8 && TEST_UBO_COUNTS[descriptorSetId] !== -1,
+                `too many UBOs in set ${descriptorSetId}, only ${TEST_UBO_COUNTS[descriptorSetId]} seats exist.`);
 
-                for (const member of block.members) {
-                    const memberRegex = new RegExp(`( |\t)${member.name}( |;|,|\n)`, `g`);
-                    let exist = false;
+            TestBase.assert(textures.length < TEST_SAMPLER_COUNTS[descriptorSetId] || TEST_SAMPLER_COUNTS[descriptorSetId] === -1,
+                `too many UBOs in set ${descriptorSetId}, only ${TEST_SAMPLER_COUNTS[descriptorSetId]} seats exist.`);
+            TestBase.assert(textures.length < 8 && TEST_SAMPLER_COUNTS[descriptorSetId] !== -1,
+                `too many UBOs in set ${descriptorSetId}, only ${TEST_SAMPLER_COUNTS[descriptorSetId]} seats exist.`);
 
-                    if (info.vert.search(memberRegex) !== -1) {
-                        shaderStageFlag |= ShaderStageFlagBit.VERTEX;
-                        exist = true;
-                    }
-                    if (info.frag.search(memberRegex) !== -1) {
-                        shaderStageFlag |= ShaderStageFlagBit.FRAGMENT;
-                        exist = true;
-                    }
-                    if (exist) {
-                        this._propertyMap[member.name] = genHandle(descriptorSetId, bindings.length, member.type, member.count || 1, offset);
-                        // no bit shift needed
-                        if ((GetTypeSize(member.type) < GetTypeSize(Type.UINT4)) && (member.count || 1) > 1) {
-                            TestBase.assert(false,
-                                `the width of ${TypeInfos[member.type].glslName} will be like vec4 in glsl std140, don't use array`);
-                        }
-                        offset += (GetTypeSize(member.type) >> 2) * (member.count || 1);
-                        blockUniforms.push(new Uniform(member.name, member.type, member.count));
-                    }
-                }
-
-                if (shaderStageFlag !== ShaderStageFlagBit.NONE) {
-                    bindings.push(new DescriptorSetLayoutBinding(
-                        bindings.length,
-                        descriptorType,
-                        1,
-                        shaderStageFlag,
-                    ));
-                    shaderBlocks.push(new UniformBlock(
-                        block.set,
-                        i++,
-                        block.name,
-                        blockUniforms,
-                        1,
-                    ));
-                }
-            }
-            for (const samplerTexture of textures) {
-                if (samplerTexture.set === descriptorSetId) {
-                    const regex = new RegExp(`( |\t)${samplerTexture.name}( |;|,|\n)`, `g`);
-                    if (info.frag.search(regex)) {
-                        this._propertyMap[samplerTexture.name] = genHandle(descriptorSetId,
-                            bindings.length, samplerTexture.type, samplerTexture.count || 1);
-                        // offset ?????
-                        bindings.push(new DescriptorSetLayoutBinding(bindings.length, DescriptorType.SAMPLER_TEXTURE, 1));
-                        samplerTextures.push(new UniformSamplerTexture(
-                            samplerTexture.set,
-                            i++,
-                            samplerTexture.name,
-                            samplerTexture.type,
-                            samplerTexture.count || 1,
-                        ));
-                    }
-                }
-            }
-            descriptorSetLayouts.push(TestBase.device.createDescriptorSetLayout(new DescriptorSetLayoutInfo(bindings)));
+            descriptorSetLayouts.push(TestBase.device.createDescriptorSetLayout(
+                new DescriptorSetLayoutInfo(layoutBindings[descriptorSetId]),
+            ));
         }
 
         // set vertex buffer attributes
-        for (const streamId of streamIds) {
-            let i = 0;
-            for (const attribute of info.attributes || []) {
-                const regex = new RegExp(`( |\t)${attribute.name}( |;|,|\n)`, `g`);
-                if (info.vert.search(regex) && (attribute.stream || 0) === streamId) {
-                    shaderAttributes.push(new Attribute(
-                        attribute.name,
-                        attribute.format,
-                        attribute.isNormalized,
-                        attribute.stream,
-                        attribute.isInstanced,
-                        i++,
-                    ));
-                }
-            }
+        const attributeLocations: Record<number, number> = streamIds.map((id) => 0);
+        for (const attribute of info.attributes || []) {
+            const regex = new RegExp(`${reg}${attribute.name}${reg}`, `g`);
+            if (!info.vert.search(regex)) continue;
+            shaderAttributes.push(new Attribute(
+                attribute.name,
+                attribute.format,
+                attribute.isNormalized,
+                attribute.stream || 0,
+                attribute.isInstanced,
+                attributeLocations[attribute.stream || 0]++,
+            ));
         }
 
         // generate shader sources
         const generator = new SourceGenerator(TestBase.device.gfxAPI);
         const shaderSources: IStandardShaderSource = generator.genShaderSource(
+            info.name,
+            info.vert, info.frag,
+            info.extensions || [],
             shaderAttributes,
             shaderBlocks,
             samplerTextures,
             info.varyings || [],
-            info.vert, info.frag,
+            info.attachments || 1,
             descriptorSetLayouts,
         );
 
@@ -336,7 +399,7 @@ export class Program {
         ));
 
         this._layout = TestBase.device.createPipelineLayout(new PipelineLayoutInfo(descriptorSetLayouts));
-        this._pipelineState = new Map<number, PipelineState>();
+        this._pipelineStateMap = new Map<number, PipelineState>();
         this._currentPipelineState = null!;
         this.setPipelineState(info.defaultStates || {});
     }
@@ -375,10 +438,14 @@ export class Program {
     getHandle (name: string, offset = 0, type = Type.UNKNOWN, arrayIdx = 0): IProgramHandle {
         let handle = this._propertyMap[name];
         if (!handle) { return 0 as unknown as IProgramHandle; }
+        const memberType = getTypeFromHandle(handle);
         if (type) {
             handle = customizeType(handle, type);
         } else if (offset) {
             handle = customizeType(handle, getTypeFromHandle(handle) - offset);
+        }
+        if (arrayIdx > 0) {
+            handle += arrayIdx * (TypeInfos[memberType].size / 4);
         }
         handle += offset;
         return handle as unknown as IProgramHandle;
@@ -388,8 +455,8 @@ export class Program {
     setPipelineState (info: IPipelineStateInfo) {
         const stateHash = hashObject(info);
 
-        if (!this._pipelineState.has(stateHash)) {
-            this._currentPipelineState = TestBase.device.createPipelineState(new PipelineStateInfo(
+        if (!this._pipelineStateMap.has(stateHash)) {
+            this._pipelineStateMap.set(stateHash, TestBase.device.createPipelineState(new PipelineStateInfo(
                 this._shader,
                 this._layout,
                 TestBase.defaultRenderPass,
@@ -398,23 +465,29 @@ export class Program {
                 info.depthStencilState,
                 info.blendState,
                 info.primitive,
-            ));
-            this._pipelineState.set(stateHash, this._currentPipelineState);
+            )));
         }
+        this._currentPipelineState = this._pipelineStateMap.get(stateHash)!;
     }
 
-    draw (commandBuffer: CommandBuffer, bindings: ProgramBindings, inputs: ProgramInputs) {
+    draw (commandBuffer: CommandBuffer, bindings: ProgramBindings, inputs: ProgramInputs, instance?: number | undefined) {
         TestBase.assert(!!this._currentPipelineState, `no pipelineState specified`);
         commandBuffer.bindPipelineState(this._currentPipelineState);
-        for (let i = 0; i < bindings.descriptorSets.length; i++) {
-            commandBuffer.bindDescriptorSet(i, bindings.descriptorSets[i]);
+
+        if (instance === undefined) {
+            bindings.descriptorSets.map((descriptorSet, index) => commandBuffer.bindDescriptorSet(index, descriptorSet));
+        } else {
+            for (let i = 0; i < bindings.descriptorSets.length; i++) {
+                const offsets = bindings.dynamicOffsets[i].map((offset) => offset * instance);
+                commandBuffer.bindDescriptorSet(i, bindings.descriptorSets[i], offsets);
+            }
         }
         commandBuffer.bindInputAssembler(inputs.inputAssembler);
         commandBuffer.draw(inputs.inputAssembler);
     }
 }
 
-type ProgramBindingProperties = IMat4Like | IVec4Like | IVec2Like | number | boolean;
+type ProgramBindingProperties = IMat4Like | IVec4Like | IVec3Like | IVec2Like | number | boolean;
 
 type UniformWriter = (a: Int32Array | Float32Array, v: ProgramBindingProperties, idx?: number) => void;
 
@@ -423,9 +496,11 @@ const type2writer: Record<Type, UniformWriter> = {
     [Type.UNKNOWN]: ((a: Int32Array, v: number, idx = 0): void => { console.warn('illegal uniform handle'); }) as UniformWriter,
     [Type.INT]: ((a: Int32Array, v: number, idx = 0): void => { a[idx] = v; }) as UniformWriter,
     [Type.INT2]: ((a: Int32Array, v: IVec2Like, idx = 0): void => { Vec2.toArray(a, v, idx); }) as UniformWriter,
+    [Type.INT3]: ((a: Int32Array, v: IVec3Like, idx = 0): void => { Vec3.toArray(a, v, idx); }) as UniformWriter,
     [Type.INT4]: ((a: Int32Array, v: IVec4Like, idx = 0): void => { Vec4.toArray(a, v, idx); }) as UniformWriter,
     [Type.FLOAT]: ((a: Float32Array, v: number, idx = 0): void => { a[idx] = v; }) as UniformWriter,
     [Type.FLOAT2]: ((a: Float32Array, v: IVec2Like, idx = 0): void => { Vec2.toArray(a, v, idx); }) as UniformWriter,
+    [Type.FLOAT3]: ((a: Float32Array, v: IVec3Like, idx = 0): void => { Vec3.toArray(a, v, idx); }) as UniformWriter,
     [Type.FLOAT4]: ((a: Float32Array, v: IVec4Like, idx = 0): void => { Vec4.toArray(a, v, idx); }) as UniformWriter,
     [Type.MAT4]: ((a: Float32Array, v: IMat4Like, idx = 0): void => { Mat4.toArray(a, v, idx); }) as UniformWriter,
 };
@@ -434,17 +509,17 @@ export class ProgramBindings {
     descriptorSets: DescriptorSet[] = [];
     currentInstance = 0;
     maxInstanceCount = 0;
+    dynamicOffsets: Record<number, number[]> = [];
 
-    private _rootBuffer: Buffer;
-    private _rootBlock: ArrayBuffer;
-    private _rootBufferDirty = false;
+    private _rootBuffers: Buffer[] = [];
+    private _rootBlocks: ArrayBuffer[] = [];
+    private _rootBufferDirties: boolean[] = [];
 
-    private _uniformBuffers: Buffer[] = [];
-    private _blocks: Float32Array[] = [];
-    private _blockSizes: number[] = [];
-    private _bindings: Record<number, number[]> = [];
+    private _blocks: Record<number, Float32Array[]> = [];
+    private _blockSizes: Record<number, number[]> = [];
 
-    private _samplerBuffers: Buffer[] = [];
+    private _uniformBuffers: Record<number, Buffer[]> = [];
+    private _samplerBuffers: Record<number, Buffer[]> = [];
 
     constructor (program: Program, info: IProgramBindingInfo) {
         // @ts-expect-error(2341) friend class access
@@ -456,75 +531,102 @@ export class ProgramBindings {
             (setLayout) => TestBase.device.createDescriptorSet(new DescriptorSetInfo(setLayout)),
         );
         for (let i = 0; i < layout.setLayouts.length; i++) {
-            this._bindings[i] = [];
+            this._blocks[i] = [];
+            this._blockSizes[i] = [];
+            this._uniformBuffers[i] = [];
+            this._samplerBuffers[i] = [];
+            this.dynamicOffsets[i] = [];
         }
 
         // calculate total size
-        const startOffsets: number[] = [];
+        const startOffsets: number[][] = [];
         const alignment = TestBase.device.capabilities.uboOffsetAlignment;
-        let lastOffset = 0; let lastSize = 0;
-        for (const block of shader.blocks) {
-            startOffsets.push(lastOffset);
-            lastSize = block.members.reduce((pv, cv) => (pv + TypeInfos[cv.type].size) * (cv.count || 1), 0);
-            lastSize *= (layout.setLayouts[block.set].bindings[block.binding].descriptorType & DescriptorType.DYNAMIC_UNIFORM_BUFFER)
-                ? this.maxInstanceCount : 1;
-            this._blockSizes.push(lastSize);
-            lastOffset += Math.ceil(lastSize / alignment) * alignment;
+
+        for (let set = 0; set < this.descriptorSets.length; set++) {
+            startOffsets.push([]);
+            let lastOffset = 0; let lastSize = 0;
+            for (const block of shader.blocks) {
+                if (block.set !== set) continue;
+                const binding = block.binding;
+                const isDynamic = layout.setLayouts[set].bindings[binding].descriptorType & DescriptorType.DYNAMIC_UNIFORM_BUFFER;
+                startOffsets[set][binding] = (lastOffset);
+                lastSize = block.members.reduce((pv, cv) => (pv + TypeInfos[cv.type].size) * (cv.count || 1), 0);
+                lastSize = Math.ceil(lastSize / alignment) * alignment;
+                this._blockSizes[set].push(lastSize);
+                if (isDynamic) this.dynamicOffsets[set].push(lastSize);
+                if (isDynamic) lastSize *= this.maxInstanceCount;
+                lastOffset += lastSize;
+            }
+            // create gfx buffer
+            const rootSize = lastOffset;
+            const bufferInfo = new BufferInfo(
+                BufferUsageBit.UNIFORM | BufferUsageBit.TRANSFER_DST,
+                MemoryUsageBit.DEVICE,
+            );
+            bufferInfo.size = Math.ceil(rootSize / 16) * 16;
+            this._rootBuffers.push(TestBase.device.createBuffer(bufferInfo));
+            this._rootBlocks.push(new ArrayBuffer(rootSize));
         }
-        // create gfx buffer
-        const rootSize = startOffsets[shader.blocks.length - 1] + lastSize;
-        const bufferInfo = new BufferInfo(
-            BufferUsageBit.UNIFORM | BufferUsageBit.TRANSFER_DST,
-            MemoryUsageBit.DEVICE,
-        );
-        bufferInfo.size = Math.ceil(rootSize / 16) * 16;
-        this._rootBuffer = TestBase.device.createBuffer(bufferInfo);
-        this._rootBlock = new ArrayBuffer(rootSize);
 
         // create buffer views
-        const bufferViewInfo = new BufferViewInfo();
         for (let i = 0; i < shader.blocks.length; i++) {
-            const size = this._blockSizes[i];
-            const block = shader.blocks[i];
-            bufferViewInfo.buffer = this._rootBuffer;
-            bufferViewInfo.offset = startOffsets[i];
-            bufferViewInfo.range = Math.ceil(size / 16) * 16;
-            const bufferView = this._uniformBuffers[i] = TestBase.device.createBuffer(bufferViewInfo);
-            this._blocks.push(new Float32Array(this._rootBlock, bufferViewInfo.offset,
-                size / Float32Array.BYTES_PER_ELEMENT));
+            const set = shader.blocks[i].set;
+            const binding = shader.blocks[i].binding;
+            const isDynamic = layout.setLayouts[set].bindings[binding].descriptorType & DescriptorType.DYNAMIC_UNIFORM_BUFFER;
 
-            this._bindings[block.set].push(i);
-            this.descriptorSets[block.set].bindBuffer(block.binding, bufferView);
+            let size = this._blockSizes[set][binding];
+            if (isDynamic) size *= this.maxInstanceCount;
+
+            const bufferViewInfo = new BufferViewInfo(
+                this._rootBuffers[set],
+                startOffsets[set][binding],
+                size,
+            );
+            const bufferView = this._uniformBuffers[set][binding] = TestBase.device.createBuffer(bufferViewInfo);
+
+            this._blocks[set][binding] = new Float32Array(
+                this._rootBlocks[set],
+                bufferViewInfo.offset,
+                size / Float32Array.BYTES_PER_ELEMENT,
+            );
+
+            this.descriptorSets[set].bindBuffer(binding, bufferView);
         }
     }
 
     destroy () {
         this.descriptorSets.map((descriptorSet) => descriptorSet.destroy());
 
-        this._uniformBuffers.map((buffer) => buffer.destroy());
-
-        this._samplerBuffers.map((samplerBuffer) => samplerBuffer.destroy());
-
-        this._rootBuffer.destroy();
+        const length = this.descriptorSets.length;
+        for (let i = 0; i < length; i++) {
+            this.descriptorSets[i].destroy();
+            this._uniformBuffers[i].map((buffer) => buffer.destroy());
+            this._samplerBuffers[i].map((samplerBuffer) => samplerBuffer.destroy());
+            this._rootBuffers[i].destroy();
+        }
     }
 
     // pass -1 as idx to apply to all applicable fields
     setUniform (handle: IProgramHandle, v: ProgramBindingProperties, instanceIdx = 0) {
+        if (instanceIdx === -1) {
+            for (let i = 0; i < this.maxInstanceCount; i++) {
+                this.setUniform(handle, v, i);
+            }
+        }
         const handleNum = handle as unknown as number;
         const setId = getSetFromHandle(handleNum);
         const bindingId = getBindingFromHandle(handleNum);
         const type = getTypeFromHandle(handleNum);
-        const idx = this._bindings[setId][bindingId];
-        const blockWidth = this._blockSizes[idx];
-        const count = getCountFromHandle(handleNum);
-        const offset = instanceIdx * blockWidth // instance offset
-                    + getOffsetFromHandle(handleNum); // value offset
+        const blockWidth = this._blockSizes[setId][bindingId] / Float32Array.BYTES_PER_ELEMENT;
 
-        const block = this._blocks[idx];
-        // write data
+        const offset = (instanceIdx * blockWidth) // instance offset
+            + getOffsetFromHandle(handleNum); // value offset
+        const block = this._blocks[setId][bindingId];
+        TestBase.assert(block.length > offset, 'memory error');
         // @ts-expect-error(7053) restrict type check
         type2writer[type](block, v, offset);
-        this._rootBufferDirty = true;
+
+        this._rootBufferDirties[setId] = true;
     }
 
     setUniformArray (handle: IProgramHandle, v: ProgramBindingProperties[], instanceIdx = 0) {
@@ -533,26 +635,34 @@ export class ProgramBindings {
         const bindingId = getBindingFromHandle(handleNum);
         const type = getTypeFromHandle(handleNum);
         const stride = TypeInfos[type].size;
-        const idx = this._bindings[setId][bindingId];
-        const blockWidth = this._blockSizes[idx];
-        let offset = instanceIdx * blockWidth // instance offset
+        const blockWidth = this._blockSizes[setId][bindingId] / Float32Array.BYTES_PER_ELEMENT;
+        let offset = (instanceIdx * blockWidth) // instance offset
             + getOffsetFromHandle(handleNum); // value offset
+
+        const block = this._blocks[setId][bindingId];
         // write data
-        const block = this._blocks[idx];
         for (let i = 0; i < v.length; i++, offset += stride) {
             if (v[i] === null) continue;
             // @ts-expect-error(7053) restrict type check
             type2writer[type](block, v, offset);
         }
-        this._rootBufferDirty = true;
+        this._rootBufferDirties[setId] = true;
     }
 
     setSampler (handle: IProgramHandle, v: Sampler, arrayIdx = 0) {
-        this._rootBufferDirty = true;
+        const handleNum = handle as unknown as number;
+        const setId = getSetFromHandle(handleNum);
+        const bindingId = getBindingFromHandle(handleNum);
+        this.descriptorSets[setId].bindSampler(bindingId, v, arrayIdx);
+        this._rootBufferDirties[setId] = true;
     }
 
     setTexture (handle: IProgramHandle, v: Texture, arrayIdx = 0) {
-        this._rootBufferDirty = true;
+        const handleNum = handle as unknown as number;
+        const setId = getSetFromHandle(handleNum);
+        const bindingId = getBindingFromHandle(handleNum);
+        this.descriptorSets[setId].bindTexture(bindingId, v, arrayIdx);
+        this._rootBufferDirties[setId] = true;
     }
 
     nextInstance (currentInstance: number): number {
@@ -562,14 +672,15 @@ export class ProgramBindings {
 
     update () {
         TestBase.assert(this.descriptorSets.length !== 0, 'at least one descriptor set is required');
-        TestBase.assert(!!this._rootBlock, '_rootBlock is not valid');
-        TestBase.assert(!!this._rootBuffer, '_rootBuffer is not valid');
-        if (this._rootBufferDirty && this._rootBuffer) {
-            this._rootBuffer.update(this._rootBlock);
-            this._rootBufferDirty = false;
-        }
-        for (const descriptorSet of this.descriptorSets) {
-            descriptorSet.update();
+
+        for (let i = 0; i < this.descriptorSets.length; i++) {
+            TestBase.assert(!!this._rootBlocks[i], '_rootBlock is not valid');
+            TestBase.assert(!!this._rootBuffers[i], '_rootBuffer is not valid');
+            if (this._rootBufferDirties[i] && this._rootBuffers[i]) {
+                this._rootBuffers[i].update(this._rootBlocks[i]);
+                this._rootBufferDirties[i] = false;
+            }
+            this.descriptorSets[i].update();
         }
     }
 }

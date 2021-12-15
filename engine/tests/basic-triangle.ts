@@ -1,7 +1,7 @@
-import { Color, DrawInfo, Format, IndirectBuffer, ShaderStageFlagBit, Type } from 'gfx/base/define';
-import { NULL_HANDLE, Program, ProgramBindings, ProgramInputs } from '../chassis';
+import { Color, CullMode, DrawInfo, Format, IndirectBuffer, PolygonMode, PrimitiveMode, ShadeModel, ShaderStageFlagBit, Type } from 'gfx/base/define';
+import { NULL_HANDLE, Program, ProgramBindings, ProgramInputs, IPipelineStateInfo } from '../chassis';
 import { TestBase } from '../test-base';
-import { Vec4 } from '../math';
+import { Vec4, Vec3, Mat4 } from '../math';
 
 export class BasicTriangle extends TestBase {
     private _program: Program;
@@ -9,9 +9,8 @@ export class BasicTriangle extends TestBase {
     private _inputs: ProgramInputs;
 
     private _clearColor = new Color(1, 0, 0, 1);
-    private _colorHandle = NULL_HANDLE;
+    private _colorHandles = [NULL_HANDLE];
     private _matrixHandle = NULL_HANDLE;
-
     constructor () {
         super();
 
@@ -19,20 +18,31 @@ export class BasicTriangle extends TestBase {
             name: 'Basic Triangle',
             vert: `
                 vec4 vert() {
-                    return u_mvp * vec4(a_position, 0.0, 1.0);
+                    frag_color = vec4(in_color, 1.0);
+                    return  u_mvp * vec4(in_position, 0.0, 1.0);
                 }
             `,
             frag: `
-                vec4 frag() {
-                    return u_color;
+                void frag(out FragColor o) {
+                    o.fragColor0 = vec4(u_color[0].x, u_color[1].y, u_color[2].z, 1.0);
                 }
             `,
             attributes: [
-                { name: 'a_position', format: Format.RG32F },
+                { name: 'in_position', format: Format.RG32F, stream: 0 },
+                { name: 'in_color', format: Format.RGB32F, stream: 1 },
             ],
             blocks: [
-                { name: 'Color', members: [{ name: 'u_color', type: Type.FLOAT4 }], set: 0 },
                 { name: 'MVP', members: [{ name: 'u_mvp', type: Type.MAT4 }], set: 0 },
+                {
+                    name: 'Color',
+                    members: [
+                        { name: 'u_color', type: Type.FLOAT4, count: 3 },
+                    ],
+                    set: 0,
+                },
+            ],
+            varyings: [
+                { name: 'frag_color', type: Type.FLOAT4 },
             ],
         });
         this._bindings = this._program.createBindings({});
@@ -43,22 +53,37 @@ export class BasicTriangle extends TestBase {
         });
 
         this._inputs.updateVertexBuffer(new Float32Array([
-            -0.5,  0.5,
+            -0.5, 0.5,
             -0.5, -0.5,
             0.5, -0.5,
-            0.0,  0.5,
-            0.5,  0.5,
-        ]));
+            0.0, 0.5,
+            0.5, 0.5,
+        ]), 0);
+        this._inputs.updateVertexBuffer(new Float32Array([
+            1, 0, 0,
+            1, 0, 0,
+            0, 1, 0,
+            0, 0, 1,
+            1, 0, 0,
+        ]), 1);
+
         this._inputs.updateIndexBuffer(new Uint16Array([1, 3, 0, 1, 2, 3, 2, 4, 3]));
         this._inputs.updateIndirectBuffer(new IndirectBuffer([new DrawInfo(0, 0, 3, 3)]));
 
-        this._bindings.setUniform(this._program.getHandle('u_color'), new Vec4(0, 1, 0, 1));
-        this._colorHandle = this._program.getHandle('u_color', 0, Type.FLOAT); // will only modify the x component
+        this._bindings.setUniform(this._program.getHandle('u_color', 0, Type.FLOAT4, 0), new Vec4(0, 0, 0, 1));
+        this._bindings.setUniform(this._program.getHandle('u_color', 0, Type.FLOAT4, 1), new Vec4(0, 0, 0, 1));
+        this._bindings.setUniform(this._program.getHandle('u_color', 0, Type.FLOAT4, 2), new Vec4(0, 0, 0, 1));
+        this._colorHandles[0] = this._program.getHandle('u_color', 0, Type.FLOAT, 0); // will only modify the x component
+        this._colorHandles[1] = this._program.getHandle('u_color', 1, Type.FLOAT, 1); // will only modify the x component
+        this._colorHandles[2] = this._program.getHandle('u_color', 2, Type.FLOAT, 2); // will only modify the x component
         this._matrixHandle = this._program.getHandle('u_mvp');
     }
 
     public onTick () {
-        this._bindings.setUniform(this._colorHandle, Math.abs(Math.sin(TestBase.cumulativeTime)));
+        this._bindings.setUniform(this._colorHandles[0], Math.abs(Math.sin(TestBase.cumulativeTime)));
+        this._bindings.setUniform(this._colorHandles[1], Math.abs(Math.sin(TestBase.cumulativeTime)));
+        this._bindings.setUniform(this._colorHandles[2], Math.abs(Math.sin(TestBase.cumulativeTime)));
+
         this._bindings.setUniform(this._matrixHandle, TestBase._getOrthographicMat4(-1, 1, -1, 1, -1, 1));
         this._bindings.update();
 

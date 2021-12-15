@@ -3,22 +3,32 @@ import {
     API, UniformSamplerTexture,
 } from 'gfx/base/define';
 import { DescriptorSetLayout } from 'gfx/base/descriptor-set-layout';
-import { IShaderVaryings, TypeInfos } from './chassis';
+import { IShaderVaryings, TypeInfos, IShaderExtension, IShaderExtensionType, IShaderExtensionTypeName } from './chassis';
 import { IStandardShaderSource } from './test-base';
 
 export class SourceGenerator {
+    private _shaderFragOut = `
+    struct FragColor {
+        vec4 fragColor0;
+        vec4 fragColor1;
+        vec4 fragColor2;
+        vec4 fragColor3;
+    };`;
+
     private _genShaderHeaders: (source: IStandardShaderSource) => void;
+    private _genShaderExtension: (extension: IShaderExtension) => string;
     private _genShaderVBO: (attribute: Attribute) =>  string;
     private _genShaderUBO: (block: UniformBlock) => string;
     private _genShaderSampler: (sampler: UniformSamplerTexture) => string;
     private _genShaderVarying: (varying: IShaderVaryings, loc: number, source: IStandardShaderSource) => void;
-    private _genShaderBody: (vert: string, frag: string, source: IStandardShaderSource) => void;
+    private _genShaderBody: (vert: string, frag: string, source: IStandardShaderSource, attachment: number) => void;
 
     constructor (api: API) {
         switch (api) {
         case API.WEBGL:
         case API.GLES2:
             this._genShaderHeaders = this._genShaderHeaders1;
+            this._genShaderExtension = this._genShaderExtension1;
             this._genShaderVBO = this._genShaderVBO1;
             this._genShaderUBO = this._genShaderUBO1;
             this._genShaderSampler = this._genShaderSampler1;
@@ -28,9 +38,10 @@ export class SourceGenerator {
         case API.WEBGL2:
         case API.GLES3:
             this._genShaderHeaders = this._genShaderHeaders3;
+            this._genShaderExtension = this._genShaderExtension1;
             this._genShaderVBO = this._genShaderVBO3;
             this._genShaderUBO = this._genShaderUBO3;
-            this._genShaderVarying = this._genShaderVarying4;
+            this._genShaderVarying = this._genShaderVarying3;
             this._genShaderSampler = this._genShaderSampler3;
             this._genShaderBody = this._genShaderBody3;
             break;
@@ -38,6 +49,7 @@ export class SourceGenerator {
         case API.VULKAN:
         default:
             this._genShaderHeaders = this._genShaderHeaders4;
+            this._genShaderExtension = this._genShaderExtension1;
             this._genShaderVBO = this._genShaderVBO4;
             this._genShaderUBO = this._genShaderUBO4;
             this._genShaderVarying = this._genShaderVarying4;
@@ -47,10 +59,25 @@ export class SourceGenerator {
         }
     }
 
-    public genShaderSource (attributes: Attribute[], blocks: UniformBlock[],
-        samplerTextures: UniformSamplerTexture[], varyings: IShaderVaryings[], vert: string, frag: string,
-        descriptorSetLayouts: DescriptorSetLayout[]): IStandardShaderSource {
+    public genShaderSource (
+        name: string,
+        vert: string,
+        frag: string,
+        extensions: IShaderExtension[],
+        attributes: Attribute[],
+        blocks: UniformBlock[],
+        samplerTextures: UniformSamplerTexture[],
+        varyings: IShaderVaryings[],
+        attachments: number,
+        descriptorSetLayouts: DescriptorSetLayout[],
+    ): IStandardShaderSource {
         const source: IStandardShaderSource = { vert: '', frag: '' };
+
+        // Extensions
+        for (const extension of extensions) {
+            source.vert += this._genShaderExtension(extension);
+            source.frag += this._genShaderExtension(extension);
+        }
 
         // header and vertex attribute
         this._genShaderHeaders(source);
@@ -79,7 +106,7 @@ export class SourceGenerator {
         }
 
         // functions
-        this._genShaderBody(vert, frag, source);
+        this._genShaderBody(vert, frag, source, attachments);
         return source;
     }
 
@@ -96,15 +123,19 @@ export class SourceGenerator {
         source.frag += `precision highp float;\n`;
     }
 
+    private _genShaderExtension1 (extension: IShaderExtension): string {
+        return `#extension ${extension.name}: ${IShaderExtensionTypeName[extension.type]}\n`;
+    }
+
     private _genShaderVBO1 (attribute: Attribute) : string {
-        return `attribute vec${FormatInfos[attribute.format].count} ${attribute.name};`;
+        return `attribute vec${FormatInfos[attribute.format].count} ${attribute.name};\n`;
     }
     private _genShaderVBO3 (attribute: Attribute) : string {
-        return `in vec${FormatInfos[attribute.format].count} ${attribute.name};`;
+        return `in vec${FormatInfos[attribute.format].count} ${attribute.name};\n`;
     }
     private _genShaderVBO4 (attribute: Attribute) : string {
         return `layout(binding = ${attribute.stream}, location = ${attribute.location})`
-    + ` in vec${FormatInfos[attribute.format].count} ${attribute.name};`;
+    + ` in vec${FormatInfos[attribute.format].count} ${attribute.name};\n`;
     }
 
     private _genShaderVaryingNumObj (obj: Uniform | UniformSamplerTexture): string {
@@ -126,11 +157,11 @@ export class SourceGenerator {
             const member = block.members[0];
             source += `layout(std140) uniform ${block.name} { ${this._genShaderVaryingNumObj(member)} };\n`;
         } else {
-            source += `layout(std140) uniform ${block.name} {`;
+            source += `layout(std140) uniform ${block.name} {\n`;
             for (const member of block.members) {
                 source += `    ${this._genShaderVaryingNumObj(member)}\n`;
             }
-            source += `}\n`;
+            source += `};\n`;
         }
         return source;
     }
@@ -141,11 +172,11 @@ export class SourceGenerator {
             source += `layout(set = ${block.set}, binding = ${block.binding})`
         + ` uniform ${block.name} { ${this._genShaderVaryingNumObj(member)} };\n`;
         } else {
-            source += `layout(set = ${block.set}, binding = ${block.binding}) uniform ${block.name} {`;
+            source += `layout(set = ${block.set}, binding = ${block.binding}) uniform ${block.name} {\n`;
             for (const member of block.members) {
                 source += `    ${this._genShaderVaryingNumObj(member)}\n`;
             }
-            source += `}\n`;
+            source += `};\n`;
         }
         return source;
     }
@@ -161,8 +192,8 @@ export class SourceGenerator {
     }
 
     private _genShaderVarying1 (varying: IShaderVaryings, loc: number, source: IStandardShaderSource) : void {
-        source.vert += `varying out ${TypeInfos[varying.type].glslName} ${varying.name};\n`;
-        source.frag += `varying in ${TypeInfos[varying.type].glslName} ${varying.name};\n`;
+        source.vert += `varying ${TypeInfos[varying.type].glslName} ${varying.name};\n`;
+        source.frag += `varying ${TypeInfos[varying.type].glslName} ${varying.name};\n`;
     }
     private _genShaderVarying3 (varying: IShaderVaryings, loc: number, source: IStandardShaderSource) : void {
         source.vert += `out ${TypeInfos[varying.type].glslName} ${varying.name};\n`;
@@ -172,36 +203,57 @@ export class SourceGenerator {
         source.vert += `layout (location = ${loc}) out ${TypeInfos[varying.type].glslName} ${varying.name};\n`;
         source.frag += `layout (location = ${loc}) in ${TypeInfos[varying.type].glslName} ${varying.name};\n`;
     }
-    private _genShaderBody1 (vert: string, frag: string, source: IStandardShaderSource): void {
+    private _genShaderBody1 (vert: string, frag: string, source: IStandardShaderSource, attachments = 1): void {
         source.vert += `${vert}
             void main() {
                 gl_Position = vert();
             }`;
-        source.frag += `${frag}
+        source.frag += `
+            ${this._shaderFragOut}
+            ${frag}
             void main() {
-                gl_FragColor = u_color;
-            }`;
+                FragColor o;
+                frag(o);
+            `;
+        for (let i = 0; i < attachments; i++) {
+            source.frag += `    gl_FragColor${i} = o.fragColor${i};\n`;
+        }
+        source.frag += `}`;
     }
-    private _genShaderBody3 (vert: string, frag: string, source: IStandardShaderSource): void {
+    private _genShaderBody3 (vert: string, frag: string, source: IStandardShaderSource, attachments = 1): void {
         source.vert += `${vert}
             void main() {
                 gl_Position = vert();
             }`;
-        source.frag += `${frag}
-            out vec4 o_color;
+        source.frag += `${this._shaderFragOut}\n${frag}\n`;
+        for (let i = 0; i < attachments; i++) {
+            source.frag += `out vec4 o_color${i};\n`;
+        }
+        source.frag += `
             void main() {
-                o_color = u_color;
-            }`;
+                FragColor o;
+                frag(o);\n`;
+        for (let i = 0; i < attachments; i++) {
+            source.frag += `o_color${i} = o.fragColor${i};\n`;
+        }
+        source.frag += `}`;
     }
-    private _genShaderBody4 (vert: string, frag: string, source: IStandardShaderSource): void {
+    private _genShaderBody4 (vert: string, frag: string, source: IStandardShaderSource, attachments = 1): void {
         source.vert += `${vert}
             void main() {
                 gl_Position = vert();
             }`;
-        source.frag += `${frag}
-            layout (location = 0) out vec4 o_color;
+        source.frag += `${this._shaderFragOut}\n${frag}\n`;
+        for (let i = 0; i < attachments; i++) {
+            source.frag += `layout (location = ${i}) out vec4 o_color${i};\n`;
+        }
+        source.frag += `
             void main() {
-                o_color = u_color;
-            }`;
+                FragColor o;
+                frag(o);\n`;
+        for (let i = 0; i < attachments; i++) {
+            source.frag += `o_color${i} = o.fragColor${i};\n`;
+        }
+        source.frag += `}`;
     }
 }
