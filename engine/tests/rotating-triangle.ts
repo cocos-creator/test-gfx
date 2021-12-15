@@ -56,6 +56,7 @@ export class RotatingTriangle extends TestBase {
             varyings: [
                 { name: 'frag_color', type: Type.FLOAT4 },
             ],
+            attachments: 2,
         });
         this._bindings = this._program.createBindings({ maxInstanceCount: 2 });
         this._inputs = this._program.createInputs({

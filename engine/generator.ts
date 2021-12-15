@@ -112,7 +112,7 @@ export class SourceGenerator {
 
     private _genShaderHeaders1 (source: IStandardShaderSource) : void {
         source.vert += ``;
-        source.frag += `precision mediump float;\n`;
+        source.frag += `#extension GL_EXT_draw_buffers : require\nprecision mediump float;\n`;
     }
     private _genShaderHeaders3 (source: IStandardShaderSource) : void {
         source.vert += ``;
@@ -218,7 +218,8 @@ export class SourceGenerator {
         if (attachments === 1) {
             source.frag += `    gl_FragColor = o.fragColor;\n`;
         } else {
-            for (let i = 0; i < attachments; i++) {
+            source.frag += `    gl_FragData[0] = o.fragColor;\n`;
+            for (let i = 1; i < attachments; i++) {
                 source.frag += `    gl_FragData[${i}] = o.fragColor${i};\n`;
             }
         }
@@ -229,10 +230,10 @@ export class SourceGenerator {
             void main() {
                 gl_Position = vert();
             }`;
-        source.frag += `${this._shaderFragOut} \n${frag}
-            out vec4 o_color;`;
+        source.frag += `${this._shaderFragOut} \n${frag}\n`;
+        source.frag += `layout (location = 0) out vec4 o_color;\n`;
         for (let i = 1; i < attachments; i++) {
-            source.frag += `out vec4 o_color${i};\n`;
+            source.frag += `layout (location = ${i}) out vec4 o_color${i};\n`;
         }
         source.frag += `
             void main() {
@@ -249,8 +250,8 @@ export class SourceGenerator {
             void main() {
                 gl_Position = vert();
             }`;
-        source.frag += `${this._shaderFragOut}\n${frag}
-            layout (location = 0) out vec4 o_color;`;
+        source.frag += `${this._shaderFragOut}\n${frag}\n`;
+        source.frag += `layout (location = 0) out vec4 o_color;`;
         for (let i = 1; i < attachments; i++) {
             source.frag += `layout (location = ${i}) out vec4 o_color${i};\n`;
         }
