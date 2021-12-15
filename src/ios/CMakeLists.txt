@@ -30,7 +30,6 @@ set(ALL_FILES
     ${GFX_TESTCASE_HEADER}
     ${GFX_TESTCASE_SOURCE}
     ${APP_UI_RES}
-    ${CC_EXTERNAL_SOURCES}
     ${cc_common_res}
     )
 
@@ -40,10 +39,6 @@ if (USE_VULKAN)
     list(APPEND ALL_FILES ${LIB_MOLTEN_VK})
 elseif (USE_METAL)
     add_definitions("-DCC_USE_METAL")
-endif()
-
-if(COCOS_UNICODE)
-	add_definitions("-DUNICODE -D_UNICODE")
 endif()
 
 add_executable(${APP_NAME} ${ALL_FILES})
@@ -105,7 +100,6 @@ source_group(TREE ${COCOS_SRC_PATH}/base PREFIX "Header Files/base" FILES ${CC_B
 source_group(TREE ${COCOS_SRC_PATH}/base PREFIX "Source Files/base" FILES ${CC_BASE_SOURCES})
 source_group(TREE ${COCOS_SRC_PATH}/math PREFIX "Header Files/math" FILES ${CC_MATH_HEADERS})
 source_group(TREE ${COCOS_SRC_PATH}/math PREFIX "Source Files/math" FILES ${CC_MATH_SOURCES})
-source_group(TREE ${COCOS_EXTERNAL_PATH}/sources PREFIX "Header Files/external" FILES ${CC_EXTERNAL_SOURCES})
 
 # setup default flags
 target_compile_definitions(${APP_NAME} PUBLIC

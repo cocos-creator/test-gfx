@@ -1,1 +1,1 @@
-http-server web-desktop -o
+http-server ../.. -o gfx-test-case/engine/web-desktop/index.html

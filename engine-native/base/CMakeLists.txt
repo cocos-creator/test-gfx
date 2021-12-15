@@ -18,26 +18,66 @@ set(PLATFORM_SUPPORT_SOURCE
   ${COCOS_SRC_PATH}/platform/SAXParser.cpp
   ${COCOS_SRC_PATH}/platform/FileUtils.h
   ${COCOS_SRC_PATH}/platform/FileUtils.cpp
-  ${COCOS_SRC_PATH}/platform/Device.h
-  ${COCOS_SRC_PATH}/platform/Application.h
+  ${COCOS_SRC_PATH}/platform/BasePlatform.h
+  ${COCOS_SRC_PATH}/platform/BasePlatform.cpp
+  ${COCOS_SRC_PATH}/platform/UniversalPlatform.h
+  ${COCOS_SRC_PATH}/platform/UniversalPlatform.cpp
+  ${COCOS_SRC_PATH}/platform/interfaces/modules/Device.cpp
+  ${COCOS_SRC_PATH}/platform/interfaces/modules/Device.h
+  ${COCOS_SRC_PATH}/platform/interfaces/modules/IAccelerometer.cpp
+  ${COCOS_SRC_PATH}/platform/interfaces/modules/IAccelerometer.h
+  ${COCOS_SRC_PATH}/platform/interfaces/modules/IBattery.cpp
+  ${COCOS_SRC_PATH}/platform/interfaces/modules/IBattery.h
+  ${COCOS_SRC_PATH}/platform/interfaces/modules/IScreen.cpp
+  ${COCOS_SRC_PATH}/platform/interfaces/modules/IScreen.h
+  ${COCOS_SRC_PATH}/platform/interfaces/modules/INetwork.cpp
+  ${COCOS_SRC_PATH}/platform/interfaces/modules/INetwork.h
+  ${COCOS_SRC_PATH}/platform/interfaces/modules/ISystem.cpp
+  ${COCOS_SRC_PATH}/platform/interfaces/modules/ISystem.h
+  ${COCOS_SRC_PATH}/platform/interfaces/modules/ISystemWindow.cpp
+  ${COCOS_SRC_PATH}/platform/interfaces/modules/ISystemWindow.h
+  ${COCOS_SRC_PATH}/platform/interfaces/modules/IVibrator.cpp
+  ${COCOS_SRC_PATH}/platform/interfaces/modules/IVibrator.h
+  ${COCOS_SRC_PATH}/platform/interfaces/OSInterface.cpp
+  ${COCOS_SRC_PATH}/platform/interfaces/OSInterface.h
+  ${COCOS_SRC_PATH}/platform/interfaces/OSInterfaceManager.cpp
+  ${COCOS_SRC_PATH}/platform/interfaces/OSInterfaceManager.h
+  ${COCOS_SRC_PATH}/application/ApplicationManager.h
+  ${COCOS_SRC_PATH}/application/ApplicationManager.cpp
+  ${COCOS_ROOT_PATH}/src/MainHack.cpp
 )
 
-if(COCOS_PLATFORM_WIN32)
+if(WINDOWS)
   list(APPEND PLATFORM_SUPPORT_SOURCE
     ${COCOS_SRC_PATH}/platform/win32/FileUtils-win32.h
     ${COCOS_SRC_PATH}/platform/win32/FileUtils-win32.cpp
     ${COCOS_SRC_PATH}/platform/win32/Utils-win32.h
     ${COCOS_SRC_PATH}/platform/win32/Utils-win32.cpp
-    ${COCOS_SRC_PATH}/platform/win32/Device-win32.cpp
+    ${COCOS_SRC_PATH}/platform/win32/WindowsPlatform.h
+    ${COCOS_SRC_PATH}/platform/win32/WindowsPlatform.cpp
+    ${COCOS_SRC_PATH}/platform/win32/modules/Accelerometer.cpp
+    ${COCOS_SRC_PATH}/platform/win32/modules/Accelerometer.h
+    ${COCOS_SRC_PATH}/platform/win32/modules/Battery.cpp
+    ${COCOS_SRC_PATH}/platform/win32/modules/Battery.h
+    ${COCOS_SRC_PATH}/platform/win32/modules/Screen.cpp
+    ${COCOS_SRC_PATH}/platform/win32/modules/Screen.h
+    ${COCOS_SRC_PATH}/platform/win32/modules/Network.cpp
+    ${COCOS_SRC_PATH}/platform/win32/modules/Network.h
+    ${COCOS_SRC_PATH}/platform/win32/modules/Vibrator.cpp
+    ${COCOS_SRC_PATH}/platform/win32/modules/Vibrator.h
+    ${COCOS_SRC_PATH}/platform/win32/modules/System.cpp
+    ${COCOS_SRC_PATH}/platform/win32/modules/System.h
+    ${COCOS_SRC_PATH}/platform/win32/modules/SystemWindow.cpp
+    ${COCOS_SRC_PATH}/platform/win32/modules/SystemWindow.h
   )
-elseif(COCOS_PLATFORM_ANDROID)
+elseif(ANDROID)
   list(APPEND PLATFORM_SUPPORT_SOURCE
     ${COCOS_SRC_PATH}/platform/android/FileUtils-android.h
     ${COCOS_SRC_PATH}/platform/android/FileUtils-android.cpp
     ${COCOS_SRC_PATH}/platform/java/jni/JniHelper.h
     ${COCOS_SRC_PATH}/platform/java/jni/JniHelper.cpp
   )
-elseif(COCOS_PLATFORM_IOS OR COCOS_PLATFORM_OSX)
+elseif(APPLE)
   list(APPEND PLATFORM_SUPPORT_SOURCE
     ${COCOS_SRC_PATH}/platform/apple/FileUtils-apple.h
     ${COCOS_SRC_PATH}/platform/apple/FileUtils-apple.mm
@@ -65,7 +105,7 @@ else()
     add_library(${TARGET_NAME} SHARED ${HEADER_FILES} ${ALL_FILES})
 endif()
 
-if(COCOS_PLATFORM_OSX)
+if(MACOSX)
     find_library(PLATFORM_SUPPORT_LIBRARY AppKit)
 endif()
 

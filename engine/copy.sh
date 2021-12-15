@@ -1,1 +1,1 @@
-cp dist/cocos.js web-desktop/cocos-js
+cp dist/* web-desktop/cocos-js
