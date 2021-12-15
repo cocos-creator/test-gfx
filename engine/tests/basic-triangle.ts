@@ -24,7 +24,7 @@ export class BasicTriangle extends TestBase {
             `,
             frag: `
                 void frag(out FragColor o) {
-                    o.fragColor0 = vec4(u_color[0].x, u_color[1].y, u_color[2].z, 1.0);
+                    o.fragColor = vec4(u_color[0].x, u_color[1].y, u_color[2].z, 1.0);
                 }
             `,
             attributes: [

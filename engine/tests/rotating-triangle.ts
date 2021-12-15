@@ -34,7 +34,7 @@ export class RotatingTriangle extends TestBase {
             `,
             frag: `
                 void frag(out FragColor o) {
-                    o.fragColor0 = u_color * 0.2 + frag_color * 0.8;
+                    o.fragColor = u_color * 0.2 + frag_color * 0.8;
                 }
             `,
             attributes: [

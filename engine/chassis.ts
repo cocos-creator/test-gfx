@@ -213,8 +213,8 @@ function hashObject (o: object) {
 }
 
 // 5, 3, 8
-export const TEST_UBO_COUNTS = [5, 3, -1];
-export const TEST_SAMPLER_COUNTS = [5, 3, -1];
+export const TEST_UBO_COUNTS: number[] = [5, 3, -1];
+export const TEST_SAMPLER_COUNTS: number[] = [5, 3, -1];
 
 export class Program {
     private _shader: Shader;
@@ -491,8 +491,7 @@ type ProgramBindingProperties = IMat4Like | IVec4Like | IVec3Like | IVec2Like | 
 
 type UniformWriter = (a: Int32Array | Float32Array, v: ProgramBindingProperties, idx?: number) => void;
 
-// @ts-expect-error(2740) not all types are relevant here
-const type2writer: Record<Type, UniformWriter> = {
+const type2writer: Record<number, UniformWriter> = {
     [Type.UNKNOWN]: ((a: Int32Array, v: number, idx = 0): void => { console.warn('illegal uniform handle'); }) as UniformWriter,
     [Type.INT]: ((a: Int32Array, v: number, idx = 0): void => { a[idx] = v; }) as UniformWriter,
     [Type.INT2]: ((a: Int32Array, v: IVec2Like, idx = 0): void => { Vec2.toArray(a, v, idx); }) as UniformWriter,
@@ -506,20 +505,17 @@ const type2writer: Record<Type, UniformWriter> = {
 };
 
 export class ProgramBindings {
-    descriptorSets: DescriptorSet[] = [];
     currentInstance = 0;
     maxInstanceCount = 0;
+    descriptorSets: DescriptorSet[] = [];
     dynamicOffsets: Record<number, number[]> = [];
-
     private _rootBuffers: Buffer[] = [];
     private _rootBlocks: ArrayBuffer[] = [];
     private _rootBufferDirties: boolean[] = [];
-
     private _blocks: Record<number, Float32Array[]> = [];
+    private _blocksInt: Record<number, Int32Array[]> = [];
     private _blockSizes: Record<number, number[]> = [];
-
     private _uniformBuffers: Record<number, Buffer[]> = [];
-    private _samplerBuffers: Record<number, Buffer[]> = [];
 
     constructor (program: Program, info: IProgramBindingInfo) {
         // @ts-expect-error(2341) friend class access
@@ -532,9 +528,9 @@ export class ProgramBindings {
         );
         for (let i = 0; i < layout.setLayouts.length; i++) {
             this._blocks[i] = [];
+            this._blocksInt[i] = [];
             this._blockSizes[i] = [];
             this._uniformBuffers[i] = [];
-            this._samplerBuffers[i] = [];
             this.dynamicOffsets[i] = [];
         }
 
@@ -589,19 +585,21 @@ export class ProgramBindings {
                 bufferViewInfo.offset,
                 size / Float32Array.BYTES_PER_ELEMENT,
             );
+            this._blocksInt[set][binding] = new Int32Array(
+                this._blocks[set][binding].buffer,
+                this._blocks[set][binding].byteOffset,
+                this._blocks[set][binding].length,
+            );
 
             this.descriptorSets[set].bindBuffer(binding, bufferView);
         }
     }
 
     destroy () {
-        this.descriptorSets.map((descriptorSet) => descriptorSet.destroy());
-
         const length = this.descriptorSets.length;
         for (let i = 0; i < length; i++) {
             this.descriptorSets[i].destroy();
             this._uniformBuffers[i].map((buffer) => buffer.destroy());
-            this._samplerBuffers[i].map((samplerBuffer) => samplerBuffer.destroy());
             this._rootBuffers[i].destroy();
         }
     }
@@ -621,15 +619,23 @@ export class ProgramBindings {
 
         const offset = (instanceIdx * blockWidth) // instance offset
             + getOffsetFromHandle(handleNum); // value offset
-        const block = this._blocks[setId][bindingId];
+
+        let block: Float32Array | Int32Array = null!;
+        if (type < Type.FLOAT && type > Type.BOOL4) block = this._blocksInt[setId][bindingId];
+        else block = this._blocks[setId][bindingId];
+
         TestBase.assert(block.length > offset, 'memory error');
-        // @ts-expect-error(7053) restrict type check
         type2writer[type](block, v, offset);
 
         this._rootBufferDirties[setId] = true;
     }
 
     setUniformArray (handle: IProgramHandle, v: ProgramBindingProperties[], instanceIdx = 0) {
+        if (instanceIdx === -1) {
+            for (let i = 0; i < this.maxInstanceCount; i++) {
+                this.setUniformArray(handle, v, i);
+            }
+        }
         const handleNum = handle as unknown as number;
         const setId = getSetFromHandle(handleNum);
         const bindingId = getBindingFromHandle(handleNum);
@@ -639,12 +645,14 @@ export class ProgramBindings {
         let offset = (instanceIdx * blockWidth) // instance offset
             + getOffsetFromHandle(handleNum); // value offset
 
-        const block = this._blocks[setId][bindingId];
+        let block: Float32Array | Int32Array = null!;
+        if (type < Type.FLOAT && type > Type.BOOL4) block = this._blocksInt[setId][bindingId];
+        else block = this._blocks[setId][bindingId];
+
         // write data
         for (let i = 0; i < v.length; i++, offset += stride) {
             if (v[i] === null) continue;
-            // @ts-expect-error(7053) restrict type check
-            type2writer[type](block, v, offset);
+            type2writer[type](block, v[i], offset);
         }
         this._rootBufferDirties[setId] = true;
     }

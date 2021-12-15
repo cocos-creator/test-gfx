@@ -9,7 +9,7 @@ import { IStandardShaderSource } from './test-base';
 export class SourceGenerator {
     private _shaderFragOut = `
     struct FragColor {
-        vec4 fragColor0;
+        vec4 fragColor;
         vec4 fragColor1;
         vec4 fragColor2;
         vec4 fragColor3;
@@ -215,8 +215,12 @@ export class SourceGenerator {
                 FragColor o;
                 frag(o);
             `;
-        for (let i = 0; i < attachments; i++) {
-            source.frag += `    gl_FragColor${i} = o.fragColor${i};\n`;
+        if (attachments === 1) {
+            source.frag += `    gl_FragColor = o.fragColor;\n`;
+        } else {
+            for (let i = 0; i < attachments; i++) {
+                source.frag += `    gl_FragData[${i}] = o.fragColor${i};\n`;
+            }
         }
         source.frag += `}`;
     }
@@ -225,15 +229,17 @@ export class SourceGenerator {
             void main() {
                 gl_Position = vert();
             }`;
-        source.frag += `${this._shaderFragOut}\n${frag}\n`;
-        for (let i = 0; i < attachments; i++) {
+        source.frag += `${this._shaderFragOut} \n${frag}
+            out vec4 o_color;`;
+        for (let i = 1; i < attachments; i++) {
             source.frag += `out vec4 o_color${i};\n`;
         }
         source.frag += `
             void main() {
                 FragColor o;
-                frag(o);\n`;
-        for (let i = 0; i < attachments; i++) {
+                frag(o);
+                o_color = o.fragColor;\n`;
+        for (let i = 1; i < attachments; i++) {
             source.frag += `o_color${i} = o.fragColor${i};\n`;
         }
         source.frag += `}`;
@@ -243,15 +249,17 @@ export class SourceGenerator {
             void main() {
                 gl_Position = vert();
             }`;
-        source.frag += `${this._shaderFragOut}\n${frag}\n`;
-        for (let i = 0; i < attachments; i++) {
+        source.frag += `${this._shaderFragOut}\n${frag}
+            layout (location = 0) out vec4 o_color;`;
+        for (let i = 1; i < attachments; i++) {
             source.frag += `layout (location = ${i}) out vec4 o_color${i};\n`;
         }
         source.frag += `
             void main() {
                 FragColor o;
-                frag(o);\n`;
-        for (let i = 0; i < attachments; i++) {
+                frag(o);
+                o_color = o.fragColor;\n`;
+        for (let i = 1; i < attachments; i++) {
             source.frag += `o_color${i} = o.fragColor${i};\n`;
         }
         source.frag += `}`;
