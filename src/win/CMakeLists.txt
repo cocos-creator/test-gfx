@@ -15,7 +15,6 @@ set(ALL_FILES
   ${SOURCE_C_FILES}
   ${GFX_TESTCASE_HEADER}
   ${GFX_TESTCASE_SOURCE}
-  ${CC_EXTERNAL_SOURCES}
 )
 
 add_definitions("-DCC_USE_VULKAN")
@@ -80,7 +79,6 @@ source_group(TREE ${COCOS_SRC_PATH}/base PREFIX "Header Files/base" FILES ${CC_B
 source_group(TREE ${COCOS_SRC_PATH}/base PREFIX "Source Files/base" FILES ${CC_BASE_SOURCES})
 source_group(TREE ${COCOS_SRC_PATH}/math PREFIX "Header Files/math" FILES ${CC_MATH_HEADERS})
 source_group(TREE ${COCOS_SRC_PATH}/math PREFIX "Source Files/math" FILES ${CC_MATH_SOURCES})
-source_group(TREE ${COCOS_EXTERNAL_PATH}/sources PREFIX "Header Files/external" FILES ${CC_EXTERNAL_SOURCES})
 
 message(STATUS "${TARGET_NAME} configuration completed.")
 set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 17)
