@@ -215,9 +215,12 @@ function hashObject (o: object) {
 // 5, 3, 8
 export const TEST_UBO_COUNTS: number[] = [5, 3, -1];
 export const TEST_SAMPLER_COUNTS: number[] = [5, 3, -1];
+export const TEST_VARY_SLOT_LIM = 8;
+export const TEST_BIND_SLOT_LIM = TEST_UBO_COUNTS[0] + TEST_UBO_COUNTS[1] + TEST_VARY_SLOT_LIM;
 
 export class Program {
     private _shader: Shader;
+    private _inputState: InputState;
     private _layout: PipelineLayout;
     private _propertyMap: Record<string, number>;
     private _pipelineStateMap: Map<number, PipelineState>; // hash map
@@ -234,12 +237,12 @@ export class Program {
         const samplerTextures: UniformSamplerTexture[] = [];
         const shaderBlocks: UniformBlock[] = [];
 
-        const streamIds: number[] = this._bufferStreamIds(info.attributes || []);
-        const descriptorSetIds: number[] = this._descriptorSetIds(info.blocks || [], info.samplerTextures || []);
+        const streamIds: number[] = Program.bufferStreamIds(info.attributes || []);
+        const descriptorSetIds: number[] = Program.descriptorSetIds(info.blocks || [], info.samplerTextures || []);
         TestBase.assert(descriptorSetIds.length < 4, 'too many descriptor set for one draw call, you can use 3 at most.');
 
         const layoutBindings: Record<number, DescriptorSetLayoutBinding[]> = descriptorSetIds.map((id) => []);
-        const reg = '[^a-zA-Z\\d\\:_]';
+        const reg = '\\b';
 
         for (const block of info.blocks || []) {
             const bindings = layoutBindings[block.set];
@@ -287,8 +290,8 @@ export class Program {
             const bindings = layoutBindings[samplerTexture.set];
             const regex = new RegExp(`${reg}${samplerTexture.name}${reg}`, `g`);
             let shaderStageFlag = ShaderStageFlagBit.NONE;
-            if (info.frag.search(regex)) shaderStageFlag |= ShaderStageFlagBit.FRAGMENT;
-            if (info.vert.search(regex)) shaderStageFlag |= ShaderStageFlagBit.VERTEX;
+            if (info.frag.search(regex) !== -1) shaderStageFlag |= ShaderStageFlagBit.FRAGMENT;
+            if (info.vert.search(regex) !== -1) shaderStageFlag |= ShaderStageFlagBit.VERTEX;
 
             if (shaderStageFlag === ShaderStageFlagBit.NONE) continue;
             samplerTextures.push(new UniformSamplerTexture(
@@ -338,14 +341,14 @@ export class Program {
             const textures = samplerTextures?.filter((texture) => texture.set === descriptorSetId) || [];
 
             TestBase.assert(blocks.length < TEST_UBO_COUNTS[descriptorSetId] || TEST_UBO_COUNTS[descriptorSetId] === -1,
-                `too many UBOs in set ${descriptorSetId}, only ${TEST_UBO_COUNTS[descriptorSetId]} seats exist.`);
-            TestBase.assert(blocks.length < 8 && TEST_UBO_COUNTS[descriptorSetId] !== -1,
-                `too many UBOs in set ${descriptorSetId}, only ${TEST_UBO_COUNTS[descriptorSetId]} seats exist.`);
+                `too many UBOs in set ${descriptorSetId}, only ${TEST_UBO_COUNTS[descriptorSetId]} slots exist.`);
+            TestBase.assert(blocks.length < TEST_VARY_SLOT_LIM || TEST_UBO_COUNTS[descriptorSetId] !== -1,
+                `too many UBOs in set ${descriptorSetId}, only ${TEST_UBO_COUNTS[descriptorSetId]} slots exist.`);
 
             TestBase.assert(textures.length < TEST_SAMPLER_COUNTS[descriptorSetId] || TEST_SAMPLER_COUNTS[descriptorSetId] === -1,
-                `too many UBOs in set ${descriptorSetId}, only ${TEST_SAMPLER_COUNTS[descriptorSetId]} seats exist.`);
-            TestBase.assert(textures.length < 8 && TEST_SAMPLER_COUNTS[descriptorSetId] !== -1,
-                `too many UBOs in set ${descriptorSetId}, only ${TEST_SAMPLER_COUNTS[descriptorSetId]} seats exist.`);
+                `too many Textures in set ${descriptorSetId}, only ${TEST_SAMPLER_COUNTS[descriptorSetId]} slots exist.`);
+            TestBase.assert(textures.length < TEST_VARY_SLOT_LIM || TEST_SAMPLER_COUNTS[descriptorSetId] !== -1,
+                `too many Textures in set ${descriptorSetId}, only ${TEST_SAMPLER_COUNTS[descriptorSetId]} slots exist.`);
 
             descriptorSetLayouts.push(TestBase.device.createDescriptorSetLayout(
                 new DescriptorSetLayoutInfo(layoutBindings[descriptorSetId]),
@@ -398,13 +401,14 @@ export class Program {
             samplerTextures,
         ));
 
+        this._inputState = new InputState(shaderAttributes);
         this._layout = TestBase.device.createPipelineLayout(new PipelineLayoutInfo(descriptorSetLayouts));
         this._pipelineStateMap = new Map<number, PipelineState>();
         this._currentPipelineState = null!;
         this.setPipelineState(info.defaultStates || {});
     }
 
-    private _bufferStreamIds (attributes: IShaderAttribute[] = []): number[] {
+    public static bufferStreamIds (attributes: IShaderAttribute[] | Attribute[] = []): number[] {
         const streamIds: number[] = [];
         let id = 0;
         for (const attribute of attributes) {
@@ -414,7 +418,8 @@ export class Program {
         return streamIds.sort((a, b) => a - b);
     }
 
-    private _descriptorSetIds (blocks: IShaderBlock[] = [], samplerTextures: IShaderSamplerTexture[] = []): number[] {
+    public static descriptorSetIds (blocks: IShaderBlock[] | UniformBlock[] = [],
+        samplerTextures: IShaderSamplerTexture[] | UniformSamplerTexture[] = []): number[] {
         const descriptorSetIds: number[] = [];
         for (const block of blocks || []) { if (descriptorSetIds.indexOf(block.set) === -1) descriptorSetIds.push(block.set); }
         for (const texture of samplerTextures || []) { if (descriptorSetIds.indexOf(texture.set) === -1) descriptorSetIds.push(texture.set); }
@@ -422,6 +427,9 @@ export class Program {
     }
 
     destroy () {
+        this._pipelineStateMap.forEach((state, key) => state.destroy());
+        this._layout.setLayouts.forEach((setLayout) => setLayout.destroy());
+
         this._shader.destroy();
         this._layout.destroy();
     }
@@ -437,7 +445,7 @@ export class Program {
     // related to uniform buffer
     getHandle (name: string, offset = 0, type = Type.UNKNOWN, arrayIdx = 0): IProgramHandle {
         let handle = this._propertyMap[name];
-        if (!handle) { return 0 as unknown as IProgramHandle; }
+        TestBase.assert(handle !== undefined, `${name} is not a valid name for uniform resources`);
         const memberType = getTypeFromHandle(handle);
         if (type) {
             handle = customizeType(handle, type);
@@ -460,7 +468,7 @@ export class Program {
                 this._shader,
                 this._layout,
                 TestBase.defaultRenderPass,
-                new InputState(this._shader.attributes),
+                this._inputState,
                 info.rasterizerState,
                 info.depthStencilState,
                 info.blendState,
@@ -478,7 +486,10 @@ export class Program {
             bindings.descriptorSets.map((descriptorSet, index) => commandBuffer.bindDescriptorSet(index, descriptorSet));
         } else {
             for (let i = 0; i < bindings.descriptorSets.length; i++) {
-                const offsets = bindings.dynamicOffsets[i].map((offset) => offset * instance);
+                const offsets = bindings.dynamicOffsets[i];
+                for (let j = 0; j < offsets.length; j++) {
+                    offsets[j] *= instance;
+                }
                 commandBuffer.bindDescriptorSet(i, bindings.descriptorSets[i], offsets);
             }
         }
@@ -591,6 +602,7 @@ export class ProgramBindings {
                 this._blocks[set][binding].length,
             );
 
+            this._blockSizes[set][binding] /= Float32Array.BYTES_PER_ELEMENT;
             this.descriptorSets[set].bindBuffer(binding, bufferView);
         }
     }
@@ -605,23 +617,24 @@ export class ProgramBindings {
     }
 
     // pass -1 as idx to apply to all applicable fields
-    setUniform (handle: IProgramHandle, v: ProgramBindingProperties, instanceIdx = 0) {
+    setUniform (handle: IProgramHandle, v: ProgramBindingProperties, instanceIdx = 0) : void {
         if (instanceIdx === -1) {
             for (let i = 0; i < this.maxInstanceCount; i++) {
                 this.setUniform(handle, v, i);
             }
+            return;
         }
         const handleNum = handle as unknown as number;
         const setId = getSetFromHandle(handleNum);
         const bindingId = getBindingFromHandle(handleNum);
         const type = getTypeFromHandle(handleNum);
-        const blockWidth = this._blockSizes[setId][bindingId] / Float32Array.BYTES_PER_ELEMENT;
+        const blockWidth = this._blockSizes[setId][bindingId];
 
         const offset = (instanceIdx * blockWidth) // instance offset
             + getOffsetFromHandle(handleNum); // value offset
 
         let block: Float32Array | Int32Array = null!;
-        if (type < Type.FLOAT && type > Type.BOOL4) block = this._blocksInt[setId][bindingId];
+        if (type < Type.FLOAT) block = this._blocksInt[setId][bindingId];
         else block = this._blocks[setId][bindingId];
 
         TestBase.assert(block.length > offset, 'memory error');
@@ -630,23 +643,24 @@ export class ProgramBindings {
         this._rootBufferDirties[setId] = true;
     }
 
-    setUniformArray (handle: IProgramHandle, v: ProgramBindingProperties[], instanceIdx = 0) {
+    setUniformArray (handle: IProgramHandle, v: ProgramBindingProperties[], instanceIdx = 0) : void {
         if (instanceIdx === -1) {
             for (let i = 0; i < this.maxInstanceCount; i++) {
                 this.setUniformArray(handle, v, i);
             }
+            return;
         }
         const handleNum = handle as unknown as number;
         const setId = getSetFromHandle(handleNum);
         const bindingId = getBindingFromHandle(handleNum);
         const type = getTypeFromHandle(handleNum);
         const stride = TypeInfos[type].size;
-        const blockWidth = this._blockSizes[setId][bindingId] / Float32Array.BYTES_PER_ELEMENT;
+        const blockWidth = this._blockSizes[setId][bindingId];
         let offset = (instanceIdx * blockWidth) // instance offset
             + getOffsetFromHandle(handleNum); // value offset
 
         let block: Float32Array | Int32Array = null!;
-        if (type < Type.FLOAT && type > Type.BOOL4) block = this._blocksInt[setId][bindingId];
+        if (type < Type.FLOAT) block = this._blocksInt[setId][bindingId];
         else block = this._blocks[setId][bindingId];
 
         // write data
@@ -657,20 +671,22 @@ export class ProgramBindings {
         this._rootBufferDirties[setId] = true;
     }
 
-    setSampler (handle: IProgramHandle, v: Sampler, arrayIdx = 0) {
+    setSampler (handle: IProgramHandle, v: Sampler, arrayIdx = 0) : void {
         const handleNum = handle as unknown as number;
         const setId = getSetFromHandle(handleNum);
         const bindingId = getBindingFromHandle(handleNum);
-        this.descriptorSets[setId].bindSampler(bindingId, v, arrayIdx);
-        this._rootBufferDirties[setId] = true;
+        const type = getTypeFromHandle(handleNum);
+        const offset = TypeInfos[type].size * arrayIdx;
+        this.descriptorSets[setId].bindSampler(bindingId, v, offset);
     }
 
-    setTexture (handle: IProgramHandle, v: Texture, arrayIdx = 0) {
+    setTexture (handle: IProgramHandle, v: Texture, arrayIdx = 0) : void {
         const handleNum = handle as unknown as number;
         const setId = getSetFromHandle(handleNum);
         const bindingId = getBindingFromHandle(handleNum);
-        this.descriptorSets[setId].bindTexture(bindingId, v, arrayIdx);
-        this._rootBufferDirties[setId] = true;
+        const type = getTypeFromHandle(handleNum);
+        const offset = TypeInfos[type].size * arrayIdx;
+        this.descriptorSets[setId].bindTexture(bindingId, v, offset);
     }
 
     nextInstance (currentInstance: number): number {
@@ -705,8 +721,9 @@ export class ProgramInputs {
 
         // create Vertex buffer
         const vertexBuffers: Buffer[] = [];
-        const streamIds: number[] = [];
-        for (const attribute of attributes) { if (streamIds.indexOf(attribute.stream) === -1) streamIds.push(attribute.stream); }
+        const streamIds: number[] = Program.bufferStreamIds(attributes);
+        let indexBuffer: Buffer | undefined = null!;
+        let indirectBuffer: Buffer | undefined = null!;
         for (const streamId of streamIds) {
             let vertexWidth = 0;
             for (const attribute of attributes) {
@@ -720,18 +737,22 @@ export class ProgramInputs {
             )));
         }
         // create index buffer
-        const indexBuffer: Buffer = TestBase.device.createBuffer(new BufferInfo(
-            BufferUsageBit.INDEX,
-            MemoryUsageBit.DEVICE,
-            (info.maxIndexCount ? info.maxIndexCount : 0) * (info.indexU32 ? Int32Array.BYTES_PER_ELEMENT : Int16Array.BYTES_PER_ELEMENT) || 0,
-            info.indexU32 ? Int32Array.BYTES_PER_ELEMENT : Int16Array.BYTES_PER_ELEMENT,
-        ));
+        if ((info.maxIndexCount || 0) > 0) {
+            indexBuffer = TestBase.device.createBuffer(new BufferInfo(
+                BufferUsageBit.INDEX,
+                MemoryUsageBit.DEVICE,
+                (info.maxIndexCount ? info.maxIndexCount : 0) * (info.indexU32 ? Int32Array.BYTES_PER_ELEMENT : Int16Array.BYTES_PER_ELEMENT) || 0,
+                info.indexU32 ? Int32Array.BYTES_PER_ELEMENT : Int16Array.BYTES_PER_ELEMENT,
+            ));
+        }
         // create indirect buffer
-        const indirectBuffer: Buffer = TestBase.device.createBuffer(new BufferInfo(
-            BufferUsageBit.INDIRECT,
-            MemoryUsageBit.DEVICE,
-            info.maxIndirectDrawCount || 1,
-        ));
+        if ((info.maxIndirectDrawCount || 0) > 0) {
+            indirectBuffer = TestBase.device.createBuffer(new BufferInfo(
+                BufferUsageBit.INDIRECT,
+                MemoryUsageBit.DEVICE,
+                info.maxIndirectDrawCount,
+            ));
+        }
         // create input assembler
         this.inputAssembler = TestBase.device.createInputAssembler(new InputAssemblerInfo(attributes, vertexBuffers, indexBuffer, indirectBuffer));
     }
@@ -748,6 +769,7 @@ export class ProgramInputs {
     }
 
     updateIndexBuffer (buffer: Uint16Array | Uint32Array) {
+        TestBase.assert(!!this.inputAssembler.indexBuffer, 'no index buffer specified');
         this.inputAssembler.indexBuffer?.update(buffer);
     }
 

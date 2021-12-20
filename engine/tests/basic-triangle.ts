@@ -49,7 +49,7 @@ export class BasicTriangle extends TestBase {
         this._inputs = this._program.createInputs({
             maxVertexCount: 5,
             maxIndexCount: 9,
-            maxIndirectDrawCount: 1,
+            maxIndirectDrawCount: 2,
         });
 
         this._inputs.updateVertexBuffer(new Float32Array([
@@ -68,7 +68,7 @@ export class BasicTriangle extends TestBase {
         ]), 1);
 
         this._inputs.updateIndexBuffer(new Uint16Array([1, 3, 0, 1, 2, 3, 2, 4, 3]));
-        this._inputs.updateIndirectBuffer(new IndirectBuffer([new DrawInfo(0, 0, 3, 3)]));
+        this._inputs.updateIndirectBuffer(new IndirectBuffer([new DrawInfo(0, 0, 3, 3), new DrawInfo(0, 0, 3, 2)]));
 
         this._bindings.setUniform(this._program.getHandle('u_color', 0, Type.FLOAT4, 0), new Vec4(0, 0, 0, 1));
         this._bindings.setUniform(this._program.getHandle('u_color', 0, Type.FLOAT4, 1), new Vec4(0, 0, 0, 1));
