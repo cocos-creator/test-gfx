@@ -52,6 +52,8 @@ if(MSVC)
         add_definitions("-DNOMINMAX")
         add_definitions("-DUNICODE -D_UNICODE")
 
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ignore:4099")
+
         # compiler building setting
         # Flags used by the compiler during all build types.
         set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /W4 /wd4819 /wd4100 /wd4201 /wd4127 /Zm256 /EHsc /GR- /fp:fast")
