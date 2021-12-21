@@ -76,18 +76,18 @@ export const TypeInfos = Object.freeze([
 
     new TypeInfo('SAMPLER', 'sampler', 0, Type.SAMPLER),
 
-    new TypeInfo('TEXTURE1D', 'texture1d', 0, Type.TEXTURE1D),
-    new TypeInfo('TEXTURE1D_ARRAY', 'texture1dArray', 0, Type.TEXTURE1D_ARRAY),
-    new TypeInfo('TEXTURE2D', 'texture2d', 0, Type.TEXTURE2D),
-    new TypeInfo('TEXTURE2D_ARRAY', 'texture2dArray', 0, Type.TEXTURE2D_ARRAY),
-    new TypeInfo('TEXTURE3D', 'texture3d', 0, Type.TEXTURE3D),
+    new TypeInfo('TEXTURE1D', 'texture1D', 0, Type.TEXTURE1D),
+    new TypeInfo('TEXTURE1D_ARRAY', 'texture1DArray', 0, Type.TEXTURE1D_ARRAY),
+    new TypeInfo('TEXTURE2D', 'texture2D', 0, Type.TEXTURE2D),
+    new TypeInfo('TEXTURE2D_ARRAY', 'texture2DArray', 0, Type.TEXTURE2D_ARRAY),
+    new TypeInfo('TEXTURE3D', 'texture3D', 0, Type.TEXTURE3D),
     new TypeInfo('TEXTURE_CUBE', 'textureCube', 0, Type.TEXTURE_CUBE),
 
-    new TypeInfo('IMAGE1D', 'image1d', 0, Type.IMAGE1D),
-    new TypeInfo('IMAGE1D_ARRAY', 'image1dArray', 0, Type.IMAGE1D_ARRAY),
-    new TypeInfo('IMAGE2D', 'image2d', 0, Type.IMAGE2D),
-    new TypeInfo('IMAGE2D_ARRAY', 'image2dArray', 0, Type.IMAGE2D_ARRAY),
-    new TypeInfo('IMAGE3D', 'image3d', 0, Type.IMAGE3D),
+    new TypeInfo('IMAGE1D', 'image1D', 0, Type.IMAGE1D),
+    new TypeInfo('IMAGE1D_ARRAY', 'image1DArray', 0, Type.IMAGE1D_ARRAY),
+    new TypeInfo('IMAGE2D', 'image2D', 0, Type.IMAGE2D),
+    new TypeInfo('IMAGE2D_ARRAY', 'image2DArray', 0, Type.IMAGE2D_ARRAY),
+    new TypeInfo('IMAGE3D', 'image3D', 0, Type.IMAGE3D),
     new TypeInfo('IMAGE_CUBE', 'imageCube', 0, Type.IMAGE_CUBE),
 
     // // input attachment
@@ -212,11 +212,8 @@ function hashObject (o: object) {
     return hash;
 }
 
-// 5, 3, 8
 export const TEST_UBO_COUNTS: number[] = [5, 3, -1];
 export const TEST_SAMPLER_COUNTS: number[] = [5, 3, -1];
-export const TEST_VARY_SLOT_LIM = 8;
-export const TEST_BIND_SLOT_LIM = TEST_UBO_COUNTS[0] + TEST_UBO_COUNTS[1] + TEST_VARY_SLOT_LIM;
 
 export class Program {
     private _shader: Shader;
@@ -237,8 +234,8 @@ export class Program {
         const samplerTextures: UniformSamplerTexture[] = [];
         const shaderBlocks: UniformBlock[] = [];
 
-        const streamIds: number[] = Program.bufferStreamIds(info.attributes || []);
-        const descriptorSetIds: number[] = Program.descriptorSetIds(info.blocks || [], info.samplerTextures || []);
+        const streamIds: number[] = this._bufferStreamIds(info.attributes || []);
+        const descriptorSetIds: number[] = this._descriptorSetIds(info.blocks || [], info.samplerTextures || []);
         TestBase.assert(descriptorSetIds.length < 4, 'too many descriptor set for one draw call, you can use 3 at most.');
 
         const layoutBindings: Record<number, DescriptorSetLayoutBinding[]> = descriptorSetIds.map((id) => []);
@@ -340,15 +337,18 @@ export class Program {
             const blocks = shaderBlocks?.filter((block) => block.set === descriptorSetId) || [];
             const textures = samplerTextures?.filter((texture) => texture.set === descriptorSetId) || [];
 
+            const SAMPLER_FLEXIBLE_LIM = TestBase.device.capabilities.maxTextureUnits - TEST_SAMPLER_COUNTS[0] - TEST_SAMPLER_COUNTS[1];
+            const UBO_FLEXIBLE_LIM = TestBase.device.capabilities.maxUniformBufferBindings - TEST_UBO_COUNTS[0] - TEST_UBO_COUNTS[1];
+
             TestBase.assert(blocks.length < TEST_UBO_COUNTS[descriptorSetId] || TEST_UBO_COUNTS[descriptorSetId] === -1,
                 `too many UBOs in set ${descriptorSetId}, only ${TEST_UBO_COUNTS[descriptorSetId]} slots exist.`);
-            TestBase.assert(blocks.length < TEST_VARY_SLOT_LIM || TEST_UBO_COUNTS[descriptorSetId] !== -1,
-                `too many UBOs in set ${descriptorSetId}, only ${TEST_UBO_COUNTS[descriptorSetId]} slots exist.`);
+            TestBase.assert(blocks.length < UBO_FLEXIBLE_LIM || TEST_UBO_COUNTS[descriptorSetId] !== -1,
+                `too many UBOs in set ${descriptorSetId}, only ${UBO_FLEXIBLE_LIM} slots exist.`);
 
             TestBase.assert(textures.length < TEST_SAMPLER_COUNTS[descriptorSetId] || TEST_SAMPLER_COUNTS[descriptorSetId] === -1,
                 `too many Textures in set ${descriptorSetId}, only ${TEST_SAMPLER_COUNTS[descriptorSetId]} slots exist.`);
-            TestBase.assert(textures.length < TEST_VARY_SLOT_LIM || TEST_SAMPLER_COUNTS[descriptorSetId] !== -1,
-                `too many Textures in set ${descriptorSetId}, only ${TEST_SAMPLER_COUNTS[descriptorSetId]} slots exist.`);
+            TestBase.assert(textures.length < SAMPLER_FLEXIBLE_LIM || TEST_SAMPLER_COUNTS[descriptorSetId] !== -1,
+                `too many Textures in set ${descriptorSetId}, only ${SAMPLER_FLEXIBLE_LIM} slots exist.`);
 
             descriptorSetLayouts.push(TestBase.device.createDescriptorSetLayout(
                 new DescriptorSetLayoutInfo(layoutBindings[descriptorSetId]),
@@ -408,7 +408,7 @@ export class Program {
         this.setPipelineState(info.defaultStates || {});
     }
 
-    public static bufferStreamIds (attributes: IShaderAttribute[] | Attribute[] = []): number[] {
+    private _bufferStreamIds (attributes: IShaderAttribute[] = []): number[] {
         const streamIds: number[] = [];
         let id = 0;
         for (const attribute of attributes) {
@@ -418,8 +418,8 @@ export class Program {
         return streamIds.sort((a, b) => a - b);
     }
 
-    public static descriptorSetIds (blocks: IShaderBlock[] | UniformBlock[] = [],
-        samplerTextures: IShaderSamplerTexture[] | UniformSamplerTexture[] = []): number[] {
+    private _descriptorSetIds (blocks: IShaderBlock[] = [],
+        samplerTextures: IShaderSamplerTexture[] = []): number[] {
         const descriptorSetIds: number[] = [];
         for (const block of blocks || []) { if (descriptorSetIds.indexOf(block.set) === -1) descriptorSetIds.push(block.set); }
         for (const texture of samplerTextures || []) { if (descriptorSetIds.indexOf(texture.set) === -1) descriptorSetIds.push(texture.set); }
@@ -486,9 +486,9 @@ export class Program {
             bindings.descriptorSets.map((descriptorSet, index) => commandBuffer.bindDescriptorSet(index, descriptorSet));
         } else {
             for (let i = 0; i < bindings.descriptorSets.length; i++) {
-                const offsets = bindings.dynamicOffsets[i];
+                const offsets = [];
                 for (let j = 0; j < offsets.length; j++) {
-                    offsets[j] *= instance;
+                    offsets[j] = bindings.dynamicOffsets[i][j] * instance;
                 }
                 commandBuffer.bindDescriptorSet(i, bindings.descriptorSets[i], offsets);
             }
@@ -719,11 +719,17 @@ export class ProgramInputs {
         // set the value of attributes
         const attributes: Attribute[] = shader.attributes;
 
+        TestBase.assert(info.maxVertexCount > 0, 'failed to create inputAssembler, no vertex data provided');
+
         // create Vertex buffer
         const vertexBuffers: Buffer[] = [];
-        const streamIds: number[] = Program.bufferStreamIds(attributes);
+        const streamIds: number[] = [];
         let indexBuffer: Buffer | undefined = null!;
         let indirectBuffer: Buffer | undefined = null!;
+        for (const attribute of attributes) {
+            const id = attribute.stream || 0;
+            if (streamIds.indexOf(id) === -1) streamIds.push(id);
+        }
         for (const streamId of streamIds) {
             let vertexWidth = 0;
             for (const attribute of attributes) {
@@ -765,7 +771,8 @@ export class ProgramInputs {
     }
 
     updateVertexBuffer (buffer: Float32Array, index = 0) {
-        if (index >= 0 && index < this.inputAssembler.vertexBuffers.length) this.inputAssembler.vertexBuffers[index].update(buffer);
+        TestBase.assert(index >= 0 && index < this.inputAssembler.vertexBuffers.length, 'failed to upload data to vertexBuffer, index out of range');
+        this.inputAssembler.vertexBuffers[index].update(buffer);
     }
 
     updateIndexBuffer (buffer: Uint16Array | Uint32Array) {

@@ -1,6 +1,6 @@
 import {
     Attribute, ShaderStageFlagBit, Uniform, UniformBlock, FormatInfos,
-    API, UniformSamplerTexture, Type,
+    API, UniformSamplerTexture, Type, Feature,
 } from 'gfx/base/define';
 import { DescriptorSetLayout } from 'gfx/base/descriptor-set-layout';
 import { IShaderVaryings, TypeInfos, IShaderExtension, IShaderExtensionType, IShaderExtensionTypeName } from './chassis';
@@ -269,7 +269,11 @@ export class SourceGenerator {
     }
 
     private _genShaderBody1 (source: IStandardShaderSource, attachments = 1): void {
-        if (attachments > 1) source.frag = `#extension GL_EXT_draw_buffers : require\n${source.frag}`;
+        if (attachments > 1) {
+            TestBase.assert(TestBase.device.hasFeature(Feature.MULTIPLE_RENDER_TARGETS),
+                'MULTIPLE_RENDER_TARGETS is not supported, but used by the shader');
+            source.frag = `#extension GL_EXT_draw_buffers : require\n${source.frag}`;
+        }
         source.vert += `
             void main() {
                 gl_Position = vert();
