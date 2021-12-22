@@ -161,7 +161,7 @@ export interface IProgramInfo {
 }
 
 export interface IProgramBindingInfo {
-    maxInstanceCount?: number; // default to 1
+    maxInstanceCount?: Record<string, number>; // default to 1
 }
 
 export interface IProgramInputInfo {
@@ -308,6 +308,7 @@ export class Program {
 
         for (const block of shaderBlocks || []) {
             let offset = 0;
+            this._propertyMap[block.name] = genHandle(block.set, block.binding, Type.UNKNOWN, 0, 0);
             for (const member of block.members) {
                 this._propertyMap[member.name] = genHandle(
                     block.set,
@@ -467,23 +468,19 @@ export class Program {
         this._currentPipelineState = this._pipelineStateMap.get(stateHash)!;
     }
 
-    draw (commandBuffer: CommandBuffer, bindings: ProgramBindings, inputs: ProgramInputs, instance?: number | undefined) {
+    draw (commandBuffer: CommandBuffer, bindings: ProgramBindings, inputs: ProgramInputs) {
         TestBase.assert(!!this._currentPipelineState, `no pipelineState specified`);
         commandBuffer.bindPipelineState(this._currentPipelineState);
+        const offsets = bindings.instanceOffsets;
 
-        if (instance === undefined) {
-            for (let i = 0; i < bindings.descriptorSets.length; i++) {
+        for (let i = 0; i < bindings.descriptorSets.length; i++) {
+            if (offsets[i].length > 0) {
+                commandBuffer.bindDescriptorSet(i, bindings.descriptorSets[i], offsets[i]);
+            } else {
                 commandBuffer.bindDescriptorSet(i, bindings.descriptorSets[i]);
             }
-        } else {
-            const offsets = [];
-            for (let i = 0; i < bindings.descriptorSets.length; i++) {
-                for (let j = 0; j < bindings.dynamicOffsets[i].length; j++) {
-                    offsets[j] = bindings.dynamicOffsets[i][j] * instance;
-                }
-                commandBuffer.bindDescriptorSet(i, bindings.descriptorSets[i], offsets);
-            }
         }
+
         commandBuffer.bindInputAssembler(inputs.inputAssembler);
         commandBuffer.draw(inputs.inputAssembler);
     }
@@ -507,10 +504,13 @@ const type2writer: Record<number, UniformWriter> = {
 };
 
 export class ProgramBindings {
-    currentInstance = 0;
-    maxInstanceCount = 0;
     descriptorSets: DescriptorSet[] = [];
-    dynamicOffsets: Record<number, number[]> = [];
+
+    private _instanceOffsets: Record<number, number[]> = [];
+    private _dynamicOffsets: Record<number, number[]> = []; // default to -1
+    private _maxInstanceCount: Record<number, number[]> = [];
+    private _dynamicBindings: Record<number, number[]> = [];
+
     private _rootBuffers: Buffer[] = [];
     private _rootBlocks: ArrayBuffer[] = [];
     private _rootBufferDirties: boolean[] = [];
@@ -522,27 +522,32 @@ export class ProgramBindings {
     constructor (program: Program, info: IProgramBindingInfo) {
         // @ts-expect-error(2341) friend class access
         const { _shader: shader, _layout: layout } = program; // destructuring assignment
-        this.maxInstanceCount = info.maxInstanceCount || 1;
+        const maxInstanceCount: Record<string, number> = info.maxInstanceCount || {};
 
         // create descriptor sets
         this.descriptorSets = layout.setLayouts.map(
             (setLayout) => TestBase.device.createDescriptorSet(new DescriptorSetInfo(setLayout)),
         );
+        const dynamicOffsets: Record < number, number[]> = [];
         for (let i = 0; i < layout.setLayouts.length; i++) {
+            this._instanceOffsets[i] = [];
+            this._dynamicOffsets[i] = [];
+            this._maxInstanceCount[i] = [];
+            this._dynamicBindings[i] = [];
             this._blocks[i] = [];
             this._blocksInt[i] = [];
             this._blockSizes[i] = [];
             this._uniformBuffers[i] = [];
-            this.dynamicOffsets[i] = [];
         }
 
         // calculate total size
         const startOffsets: number[][] = [];
         const alignment = TestBase.device.capabilities.uboOffsetAlignment;
+        let instanceCount = 0;
 
         for (let set = 0; set < this.descriptorSets.length; set++) {
             startOffsets.push([]);
-            let lastOffset = 0; let lastSize = 0;
+            let lastOffset = 0; let lastSize = 0; let dynamicBinding = 0;
             for (const block of shader.blocks) {
                 if (block.set !== set) continue;
                 const binding = block.binding;
@@ -551,8 +556,20 @@ export class ProgramBindings {
                 lastSize = block.members.reduce((pv, cv) => (pv + TypeInfos[cv.type].size) * (cv.count || 1), 0);
                 lastSize = Math.ceil(lastSize / alignment) * alignment;
                 this._blockSizes[set].push(lastSize);
-                if (isDynamic) this.dynamicOffsets[set].push(lastSize);
-                if (isDynamic) lastSize *= this.maxInstanceCount;
+                if (isDynamic) {
+                    instanceCount = maxInstanceCount[block.name];
+                    instanceCount = instanceCount !== undefined ? instanceCount : 1;
+
+                    this._dynamicOffsets[set].push(lastSize);
+                    this._instanceOffsets[set].push(0);
+                    this._maxInstanceCount[set].push(instanceCount);
+                    this._dynamicBindings[set][binding] = dynamicBinding;
+                    dynamicBinding += 1;
+
+                    lastSize *= instanceCount;
+                } else {
+                    this._dynamicBindings[set][binding] = -1;
+                }
                 lastOffset += lastSize;
             }
             // create gfx buffer
@@ -573,7 +590,8 @@ export class ProgramBindings {
             const isDynamic = layout.setLayouts[set].bindings[binding].descriptorType & DescriptorType.DYNAMIC_UNIFORM_BUFFER;
 
             let size = this._blockSizes[set][binding];
-            if (isDynamic) size *= this.maxInstanceCount;
+            const dynamicBinding = this._dynamicBindings[set][binding];
+            if (isDynamic) size *= this._maxInstanceCount[set][dynamicBinding];
 
             const bufferViewInfo = new BufferViewInfo(
                 this._rootBuffers[set],
@@ -609,80 +627,109 @@ export class ProgramBindings {
 
     // pass -1 as idx to apply to all applicable fields
     setUniform (handle: IProgramHandle, v: ProgramBindingProperties, instanceIdx = 0) : void {
+        const handleNum = handle as unknown as number;
+        const set = getSetFromHandle(handleNum);
+        const binding = getBindingFromHandle(handleNum);
+        const dynamicBinding = this._dynamicBindings[set][binding];
+        const maxInstanceCount = dynamicBinding > -1 ? this._maxInstanceCount[set][dynamicBinding] : 1;
         if (instanceIdx === -1) {
-            for (let i = 0; i < this.maxInstanceCount; i++) {
+            for (let i = 0; i < maxInstanceCount; i++) {
                 this.setUniform(handle, v, i);
             }
             return;
         }
-        const handleNum = handle as unknown as number;
-        const setId = getSetFromHandle(handleNum);
-        const bindingId = getBindingFromHandle(handleNum);
+        TestBase.assert(instanceIdx < maxInstanceCount && instanceIdx > -1, 'instanceIdx is out of range');
         const type = getTypeFromHandle(handleNum);
-        const blockWidth = this._blockSizes[setId][bindingId];
+        const blockWidth = this._blockSizes[set][binding];
 
         const offset = (instanceIdx * blockWidth) // instance offset
             + getOffsetFromHandle(handleNum); // value offset
 
         let block: Float32Array | Int32Array = null!;
-        if (type < Type.FLOAT) block = this._blocksInt[setId][bindingId];
-        else block = this._blocks[setId][bindingId];
+        if (type < Type.FLOAT) block = this._blocksInt[set][binding];
+        else block = this._blocks[set][binding];
 
         TestBase.assert(block.length > offset, 'memory error');
         type2writer[type](block, v, offset);
 
-        this._rootBufferDirties[setId] = true;
+        this._rootBufferDirties[set] = true;
     }
 
     setUniformArray (handle: IProgramHandle, v: ProgramBindingProperties[], instanceIdx = 0) : void {
+        const handleNum = handle as unknown as number;
+        const set = getSetFromHandle(handleNum);
+        const binding = getBindingFromHandle(handleNum);
+        const dynamicBinding = this._dynamicBindings[set][binding];
+        const maxInstanceCount = dynamicBinding > -1 ? this._maxInstanceCount[set][dynamicBinding] : 1;
         if (instanceIdx === -1) {
-            for (let i = 0; i < this.maxInstanceCount; i++) {
+            for (let i = 0; i < maxInstanceCount; i++) {
                 this.setUniformArray(handle, v, i);
             }
             return;
         }
-        const handleNum = handle as unknown as number;
-        const setId = getSetFromHandle(handleNum);
-        const bindingId = getBindingFromHandle(handleNum);
+        TestBase.assert(instanceIdx < maxInstanceCount && instanceIdx > -1, 'instanceIdx is out of range');
         const type = getTypeFromHandle(handleNum);
         const stride = TypeInfos[type].size;
-        const blockWidth = this._blockSizes[setId][bindingId];
+        const blockWidth = this._blockSizes[set][binding];
         let offset = (instanceIdx * blockWidth) // instance offset
             + getOffsetFromHandle(handleNum); // value offset
 
         let block: Float32Array | Int32Array = null!;
-        if (type < Type.FLOAT) block = this._blocksInt[setId][bindingId];
-        else block = this._blocks[setId][bindingId];
+        if (type < Type.FLOAT) block = this._blocksInt[set][binding];
+        else block = this._blocks[set][binding];
 
         // write data
         for (let i = 0; i < v.length; i++, offset += stride) {
             if (v[i] === null) continue;
             type2writer[type](block, v[i], offset);
         }
-        this._rootBufferDirties[setId] = true;
+        this._rootBufferDirties[set] = true;
     }
 
     setSampler (handle: IProgramHandle, v: Sampler, arrayIdx = 0) : void {
         const handleNum = handle as unknown as number;
-        const setId = getSetFromHandle(handleNum);
-        const bindingId = getBindingFromHandle(handleNum);
+        const set = getSetFromHandle(handleNum);
+        const binding = getBindingFromHandle(handleNum);
         const type = getTypeFromHandle(handleNum);
         const offset = TypeInfos[type].size * arrayIdx;
-        this.descriptorSets[setId].bindSampler(bindingId, v, offset);
+        this.descriptorSets[set].bindSampler(binding, v, offset);
     }
 
     setTexture (handle: IProgramHandle, v: Texture, arrayIdx = 0) : void {
         const handleNum = handle as unknown as number;
-        const setId = getSetFromHandle(handleNum);
-        const bindingId = getBindingFromHandle(handleNum);
+        const set = getSetFromHandle(handleNum);
+        const binding = getBindingFromHandle(handleNum);
         const type = getTypeFromHandle(handleNum);
         const offset = TypeInfos[type].size * arrayIdx;
-        this.descriptorSets[setId].bindTexture(bindingId, v, offset);
+        this.descriptorSets[set].bindTexture(binding, v, offset);
     }
 
-    nextInstance (currentInstance: number): number {
-        const nextInstance = currentInstance + 1;
-        return nextInstance === this.maxInstanceCount ? 0 : nextInstance;
+    setBufferInstance (handle: IProgramHandle, instanceIdx = 0): void {
+        const handleNum = handle as unknown as number;
+        const set = getSetFromHandle(handleNum);
+        const binding = getBindingFromHandle(handleNum);
+        const type = getTypeFromHandle(handleNum);
+        TestBase.assert(type !== undefined, `${handleNum} is not a valid IProgramHandle of ubo block`);
+        const dynamicBinding = this._dynamicBindings[set][binding];
+        TestBase.assert(dynamicBinding !== -1, 'block is not dynamic');
+        const maxInstanceCount = this._maxInstanceCount[set][dynamicBinding];
+        TestBase.assert(instanceIdx < maxInstanceCount && instanceIdx > -1, 'instanceIdx is out of range');
+        this._instanceOffsets[set][dynamicBinding] = this._dynamicOffsets[set][dynamicBinding] * instanceIdx;
+    }
+
+    getInstanceRange (handle: IProgramHandle): number {
+        const handleNum = handle as unknown as number;
+        const set = getSetFromHandle(handleNum);
+        const binding = getBindingFromHandle(handleNum);
+        const type = getTypeFromHandle(handleNum);
+        TestBase.assert(type !== undefined, `${handleNum} is not a valid IProgramHandle of ubo block`);
+        const dynamicBinding = this._dynamicBindings[set][binding];
+        TestBase.assert(dynamicBinding !== -1, 'block is not dynamic');
+        return this._maxInstanceCount[set][dynamicBinding];
+    }
+
+    get instanceOffsets () {
+        return this._instanceOffsets;
     }
 
     update () {
