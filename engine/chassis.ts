@@ -234,7 +234,6 @@ export class Program {
         const samplerTextures: UniformSamplerTexture[] = [];
         const shaderBlocks: UniformBlock[] = [];
 
-        const streamIds: number[] = this._bufferStreamIds(info.attributes || []);
         const descriptorSetIds: number[] = this._descriptorSetIds(info.blocks || [], info.samplerTextures || []);
         TestBase.assert(descriptorSetIds.length < 4, 'too many descriptor set for one draw call, you can use 3 at most.');
 
@@ -356,7 +355,7 @@ export class Program {
         }
 
         // set vertex buffer attributes
-        const attributeLocations: Record<number, number> = streamIds.map((id) => 0);
+        let attributeLocations = 0;
         for (const attribute of info.attributes || []) {
             const regex = new RegExp(`${reg}${attribute.name}${reg}`, `g`);
             if (!info.vert.search(regex)) continue;
@@ -366,7 +365,7 @@ export class Program {
                 attribute.isNormalized,
                 attribute.stream || 0,
                 attribute.isInstanced,
-                attributeLocations[attribute.stream || 0]++,
+                attributeLocations++,
             ));
         }
 
@@ -406,16 +405,6 @@ export class Program {
         this._pipelineStateMap = new Map<number, PipelineState>();
         this._currentPipelineState = null!;
         this.setPipelineState(info.defaultStates || {});
-    }
-
-    private _bufferStreamIds (attributes: IShaderAttribute[] = []): number[] {
-        const streamIds: number[] = [];
-        let id = 0;
-        for (const attribute of attributes) {
-            id = attribute.stream || 0;
-            if (streamIds.indexOf(id) === -1) streamIds.push(id);
-        }
-        return streamIds.sort((a, b) => a - b);
     }
 
     private _descriptorSetIds (blocks: IShaderBlock[] = [],
@@ -483,11 +472,13 @@ export class Program {
         commandBuffer.bindPipelineState(this._currentPipelineState);
 
         if (instance === undefined) {
-            bindings.descriptorSets.map((descriptorSet, index) => commandBuffer.bindDescriptorSet(index, descriptorSet));
-        } else {
             for (let i = 0; i < bindings.descriptorSets.length; i++) {
-                const offsets = [];
-                for (let j = 0; j < offsets.length; j++) {
+                commandBuffer.bindDescriptorSet(i, bindings.descriptorSets[i]);
+            }
+        } else {
+            const offsets = [];
+            for (let i = 0; i < bindings.descriptorSets.length; i++) {
+                for (let j = 0; j < bindings.dynamicOffsets[i].length; j++) {
                     offsets[j] = bindings.dynamicOffsets[i][j] * instance;
                 }
                 commandBuffer.bindDescriptorSet(i, bindings.descriptorSets[i], offsets);
