@@ -556,13 +556,14 @@ export class ProgramBindings {
                 lastSize = block.members.reduce((pv, cv) => (pv + TypeInfos[cv.type].size) * (cv.count || 1), 0);
                 lastSize = Math.ceil(lastSize / alignment) * alignment;
                 this._blockSizes[set].push(lastSize);
-                if (isDynamic) {
-                    instanceCount = maxInstanceCount[block.name];
-                    instanceCount = instanceCount !== undefined ? instanceCount : 1;
 
+                instanceCount = maxInstanceCount[block.name];
+                instanceCount = instanceCount !== undefined ? instanceCount : 1;
+                this._maxInstanceCount[set][binding] = instanceCount;
+
+                if (isDynamic) {
                     this._dynamicOffsets[set].push(lastSize);
                     this._instanceOffsets[set].push(0);
-                    this._maxInstanceCount[set].push(instanceCount);
                     this._dynamicBindings[set][binding] = dynamicBinding;
                     dynamicBinding += 1;
 
@@ -590,9 +591,7 @@ export class ProgramBindings {
             const isDynamic = layout.setLayouts[set].bindings[binding].descriptorType & DescriptorType.DYNAMIC_UNIFORM_BUFFER;
 
             let size = this._blockSizes[set][binding];
-            const dynamicBinding = this._dynamicBindings[set][binding];
-            if (isDynamic) size *= this._maxInstanceCount[set][dynamicBinding];
-
+            if (isDynamic) size *= this._maxInstanceCount[set][binding];
             const bufferViewInfo = new BufferViewInfo(
                 this._rootBuffers[set],
                 startOffsets[set][binding],
@@ -630,8 +629,7 @@ export class ProgramBindings {
         const handleNum = handle as unknown as number;
         const set = getSetFromHandle(handleNum);
         const binding = getBindingFromHandle(handleNum);
-        const dynamicBinding = this._dynamicBindings[set][binding];
-        const maxInstanceCount = dynamicBinding > -1 ? this._maxInstanceCount[set][dynamicBinding] : 1;
+        const maxInstanceCount = this._maxInstanceCount[set][binding];
         if (instanceIdx === -1) {
             for (let i = 0; i < maxInstanceCount; i++) {
                 this.setUniform(handle, v, i);
@@ -659,8 +657,7 @@ export class ProgramBindings {
         const handleNum = handle as unknown as number;
         const set = getSetFromHandle(handleNum);
         const binding = getBindingFromHandle(handleNum);
-        const dynamicBinding = this._dynamicBindings[set][binding];
-        const maxInstanceCount = dynamicBinding > -1 ? this._maxInstanceCount[set][dynamicBinding] : 1;
+        const maxInstanceCount = this._maxInstanceCount[set][binding];
         if (instanceIdx === -1) {
             for (let i = 0; i < maxInstanceCount; i++) {
                 this.setUniformArray(handle, v, i);
@@ -708,24 +705,11 @@ export class ProgramBindings {
         const handleNum = handle as unknown as number;
         const set = getSetFromHandle(handleNum);
         const binding = getBindingFromHandle(handleNum);
-        const type = getTypeFromHandle(handleNum);
-        TestBase.assert(type !== undefined, `${handleNum} is not a valid IProgramHandle of ubo block`);
         const dynamicBinding = this._dynamicBindings[set][binding];
         TestBase.assert(dynamicBinding !== -1, 'block is not dynamic');
-        const maxInstanceCount = this._maxInstanceCount[set][dynamicBinding];
+        const maxInstanceCount = this._maxInstanceCount[set][binding];
         TestBase.assert(instanceIdx < maxInstanceCount && instanceIdx > -1, 'instanceIdx is out of range');
         this._instanceOffsets[set][dynamicBinding] = this._dynamicOffsets[set][dynamicBinding] * instanceIdx;
-    }
-
-    getInstanceRange (handle: IProgramHandle): number {
-        const handleNum = handle as unknown as number;
-        const set = getSetFromHandle(handleNum);
-        const binding = getBindingFromHandle(handleNum);
-        const type = getTypeFromHandle(handleNum);
-        TestBase.assert(type !== undefined, `${handleNum} is not a valid IProgramHandle of ubo block`);
-        const dynamicBinding = this._dynamicBindings[set][binding];
-        TestBase.assert(dynamicBinding !== -1, 'block is not dynamic');
-        return this._maxInstanceCount[set][dynamicBinding];
     }
 
     get instanceOffsets () {

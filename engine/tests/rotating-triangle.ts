@@ -64,7 +64,8 @@ export class RotatingTriangle extends TestBase {
             ],
             attachments: 2,
         });
-        this._bindings = this._program.createBindings({ maxInstanceCount: { Color: 2, Material: 5 } });
+        // Material's maxInstanceCount will be the default value, i.e., 1
+        this._bindings = this._program.createBindings({ maxInstanceCount: { Color: 2 } });
         this._inputs = this._program.createInputs({
             maxVertexCount: 5,
             maxIndexCount: 9,
@@ -83,16 +84,9 @@ export class RotatingTriangle extends TestBase {
 
         this._bindings.setUniform(this._program.getHandle('u_color', 0, Type.FLOAT4), new Vec4(0, 1, 0, 1), 0);
         this._bindings.setUniform(this._program.getHandle('u_color', 0, Type.FLOAT4), new Vec4(0, 1, 0, 1), 1);
-        this._ucolorHandle = this._program.getHandle('u_color', 1, Type.FLOAT); // will only modify the x component
-        this._colorHandle = this._program.getHandle('Color'); // get the handle of the Color block
-        this._instanceRange = this._bindings.getInstanceRange(this._colorHandle);
+        this._colorHandle = this._program.getHandle('u_color', 0, Type.FLOAT); // will only modify the x component
 
         const material = this._program.getHandle('Material');
-        const materialRange = this._bindings.getInstanceRange(material);
-        this._bindings.setBufferInstance(material, 1);
-        this._bindings.setBufferInstance(material, 2);
-        this._bindings.setBufferInstance(material, 3);
-        this._bindings.setBufferInstance(material, 4);
         this._bindings.setBufferInstance(material, 0);
 
         this._modelHandle = this._program.getHandle('u_model');
@@ -110,7 +104,7 @@ export class RotatingTriangle extends TestBase {
     }
 
     public onTick () {
-        this._bindings.setUniform(this._ucolorHandle, Math.abs(Math.sin(TestBase.cumulativeTime)), this._instance);
+        this._bindings.setUniform(this._colorHandle, Math.abs(Math.sin(TestBase.cumulativeTime)), this._instance);
 
         this._model.rotate(0.02, new Vec3(0.0, 1.0, 0.0));
 
@@ -127,7 +121,7 @@ export class RotatingTriangle extends TestBase {
         TestBase._endOnscreenPass();
         TestBase._present();
 
-        if (++this._instance >= this._instanceRange) this._instance = 0;
+        if (++this._instance >= 2) this._instance = 0;
     }
 
     public onDestroy () {
