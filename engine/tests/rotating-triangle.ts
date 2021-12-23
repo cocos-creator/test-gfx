@@ -10,9 +10,6 @@ export class RotatingTriangle extends TestBase {
 
     private _clearColor = new Color(1, 0, 0, 1);
     private _colorHandle = NULL_HANDLE;
-    private _ucolorHandle = NULL_HANDLE;
-
-    private _instanceRange = 0;
 
     private _modelHandle = NULL_HANDLE;
     private _viewHandle = NULL_HANDLE;
@@ -21,7 +18,6 @@ export class RotatingTriangle extends TestBase {
     private _model: Mat4 = new Mat4();
     private _view: Mat4 = new Mat4();
     private _proj: Mat4 = new Mat4();
-    private _mvp: Mat4 = new Mat4();
 
     private _instance = 0;
 
