@@ -5,6 +5,7 @@ import { EmptyDevice } from 'gfx/empty/empty-device';
 import { WebGLDevice } from 'gfx/webgl/webgl-device';
 import { WebGL2Device } from 'gfx/webgl2/webgl2-device';
 import { TestBase } from './test-base';
+import { TEST_UBO_COUNTS, TEST_SAMPLER_COUNTS } from './chassis';
 import { testlist } from './tests';
 
 export interface IApplicationInfo {
@@ -22,6 +23,20 @@ export class Application {
         Device.canvas = info.canvas;
 
         const deviceInfo = new DeviceInfo();
+
+        deviceInfo.bindingMappingInfo.bufferOffsets = [
+            0,
+            TEST_UBO_COUNTS[0],
+            TEST_UBO_COUNTS[0] + TEST_UBO_COUNTS[1],
+        ];
+        deviceInfo.bindingMappingInfo.samplerOffsets = [
+            -TEST_UBO_COUNTS[0],
+            TEST_SAMPLER_COUNTS[0] - TEST_UBO_COUNTS[1],
+            TEST_SAMPLER_COUNTS[0] + TEST_SAMPLER_COUNTS[1],
+        ];
+
+        deviceInfo.bindingMappingInfo.flexibleSet = TEST_UBO_COUNTS.findIndex((num) => num === -1);
+
         switch (info.api) {
         case API.WEBGL:
             TestBase.device = new WebGLDevice();
