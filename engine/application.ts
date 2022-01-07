@@ -1,6 +1,6 @@
 import { Device } from 'gfx/base/device';
 import { API, ColorAttachment, DepthStencilAttachment, DeviceInfo, FramebufferInfo,
-    RenderPassInfo, SurfaceTransform, SwapchainInfo } from 'gfx/base/define';
+    RenderPassInfo, SurfaceTransform, SwapchainInfo, BindingMappingInfo } from 'gfx/base/define';
 import { EmptyDevice } from 'gfx/empty/empty-device';
 import { WebGLDevice } from 'gfx/webgl/webgl-device';
 import { WebGL2Device } from 'gfx/webgl2/webgl2-device';
@@ -22,20 +22,15 @@ export class Application {
     public initialize (info: IApplicationInfo) {
         Device.canvas = info.canvas;
 
-        const deviceInfo = new DeviceInfo();
-
-        deviceInfo.bindingMappingInfo.bufferOffsets = [
-            0,
-            TEST_UBO_COUNTS[0],
-            TEST_UBO_COUNTS[0] + TEST_UBO_COUNTS[1],
-        ];
-        deviceInfo.bindingMappingInfo.samplerOffsets = [
-            -TEST_UBO_COUNTS[0],
-            TEST_SAMPLER_COUNTS[0] - TEST_UBO_COUNTS[1],
-            TEST_SAMPLER_COUNTS[0] + TEST_SAMPLER_COUNTS[1],
-        ];
-
-        deviceInfo.bindingMappingInfo.flexibleSet = TEST_UBO_COUNTS.findIndex((num) => num === -1);
+        const deviceInfo = new DeviceInfo(new BindingMappingInfo(
+            TEST_UBO_COUNTS,
+            TEST_SAMPLER_COUNTS,
+            [0, 0, -1],
+            [0, 0, -1],
+            [0, 0, -1],
+            [0, 0, -1],
+            [0, 0, -1],
+        ));
 
         switch (info.api) {
         case API.WEBGL:
