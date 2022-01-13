@@ -25,11 +25,12 @@ export class Application {
         const deviceInfo = new DeviceInfo(new BindingMappingInfo(
             TEST_UBO_COUNTS,
             TEST_SAMPLER_COUNTS,
-            [0, 0, -1],
-            [0, 0, -1],
-            [0, 0, -1],
-            [0, 0, -1],
-            [0, 0, -1],
+            [0, 0, 0],
+            [0, 0, 0],
+            [0, 0, 0],
+            [0, 0, 0],
+            [0, 0, 0],
+            [0, 1, 2],
         ));
 
         switch (info.api) {

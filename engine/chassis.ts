@@ -212,8 +212,8 @@ function hashObject (o: object) {
     return hash;
 }
 
-export const TEST_UBO_COUNTS: number[] = [5, 3, -1];
-export const TEST_SAMPLER_COUNTS: number[] = [5, 3, -1];
+export const TEST_UBO_COUNTS: number[] = [5, 3, 0];
+export const TEST_SAMPLER_COUNTS: number[] = [5, 3, 0];
 
 export class Program {
     private _shader: Shader;

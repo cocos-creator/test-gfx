@@ -48,19 +48,19 @@ gfx::Device *    TestBaseI::device     = nullptr;
 gfx::RenderPass *TestBaseI::renderPass = nullptr;
 
 vector<TestBaseI::createFunc> TestBaseI::tests = {
-    BasicTexture::create,
-    BasicTriangle::create,
     SubpassTest::create,
     ScriptTest::create,
     ComputeTest::create,
     StressTest::create,
     FrameGraphTest::create,
     ClearScreen::create,
+    BasicTriangle::create,
     DepthTexture::create,
     BlendTest::create,
     ParticleTest::create,
 // Need to fix lib jpeg on iOS
 #if CC_PLATFORM != CC_PLATFORM_MAC_IOS
+    BasicTexture::create,
     StencilTest::create,
 #endif // CC_PLATFORM != CC_PLATFORM_MAC_IOS
 };
