@@ -1,6 +1,7 @@
 #include "Chassis.h"
 #include "base/threading/MessageQueue.h"
 #include "gfx-agent/DeviceAgent.h"
+#include "gfx-validator/BufferValidator.h"
 
 namespace cc {
 namespace experimental {
@@ -328,7 +329,7 @@ void TransformAgent::setRotationFromEuler(float angleX, float angleY, float angl
         })
 }
 
-void TransformAgent::setScale(float x, float y, float z) {
+void TransformAgent::setScale(float x, float y, float z){
     ENQUEUE_MESSAGE_4(
         RootAgent::getInstance()->getMessageQueue(), TransformSetScale,
         actor, getActor(),
@@ -337,8 +338,7 @@ void TransformAgent::setScale(float x, float y, float z) {
         z, z,
         {
             actor->setScale(x, y, z);
-        })
-}
+        })}
 
 ModelAgent::~ModelAgent() {
     ENQUEUE_MESSAGE_1(
@@ -369,15 +369,14 @@ void ModelAgent::setTransform(const TransformView *transform) {
         })
 }
 
-void ModelAgent::setEnabled(bool enabled) {
+void ModelAgent::setEnabled(bool enabled){
     ENQUEUE_MESSAGE_2(
         RootAgent::getInstance()->getMessageQueue(), ModelSetEnabled,
         actor, getActor(),
         enabled, enabled,
         {
             actor->setEnabled(enabled);
-        })
-}
+        })}
 
 RootAgent *RootAgent::instance = nullptr;
 
@@ -430,7 +429,7 @@ void RootAgent::destroy() {
 }
 
 /**
- * Render thread will be running completely asynchronously from 
+ * Render thread will be running completely asynchronously from
  * logic thread. (No semaphores guarding each frame boundaries)
  * This allows different refresh rates between RT(60 FPS, V-Synced)
  * and LT(e.g. 120 FPS, providing the best responsiveness).
@@ -464,6 +463,8 @@ void RootAgent::setMultithreaded(bool multithreaded) {
 
     // Cannot detach if there is no device thread
     if (!gfx::DeviceAgent::getInstance()) return;
+    // V8 doesn't support multithreaded invocations
+    gfx::BufferValidator::recordInitStack = !multithreaded;
 
     _multithreaded = multithreaded;
 
