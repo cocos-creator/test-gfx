@@ -182,10 +182,10 @@ void BasicTexture::createTexture() {
     _textures[0] = TestBaseI::createTextureWithFile(textureInfo, "uv_checker_01.jpg");
     _textures[1] = TestBaseI::createTextureWithFile(textureInfo, "uv_checker_02.jpg");
 
-    vector<uint8_t> buffer(_textures[0]->getWidth() * _textures[0]->getHeight() * gfx::GFX_FORMAT_INFOS[toNumber(_textures[0]->getFormat())].size);
-    uint8_t *       data = buffer.data();
+    vector<uint8_t>        buffer(_textures[0]->getWidth() * _textures[0]->getHeight() * gfx::GFX_FORMAT_INFOS[toNumber(_textures[0]->getFormat())].size);
+    uint8_t *              data = buffer.data();
     gfx::BufferTextureCopy region;
-    region.texExtent.width = _textures[0]->getWidth();
+    region.texExtent.width  = _textures[0]->getWidth();
     region.texExtent.height = _textures[0]->getHeight();
     device->copyTextureToBuffers(_textures[0], &data, &region, 1);
 
@@ -203,7 +203,7 @@ void BasicTexture::createPipeline() {
     _descriptorSet = device->createDescriptorSet({_descriptorSetLayout});
 
     gfx::SamplerInfo samplerInfo;
-    auto *sampler = device->getSampler(samplerInfo);
+    auto *           sampler = device->getSampler(samplerInfo);
 
     _descriptorSet->bindBuffer(0, _uniformBuffer);
     _descriptorSet->bindSampler(1, sampler);
@@ -222,32 +222,18 @@ void BasicTexture::createPipeline() {
     _pipelineState = device->createPipelineState(pipelineInfo);
 
     _globalBarriers.push_back(device->getGlobalBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-            gfx::AccessType::VERTEX_BUFFER,
-            gfx::AccessType::INDEX_BUFFER,
-        },
+        gfx::AccessFlagBit::TRANSFER_WRITE,
+        gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER | gfx::AccessFlagBit::VERTEX_BUFFER | gfx::AccessFlagBit::INDEX_BUFFER,
     }));
 
     _globalBarriers.push_back(device->getGlobalBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-        },
+        gfx::AccessFlagBit::TRANSFER_WRITE,
+        gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER,
     }));
 
     _textureBarriers.push_back(device->getTextureBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE,
-        },
+        gfx::AccessFlagBit::TRANSFER_WRITE,
+        gfx::AccessFlagBit::FRAGMENT_SHADER_READ_TEXTURE,
         false,
     }));
 

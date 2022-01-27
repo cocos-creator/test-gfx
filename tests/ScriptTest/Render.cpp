@@ -16,12 +16,18 @@ struct MultisampledFramebuffer {
         colorAttachment.format      = swapchain->getColorTexture()->getFormat();
         colorAttachment.sampleCount = gfx::SampleCount::MULTIPLE_BALANCE;
         colorAttachment.storeOp     = gfx::StoreOp::DISCARD;
-        colorAttachment.endAccesses = {gfx::AccessType::COLOR_ATTACHMENT_WRITE};
+        colorAttachment.barrier     = device->getGlobalBarrier({
+            gfx::AccessFlagBit::NONE,
+            gfx::AccessFlagBit::COLOR_ATTACHMENT_WRITE,
+        });
 
         gfx::ColorAttachment &colorResolveAttachment{renderPassInfo.colorAttachments.emplace_back()};
-        colorResolveAttachment.format      = swapchain->getColorTexture()->getFormat();
-        colorResolveAttachment.loadOp      = gfx::LoadOp::DISCARD;
-        colorResolveAttachment.endAccesses = {gfx::AccessType::TRANSFER_READ};
+        colorResolveAttachment.format  = swapchain->getColorTexture()->getFormat();
+        colorResolveAttachment.loadOp  = gfx::LoadOp::DISCARD;
+        colorResolveAttachment.barrier = device->getGlobalBarrier({
+            gfx::AccessFlagBit::NONE,
+            gfx::AccessFlagBit::TRANSFER_READ,
+        });
 
         gfx::DepthStencilAttachment &depthStencilAttachment{renderPassInfo.depthStencilAttachment};
         depthStencilAttachment.format         = gfx::Format::DEPTH;
@@ -399,14 +405,10 @@ void Root::initialize() {
     pipelineState = device->createPipelineState(pipelineInfo);
 
     globalBarriers.push_back(device->getGlobalBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-            gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
-            gfx::AccessType::VERTEX_BUFFER,
-        },
+        gfx::AccessFlagBit::TRANSFER_WRITE,
+        gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER |
+            gfx::AccessFlagBit::FRAGMENT_SHADER_READ_UNIFORM_BUFFER |
+            gfx::AccessFlagBit::VERTEX_BUFFER,
     }));
 
     auto max = static_cast<int>((vmath::IndexP::Size - 1) * floatCountPerModel);

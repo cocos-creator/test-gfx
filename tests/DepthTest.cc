@@ -34,12 +34,18 @@ struct DepthResolveFramebuffer {
             depthStencilAttachment.format      = gfx::Format::DEPTH;
             depthStencilAttachment.sampleCount = gfx::SampleCount::MULTIPLE_BALANCE;
             depthStencilAttachment.storeOp     = gfx::StoreOp::DISCARD;
-            depthStencilAttachment.endAccesses = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
+            depthStencilAttachment.barrier     = device->getGlobalBarrier({
+                gfx::AccessFlagBit::NONE,
+                gfx::AccessFlagBit::DEPTH_STENCIL_ATTACHMENT_WRITE,
+            });
 
             gfx::ColorAttachment &depthStencilResolveAttachment{renderPassInfo.colorAttachments.emplace_back()};
-            depthStencilResolveAttachment.format      = gfx::Format::DEPTH;
-            depthStencilResolveAttachment.loadOp      = gfx::LoadOp::DISCARD;
-            depthStencilResolveAttachment.endAccesses = {gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE};
+            depthStencilResolveAttachment.format = gfx::Format::DEPTH;
+            depthStencilResolveAttachment.loadOp = gfx::LoadOp::DISCARD;
+            depthStencilAttachment.barrier       = device->getGlobalBarrier({
+                gfx::AccessFlagBit::NONE,
+                gfx::AccessFlagBit::FRAGMENT_SHADER_READ_TEXTURE,
+            });
 
             gfx::SubpassInfo &subpass{renderPassInfo.subpasses.emplace_back()};
             subpass.depthStencil        = 0U;
@@ -56,9 +62,12 @@ struct DepthResolveFramebuffer {
             framebuffer = device->createFramebuffer(fboInfo);
         } else {
             gfx::RenderPassInfo renderPassInfo;
-            renderPassInfo.depthStencilAttachment.format      = gfx::Format::DEPTH;
-            renderPassInfo.depthStencilAttachment.endAccesses = {gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE};
-            renderPass                                        = device->createRenderPass(renderPassInfo);
+            renderPassInfo.depthStencilAttachment.format  = gfx::Format::DEPTH;
+            renderPassInfo.depthStencilAttachment.barrier = device->getGlobalBarrier({
+                gfx::AccessFlagBit::NONE,
+                gfx::AccessFlagBit::FRAGMENT_SHADER_READ_TEXTURE,
+            });
+            renderPass                                    = device->createRenderPass(renderPassInfo);
 
             gfx::FramebufferInfo fboInfo;
             fboInfo.renderPass          = renderPass;
@@ -546,24 +555,16 @@ bool DepthTexture::onInit() {
     bg->descriptorSet->update();
 
     _globalBarriers.push_back(device->getGlobalBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-            gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
-            gfx::AccessType::VERTEX_BUFFER,
-            gfx::AccessType::INDEX_BUFFER,
-        },
+        gfx::AccessFlagBit::TRANSFER_WRITE,
+        gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER |
+            gfx::AccessFlagBit::FRAGMENT_SHADER_READ_UNIFORM_BUFFER |
+            gfx::AccessFlagBit::VERTEX_BUFFER |
+            gfx::AccessFlagBit::INDEX_BUFFER,
     }));
 
     _globalBarriers.push_back(device->getGlobalBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-        },
+        gfx::AccessFlagBit::TRANSFER_WRITE,
+        gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER,
     }));
 
     return true;

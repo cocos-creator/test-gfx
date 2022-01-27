@@ -202,7 +202,7 @@ void StencilTest::createPipelineState() {
     _pipelineLayout = device->createPipelineLayout({{_descriptorSetLayout}});
 
     gfx::SamplerInfo samplerInfo;
-    auto *sampler = device->getSampler(samplerInfo);
+    auto *           sampler = device->getSampler(samplerInfo);
 
     for (uint i = 0; i < BINDING_COUNT; i++) {
         _descriptorSet[i] = device->createDescriptorSet({_descriptorSetLayout});
@@ -314,31 +314,19 @@ void StencilTest::createPipelineState() {
     _pipelineState[static_cast<uint8_t>(PipelineType::FRONT_BACK_STENCIL)]                        = device->createPipelineState(pipelineInfo[static_cast<uint8_t>(PipelineType::FRONT_BACK_STENCIL)]);
 
     _globalBarriers.push_back(device->getGlobalBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-            gfx::AccessType::VERTEX_BUFFER,
-        },
+        gfx::AccessFlagBit::TRANSFER_WRITE,
+        gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER |
+            gfx::AccessFlagBit::VERTEX_BUFFER,
     }));
 
     _globalBarriers.push_back(device->getGlobalBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-        },
+        gfx::AccessFlagBit::TRANSFER_WRITE,
+        gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER,
     }));
 
     _textureBarriers.push_back(device->getTextureBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE,
-        },
+        gfx::AccessFlagBit::TRANSFER_WRITE,
+        gfx::AccessFlagBit::FRAGMENT_SHADER_READ_TEXTURE,
         false,
     }));
 

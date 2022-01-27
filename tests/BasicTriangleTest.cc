@@ -213,26 +213,18 @@ void BasicTriangle::createPipeline() {
     _invisiblePipelineState = device->createPipelineState(pipelineInfo);
 
     _globalBarriers.push_back(device->getGlobalBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-            gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
-            gfx::AccessType::INDIRECT_BUFFER,
-            gfx::AccessType::VERTEX_BUFFER,
-            gfx::AccessType::INDEX_BUFFER,
-        },
+        gfx::AccessFlagBit::TRANSFER_WRITE,
+        gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER |
+            gfx::AccessFlagBit::FRAGMENT_SHADER_READ_UNIFORM_BUFFER |
+            gfx::AccessFlagBit::INDIRECT_BUFFER |
+            gfx::AccessFlagBit::VERTEX_BUFFER |
+            gfx::AccessFlagBit::INDEX_BUFFER,
     }));
 
     _globalBarriers.push_back(device->getGlobalBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-            gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
-        },
+        gfx::AccessFlagBit::TRANSFER_WRITE,
+        gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER |
+            gfx::AccessFlagBit::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
     }));
 }
 

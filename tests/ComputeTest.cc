@@ -376,39 +376,27 @@ void ComputeTest::createPipeline() {
     _pipelineState = device->createPipelineState(pipelineInfo);
 
     _globalBarriers.push_back(device->getGlobalBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::COMPUTE_SHADER_READ_UNIFORM_BUFFER,
-            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-        },
+        gfx::AccessFlagBit::TRANSFER_WRITE,
+        gfx::AccessFlagBit::COMPUTE_SHADER_READ_UNIFORM_BUFFER |
+            gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER,
     }));
 
     _globalBarriers.push_back(device->getGlobalBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::COMPUTE_SHADER_WRITE,
-        },
+        gfx::AccessFlagBit::TRANSFER_WRITE,
+        gfx::AccessFlagBit::COMPUTE_SHADER_WRITE,
     }));
 
     _globalBarriers.push_back(device->getGlobalBarrier({
-        {
-            gfx::AccessType::COMPUTE_SHADER_WRITE,
-        },
-        {
-            gfx::AccessType::VERTEX_BUFFER,
-            gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE,
-        },
+        gfx::AccessFlagBit::COMPUTE_SHADER_WRITE,
+        gfx::AccessFlagBit::VERTEX_BUFFER |
+            gfx::AccessFlagBit::FRAGMENT_SHADER_READ_TEXTURE,
     }));
 
-    _textureBarriers.push_back(device->getTextureBarrier({{},
-                                                             {
-                                                                 gfx::AccessType::COMPUTE_SHADER_WRITE,
-                                                             },
-                                                             true}));
+    _textureBarriers.push_back(device->getTextureBarrier({
+        gfx::AccessFlagBit::NONE,
+        gfx::AccessFlagBit::COMPUTE_SHADER_WRITE,
+        true,
+    }));
 }
 
 void ComputeTest::onTick() {

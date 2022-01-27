@@ -1,7 +1,7 @@
 #include "Chassis.h"
 #include "base/threading/MessageQueue.h"
 #include "gfx-agent/DeviceAgent.h"
-#include "gfx-validator/BufferValidator.h"
+#include "gfx-validator/DeviceValidator.h"
 
 namespace cc {
 namespace experimental {
@@ -464,7 +464,7 @@ void RootAgent::setMultithreaded(bool multithreaded) {
     // Cannot detach if there is no device thread
     if (!gfx::DeviceAgent::getInstance()) return;
     // V8 doesn't support multithreaded invocations
-    gfx::BufferValidator::recordInitStack = !multithreaded;
+    gfx::DeviceValidator::allowStacktraceJS = !multithreaded;
 
     _multithreaded = multithreaded;
 
