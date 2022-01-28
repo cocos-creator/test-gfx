@@ -1,9 +1,14 @@
-#include "BasicTextureTest.h"
+#include "BasicMipMapTest.h"
+#include "gfx-base/GFXDef-common.h"
 
 namespace cc {
 
-void BasicTexture::onDestroy() {
+void BasicMipMap::onDestroy() {
     CC_SAFE_DESTROY(_shader);
+    for (auto *view : _textureViews) {
+        CC_SAFE_DESTROY(view);
+    }
+    _textureViews.clear();
     CC_SAFE_DESTROY(_vertexBuffer);
     CC_SAFE_DESTROY(_inputAssembler);
     CC_SAFE_DESTROY(_descriptorSet);
@@ -13,7 +18,7 @@ void BasicTexture::onDestroy() {
     CC_SAFE_DESTROY(_uniformBuffer);
 }
 
-bool BasicTexture::onInit() {
+bool BasicMipMap::onInit() {
     createShader();
     createVertexBuffer();
     createInputAssembler();
@@ -22,7 +27,7 @@ bool BasicTexture::onInit() {
     return true;
 }
 
-void BasicTexture::createShader() {
+void BasicMipMap::createShader() {
     ShaderSources<StandardShaderSource> sources;
     sources.glsl4 = {
         R"(
@@ -136,7 +141,7 @@ void BasicTexture::createShader() {
     _shader                    = device->createShader(shaderInfo);
 }
 
-void BasicTexture::createVertexBuffer() {
+void BasicMipMap::createVertexBuffer() {
     //float left = -.7f, bottom = -.2f, right = .1f, top = .6f;
     float left         = -1.F;
     float bottom       = -1.F;
@@ -158,15 +163,13 @@ void BasicTexture::createVertexBuffer() {
     });
     _vertexBuffer->update(vertexData, sizeof(vertexData));
 
-    _uniformBuffer = device->createBuffer({
-        gfx::BufferUsage::UNIFORM,
-        gfx::MemoryUsage::DEVICE,
-        TestBaseI::getUBOSize(sizeof(Mat4)),
-        sizeof(Mat4) / 4,
-    });
+    _uniformBuffer = device->createBuffer({gfx::BufferUsage::UNIFORM,
+                                           gfx::MemoryUsage::DEVICE,
+                                           TestBaseI::getUBOSize(sizeof(Mat4)),
+                                           sizeof(Mat4) / 4});
 }
 
-void BasicTexture::createInputAssembler() {
+void BasicMipMap::createInputAssembler() {
     gfx::InputAssemblerInfo inputAssemblerInfo;
     inputAssemblerInfo.attributes.emplace_back(gfx::Attribute{"a_position", gfx::Format::RG32F, false, 0, false});
     inputAssemblerInfo.attributes.emplace_back(gfx::Attribute{"a_texCoord", gfx::Format::RG32F, false, 0, false});
@@ -174,7 +177,7 @@ void BasicTexture::createInputAssembler() {
     _inputAssembler = device->createInputAssembler(inputAssemblerInfo);
 }
 
-void BasicTexture::createTexture() {
+void BasicMipMap::createTexture() {
     gfx::TextureInfo textureInfo;
     textureInfo.usage  = gfx::TextureUsage::SAMPLED | gfx::TextureUsage::TRANSFER_DST | gfx::TextureUsage::TRANSFER_SRC;
     textureInfo.format = gfx::Format::RGBA8;
@@ -184,9 +187,21 @@ void BasicTexture::createTexture() {
     _textures[0] = TestBaseI::createTextureWithFile(textureInfo, "uv_checker_01.jpg");
     _textures[1] = TestBaseI::createTextureWithFile(textureInfo, "uv_checker_02.jpg");
 
-    vector<uint8_t> buffer(_textures[0]->getWidth() * _textures[0]->getHeight() * gfx::GFX_FORMAT_INFOS[toNumber(_textures[0]->getFormat())].size);
-    uint8_t *       data = buffer.data();
+    // texture view
+    gfx::TextureViewInfo viewInfo = {};
+    viewInfo.type                 = gfx::TextureType::TEX2D;
+    viewInfo.format               = gfx::Format::RGBA8;
+    viewInfo.baseLevel            = 3;
+    viewInfo.levelCount           = 1;
 
+    _textureViews.resize(2);
+    viewInfo.texture = _textures[0];
+    //_textureViews[0] = TestBaseI::device->createTexture(viewInfo);
+    viewInfo.texture = _textures[1];
+    //_textureViews[1] = TestBaseI::device->createTexture(viewInfo);
+
+    vector<uint8_t>        buffer(_textures[0]->getWidth() * _textures[0]->getHeight() * gfx::GFX_FORMAT_INFOS[toNumber(_textures[0]->getFormat())].size);
+    uint8_t *              data = buffer.data();
     gfx::BufferTextureCopy region;
     region.texExtent.width  = _textures[0]->getWidth();
     region.texExtent.height = _textures[0]->getHeight();
@@ -195,7 +210,7 @@ void BasicTexture::createTexture() {
     device->copyBuffersToTexture(&data, _textures[0], &region, 1);
 }
 
-void BasicTexture::createPipeline() {
+void BasicMipMap::createPipeline() {
     gfx::DescriptorSetLayoutInfo dslInfo;
     dslInfo.bindings.push_back({0, gfx::DescriptorType::UNIFORM_BUFFER, 1, gfx::ShaderStageFlagBit::VERTEX});
     dslInfo.bindings.push_back({1, gfx::DescriptorType::SAMPLER_TEXTURE, 2, gfx::ShaderStageFlagBit::FRAGMENT});
@@ -206,7 +221,8 @@ void BasicTexture::createPipeline() {
     _descriptorSet = device->createDescriptorSet({_descriptorSetLayout});
 
     gfx::SamplerInfo samplerInfo;
-    auto *           sampler = device->getSampler(samplerInfo);
+    samplerInfo.mipFilter = gfx::Filter::LINEAR;
+    auto *sampler         = device->getSampler(samplerInfo);
 
     _descriptorSet->bindBuffer(0, _uniformBuffer);
     _descriptorSet->bindSampler(1, sampler);
@@ -257,7 +273,7 @@ void BasicTexture::createPipeline() {
     _textureBarriers.push_back(_textureBarriers.back());
 }
 
-void BasicTexture::onTick() {
+void BasicMipMap::onTick() {
     auto *swapchain = swapchains[0];
     auto *fbo       = fbos[0];
 

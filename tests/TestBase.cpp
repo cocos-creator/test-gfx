@@ -10,6 +10,7 @@
 #include "bindings/manual/jsb_classtype.h"
 #include "bindings/manual/jsb_global_init.h"
 
+#include "tests/BasicMipMapTest.h"
 #include "tests/BasicTextureTest.h"
 #include "tests/BasicTriangleTest.h"
 #include "tests/BlendTest.h"
@@ -55,11 +56,12 @@ vector<TestBaseI::createFunc> TestBaseI::tests = {
     StressTest::create,
     FrameGraphTest::create,
     ClearScreen::create,
-    DepthTexture::create,
     BlendTest::create,
     ParticleTest::create,
 // Need to fix lib jpeg on iOS
 #if CC_PLATFORM != CC_PLATFORM_MAC_IOS
+    DepthTexture::create,
+    BasicMipMap::create,
     BasicTexture::create,
     StencilTest::create,
 #endif // CC_PLATFORM != CC_PLATFORM_MAC_IOS
