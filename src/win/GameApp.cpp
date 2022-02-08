@@ -130,10 +130,9 @@ void GameApp::Run() {
 }
 
 LRESULT CALLBACK GameApp::MessageHandler(HWND hWnd, DWORD msg, WPARAM wParam, LPARAM lParam) {
-    // Is the application in a minimized or maximized state?
-    static bool minOrMaxed = false;
-    uint        width      = 0u;
-    uint        height     = 0u;
+    bool closing = false;
+    uint width   = 0u;
+    uint height  = 0u;
 
     switch (msg) {
         // WM_SIZE is sent when the user resizes the window.
@@ -146,13 +145,13 @@ LRESULT CALLBACK GameApp::MessageHandler(HWND hWnd, DWORD msg, WPARAM wParam, LP
         // WM_CLOSE is sent when the user presses the 'X' button in the
         // caption bar menu.
         case WM_CLOSE:
-            TestBaseI::destroyGlobal();
-            _running = false;
-            _paused  = true;
+            closing = true;
             break;
         case WM_KEYDOWN:
             if (wParam == VK_SPACE) {
                 TestBaseI::spacePressed();
+            } else if (wParam == VK_ESCAPE) {
+                closing = true;
             }
             break;
         case WM_LBUTTONUP:
@@ -161,6 +160,12 @@ LRESULT CALLBACK GameApp::MessageHandler(HWND hWnd, DWORD msg, WPARAM wParam, LP
         case WM_RBUTTONUP:
             TestBaseI::onTouchEnd();
             break;
+    }
+
+    if (closing) {
+        TestBaseI::destroyGlobal();
+        _running = false;
+        _paused  = true;
     }
 
     return DefWindowProc(hWnd, msg, wParam, lParam);

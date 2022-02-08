@@ -168,7 +168,6 @@ void BasicTexture::createVertexBuffer() {
         gfx::BufferUsage::UNIFORM,
         gfx::MemoryUsage::DEVICE,
         TestBaseI::getUBOSize(sizeof(Mat4)),
-        sizeof(Mat4) / 4,
     });
 }
 

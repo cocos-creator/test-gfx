@@ -167,6 +167,7 @@ public:
                 return sources.glsl3;
             case gfx::API::METAL:
             case gfx::API::VULKAN:
+            case gfx::API::NVN:
                 return sources.glsl4;
             default: break;
         }

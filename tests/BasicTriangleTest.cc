@@ -1,4 +1,5 @@
 #include "BasicTriangleTest.h"
+#include "gfx-base/GFXDef-common.h"
 
 namespace cc {
 
@@ -12,6 +13,7 @@ void BasicTriangle::onDestroy() {
     CC_SAFE_DESTROY(_descriptorSetLayout);
     CC_SAFE_DESTROY(_pipelineLayout);
     CC_SAFE_DESTROY(_pipelineState);
+    CC_SAFE_DESTROY(_invisiblePipelineState);
     CC_SAFE_DESTROY(_indexBuffer);
     CC_SAFE_DESTROY(_indirectBuffer);
 }
@@ -206,6 +208,10 @@ void BasicTriangle::createPipeline() {
 
     _pipelineState = device->createPipelineState(pipelineInfo);
 
+    pipelineInfo.blendState.targets[0].blendColorMask = gfx::ColorMask::NONE;
+
+    _invisiblePipelineState = device->createPipelineState(pipelineInfo);
+
     _globalBarriers.push_back(device->getGlobalBarrier({
         {
             gfx::AccessType::TRANSFER_WRITE,
@@ -230,6 +236,8 @@ void BasicTriangle::createPipeline() {
     }));
 }
 
+#define TEST_OCCLUSION_QUERY 0
+
 void BasicTriangle::onTick() {
     auto *swapchain = swapchains[0];
     auto *fbo       = fbos[0];
@@ -247,6 +255,13 @@ void BasicTriangle::onTick() {
     Mat4 mvp;
     TestBaseI::createOrthographic(-1, 1, -1, 1, -1, 1, &mvp, swapchain);
 
+#if TEST_OCCLUSION_QUERY
+    Mat4  translate;
+    float speed{1.F};
+    Mat4::createTranslation({std::cos(_time * speed) - 1.F, std::sin(_time * speed) - 1.F, 0}, &translate);
+    mvp = translate * mvp;
+#endif
+
     device->acquire(&swapchain, 1);
 
     _uniformBuffer->update(&uniformColor, sizeof(uniformColor));
@@ -261,12 +276,39 @@ void BasicTriangle::onTick() {
         commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx]);
     }
 
+#if TEST_OCCLUSION_QUERY
+    static bool visible{false};
+    auto *      queryPool = device->getQueryPool();
+    device->getQueryPoolResults(queryPool);
+    commandBuffer->resetQueryPool(queryPool);
+
     commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0F, 0);
+    commandBuffer->beginQuery(queryPool, 0);
     commandBuffer->bindInputAssembler(_inputAssembler);
+    commandBuffer->bindDescriptorSet(0, _descriptorSet);
+
+    if (queryPool->hasResult(0) && !queryPool->getResult(0)) { // invisible last frame
+        commandBuffer->bindPipelineState(_invisiblePipelineState);
+        if (visible) CC_LOG_DEBUG("occlusion query result: %d", visible = false);
+    } else { // visible
+        commandBuffer->bindPipelineState(_pipelineState);
+        if (!visible) CC_LOG_DEBUG("occlusion query result: %d", visible = true);
+    }
+
+    commandBuffer->draw(_inputAssembler);
+    commandBuffer->endQuery(queryPool, 0);
+    commandBuffer->endRenderPass();
+
+    commandBuffer->completeQueryPool(queryPool);
+#else
+    commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0F, 0);
     commandBuffer->bindPipelineState(_pipelineState);
+    commandBuffer->bindInputAssembler(_inputAssembler);
     commandBuffer->bindDescriptorSet(0, _descriptorSet);
     commandBuffer->draw(_inputAssembler);
     commandBuffer->endRenderPass();
+#endif
+
     commandBuffer->end();
 
     device->flushCommands(commandBuffers);

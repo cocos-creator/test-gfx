@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.6)
 
 set(APP_NAME gfx_tests)
-cmake_policy(SET CMP0111 OLD)
+if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.19")
+    cmake_policy(SET CMP0111 OLD)
+endif()
 
 project(${APP_NAME})
 
