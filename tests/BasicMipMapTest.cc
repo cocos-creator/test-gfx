@@ -81,8 +81,11 @@ void BasicMipMap::createShader() {
             uniform sampler2D u_texture[2];
             out vec4 o_color;
             void main () {
-                const int idx = 1; //texcoord.x > 0.5 ? 1 : 0;
-                o_color = texture(u_texture[idx], texcoord);
+                if (texcoord.x > 0.5) {
+                    o_color = texture(u_texture[1], texcoord);
+                } else {
+                    o_color = texture(u_texture[0], texcoord);
+                }
             }
         )",
     };
@@ -105,8 +108,11 @@ void BasicMipMap::createShader() {
             uniform sampler2D u_texture[2];
             varying vec2 texcoord;
             void main () {
-                const int idx = 1; // texcoord.x > 0.5 ? 1 : 0;
-                gl_FragColor = texture2D(u_texture[idx], texcoord);
+                if (texcoord.x > 0.5) {
+                    gl_FragColor = texture2D(u_texture[1], texcoord);
+                } else {
+                    gl_FragColor = texture2D(u_texture[0], texcoord);
+                }
             }
         )",
     };
@@ -196,9 +202,9 @@ void BasicMipMap::createTexture() {
 
     _textureViews.resize(2);
     viewInfo.texture = _textures[0];
-    //_textureViews[0] = TestBaseI::device->createTexture(viewInfo);
+    _textureViews[0] = TestBaseI::device->createTexture(viewInfo);
     viewInfo.texture = _textures[1];
-    //_textureViews[1] = TestBaseI::device->createTexture(viewInfo);
+    _textureViews[1] = TestBaseI::device->createTexture(viewInfo);
 
     vector<uint8_t>        buffer(_textures[0]->getWidth() * _textures[0]->getHeight() * gfx::GFX_FORMAT_INFOS[toNumber(_textures[0]->getFormat())].size);
     uint8_t *              data = buffer.data();
@@ -226,9 +232,9 @@ void BasicMipMap::createPipeline() {
 
     _descriptorSet->bindBuffer(0, _uniformBuffer);
     _descriptorSet->bindSampler(1, sampler);
-    _descriptorSet->bindTexture(1, _textures[1]);
+    _descriptorSet->bindTexture(1, _textureViews[1]);
     _descriptorSet->bindSampler(1, sampler, 1);
-    _descriptorSet->bindTexture(1, _textures[0], 1);
+    _descriptorSet->bindTexture(1, _textureViews[0], 1);
     _descriptorSet->update();
 
     gfx::PipelineStateInfo pipelineInfo;

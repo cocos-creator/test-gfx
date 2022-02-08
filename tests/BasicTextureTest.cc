@@ -76,8 +76,11 @@ void BasicTexture::createShader() {
             uniform sampler2D u_texture[2];
             out vec4 o_color;
             void main () {
-                const int idx = 1; //texcoord.x > 0.5 ? 1 : 0;
-                o_color = texture(u_texture[idx], texcoord);
+                if (texcoord.x > 0.5) {
+                    o_color = texture(u_texture[1], texcoord);
+                } else {
+                    o_color = texture(u_texture[0], texcoord);
+                }
             }
         )",
     };
@@ -100,8 +103,11 @@ void BasicTexture::createShader() {
             uniform sampler2D u_texture[2];
             varying vec2 texcoord;
             void main () {
-                const int idx = 1; // texcoord.x > 0.5 ? 1 : 0;
-                gl_FragColor = texture2D(u_texture[idx], texcoord);
+                if (texcoord.x > 0.5) {
+                    gl_FragColor = texture2D(u_texture[1], texcoord);
+                } else {
+                    gl_FragColor = texture2D(u_texture[0], texcoord);
+                }
             }
         )",
     };

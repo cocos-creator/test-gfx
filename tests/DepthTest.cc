@@ -29,7 +29,7 @@ struct DepthResolveFramebuffer {
         bunnyArea.width  = swapchain->getWidth() >> lodLevel;
         bunnyArea.height = swapchain->getHeight() >> lodLevel;
 
-        //depthStencilTexView = device->createTexture(depthStencilTexViewInfo);
+        depthStencilTexView = device->createTexture(depthStencilTexViewInfo);
 
         gfx::TextureInfo depthStecnilTexMSAAInfo;
         depthStecnilTexMSAAInfo.type    = gfx::TextureType::TEX2D;
@@ -75,7 +75,7 @@ struct DepthResolveFramebuffer {
 
             gfx::FramebufferInfo fboInfo;
             fboInfo.renderPass          = renderPass;
-            fboInfo.depthStencilTexture = depthStencilTex;
+            fboInfo.depthStencilTexture = depthStencilTexView;
             framebuffer                 = device->createFramebuffer(fboInfo);
         }
     }
@@ -98,7 +98,7 @@ struct DepthResolveFramebuffer {
             fboInfo.colorTextures.push_back(depthStencilTexMSAA);
             fboInfo.colorTextures.push_back(depthStencilTex);
         } else {
-            fboInfo.depthStencilTexture = depthStencilTex;
+            fboInfo.depthStencilTexture = depthStencilTexView;
         }
 
         framebuffer->initialize(fboInfo);
@@ -573,7 +573,7 @@ bool DepthTexture::onInit() {
     samplerInfo.mipFilter = gfx::Filter::LINEAR;
     auto *sampler         = device->getSampler(samplerInfo);
 
-    bg->descriptorSet->bindTexture(1, bunnyFBO->depthStencilTex);
+    bg->descriptorSet->bindTexture(1, bunnyFBO->depthStencilTexView);
     bg->descriptorSet->bindSampler(1, sampler);
     bg->descriptorSet->update();
 
