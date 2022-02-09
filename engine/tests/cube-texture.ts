@@ -1,6 +1,6 @@
 import {
     Attribute, BufferTextureCopy, Color, CullMode, DrawInfo, Filter, Format, IndirectBuffer, PolygonMode,
-    PrimitiveMode, SampleCount, SamplerInfo, ShadeModel, ShaderStageFlagBit, TextureFlagBit, TextureInfo, TextureType, TextureUsageBit, Type,
+    PrimitiveMode, SampleCount, SamplerInfo, ShadeModel, ShaderStageFlagBit, TextureFlagBit, TextureInfo, TextureType, TextureUsageBit, TextureViewInfo, Type,
 } from 'gfx/base/define';
 import { RasterizerState } from 'gfx/base/pipeline-state';
 import { Texture } from 'gfx/base/texture';
@@ -15,6 +15,7 @@ export class CubeTexture extends TestBase {
     private _bindings: ProgramBindings;
     private _inputs: ProgramInputs;
     private _texture: Texture;
+    private _textureView: Texture;
     private _sampler: Sampler;
 
     private _clearColor = new Color(1, 0, 0, 1);
@@ -105,14 +106,24 @@ export class CubeTexture extends TestBase {
             Format.RGBA8,
             width,
             height,
+            TextureFlagBit.GEN_MIPMAP,
         );
         this._texture = TestBase.device.createTexture(textureInfo);
+
+        const textureViewInfo = new TextureViewInfo(
+            this._texture,
+            TextureType.TEX2D,
+            Format.RGBA8,
+            4, 1,
+        );
+        this._textureView = TestBase.device.createTexture(textureViewInfo);
+
         this._sampler = TestBase.device.getSampler(new SamplerInfo(
-            Filter.POINT, Filter.POINT,
+            Filter.POINT, Filter.POINT, Filter.POINT,
         ));
 
         const samplerHandle = this._program.getHandle('cube');
-        this._bindings.setTexture(samplerHandle, this._texture);
+        this._bindings.setTexture(samplerHandle, this._textureView);
         this._bindings.setSampler(samplerHandle, this._sampler);
 
         const region = new BufferTextureCopy();
@@ -181,5 +192,6 @@ export class CubeTexture extends TestBase {
         this._bindings.destroy();
         this._program.destroy();
         this._texture.destroy();
+        this._textureView.destroy();
     }
 }
