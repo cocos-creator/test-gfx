@@ -22,7 +22,7 @@ class DepthFrameBuffer {
     private _depthTextureView: Texture = null!;
     private _framebuffer: Framebuffer = null!;
 
-    private _lodLevel = 4;
+    private _lodLevel = 2;
     private _area: Rect = null!;
 
     constructor(device: Device, swapchain: Swapchain) {
@@ -31,8 +31,7 @@ class DepthFrameBuffer {
             TextureType.TEX2D,
             TextureUsageBit.DEPTH_STENCIL_ATTACHMENT | TextureUsageBit.SAMPLED,
             Format.DEPTH,
-            swapchain.width, swapchain.height,
-            TextureFlagBit.GEN_MIPMAP, 1, 1,
+            swapchain.width, swapchain.height, TextureFlagBit.NONE, 1, Math.ceil(Math.log(Math.max(swapchain.width, swapchain.height))),
         );
 
         if (!(device.getFormatFeatures(Format.DEPTH) & FormatFeatureBit.RENDER_TARGET)) {
@@ -68,6 +67,8 @@ class DepthFrameBuffer {
         fboInfo.depthStencilTexture = this._depthTextureView;
         this._framebuffer = device.createFramebuffer(fboInfo);
     }
+
+    get area() : Rect { return this._area; }
 
     get frameBuffer(): Framebuffer {
         return this._framebuffer;
@@ -270,7 +271,7 @@ export class DepthTest extends TestBase {
         this._inputs.updateIndexBuffer(new Uint16Array([0, 1, 2, 2, 3, 0]));
         this._inputs.updateIndirectBuffer(new IndirectBuffer([new DrawInfo(0, 0, 6, 0)]));
 
-        this._sampler = TestBase.device.getSampler(new SamplerInfo(Filter.POINT, Filter.POINT, Filter.LINEAR));
+        this._sampler = TestBase.device.getSampler(new SamplerInfo(Filter.POINT, Filter.POINT, Filter.POINT));
 
         const samplerHandle = this._program.getHandle('u_texture');
         this._bindings.setTexture(samplerHandle, this._cubeFbo.depthTextureView);
@@ -309,7 +310,7 @@ export class DepthTest extends TestBase {
         commandBuffer.begin();
         // // draw cube
         commandBuffer.beginRenderPass(this._cubeFbo.renderPass, this._cubeFbo.frameBuffer,
-            TestBase.defaultRenderArea, [], 1, 0);
+            this._cubeFbo.area, [], 1, 0);
         this._cube.draw(commandBuffer);
         commandBuffer.endRenderPass();
 

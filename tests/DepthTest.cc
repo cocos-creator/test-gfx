@@ -570,7 +570,7 @@ bool DepthTexture::onInit() {
     bg       = CC_NEW(BigTriangle(device, fbo));
 
     gfx::SamplerInfo samplerInfo;
-    samplerInfo.mipFilter = gfx::Filter::LINEAR;
+    samplerInfo.mipFilter = gfx::Filter::POINT;
     auto *sampler         = device->getSampler(samplerInfo);
 
     bg->descriptorSet->bindTexture(1, bunnyFBO->depthStencilTexView);
