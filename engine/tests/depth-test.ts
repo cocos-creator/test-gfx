@@ -1,20 +1,21 @@
 import {
-    AccessType,
-    Attribute, BufferTextureCopy, Color, CullMode, DepthStencilAttachment, DrawInfo, Filter, Format, FormatFeatureBit, FramebufferInfo, IndirectBuffer, PolygonMode,
-    PrimitiveMode, Rect, RenderPassInfo, SampleCount, SamplerInfo, ShadeModel, ShaderStageFlagBit, TextureFlagBit, TextureInfo, TextureType, TextureUsageBit, TextureViewInfo, Type,
+    AccessType, Attribute, BufferTextureCopy, Color, CullMode, DepthStencilAttachment, DrawInfo, Filter,
+    Format, FormatFeatureBit, FramebufferInfo, IndirectBuffer, PolygonMode, PrimitiveMode, Rect,
+    RenderPassInfo, SampleCount, SamplerInfo, ShadeModel, ShaderStageFlagBit, TextureFlagBit, TextureInfo,
+    TextureType, TextureUsageBit, TextureViewInfo, Type,
 } from 'gfx/base/define';
 import { Device } from 'gfx/base/device';
 import { RasterizerState } from 'gfx/base/pipeline-state';
 import { Texture } from 'gfx/base/texture';
 import { Sampler } from 'gfx/base/states/sampler';
-import { box } from '../primitive/box';
-import { NULL_HANDLE, Program, ProgramBindings, ProgramInputs, IShaderExtension, IShaderExtensionType } from '../chassis';
-import { TestBase } from '../test-base';
-import { Vec4, Vec3, Mat4, IVec3Like, IVec4Like } from '../math';
 import { RenderPass } from 'gfx/base/render-pass';
 import { Framebuffer } from 'gfx/base/framebuffer';
 import { Swapchain } from 'gfx/base/swapchain';
 import { CommandBuffer } from 'gfx/base/command-buffer';
+import { box } from '../primitive/box';
+import { NULL_HANDLE, Program, ProgramBindings, ProgramInputs, IShaderExtension, IShaderExtensionType } from '../chassis';
+import { TestBase } from '../test-base';
+import { Vec4, Vec3, Mat4, IVec3Like, IVec4Like } from '../math';
 
 class DepthFrameBuffer {
     private _renderPass: RenderPass = null!;
@@ -25,7 +26,7 @@ class DepthFrameBuffer {
     private _lodLevel = 2;
     private _area: Rect = null!;
 
-    constructor(device: Device, swapchain: Swapchain) {
+    constructor (device: Device, swapchain: Swapchain) {
         this._area = new Rect();
         const depthTextureInfo = new TextureInfo(
             TextureType.TEX2D,
@@ -35,7 +36,7 @@ class DepthFrameBuffer {
         );
 
         if (!(device.getFormatFeatures(Format.DEPTH) & FormatFeatureBit.RENDER_TARGET)) {
-            console.log("Depth texture is not color renderable?");
+            console.log('Depth texture is not color renderable?');
         }
 
         this._depthTexture = device.createTexture(depthTextureInfo);
@@ -52,7 +53,7 @@ class DepthFrameBuffer {
         this._area.width = swapchain.width >> this._lodLevel;
         this._area.height = swapchain.height >> this._lodLevel;
 
-        let depthAttachment = new DepthStencilAttachment();
+        const depthAttachment = new DepthStencilAttachment();
 
         depthAttachment.format = Format.DEPTH;
         depthAttachment.endAccesses = [AccessType.FRAGMENT_SHADER_READ_TEXTURE];
@@ -62,30 +63,30 @@ class DepthFrameBuffer {
         );
         this._renderPass = device.createRenderPass(renderPassInfo);
 
-        let fboInfo = new FramebufferInfo();
+        const fboInfo = new FramebufferInfo();
         fboInfo.renderPass = this._renderPass;
         fboInfo.depthStencilTexture = this._depthTextureView;
         this._framebuffer = device.createFramebuffer(fboInfo);
     }
 
-    get area() : Rect { return this._area; }
+    get area () : Rect { return this._area; }
 
-    get frameBuffer(): Framebuffer {
+    get frameBuffer (): Framebuffer {
         return this._framebuffer;
     }
-    get renderPass(): RenderPass {
+    get renderPass (): RenderPass {
         return this._renderPass;
     }
 
-    get depthTexture(): Texture {
+    get depthTexture (): Texture {
         return this._depthTexture;
     }
 
-    get depthTextureView(): Texture {
+    get depthTextureView (): Texture {
         return this._depthTextureView;
     }
 
-    public onResize(width: number, height: number) {
+    public onResize (width: number, height: number) {
         if (this._depthTexture.width === width && this._depthTexture.height === height) return;
 
         this._framebuffer.destroy();
@@ -95,14 +96,14 @@ class DepthFrameBuffer {
 
         this._depthTexture.resize(width, height);
 
-        let fboInfo = new FramebufferInfo();
+        const fboInfo = new FramebufferInfo();
         fboInfo.renderPass = this._renderPass;
         fboInfo.depthStencilTexture = this._depthTextureView;
 
         this._framebuffer.initialize(fboInfo);
     }
 
-    public onDestroy() {
+    public onDestroy () {
         this._framebuffer.destroy();
         this._depthTextureView.destroy();
         this._depthTexture.destroy();
@@ -116,7 +117,7 @@ class Cube {
     private _inputs: ProgramInputs;
     private _bindings: ProgramBindings;
 
-    constructor(device: Device, frameBuffer: Framebuffer) {
+    constructor (device: Device, frameBuffer: Framebuffer) {
         this._framebuffer = frameBuffer;
         this._program = new Program({
             name: 'Basic Cube',
@@ -163,23 +164,23 @@ class Cube {
         this._program.setPipelineState({ renderPass: this._framebuffer.renderPass });
     }
 
-    get frameBuffer(): Framebuffer {
+    get frameBuffer (): Framebuffer {
         return this._framebuffer;
     }
 
-    get bindings(): ProgramBindings {
+    get bindings (): ProgramBindings {
         return this._bindings;
     }
 
-    get program(): Program {
+    get program (): Program {
         return this._program;
     }
 
-    public draw(commandBuffer: CommandBuffer) {
+    public draw (commandBuffer: CommandBuffer) {
         this._program.draw(commandBuffer, this._bindings, this._inputs);
     }
 
-    public onDestroy() {
+    public onDestroy () {
         this._program.destroy();
         this._inputs.destroy();
         this._bindings.destroy();
@@ -204,7 +205,7 @@ export class DepthTest extends TestBase {
 
     private _sampler: Sampler = null!;
 
-    constructor() {
+    constructor () {
         super();
 
         this._cubeFbo = new DepthFrameBuffer(TestBase.device, TestBase.swapchains[0]);
@@ -288,9 +289,9 @@ export class DepthTest extends TestBase {
             new Vec3(0.0, 1.5, 2),
             new Vec3(0.0, 0.0, 0.0),
             new Vec3(0.0, 1.0, 0.0));
-        }
+    }
 
-    public onTick() {
+    public onTick () {
         Mat4.lookAt(this._view,
             new Vec3(0.0, 2 + Math.sin(TestBase.cumulativeTime) * 2.0, 4 + Math.cos(TestBase.cumulativeTime) * 2.0),
             new Vec3(0.0, 0.0, 0.0),
@@ -326,7 +327,7 @@ export class DepthTest extends TestBase {
         TestBase.device.present();
     }
 
-    public onDestroy() {
+    public onDestroy () {
         this._inputs.destroy();
         this._bindings.destroy();
         this._program.destroy();

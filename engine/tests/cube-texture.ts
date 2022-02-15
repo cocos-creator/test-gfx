@@ -1,6 +1,7 @@
 import {
     Attribute, BufferTextureCopy, Color, CullMode, DrawInfo, Filter, Format, IndirectBuffer, PolygonMode,
-    PrimitiveMode, SampleCount, SamplerInfo, ShadeModel, ShaderStageFlagBit, TextureFlagBit, TextureInfo, TextureType, TextureUsageBit, TextureViewInfo, Type,
+    PrimitiveMode, SampleCount, SamplerInfo, ShadeModel, ShaderStageFlagBit, TextureFlagBit, TextureInfo,
+    TextureType, TextureUsageBit, TextureViewInfo, Type,
 } from 'gfx/base/define';
 import { RasterizerState } from 'gfx/base/pipeline-state';
 import { Texture } from 'gfx/base/texture';

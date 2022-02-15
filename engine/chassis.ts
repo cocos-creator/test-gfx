@@ -15,16 +15,16 @@ import { BlendState, DepthStencilState, PipelineState, PipelineStateInfo, Raster
 import { Shader } from 'gfx/base/shader';
 import { Sampler } from 'gfx/base/states/sampler';
 import { Texture } from 'gfx/base/texture';
+import { RenderPass } from 'gfx/base/render-pass';
 import { IMat4Like, IVec2Like, IVec3Like, IVec4Like, Mat4, Vec2, Vec3, Vec4 } from './math';
 import { IStandardShaderSource, TestBase } from './test-base';
 
 import { SourceGenerator } from './generator';
-import { RenderPass } from 'gfx/base/render-pass';
 
 export class TypeInfo {
     declare private _token: never;
 
-    constructor(
+    constructor (
         public readonly name: string = '',
         public readonly glslName: string = '',
         public readonly size: number = 0,
@@ -203,7 +203,7 @@ export const getCountFromHandle = (handle: number): number => (handle & countMas
 export const getOffsetFromHandle = (handle: number): number => (handle & offsetMask);
 export const customizeType = (handle: number, type: Type): number => (handle & ~typeMask) | ((type << 18) & typeMask);
 
-function hashObject(o: object) {
+function hashObject (o: object) {
     let hash = 0;
     for (const _ in o) ++hash;
     for (const k in o) {
@@ -225,7 +225,7 @@ export class Program {
     private _pipelineStateMap: Map<number, PipelineState>; // hash map
     private _currentPipelineState: PipelineState;
 
-    constructor(info: IProgramInfo) {
+    constructor (info: IProgramInfo) {
         // create bindings
         // the number of layout should be the same as the required sets.
         // There can be more than one descriptorSet for each instance/pass
@@ -410,7 +410,7 @@ export class Program {
         this.setPipelineState(info.defaultStates || {});
     }
 
-    private _descriptorSetIds(blocks: IShaderBlock[] = [],
+    private _descriptorSetIds (blocks: IShaderBlock[] = [],
         samplerTextures: IShaderSamplerTexture[] = []): number[] {
         const descriptorSetIds: number[] = [];
         for (const block of blocks || []) { if (descriptorSetIds.indexOf(block.set) === -1) descriptorSetIds.push(block.set); }
@@ -418,7 +418,7 @@ export class Program {
         return descriptorSetIds.sort((a, b) => a - b);
     }
 
-    destroy() {
+    destroy () {
         this._pipelineStateMap.forEach((state, key) => state.destroy());
         this._layout.setLayouts.forEach((setLayout) => setLayout.destroy());
 
@@ -426,16 +426,16 @@ export class Program {
         this._layout.destroy();
     }
 
-    createBindings(info: IProgramBindingInfo) {
+    createBindings (info: IProgramBindingInfo) {
         return new ProgramBindings(this, info);
     }
 
-    createInputs(info: IProgramInputInfo) {
+    createInputs (info: IProgramInputInfo) {
         return new ProgramInputs(this, info);
     }
 
     // related to uniform buffer
-    getHandle(name: string, offset = 0, type = Type.UNKNOWN, arrayIdx = 0): IProgramHandle {
+    getHandle (name: string, offset = 0, type = Type.UNKNOWN, arrayIdx = 0): IProgramHandle {
         let handle = this._propertyMap[name];
         TestBase.assert(handle !== undefined, `${name} is not a valid name for uniform resources`);
         const memberType = getTypeFromHandle(handle);
@@ -452,7 +452,7 @@ export class Program {
     }
 
     // update current state settings
-    setPipelineState(info: IPipelineStateInfo) {
+    setPipelineState (info: IPipelineStateInfo) {
         const stateHash = hashObject(info);
 
         if (!this._pipelineStateMap.has(stateHash)) {
@@ -470,7 +470,7 @@ export class Program {
         this._currentPipelineState = this._pipelineStateMap.get(stateHash)!;
     }
 
-    draw(commandBuffer: CommandBuffer, bindings: ProgramBindings, inputs: ProgramInputs) {
+    draw (commandBuffer: CommandBuffer, bindings: ProgramBindings, inputs: ProgramInputs) {
         TestBase.assert(!!this._currentPipelineState, `no pipelineState specified`);
         commandBuffer.bindPipelineState(this._currentPipelineState);
         const offsets = bindings.instanceOffsets;
@@ -521,7 +521,7 @@ export class ProgramBindings {
     private _blockSizes: Record<number, number[]> = [];
     private _uniformBuffers: Record<number, Buffer[]> = [];
 
-    constructor(program: Program, info: IProgramBindingInfo) {
+    constructor (program: Program, info: IProgramBindingInfo) {
         // @ts-expect-error(2341) friend class access
         const { _shader: shader, _layout: layout } = program; // destructuring assignment
         const maxInstanceCount: Record<string, number> = info.maxInstanceCount || {};
@@ -617,7 +617,7 @@ export class ProgramBindings {
         }
     }
 
-    destroy() {
+    destroy () {
         const length = this.descriptorSets.length;
         for (let i = 0; i < length; i++) {
             this.descriptorSets[i].destroy();
@@ -627,7 +627,7 @@ export class ProgramBindings {
     }
 
     // pass -1 as idx to apply to all applicable fields
-    setUniform(handle: IProgramHandle, v: ProgramBindingProperties, instanceIdx = 0): void {
+    setUniform (handle: IProgramHandle, v: ProgramBindingProperties, instanceIdx = 0): void {
         const handleNum = handle as unknown as number;
         const set = getSetFromHandle(handleNum);
         const binding = getBindingFromHandle(handleNum);
@@ -655,7 +655,7 @@ export class ProgramBindings {
         this._rootBufferDirties[set] = true;
     }
 
-    setUniformArray(handle: IProgramHandle, v: ProgramBindingProperties[], instanceIdx = 0): void {
+    setUniformArray (handle: IProgramHandle, v: ProgramBindingProperties[], instanceIdx = 0): void {
         const handleNum = handle as unknown as number;
         const set = getSetFromHandle(handleNum);
         const binding = getBindingFromHandle(handleNum);
@@ -685,7 +685,7 @@ export class ProgramBindings {
         this._rootBufferDirties[set] = true;
     }
 
-    setSampler(handle: IProgramHandle, v: Sampler, arrayIdx = 0): void {
+    setSampler (handle: IProgramHandle, v: Sampler, arrayIdx = 0): void {
         const handleNum = handle as unknown as number;
         const set = getSetFromHandle(handleNum);
         const binding = getBindingFromHandle(handleNum);
@@ -694,7 +694,7 @@ export class ProgramBindings {
         this.descriptorSets[set].bindSampler(binding, v, offset);
     }
 
-    setTexture(handle: IProgramHandle, v: Texture, arrayIdx = 0): void {
+    setTexture (handle: IProgramHandle, v: Texture, arrayIdx = 0): void {
         const handleNum = handle as unknown as number;
         const set = getSetFromHandle(handleNum);
         const binding = getBindingFromHandle(handleNum);
@@ -703,7 +703,7 @@ export class ProgramBindings {
         this.descriptorSets[set].bindTexture(binding, v, offset);
     }
 
-    setBufferInstance(handle: IProgramHandle, instanceIdx = 0): void {
+    setBufferInstance (handle: IProgramHandle, instanceIdx = 0): void {
         const handleNum = handle as unknown as number;
         const set = getSetFromHandle(handleNum);
         const binding = getBindingFromHandle(handleNum);
@@ -714,11 +714,11 @@ export class ProgramBindings {
         this._instanceOffsets[set][dynamicBinding] = this._dynamicOffsets[set][dynamicBinding] * instanceIdx;
     }
 
-    get instanceOffsets() {
+    get instanceOffsets () {
         return this._instanceOffsets;
     }
 
-    update() {
+    update () {
         TestBase.assert(this.descriptorSets.length !== 0, 'at least one descriptor set is required');
 
         for (let i = 0; i < this.descriptorSets.length; i++) {
@@ -736,7 +736,7 @@ export class ProgramBindings {
 export class ProgramInputs {
     inputAssembler: InputAssembler;
 
-    constructor(program: Program, info: IProgramInputInfo) {
+    constructor (program: Program, info: IProgramInputInfo) {
         // @ts-expect-error(2341) friend class access
         const { _shader: shader } = program; // destructuring assignment
 
@@ -787,24 +787,24 @@ export class ProgramInputs {
         this.inputAssembler = TestBase.device.createInputAssembler(new InputAssemblerInfo(attributes, vertexBuffers, indexBuffer, indirectBuffer));
     }
 
-    destroy() {
+    destroy () {
         this.inputAssembler.vertexBuffers.map((v) => v.destroy());
         this.inputAssembler.indexBuffer?.destroy();
         this.inputAssembler.indirectBuffer?.destroy();
         this.inputAssembler.destroy();
     }
 
-    updateVertexBuffer(buffer: Float32Array, index = 0) {
+    updateVertexBuffer (buffer: Float32Array, index = 0) {
         TestBase.assert(index >= 0 && index < this.inputAssembler.vertexBuffers.length, 'failed to upload data to vertexBuffer, index out of range');
         this.inputAssembler.vertexBuffers[index].update(buffer);
     }
 
-    updateIndexBuffer(buffer: Uint16Array | Uint32Array) {
+    updateIndexBuffer (buffer: Uint16Array | Uint32Array) {
         TestBase.assert(!!this.inputAssembler.indexBuffer, 'no index buffer specified');
         this.inputAssembler.indexBuffer?.update(buffer);
     }
 
-    updateIndirectBuffer(buffer: IndirectBuffer) {
+    updateIndirectBuffer (buffer: IndirectBuffer) {
         TestBase.assert(!!this.inputAssembler.indirectBuffer, 'no indirect buffer specified');
         this.inputAssembler.indirectBuffer?.update(buffer);
     }

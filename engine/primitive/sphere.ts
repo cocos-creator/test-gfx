@@ -47,7 +47,7 @@ interface ISphereOptions extends IGeometryOptions {
  * @param radius 球半径。
  * @param options 参数选项。
  */
-export function sphere(radius = 0.5, opts: RecursivePartial<ISphereOptions> = {}): IGeometry {
+export function sphere (radius = 0.5, opts: RecursivePartial<ISphereOptions> = {}): IGeometry {
     const segments = opts.segments !== undefined ? opts.segments : 32;
 
     // lat === latitude
