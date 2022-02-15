@@ -1,9 +1,14 @@
 #include "BasicTextureTest.h"
+#include <stdint.h>
 
 namespace cc {
 
 void BasicTexture::onDestroy() {
     CC_SAFE_DESTROY(_shader);
+    for (auto *view : _textureViews) {
+        CC_SAFE_DESTROY(view);
+    }
+    _textureViews.clear();
     CC_SAFE_DESTROY(_vertexBuffer);
     CC_SAFE_DESTROY(_inputAssembler);
     CC_SAFE_DESTROY(_descriptorSet);
@@ -14,6 +19,7 @@ void BasicTexture::onDestroy() {
 }
 
 bool BasicTexture::onInit() {
+    _oldTime = static_cast<uint32_t>(_time);
     createShader();
     createVertexBuffer();
     createInputAssembler();
@@ -189,6 +195,18 @@ void BasicTexture::createTexture() {
     _textures[0] = TestBaseI::createTextureWithFile(textureInfo, "uv_checker_01.jpg");
     _textures[1] = TestBaseI::createTextureWithFile(textureInfo, "uv_checker_02.jpg");
 
+    gfx::TextureViewInfo viewInfo = {};
+    viewInfo.type                 = gfx::TextureType::TEX2D;
+    viewInfo.format               = gfx::Format::RGBA8;
+    viewInfo.baseLevel            = 3;
+    viewInfo.levelCount           = 1;
+
+    _textureViews.resize(2);
+    viewInfo.texture = _textures[0];
+    _textureViews[0] = TestBaseI::device->createTexture(viewInfo);
+    viewInfo.texture = _textures[1];
+    _textureViews[1] = TestBaseI::device->createTexture(viewInfo);
+
     vector<uint8_t> buffer(_textures[0]->getWidth() * _textures[0]->getHeight() * gfx::GFX_FORMAT_INFOS[toNumber(_textures[0]->getFormat())].size);
     uint8_t *       data = buffer.data();
 
@@ -265,6 +283,19 @@ void BasicTexture::createPipeline() {
 void BasicTexture::onTick() {
     auto *swapchain = swapchains[0];
     auto *fbo       = fbos[0];
+
+    if (static_cast<uint32_t>(_time) > _oldTime) {
+        _oldTime = static_cast<uint32_t>(_time);
+        if (_oldTime % 2) {
+            _descriptorSet->bindTexture(1, _textureViews[1]);
+            _descriptorSet->bindTexture(1, _textureViews[0], 1);
+
+        } else {
+            _descriptorSet->bindTexture(1, _textures[1]);
+            _descriptorSet->bindTexture(1, _textures[0], 1);
+        }
+        _descriptorSet->update();
+    }
 
     uint globalBarrierIdx = _frameCount ? 1 : 0;
     uint textureBarriers  = _frameCount ? 0 : _textureBarriers.size();
