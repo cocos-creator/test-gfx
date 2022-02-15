@@ -73,7 +73,7 @@ bool SubpassTest::onInit() {
     inputAssemblerInfo.indexBuffer = _indexBuffer.get();
     _inputAssembler.reset(device->createInputAssembler(inputAssemblerInfo));
 
-    _globalBarriers.push_back(device->getGlobalBarrier({
+    _generalBarriers.push_back(device->getGeneralBarrier({
         gfx::AccessFlagBit::TRANSFER_WRITE,
         gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER |
             gfx::AccessFlagBit::FRAGMENT_SHADER_READ_UNIFORM_BUFFER |
@@ -81,7 +81,7 @@ bool SubpassTest::onInit() {
             gfx::AccessFlagBit::INDEX_BUFFER,
     }));
 
-    _globalBarriers.push_back(device->getGlobalBarrier({
+    _generalBarriers.push_back(device->getGeneralBarrier({
         gfx::AccessFlagBit::TRANSFER_WRITE,
         gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER |
             gfx::AccessFlagBit::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
@@ -96,7 +96,7 @@ void SubpassTest::onSpacePressed() {
 }
 
 void SubpassTest::onTick() {
-    uint  globalBarrierIdx = _frameCount ? 1 : 0;
+    uint  GeneralBarrierIdx = _frameCount ? 1 : 0;
     auto *commandBuffer    = commandBuffers[0];
     Vec4  colors[]{
         {252 / 255.F, 23 / 255.F, 3 / 255.F, 1.0F},
@@ -122,7 +122,7 @@ void SubpassTest::onTick() {
 
     _ubos.update();
     if (TestBaseI::MANUAL_BARRIER) {
-        commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx]);
+        commandBuffer->pipelineBarrier(_generalBarriers[GeneralBarrierIdx]);
     }
 
     fg.reset();

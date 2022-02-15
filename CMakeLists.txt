@@ -165,7 +165,7 @@ set(GFX_INCLUDE_FILES
 
 include_directories(${GFX_INCLUDE_FILES})
 
-add_subdirectory(engine-native/base)
-add_subdirectory(engine-native/bindings)
-add_subdirectory(engine-native/renderer)
+add_subdirectory(native/base)
+add_subdirectory(native/bindings)
+add_subdirectory(native/renderer)
 add_subdirectory(src)

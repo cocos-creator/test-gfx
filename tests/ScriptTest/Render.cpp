@@ -16,7 +16,7 @@ struct MultisampledFramebuffer {
         colorAttachment.format      = swapchain->getColorTexture()->getFormat();
         colorAttachment.sampleCount = gfx::SampleCount::MULTIPLE_BALANCE;
         colorAttachment.storeOp     = gfx::StoreOp::DISCARD;
-        colorAttachment.barrier     = device->getGlobalBarrier({
+        colorAttachment.barrier     = device->getGeneralBarrier({
             gfx::AccessFlagBit::NONE,
             gfx::AccessFlagBit::COLOR_ATTACHMENT_WRITE,
         });
@@ -24,7 +24,7 @@ struct MultisampledFramebuffer {
         gfx::ColorAttachment &colorResolveAttachment{renderPassInfo.colorAttachments.emplace_back()};
         colorResolveAttachment.format  = swapchain->getColorTexture()->getFormat();
         colorResolveAttachment.loadOp  = gfx::LoadOp::DISCARD;
-        colorResolveAttachment.barrier = device->getGlobalBarrier({
+        colorResolveAttachment.barrier = device->getGeneralBarrier({
             gfx::AccessFlagBit::NONE,
             gfx::AccessFlagBit::TRANSFER_READ,
         });
@@ -122,7 +122,7 @@ gfx::DescriptorSetLayout *   descriptorSetLayout{nullptr};
 gfx::PipelineLayout *        pipelineLayout{nullptr};
 gfx::PipelineState *         pipelineState{nullptr};
 gfx::InputAssembler *        inputAssembler{nullptr};
-vector<gfx::GlobalBarrier *> globalBarriers;
+vector<gfx::GeneralBarrier *> GeneralBarriers;
 vector<float>                uniformBufferData;
 uint                         uboStride{0U};
 uint                         floatCountPerModel{0U};
@@ -404,7 +404,7 @@ void Root::initialize() {
 
     pipelineState = device->createPipelineState(pipelineInfo);
 
-    globalBarriers.push_back(device->getGlobalBarrier({
+    GeneralBarriers.push_back(device->getGeneralBarrier({
         gfx::AccessFlagBit::TRANSFER_WRITE,
         gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER |
             gfx::AccessFlagBit::FRAGMENT_SHADER_READ_UNIFORM_BUFFER |
@@ -492,7 +492,7 @@ void Root::destroy() {
     CC_SAFE_DESTROY(msaaFBO)
     commandBuffers.clear();
 
-    globalBarriers.clear();
+    GeneralBarriers.clear();
 }
 
 void Root::render() {
@@ -535,7 +535,7 @@ void Root::render() {
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER) {
-        commandBuffer->pipelineBarrier(globalBarriers[0]);
+        commandBuffer->pipelineBarrier(GeneralBarriers[0]);
     }
 
     commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.F, 0);

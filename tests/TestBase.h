@@ -237,7 +237,7 @@ protected:
 
     virtual void onSpacePressed() {}
 
-    vector<gfx::GlobalBarrier *> _globalBarriers;
+    vector<gfx::GeneralBarrier *> _generalBarriers;
 
     vector<gfx::Texture *>        _textures;
     vector<gfx::TextureBarrier *> _textureBarriers;

@@ -34,7 +34,7 @@ struct DepthResolveFramebuffer {
             depthStencilAttachment.format      = gfx::Format::DEPTH;
             depthStencilAttachment.sampleCount = gfx::SampleCount::MULTIPLE_BALANCE;
             depthStencilAttachment.storeOp     = gfx::StoreOp::DISCARD;
-            depthStencilAttachment.barrier     = device->getGlobalBarrier({
+            depthStencilAttachment.barrier     = device->getGeneralBarrier({
                 gfx::AccessFlagBit::NONE,
                 gfx::AccessFlagBit::DEPTH_STENCIL_ATTACHMENT_WRITE,
             });
@@ -42,7 +42,7 @@ struct DepthResolveFramebuffer {
             gfx::ColorAttachment &depthStencilResolveAttachment{renderPassInfo.colorAttachments.emplace_back()};
             depthStencilResolveAttachment.format = gfx::Format::DEPTH;
             depthStencilResolveAttachment.loadOp = gfx::LoadOp::DISCARD;
-            depthStencilAttachment.barrier       = device->getGlobalBarrier({
+            depthStencilAttachment.barrier       = device->getGeneralBarrier({
                 gfx::AccessFlagBit::NONE,
                 gfx::AccessFlagBit::FRAGMENT_SHADER_READ_TEXTURE,
             });
@@ -63,7 +63,7 @@ struct DepthResolveFramebuffer {
         } else {
             gfx::RenderPassInfo renderPassInfo;
             renderPassInfo.depthStencilAttachment.format  = gfx::Format::DEPTH;
-            renderPassInfo.depthStencilAttachment.barrier = device->getGlobalBarrier({
+            renderPassInfo.depthStencilAttachment.barrier = device->getGeneralBarrier({
                 gfx::AccessFlagBit::NONE,
                 gfx::AccessFlagBit::FRAGMENT_SHADER_READ_TEXTURE,
             });
@@ -554,7 +554,7 @@ bool DepthTexture::onInit() {
     bg->descriptorSet->bindTexture(1, bunnyFBO->depthStencilTex);
     bg->descriptorSet->update();
 
-    _globalBarriers.push_back(device->getGlobalBarrier({
+    _generalBarriers.push_back(device->getGeneralBarrier({
         gfx::AccessFlagBit::TRANSFER_WRITE,
         gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER |
             gfx::AccessFlagBit::FRAGMENT_SHADER_READ_UNIFORM_BUFFER |
@@ -562,7 +562,7 @@ bool DepthTexture::onInit() {
             gfx::AccessFlagBit::INDEX_BUFFER,
     }));
 
-    _globalBarriers.push_back(device->getGlobalBarrier({
+    _generalBarriers.push_back(device->getGeneralBarrier({
         gfx::AccessFlagBit::TRANSFER_WRITE,
         gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER,
     }));
@@ -574,7 +574,7 @@ void DepthTexture::onTick() {
     auto *swapchain = swapchains[0];
     auto *fbo       = fbos[0];
 
-    uint globalBarrierIdx = _frameCount ? 1 : 0;
+    uint GeneralBarrierIdx = _frameCount ? 1 : 0;
 
     static constexpr float CAMERA_DISTANCE = 8.F;
     _eye.set(CAMERA_DISTANCE * std::cos(_time), CAMERA_DISTANCE * 0.5F, CAMERA_DISTANCE * std::sin(_time));
@@ -600,7 +600,7 @@ void DepthTexture::onTick() {
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER) {
-        commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx]);
+        commandBuffer->pipelineBarrier(_generalBarriers[GeneralBarrierIdx]);
     }
 
     // render bunny

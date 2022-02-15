@@ -313,13 +313,13 @@ void StencilTest::createPipelineState() {
     pipelineInfo[static_cast<uint8_t>(PipelineType::FRONT_BACK_STENCIL)].pipelineLayout           = _pipelineLayout;
     _pipelineState[static_cast<uint8_t>(PipelineType::FRONT_BACK_STENCIL)]                        = device->createPipelineState(pipelineInfo[static_cast<uint8_t>(PipelineType::FRONT_BACK_STENCIL)]);
 
-    _globalBarriers.push_back(device->getGlobalBarrier({
+    _generalBarriers.push_back(device->getGeneralBarrier({
         gfx::AccessFlagBit::TRANSFER_WRITE,
         gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER |
             gfx::AccessFlagBit::VERTEX_BUFFER,
     }));
 
-    _globalBarriers.push_back(device->getGlobalBarrier({
+    _generalBarriers.push_back(device->getGeneralBarrier({
         gfx::AccessFlagBit::TRANSFER_WRITE,
         gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER,
     }));
@@ -337,7 +337,7 @@ void StencilTest::onTick() {
     auto *swapchain = swapchains[0];
     auto *fbo       = fbos[0];
 
-    uint globalBarrierIdx = _frameCount ? 1 : 0;
+    uint GeneralBarrierIdx = _frameCount ? 1 : 0;
     uint textureBarriers  = _frameCount ? 0 : _textureBarriers.size();
 
     gfx::Color clearColor = {1.0F, 0, 0, 1.0F};
@@ -358,7 +358,7 @@ void StencilTest::onTick() {
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER) {
-        commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx], _textureBarriers.data(), _textures.data(), textureBarriers);
+        commandBuffer->pipelineBarrier(_generalBarriers[GeneralBarrierIdx], _textureBarriers.data(), _textures.data(), textureBarriers);
     }
 
     commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0F, 0);

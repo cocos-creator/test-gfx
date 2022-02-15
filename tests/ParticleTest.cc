@@ -356,14 +356,14 @@ void ParticleTest::createPipeline() {
 
     _pipelineState = device->createPipelineState(pipelineInfo);
 
-    _globalBarriers.push_back(device->getGlobalBarrier({
+    _generalBarriers.push_back(device->getGeneralBarrier({
         gfx::AccessFlagBit::TRANSFER_WRITE,
         gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER |
             gfx::AccessFlagBit::VERTEX_BUFFER |
             gfx::AccessFlagBit::INDEX_BUFFER,
     }));
 
-    _globalBarriers.push_back(device->getGlobalBarrier({
+    _generalBarriers.push_back(device->getGeneralBarrier({
         gfx::AccessFlagBit::TRANSFER_WRITE,
         gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER,
     }));
@@ -381,7 +381,7 @@ void ParticleTest::onTick() {
 
     printTime();
 
-    uint globalBarrierIdx = _frameCount ? 1 : 0;
+    uint GeneralBarrierIdx = _frameCount ? 1 : 0;
     uint textureBarriers  = _frameCount ? 0 : _textureBarriers.size();
 
     gfx::Color clearColor = {0.2F, 0.2F, 0.2F, 1.0F};
@@ -436,7 +436,7 @@ void ParticleTest::onTick() {
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER) {
-        commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx], _textureBarriers.data(), _textures.data(), textureBarriers);
+        commandBuffer->pipelineBarrier(_generalBarriers[GeneralBarrierIdx], _textureBarriers.data(), _textures.data(), textureBarriers);
     }
 
     commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0F, 0);

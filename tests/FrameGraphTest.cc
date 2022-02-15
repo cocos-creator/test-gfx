@@ -192,7 +192,7 @@ void FrameGraphTest::createPipeline() {
 
     _pipelineState = device->createPipelineState(pipelineInfo);
 
-    _globalBarriers.push_back(device->getGlobalBarrier({
+    _generalBarriers.push_back(device->getGeneralBarrier({
         gfx::AccessFlagBit::TRANSFER_WRITE,
         gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER |
             gfx::AccessFlagBit::FRAGMENT_SHADER_READ_UNIFORM_BUFFER |
@@ -201,7 +201,7 @@ void FrameGraphTest::createPipeline() {
             gfx::AccessFlagBit::INDEX_BUFFER,
     }));
 
-    _globalBarriers.push_back(device->getGlobalBarrier({
+    _generalBarriers.push_back(device->getGeneralBarrier({
         gfx::AccessFlagBit::TRANSFER_WRITE,
         gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER |
             gfx::AccessFlagBit::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
@@ -210,7 +210,7 @@ void FrameGraphTest::createPipeline() {
 
 void FrameGraphTest::onTick() {
     auto *swapchain        = swapchains[0];
-    uint  globalBarrierIdx = _frameCount ? 1 : 0;
+    uint  GeneralBarrierIdx = _frameCount ? 1 : 0;
 
     gfx::Color clearColor = {1.0F, 0, 0, 1.0F};
 
@@ -232,7 +232,7 @@ void FrameGraphTest::onTick() {
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER) {
-        commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx]);
+        commandBuffer->pipelineBarrier(_generalBarriers[GeneralBarrierIdx]);
     }
 
     ////////////////////////////////////////////////////////

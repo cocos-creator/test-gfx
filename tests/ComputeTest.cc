@@ -375,18 +375,18 @@ void ComputeTest::createPipeline() {
 
     _pipelineState = device->createPipelineState(pipelineInfo);
 
-    _globalBarriers.push_back(device->getGlobalBarrier({
+    _generalBarriers.push_back(device->getGeneralBarrier({
         gfx::AccessFlagBit::TRANSFER_WRITE,
         gfx::AccessFlagBit::COMPUTE_SHADER_READ_UNIFORM_BUFFER |
             gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER,
     }));
 
-    _globalBarriers.push_back(device->getGlobalBarrier({
+    _generalBarriers.push_back(device->getGeneralBarrier({
         gfx::AccessFlagBit::TRANSFER_WRITE,
         gfx::AccessFlagBit::COMPUTE_SHADER_WRITE,
     }));
 
-    _globalBarriers.push_back(device->getGlobalBarrier({
+    _generalBarriers.push_back(device->getGeneralBarrier({
         gfx::AccessFlagBit::COMPUTE_SHADER_WRITE,
         gfx::AccessFlagBit::VERTEX_BUFFER |
             gfx::AccessFlagBit::FRAGMENT_SHADER_READ_TEXTURE,
@@ -429,11 +429,11 @@ void ComputeTest::onTick() {
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER) {
-        commandBuffer->pipelineBarrier(_globalBarriers[0]);
+        commandBuffer->pipelineBarrier(_generalBarriers[0]);
     }
 
     if (device->hasFeature(gfx::Feature::COMPUTE_SHADER)) {
-        commandBuffer->pipelineBarrier(_globalBarriers[1], _textureBarriers.data(), _textures.data(), 1);
+        commandBuffer->pipelineBarrier(_generalBarriers[1], _textureBarriers.data(), _textures.data(), 1);
 
         commandBuffer->bindPipelineState(_compPipelineState);
         commandBuffer->bindDescriptorSet(0, _compDescriptorSet);
@@ -443,7 +443,7 @@ void ComputeTest::onTick() {
         commandBuffer->bindDescriptorSet(0, _compBGDescriptorSet);
         commandBuffer->dispatch(bgDispatchInfo);
 
-        commandBuffer->pipelineBarrier(_globalBarriers[2]);
+        commandBuffer->pipelineBarrier(_generalBarriers[2]);
     }
 
     commandBuffer->beginRenderPass(renderPass, fbo, renderArea, &clearColor, 1.0F, 0);
