@@ -735,12 +735,12 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Com
 
     auto gbufferPassSetup = [&](framegraph::PassNodeBuilder &builder, GBufferData &data) {
         auto usages     = gfx::TextureUsageBit::COLOR_ATTACHMENT | gfx::TextureUsageBit::SAMPLED;
-        auto accessType = gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE;
+        auto accessType = gfx::AccessFlagBit::FRAGMENT_SHADER_READ_TEXTURE;
 
         if constexpr (USE_SUBPASS) {
             builder.subpass();
             usages     = gfx::TextureUsageBit::COLOR_ATTACHMENT | gfx::TextureUsageBit::INPUT_ATTACHMENT;
-            accessType = gfx::AccessType::FRAGMENT_SHADER_READ_COLOR_INPUT_ATTACHMENT;
+            accessType = gfx::AccessFlagBit::FRAGMENT_SHADER_READ_COLOR_INPUT_ATTACHMENT;
         }
 
         for (uint i = 0; i < 4; ++i) {
@@ -773,8 +773,8 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Com
         // Attachment Setup
         framegraph::RenderTargetAttachment::Descriptor depthStencilAttachmentInfo;
         depthStencilAttachmentInfo.loadOp        = gfx::LoadOp::CLEAR;
-        depthStencilAttachmentInfo.beginAccesses = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
-        depthStencilAttachmentInfo.endAccesses   = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
+        depthStencilAttachmentInfo.beginAccesses = gfx::AccessFlagBit::DEPTH_STENCIL_ATTACHMENT_WRITE;
+        depthStencilAttachmentInfo.endAccesses   = gfx::AccessFlagBit::DEPTH_STENCIL_ATTACHMENT_WRITE;
         depthStencilAttachmentInfo.usage         = framegraph::RenderTargetAttachment::Usage::DEPTH_STENCIL;
 
         data.depthStencil = builder.write(data.depthStencil, depthStencilAttachmentInfo);
@@ -823,15 +823,15 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Com
         framegraph::RenderTargetAttachment::Descriptor lightingAttachmentInfo;
         lightingAttachmentInfo.loadOp        = gfx::LoadOp::CLEAR;
         lightingAttachmentInfo.clearColor    = clearColor;
-        lightingAttachmentInfo.beginAccesses   = {gfx::AccessType::COLOR_ATTACHMENT_WRITE};
-        lightingAttachmentInfo.endAccesses   = {gfx::AccessType::COLOR_ATTACHMENT_WRITE};
+        lightingAttachmentInfo.beginAccesses   = {gfx::AccessFlagBit::COLOR_ATTACHMENT_WRITE};
+        lightingAttachmentInfo.endAccesses   = {gfx::AccessFlagBit::COLOR_ATTACHMENT_WRITE};
 
         builder.writeToBlackboard(LIGHTING_OUTPUT_NAME, builder.write(data.lightingOutput, lightingAttachmentInfo));
 
         framegraph::RenderTargetAttachment::Descriptor depthStencilAttachmentInfo;
         depthStencilAttachmentInfo.loadOp        = gfx::LoadOp::LOAD;
-        depthStencilAttachmentInfo.beginAccesses = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
-        depthStencilAttachmentInfo.endAccesses   = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
+        depthStencilAttachmentInfo.beginAccesses = {gfx::AccessFlagBit::DEPTH_STENCIL_ATTACHMENT_WRITE};
+        depthStencilAttachmentInfo.endAccesses   = {gfx::AccessFlagBit::DEPTH_STENCIL_ATTACHMENT_WRITE};
         depthStencilAttachmentInfo.usage         = framegraph::RenderTargetAttachment::Usage::DEPTH_STENCIL;
 
         data.depthStencil = framegraph::TextureHandle(builder.readFromBlackboard(DEPTH_STENCIL_NAME));

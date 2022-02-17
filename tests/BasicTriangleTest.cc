@@ -212,27 +212,19 @@ void BasicTriangle::createPipeline() {
 
     _invisiblePipelineState = device->createPipelineState(pipelineInfo);
 
-    _globalBarriers.push_back(device->getGlobalBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-            gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
-            gfx::AccessType::INDIRECT_BUFFER,
-            gfx::AccessType::VERTEX_BUFFER,
-            gfx::AccessType::INDEX_BUFFER,
-        },
+    _generalBarriers.push_back(device->getGeneralBarrier({
+        gfx::AccessFlagBit::TRANSFER_WRITE,
+        gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER |
+            gfx::AccessFlagBit::FRAGMENT_SHADER_READ_UNIFORM_BUFFER |
+            gfx::AccessFlagBit::INDIRECT_BUFFER |
+            gfx::AccessFlagBit::VERTEX_BUFFER |
+            gfx::AccessFlagBit::INDEX_BUFFER,
     }));
 
-    _globalBarriers.push_back(device->getGlobalBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-            gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
-        },
+    _generalBarriers.push_back(device->getGeneralBarrier({
+        gfx::AccessFlagBit::TRANSFER_WRITE,
+        gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER |
+            gfx::AccessFlagBit::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
     }));
 }
 
@@ -242,7 +234,7 @@ void BasicTriangle::onTick() {
     auto *swapchain = swapchains[0];
     auto *fbo       = fbos[0];
 
-    uint globalBarrierIdx = _frameCount ? 1 : 0;
+    uint generalBarrierIdx = _frameCount ? 1 : 0;
 
     gfx::Color clearColor = {1.0F, 0, 0, 1.0F};
 
@@ -273,7 +265,7 @@ void BasicTriangle::onTick() {
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER) {
-        commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx]);
+        commandBuffer->pipelineBarrier(_generalBarriers[generalBarrierIdx]);
     }
 
 #if TEST_OCCLUSION_QUERY

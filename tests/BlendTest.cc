@@ -568,35 +568,23 @@ bool BlendTest::onInit() {
     bigTriangle = CC_NEW(BigTriangle(device, fbo));
     quad        = CC_NEW(Quad(device, fbo));
 
-    _globalBarriers.push_back(device->getGlobalBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
-            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-            gfx::AccessType::VERTEX_BUFFER,
-            gfx::AccessType::INDEX_BUFFER,
-        },
+    _generalBarriers.push_back(device->getGeneralBarrier({
+        gfx::AccessFlagBit::TRANSFER_WRITE,
+        gfx::AccessFlagBit::FRAGMENT_SHADER_READ_UNIFORM_BUFFER |
+            gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER |
+            gfx::AccessFlagBit::VERTEX_BUFFER |
+            gfx::AccessFlagBit::INDEX_BUFFER,
     }));
 
-    _globalBarriers.push_back(device->getGlobalBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
-            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-        },
+    _generalBarriers.push_back(device->getGeneralBarrier({
+        gfx::AccessFlagBit::TRANSFER_WRITE,
+        gfx::AccessFlagBit::FRAGMENT_SHADER_READ_UNIFORM_BUFFER |
+            gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER,
     }));
 
     _textureBarriers.push_back(device->getTextureBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE,
-        },
+        gfx::AccessFlagBit::TRANSFER_WRITE,
+        gfx::AccessFlagBit::FRAGMENT_SHADER_READ_TEXTURE,
         false,
     }));
 
@@ -611,7 +599,7 @@ void BlendTest::onTick() {
     auto *swapchain = swapchains[0];
     auto *fbo       = fbos[0];
 
-    uint globalBarrierIdx = _frameCount ? 1 : 0;
+    uint generalBarrierIdx = _frameCount ? 1 : 0;
     uint textureBarriers  = _frameCount ? 0 : _textureBarriers.size();
 
     device->acquire(&swapchain, 1);
@@ -651,7 +639,7 @@ void BlendTest::onTick() {
     }
 
     if (TestBaseI::MANUAL_BARRIER) {
-        commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx], _textureBarriers.data(), _textures.data(), textureBarriers);
+        commandBuffer->pipelineBarrier(_generalBarriers[generalBarrierIdx], _textureBarriers.data(), _textures.data(), textureBarriers);
     }
 
     commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0F, 0);

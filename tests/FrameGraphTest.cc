@@ -192,33 +192,25 @@ void FrameGraphTest::createPipeline() {
 
     _pipelineState = device->createPipelineState(pipelineInfo);
 
-    _globalBarriers.push_back(device->getGlobalBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-            gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
-            gfx::AccessType::INDIRECT_BUFFER,
-            gfx::AccessType::VERTEX_BUFFER,
-            gfx::AccessType::INDEX_BUFFER,
-        },
+    _generalBarriers.push_back(device->getGeneralBarrier({
+        gfx::AccessFlagBit::TRANSFER_WRITE,
+        gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER |
+            gfx::AccessFlagBit::FRAGMENT_SHADER_READ_UNIFORM_BUFFER |
+            gfx::AccessFlagBit::INDIRECT_BUFFER |
+            gfx::AccessFlagBit::VERTEX_BUFFER |
+            gfx::AccessFlagBit::INDEX_BUFFER,
     }));
 
-    _globalBarriers.push_back(device->getGlobalBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-            gfx::AccessType::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
-        },
+    _generalBarriers.push_back(device->getGeneralBarrier({
+        gfx::AccessFlagBit::TRANSFER_WRITE,
+        gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER |
+            gfx::AccessFlagBit::FRAGMENT_SHADER_READ_UNIFORM_BUFFER,
     }));
 }
 
 void FrameGraphTest::onTick() {
     auto *swapchain        = swapchains[0];
-    uint  globalBarrierIdx = _frameCount ? 1 : 0;
+    uint  generalBarrierIdx = _frameCount ? 1 : 0;
 
     gfx::Color clearColor = {1.0F, 0, 0, 1.0F};
 
@@ -240,7 +232,7 @@ void FrameGraphTest::onTick() {
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER) {
-        commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx]);
+        commandBuffer->pipelineBarrier(_generalBarriers[generalBarrierIdx]);
     }
 
     ////////////////////////////////////////////////////////
@@ -261,20 +253,20 @@ void FrameGraphTest::onTick() {
             colorAttachmentInfo.usage       = framegraph::RenderTargetAttachment::Usage::COLOR;
             colorAttachmentInfo.loadOp      = gfx::LoadOp::CLEAR;
             colorAttachmentInfo.clearColor  = clearColor;
-            colorAttachmentInfo.endAccesses = {gfx::AccessType::COLOR_ATTACHMENT_WRITE};
+            colorAttachmentInfo.endAccesses = gfx::AccessFlagBit::COLOR_ATTACHMENT_WRITE;
 
             data.colorTex = framegraph::TextureHandle(builder.readFromBlackboard(colorTexName));
 
             if (data.colorTex.isValid()) {
                 colorAttachmentInfo.loadOp        = gfx::LoadOp::LOAD;
-                colorAttachmentInfo.beginAccesses = {gfx::AccessType::COLOR_ATTACHMENT_WRITE};
+                colorAttachmentInfo.beginAccesses = gfx::AccessFlagBit::COLOR_ATTACHMENT_WRITE;
             } else {
                 framegraph::Texture::Descriptor colorTexInfo;
                 colorTexInfo.format = swapchain->getColorTexture()->getFormat();
                 colorTexInfo.usage  = gfx::TextureUsageBit::COLOR_ATTACHMENT;
                 colorTexInfo.width  = swapchain->getWidth();
                 colorTexInfo.height = swapchain->getHeight();
-                data.colorTex = builder.create(colorTexName, colorTexInfo);
+                data.colorTex       = builder.create(colorTexName, colorTexInfo);
             }
 
             data.colorTex = builder.write(data.colorTex, colorAttachmentInfo);
@@ -286,20 +278,20 @@ void FrameGraphTest::onTick() {
             depthStencilAttachmentInfo.clearStencil = 0;
             depthStencilAttachmentInfo.usage        = framegraph::RenderTargetAttachment::Usage::DEPTH_STENCIL;
             depthStencilAttachmentInfo.loadOp       = gfx::LoadOp::CLEAR;
-            depthStencilAttachmentInfo.endAccesses  = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
+            depthStencilAttachmentInfo.endAccesses  = gfx::AccessFlagBit::DEPTH_STENCIL_ATTACHMENT_WRITE;
 
             data.depthStencilTex = framegraph::TextureHandle(builder.readFromBlackboard(depthStencilTexName));
 
             if (data.depthStencilTex.isValid()) {
                 depthStencilAttachmentInfo.loadOp        = gfx::LoadOp::LOAD;
-                depthStencilAttachmentInfo.beginAccesses = {gfx::AccessType::DEPTH_STENCIL_ATTACHMENT_WRITE};
+                depthStencilAttachmentInfo.beginAccesses = gfx::AccessFlagBit::DEPTH_STENCIL_ATTACHMENT_WRITE;
             } else {
                 framegraph::Texture::Descriptor depthStencilTexInfo;
                 depthStencilTexInfo.format = gfx::Format::DEPTH_STENCIL;
                 depthStencilTexInfo.usage  = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT;
                 depthStencilTexInfo.width  = swapchain->getWidth();
                 depthStencilTexInfo.height = swapchain->getHeight();
-                data.depthStencilTex = builder.create(depthStencilTexName, depthStencilTexInfo);
+                data.depthStencilTex       = builder.create(depthStencilTexName, depthStencilTexInfo);
             }
 
             data.depthStencilTex = builder.write(data.depthStencilTex, depthStencilAttachmentInfo);

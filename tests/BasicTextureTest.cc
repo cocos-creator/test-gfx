@@ -247,33 +247,19 @@ void BasicTexture::createPipeline() {
 
     _pipelineState = device->createPipelineState(pipelineInfo);
 
-    _globalBarriers.push_back(device->getGlobalBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-            gfx::AccessType::VERTEX_BUFFER,
-            gfx::AccessType::INDEX_BUFFER,
-        },
+    _generalBarriers.push_back(device->getGeneralBarrier({
+        gfx::AccessFlagBit::TRANSFER_WRITE,
+        gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER | gfx::AccessFlagBit::VERTEX_BUFFER | gfx::AccessFlagBit::INDEX_BUFFER,
     }));
 
-    _globalBarriers.push_back(device->getGlobalBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::VERTEX_SHADER_READ_UNIFORM_BUFFER,
-        },
+    _generalBarriers.push_back(device->getGeneralBarrier({
+        gfx::AccessFlagBit::TRANSFER_WRITE,
+        gfx::AccessFlagBit::VERTEX_SHADER_READ_UNIFORM_BUFFER,
     }));
 
     _textureBarriers.push_back(device->getTextureBarrier({
-        {
-            gfx::AccessType::TRANSFER_WRITE,
-        },
-        {
-            gfx::AccessType::FRAGMENT_SHADER_READ_TEXTURE,
-        },
+        gfx::AccessFlagBit::TRANSFER_WRITE,
+        gfx::AccessFlagBit::FRAGMENT_SHADER_READ_TEXTURE,
         false,
     }));
 
@@ -297,8 +283,8 @@ void BasicTexture::onTick() {
         _descriptorSet->update();
     }
 
-    uint globalBarrierIdx = _frameCount ? 1 : 0;
-    uint textureBarriers  = _frameCount ? 0 : _textureBarriers.size();
+    uint generalBarrierIdx = _frameCount ? 1 : 0;
+    uint textureBarriers   = _frameCount ? 0 : _textureBarriers.size();
 
     gfx::Color clearColor = {0, 0, 0, 1.0F};
 
@@ -314,7 +300,7 @@ void BasicTexture::onTick() {
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER) {
-        commandBuffer->pipelineBarrier(_globalBarriers[globalBarrierIdx], _textureBarriers.data(), _textures.data(), textureBarriers);
+        commandBuffer->pipelineBarrier(_generalBarriers[generalBarrierIdx], _textureBarriers.data(), _textures.data(), textureBarriers);
     }
 
     commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0F, 0);
