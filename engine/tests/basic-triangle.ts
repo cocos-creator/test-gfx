@@ -1,4 +1,7 @@
-import { Color, CullMode, DrawInfo, Format, IndirectBuffer, PolygonMode, PrimitiveMode, ShadeModel, ShaderStageFlagBit, Type } from 'gfx/base/define';
+import {
+    Color, CullMode, DrawInfo, Format, IndirectBuffer, PolygonMode, PrimitiveMode, ShadeModel,
+    ShaderStageFlagBit, Type,
+} from 'gfx/base/define';
 import { NULL_HANDLE, Program, ProgramBindings, ProgramInputs, IPipelineStateInfo } from '../chassis';
 import { TestBase } from '../test-base';
 import { Vec4, Vec3, Mat4 } from '../math';

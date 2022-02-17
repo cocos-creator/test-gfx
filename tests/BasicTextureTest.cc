@@ -1,9 +1,14 @@
 #include "BasicTextureTest.h"
+#include <stdint.h>
 
 namespace cc {
 
 void BasicTexture::onDestroy() {
     CC_SAFE_DESTROY(_shader);
+    for (auto *view : _textureViews) {
+        CC_SAFE_DESTROY(view);
+    }
+    _textureViews.clear();
     CC_SAFE_DESTROY(_vertexBuffer);
     CC_SAFE_DESTROY(_inputAssembler);
     CC_SAFE_DESTROY(_descriptorSet);
@@ -14,6 +19,7 @@ void BasicTexture::onDestroy() {
 }
 
 bool BasicTexture::onInit() {
+    _oldTime = static_cast<uint32_t>(_time);
     createShader();
     createVertexBuffer();
     createInputAssembler();
@@ -76,8 +82,11 @@ void BasicTexture::createShader() {
             uniform sampler2D u_texture[2];
             out vec4 o_color;
             void main () {
-                const int idx = 1; // texcoord.x > 0.5 ? 1 : 0;
-                o_color = texture(u_texture[idx], texcoord);
+                if (texcoord.x > 0.5) {
+                    o_color = texture(u_texture[1], texcoord);
+                } else {
+                    o_color = texture(u_texture[0], texcoord);
+                }
             }
         )",
     };
@@ -100,8 +109,11 @@ void BasicTexture::createShader() {
             uniform sampler2D u_texture[2];
             varying vec2 texcoord;
             void main () {
-                const int idx = 1; // texcoord.x > 0.5 ? 1 : 0;
-                gl_FragColor = texture2D(u_texture[idx], texcoord);
+                if (texcoord.x > 0.5) {
+                    gl_FragColor = texture2D(u_texture[1], texcoord);
+                } else {
+                    gl_FragColor = texture2D(u_texture[0], texcoord);
+                }
             }
         )",
     };
@@ -177,13 +189,27 @@ void BasicTexture::createTexture() {
     gfx::TextureInfo textureInfo;
     textureInfo.usage  = gfx::TextureUsage::SAMPLED | gfx::TextureUsage::TRANSFER_DST | gfx::TextureUsage::TRANSFER_SRC;
     textureInfo.format = gfx::Format::RGBA8;
+    textureInfo.flags  = gfx::TextureFlagBit::GEN_MIPMAP;
 
     _textures.resize(2);
     _textures[0] = TestBaseI::createTextureWithFile(textureInfo, "uv_checker_01.jpg");
     _textures[1] = TestBaseI::createTextureWithFile(textureInfo, "uv_checker_02.jpg");
 
-    vector<uint8_t>        buffer(_textures[0]->getWidth() * _textures[0]->getHeight() * gfx::GFX_FORMAT_INFOS[toNumber(_textures[0]->getFormat())].size);
-    uint8_t *              data = buffer.data();
+    gfx::TextureViewInfo viewInfo = {};
+    viewInfo.type                 = gfx::TextureType::TEX2D;
+    viewInfo.format               = gfx::Format::RGBA8;
+    viewInfo.baseLevel            = 3;
+    viewInfo.levelCount           = 1;
+
+    _textureViews.resize(2);
+    viewInfo.texture = _textures[0];
+    _textureViews[0] = TestBaseI::device->createTexture(viewInfo);
+    viewInfo.texture = _textures[1];
+    _textureViews[1] = TestBaseI::device->createTexture(viewInfo);
+
+    vector<uint8_t> buffer(_textures[0]->getWidth() * _textures[0]->getHeight() * gfx::GFX_FORMAT_INFOS[toNumber(_textures[0]->getFormat())].size);
+    uint8_t *       data = buffer.data();
+
     gfx::BufferTextureCopy region;
     region.texExtent.width  = _textures[0]->getWidth();
     region.texExtent.height = _textures[0]->getHeight();
@@ -244,8 +270,21 @@ void BasicTexture::onTick() {
     auto *swapchain = swapchains[0];
     auto *fbo       = fbos[0];
 
-    uint GeneralBarrierIdx = _frameCount ? 1 : 0;
-    uint textureBarriers  = _frameCount ? 0 : _textureBarriers.size();
+    if (static_cast<uint32_t>(_time) > _oldTime) {
+        _oldTime = static_cast<uint32_t>(_time);
+        if (_oldTime % 2) {
+            _descriptorSet->bindTexture(1, _textureViews[1]);
+            _descriptorSet->bindTexture(1, _textureViews[0], 1);
+
+        } else {
+            _descriptorSet->bindTexture(1, _textures[1]);
+            _descriptorSet->bindTexture(1, _textures[0], 1);
+        }
+        _descriptorSet->update();
+    }
+
+    uint generalBarrierIdx = _frameCount ? 1 : 0;
+    uint textureBarriers   = _frameCount ? 0 : _textureBarriers.size();
 
     gfx::Color clearColor = {0, 0, 0, 1.0F};
 
@@ -261,7 +300,7 @@ void BasicTexture::onTick() {
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER) {
-        commandBuffer->pipelineBarrier(_generalBarriers[GeneralBarrierIdx], _textureBarriers.data(), _textures.data(), textureBarriers);
+        commandBuffer->pipelineBarrier(_generalBarriers[generalBarrierIdx], _textureBarriers.data(), _textures.data(), textureBarriers);
     }
 
     commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0F, 0);

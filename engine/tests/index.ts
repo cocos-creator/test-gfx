@@ -6,6 +6,8 @@ import { RotatingTriangle } from './rotating-triangle';
 import { BasicSphere } from './basic-sphere';
 import { CubeTexture } from './cube-texture';
 import { EngineTest } from './engine-test';
+import { DepthTest } from './depth-test';
+import { JuliaSet } from './julia-set';
 
 export const testlist: Constructor<TestBase>[] = [
     ClearScreen,
@@ -13,5 +15,7 @@ export const testlist: Constructor<TestBase>[] = [
     RotatingTriangle,
     BasicSphere,
     CubeTexture,
+    DepthTest,
     EngineTest,
+    JuliaSet,
 ];

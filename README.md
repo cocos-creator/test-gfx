@@ -1,4 +1,4 @@
-Should be put alongside the engine repos:
+Should be put alongside the engine repo:
 
 <pre>
 ├── engine (<a href="https://github.com/cocos-creator/engine/tree/v3.5.0">3.5.0</a>)

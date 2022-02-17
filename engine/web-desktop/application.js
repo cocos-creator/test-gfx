@@ -74,14 +74,14 @@ System.register([], function (_export, _context) {
     }
   }
 
-  function getLocation (touch, canvas) {
-      const box = canvas?.getBoundingClientRect();
-      let x = touch.clientX - box.x;
-      let y = box.y + box.height - touch.clientY;
-      const dpr = window.devicePixelRatio;
-      x *= dpr;
-      y *= dpr;
-      return { x, y };
+  function getLocation(touch, canvas) {
+    const box = canvas?.getBoundingClientRect();
+    let x = touch.clientX - box.x;
+    let y = box.y + box.height - touch.clientY;
+    const dpr = window.devicePixelRatio;
+    x *= dpr;
+    y *= dpr;
+    return { x, y };
   }
 
   function onGameStarted(gfx, settings, findCanvas) {
@@ -91,7 +91,7 @@ System.register([], function (_export, _context) {
     // main entry
     const app = new gfx.Application();
     app.initialize({
-      api: 6, // webgl - 5, webgl2 - 6
+      api: 7, // webgl - 6, webgl2 - 7
       canvas: gameOptions.adapter.canvas,
       width: gameOptions.adapter.canvas.width,
       height: gameOptions.adapter.canvas.height,
@@ -125,6 +125,6 @@ System.register([], function (_export, _context) {
 
   return {
     setters: [],
-    execute: function () {}
+    execute: function () { }
   };
 });

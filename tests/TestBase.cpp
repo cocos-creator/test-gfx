@@ -55,11 +55,11 @@ vector<TestBaseI::createFunc> TestBaseI::tests = {
     FrameGraphTest::create,
     ClearScreen::create,
     BasicTriangle::create,
-    DepthTexture::create,
     BlendTest::create,
     ParticleTest::create,
 // Need to fix lib jpeg on iOS
 #if CC_PLATFORM != CC_PLATFORM_MAC_IOS
+    DepthTexture::create,
     BasicTexture::create,
     StencilTest::create,
 #endif // CC_PLATFORM != CC_PLATFORM_MAC_IOS

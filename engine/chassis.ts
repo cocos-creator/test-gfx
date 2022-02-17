@@ -15,6 +15,7 @@ import { BlendState, DepthStencilState, PipelineState, PipelineStateInfo, Raster
 import { Shader } from 'gfx/base/shader';
 import { Sampler } from 'gfx/base/states/sampler';
 import { Texture } from 'gfx/base/texture';
+import { RenderPass } from 'gfx/base/render-pass';
 import { IMat4Like, IVec2Like, IVec3Like, IVec4Like, Mat4, Vec2, Vec3, Vec4 } from './math';
 import { IStandardShaderSource, TestBase } from './test-base';
 
@@ -177,6 +178,7 @@ export interface IProgramInputInfo {
 export interface IPipelineStateInfo {
     rasterizerState?: RasterizerState;     // default to default value
     depthStencilState?: DepthStencilState; // default to default value
+    renderPass?: RenderPass;               // default to default value
     blendState?: BlendState;               // default to default value
     primitive?: PrimitiveMode;             // default to default value
 }
@@ -457,7 +459,7 @@ export class Program {
             this._pipelineStateMap.set(stateHash, TestBase.device.createPipelineState(new PipelineStateInfo(
                 this._shader,
                 this._layout,
-                TestBase.defaultRenderPass,
+                info.renderPass || TestBase.defaultRenderPass,
                 this._inputState,
                 info.rasterizerState,
                 info.depthStencilState,
@@ -528,7 +530,7 @@ export class ProgramBindings {
         this.descriptorSets = layout.setLayouts.map(
             (setLayout) => TestBase.device.createDescriptorSet(new DescriptorSetInfo(setLayout)),
         );
-        const dynamicOffsets: Record < number, number[]> = [];
+        const dynamicOffsets: Record<number, number[]> = [];
         for (let i = 0; i < layout.setLayouts.length; i++) {
             this._instanceOffsets[i] = [];
             this._dynamicOffsets[i] = [];
@@ -625,7 +627,7 @@ export class ProgramBindings {
     }
 
     // pass -1 as idx to apply to all applicable fields
-    setUniform (handle: IProgramHandle, v: ProgramBindingProperties, instanceIdx = 0) : void {
+    setUniform (handle: IProgramHandle, v: ProgramBindingProperties, instanceIdx = 0): void {
         const handleNum = handle as unknown as number;
         const set = getSetFromHandle(handleNum);
         const binding = getBindingFromHandle(handleNum);
@@ -653,7 +655,7 @@ export class ProgramBindings {
         this._rootBufferDirties[set] = true;
     }
 
-    setUniformArray (handle: IProgramHandle, v: ProgramBindingProperties[], instanceIdx = 0) : void {
+    setUniformArray (handle: IProgramHandle, v: ProgramBindingProperties[], instanceIdx = 0): void {
         const handleNum = handle as unknown as number;
         const set = getSetFromHandle(handleNum);
         const binding = getBindingFromHandle(handleNum);
@@ -683,7 +685,7 @@ export class ProgramBindings {
         this._rootBufferDirties[set] = true;
     }
 
-    setSampler (handle: IProgramHandle, v: Sampler, arrayIdx = 0) : void {
+    setSampler (handle: IProgramHandle, v: Sampler, arrayIdx = 0): void {
         const handleNum = handle as unknown as number;
         const set = getSetFromHandle(handleNum);
         const binding = getBindingFromHandle(handleNum);
@@ -692,7 +694,7 @@ export class ProgramBindings {
         this.descriptorSets[set].bindSampler(binding, v, offset);
     }
 
-    setTexture (handle: IProgramHandle, v: Texture, arrayIdx = 0) : void {
+    setTexture (handle: IProgramHandle, v: Texture, arrayIdx = 0): void {
         const handleNum = handle as unknown as number;
         const set = getSetFromHandle(handleNum);
         const binding = getBindingFromHandle(handleNum);

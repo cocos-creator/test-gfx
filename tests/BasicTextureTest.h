@@ -20,6 +20,8 @@ private:
     void createInputAssembler();
     void createTexture();
 
+    vector<gfx::Texture *> _textureViews = {};
+
     gfx::Shader *             _shader              = nullptr;
     gfx::Buffer *             _vertexBuffer        = nullptr;
     gfx::Buffer *             _uniformBuffer       = nullptr;
@@ -28,6 +30,8 @@ private:
     gfx::DescriptorSetLayout *_descriptorSetLayout = nullptr;
     gfx::PipelineLayout *     _pipelineLayout      = nullptr;
     gfx::PipelineState *      _pipelineState       = nullptr;
+
+    uint32_t _oldTime = 0;
 };
 
 } // namespace cc

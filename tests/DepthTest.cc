@@ -11,12 +11,25 @@ constexpr bool USE_DEPTH_RESOLVE = false;
 struct DepthResolveFramebuffer {
     explicit DepthResolveFramebuffer(gfx::Device *device, gfx::Swapchain *swapchain) {
         gfx::TextureInfo depthStecnilTexInfo;
-        depthStecnilTexInfo.type   = gfx::TextureType::TEX2D;
-        depthStecnilTexInfo.usage  = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT | gfx::TextureUsageBit::SAMPLED;
-        depthStecnilTexInfo.format = gfx::Format::DEPTH;
-        depthStecnilTexInfo.width  = swapchain->getWidth();
-        depthStecnilTexInfo.height = swapchain->getHeight();
-        depthStencilTex            = device->createTexture(depthStecnilTexInfo);
+        depthStecnilTexInfo.type       = gfx::TextureType::TEX2D;
+        depthStecnilTexInfo.usage      = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT | gfx::TextureUsageBit::SAMPLED;
+        depthStecnilTexInfo.format     = gfx::Format::DEPTH;
+        depthStecnilTexInfo.flags      = gfx::TextureFlagBit::GEN_MIPMAP;
+        depthStecnilTexInfo.width      = swapchain->getWidth();
+        depthStecnilTexInfo.height     = swapchain->getHeight();
+        depthStecnilTexInfo.levelCount = TestBaseI::getMipmapLevelCounts(depthStecnilTexInfo.width, depthStecnilTexInfo.height);
+        depthStencilTex                = device->createTexture(depthStecnilTexInfo);
+
+        gfx::TextureViewInfo depthStencilTexViewInfo;
+        depthStencilTexViewInfo.texture    = depthStencilTex;
+        depthStencilTexViewInfo.format     = gfx::Format::DEPTH;
+        depthStencilTexViewInfo.baseLevel  = lodLevel;
+        depthStencilTexViewInfo.levelCount = 1;
+
+        bunnyArea.width  = swapchain->getWidth() >> lodLevel;
+        bunnyArea.height = swapchain->getHeight() >> lodLevel;
+
+        depthStencilTexView = device->createTexture(depthStencilTexViewInfo);
 
         gfx::TextureInfo depthStecnilTexMSAAInfo;
         depthStecnilTexMSAAInfo.type    = gfx::TextureType::TEX2D;
@@ -71,36 +84,50 @@ struct DepthResolveFramebuffer {
 
             gfx::FramebufferInfo fboInfo;
             fboInfo.renderPass          = renderPass;
-            fboInfo.depthStencilTexture = depthStencilTex;
+            fboInfo.depthStencilTexture = depthStencilTexView;
             framebuffer                 = device->createFramebuffer(fboInfo);
         }
     }
 
-    void resize(uint width, uint height) const {
+    void resize(uint width, uint height) {
         if (depthStencilTexMSAA->getWidth() == width && depthStencilTexMSAA->getHeight() == height) return;
 
         framebuffer->destroy();
+
+        bunnyArea.height = height >> lodLevel;
+        bunnyArea.width  = width >> lodLevel;
 
         depthStencilTexMSAA->resize(width, height);
         depthStencilTex->resize(width, height);
 
         gfx::FramebufferInfo fboInfo;
         fboInfo.renderPass = renderPass;
-        fboInfo.colorTextures.push_back(depthStencilTexMSAA);
-        fboInfo.colorTextures.push_back(depthStencilTex);
+
+        if (USE_DEPTH_RESOLVE) {
+            fboInfo.colorTextures.push_back(depthStencilTexMSAA);
+            fboInfo.colorTextures.push_back(depthStencilTex);
+        } else {
+            fboInfo.depthStencilTexture = depthStencilTexView;
+        }
+
         framebuffer->initialize(fboInfo);
     }
 
     void destroy() {
         CC_SAFE_DESTROY(framebuffer);
+        CC_SAFE_DESTROY(depthStencilTexView);
         CC_SAFE_DESTROY(depthStencilTex);
         CC_SAFE_DESTROY(depthStencilTexMSAA);
         CC_SAFE_DESTROY(renderPass);
     }
 
+    const uint lodLevel  = 4;
+    gfx::Rect  bunnyArea = gfx::Rect{0, 0, 0, 0};
+
     gfx::RenderPass * renderPass          = nullptr;
     gfx::Texture *    depthStencilTexMSAA = nullptr;
     gfx::Texture *    depthStencilTex     = nullptr;
+    gfx::Texture *    depthStencilTexView = nullptr;
     gfx::Framebuffer *framebuffer         = nullptr;
 };
 
@@ -551,7 +578,12 @@ bool DepthTexture::onInit() {
     bunny    = CC_NEW(Bunny(device, bunnyFBO->framebuffer));
     bg       = CC_NEW(BigTriangle(device, fbo));
 
-    bg->descriptorSet->bindTexture(1, bunnyFBO->depthStencilTex);
+    gfx::SamplerInfo samplerInfo;
+    samplerInfo.mipFilter = gfx::Filter::POINT;
+    auto *sampler         = device->getSampler(samplerInfo);
+
+    bg->descriptorSet->bindTexture(1, bunnyFBO->depthStencilTexView);
+    bg->descriptorSet->bindSampler(1, sampler);
     bg->descriptorSet->update();
 
     _generalBarriers.push_back(device->getGeneralBarrier({
@@ -574,7 +606,7 @@ void DepthTexture::onTick() {
     auto *swapchain = swapchains[0];
     auto *fbo       = fbos[0];
 
-    uint GeneralBarrierIdx = _frameCount ? 1 : 0;
+    uint generalBarrierIdx = _frameCount ? 1 : 0;
 
     static constexpr float CAMERA_DISTANCE = 8.F;
     _eye.set(CAMERA_DISTANCE * std::cos(_time), CAMERA_DISTANCE * 0.5F, CAMERA_DISTANCE * std::sin(_time));
@@ -594,17 +626,18 @@ void DepthTexture::onTick() {
         _bunnyMatrices[0].m[12] = i % 2 ? -1.5F : 1.5F;
         bunny->mvpUniformBuffer[i]->update(_bunnyMatrices, sizeof(_bunnyMatrices));
     }
+
     gfx::Rect renderArea = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
 
     auto *commandBuffer = commandBuffers[0];
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER) {
-        commandBuffer->pipelineBarrier(_generalBarriers[GeneralBarrierIdx]);
+        commandBuffer->pipelineBarrier(_generalBarriers[generalBarrierIdx]);
     }
 
     // render bunny
-    commandBuffer->beginRenderPass(bunnyFBO->renderPass, bunnyFBO->framebuffer, renderArea, clearColor, 1.0F, 0);
+    commandBuffer->beginRenderPass(bunnyFBO->renderPass, bunnyFBO->framebuffer, bunnyFBO->bunnyArea, clearColor, 1.0F, 0);
     commandBuffer->bindPipelineState(bunny->pipelineState);
     commandBuffer->bindInputAssembler(bunny->inputAssembler);
     for (auto &i : bunny->descriptorSet) {

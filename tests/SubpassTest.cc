@@ -96,7 +96,7 @@ void SubpassTest::onSpacePressed() {
 }
 
 void SubpassTest::onTick() {
-    uint  GeneralBarrierIdx = _frameCount ? 1 : 0;
+    uint  generalBarrierIdx = _frameCount ? 1 : 0;
     auto *commandBuffer    = commandBuffers[0];
     Vec4  colors[]{
         {252 / 255.F, 23 / 255.F, 3 / 255.F, 1.0F},
@@ -122,7 +122,7 @@ void SubpassTest::onTick() {
 
     _ubos.update();
     if (TestBaseI::MANUAL_BARRIER) {
-        commandBuffer->pipelineBarrier(_generalBarriers[GeneralBarrierIdx]);
+        commandBuffer->pipelineBarrier(_generalBarriers[generalBarrierIdx]);
     }
 
     fg.reset();

@@ -234,7 +234,7 @@ void BasicTriangle::onTick() {
     auto *swapchain = swapchains[0];
     auto *fbo       = fbos[0];
 
-    uint GeneralBarrierIdx = _frameCount ? 1 : 0;
+    uint generalBarrierIdx = _frameCount ? 1 : 0;
 
     gfx::Color clearColor = {1.0F, 0, 0, 1.0F};
 
@@ -265,7 +265,7 @@ void BasicTriangle::onTick() {
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER) {
-        commandBuffer->pipelineBarrier(_generalBarriers[GeneralBarrierIdx]);
+        commandBuffer->pipelineBarrier(_generalBarriers[generalBarrierIdx]);
     }
 
 #if TEST_OCCLUSION_QUERY
