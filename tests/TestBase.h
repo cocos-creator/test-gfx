@@ -150,7 +150,7 @@ public:
     static void               createOrthographic(float left, float right, float bottom, float top, float near, float zFar, Mat4 *dst, gfx::Swapchain *swapchain);
     static void               createPerspective(float fov, float aspect, float near, float zFar, Mat4 *dst, gfx::Swapchain *swapchain);
     static gfx::Extent        getOrientedSurfaceSize(gfx::Swapchain *swapchain);
-    static gfx::Viewport      getViewportBasedOnDevice(const Vec4 &relativeArea, gfx::Swapchain *swapchain);
+    static gfx::Rect      getViewportBasedOnDevice(const Vec4 &relativeArea, gfx::Swapchain *swapchain);
     static uint               getUBOSize(uint size);
     static uint               getMipmapLevelCounts(uint width, uint height);
     static uint               getAlignedUBOStride(uint stride);

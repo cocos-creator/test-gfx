@@ -298,7 +298,7 @@ void FrameGraphTest::onTick() {
             builder.writeToBlackboard(depthStencilTexName, data.depthStencilTex);
 
             int           xOff = second * static_cast<int>(swapchain->getWidth()) / 2;
-            gfx::Viewport vp   = {xOff, 0, swapchain->getWidth() / 2, swapchain->getHeight(), 0, 1};
+            gfx::Rect vp   = {xOff, 0, swapchain->getWidth() / 2, swapchain->getHeight()};
             gfx::Rect     rect = {xOff, 0, swapchain->getWidth() / 2, swapchain->getHeight()};
             builder.setViewport(vp, rect);
         };
