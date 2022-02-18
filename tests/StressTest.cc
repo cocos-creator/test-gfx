@@ -401,7 +401,7 @@ void StressTest::recordRenderPass(uint jobIdx) {
     auto *fbo       = fbos[0];
 
     gfx::Rect     scissor = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
-    gfx::Viewport vp      = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
+    gfx::Rect vp      = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
 
     uint passIdx        = jobIdx / _threadCount;
     uint threadIdx      = jobIdx % _threadCount;
@@ -420,7 +420,6 @@ void StressTest::recordRenderPass(uint jobIdx) {
     if (dcCount) {
         commandBuffer->bindInputAssembler(_inputAssembler);
         commandBuffer->bindPipelineState(_pipelineState);
-        commandBuffer->setScissor(scissor);
         commandBuffer->setViewport(vp);
 
         for (uint j = 0, t = perThreadCount * threadIdx; j < dcCount; ++j, ++t) {
@@ -441,7 +440,7 @@ void StressTest::recordRenderPass(uint threadIdx) {
     auto *fbo       = fbos[0];
 
     gfx::Rect           scissor       = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
-    gfx::Viewport       vp            = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
+    gfx::Rect       vp            = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
     gfx::CommandBuffer *commandBuffer = _parallelCBs[threadIdx];
 
     for (uint i = 0u; i < PASS_COUNT; ++i) {
@@ -480,7 +479,7 @@ void StressTest::recordRenderPass(uint passIndex) {
     auto *fbo       = fbos[0];
 
     gfx::Rect     scissor   = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
-    gfx::Viewport vp        = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
+    gfx::Rect vp        = {0, 0, swapchain->getWidth(), swapchain->getHeight()};
 
     gfx::CommandBuffer *commandBuffer = _parallelCBs[passIndex];
 

@@ -780,7 +780,7 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Com
         data.depthStencil = builder.write(data.depthStencil, depthStencilAttachmentInfo);
         builder.writeToBlackboard(DEPTH_STENCIL_NAME, data.depthStencil);
 
-        gfx::Viewport vp{renderArea.x, renderArea.y, renderArea.width, renderArea.height, 0, 1};
+        gfx::Rect vp{renderArea.x, renderArea.y, renderArea.width, renderArea.height};
         gfx::Rect     rect{renderArea.x, renderArea.y, renderArea.width, renderArea.height};
         builder.setViewport(vp, rect);
     };
@@ -838,7 +838,7 @@ void StandardDeferredPipeline::recordCommandBuffer(gfx::Device *device, gfx::Com
         data.depthStencil = builder.write(data.depthStencil, depthStencilAttachmentInfo);
         builder.writeToBlackboard(DEPTH_STENCIL_NAME, data.depthStencil);
 
-        gfx::Viewport vp{renderArea.x, renderArea.y, renderArea.width, renderArea.height, 0, 1};
+        gfx::Rect vp{renderArea.x, renderArea.y, renderArea.width, renderArea.height};
         gfx::Rect     rect{renderArea.x, renderArea.y, renderArea.width, renderArea.height};
         builder.setViewport(vp, rect);
     };
