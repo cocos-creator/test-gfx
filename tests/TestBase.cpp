@@ -17,6 +17,7 @@
 #include "tests/ComputeTest.h"
 #include "tests/DepthTest.h"
 #include "tests/FrameGraphTest.h"
+#include "tests/MultiViewportTest.h"
 #include "tests/ParticleTest.h"
 #include "tests/ScriptTest/ScriptTest.h"
 #include "tests/StencilTest.h"
@@ -54,6 +55,8 @@ vector<TestBaseI::createFunc> TestBaseI::tests = {
     StressTest::create,
     FrameGraphTest::create,
     ClearScreen::create,
+    // ES2 is not supported
+    MultiViewportTest::create,
     BasicTriangle::create,
     BlendTest::create,
     ParticleTest::create,
@@ -363,26 +366,26 @@ gfx::Rect TestBaseI::getViewportBasedOnDevice(const Vec4 &relativeArea, gfx::Swa
 
     switch (swapchain->getSurfaceTransform()) {
         case gfx::SurfaceTransform::ROTATE_90:
-            viewport.x   = static_cast<int>((1.F - y - h) * deviceWidth);
-            viewport.y    = static_cast<int>(x * deviceHeight);
+            viewport.x      = static_cast<int>((1.F - y - h) * deviceWidth);
+            viewport.y      = static_cast<int>(x * deviceHeight);
             viewport.width  = static_cast<uint>(h * deviceWidth);
             viewport.height = static_cast<uint>(w * deviceHeight);
             break;
         case gfx::SurfaceTransform::ROTATE_180:
-            viewport.x   = static_cast<int>((1.F - x - w) * deviceWidth);
-            viewport.y    = static_cast<int>((1.F - y - h) * deviceHeight);
+            viewport.x      = static_cast<int>((1.F - x - w) * deviceWidth);
+            viewport.y      = static_cast<int>((1.F - y - h) * deviceHeight);
             viewport.width  = static_cast<uint>(w * deviceWidth);
             viewport.height = static_cast<uint>(h * deviceHeight);
             break;
         case gfx::SurfaceTransform::ROTATE_270:
-            viewport.x   = static_cast<int>(y * deviceWidth);
-            viewport.y    = static_cast<int>((1.F - x - w) * deviceHeight);
+            viewport.x      = static_cast<int>(y * deviceWidth);
+            viewport.y      = static_cast<int>((1.F - x - w) * deviceHeight);
             viewport.width  = static_cast<uint>(h * deviceWidth);
             viewport.height = static_cast<uint>(w * deviceHeight);
             break;
         case gfx::SurfaceTransform::IDENTITY:
-            viewport.x   = static_cast<int>(x * deviceWidth);
-            viewport.y    = static_cast<int>(y * deviceHeight);
+            viewport.x      = static_cast<int>(x * deviceWidth);
+            viewport.y      = static_cast<int>(y * deviceHeight);
             viewport.width  = static_cast<uint>(w * deviceWidth);
             viewport.height = static_cast<uint>(h * deviceHeight);
             break;
