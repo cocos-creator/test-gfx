@@ -13,6 +13,11 @@ public:
     bool onInit() override;
     void onDestroy() override;
 
+    struct Vertex {
+        float pos[2];
+        float col[3];
+    };
+
 private:
     void createShader();
     void createVertexBuffer();
