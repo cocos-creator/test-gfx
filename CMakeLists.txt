@@ -17,7 +17,7 @@ set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS TRUE)
 set_property(GLOBAL PROPERTY USE_FOLDERS TRUE)
 
 set(COCOS_ROOT_PATH "${PROJECT_SOURCE_DIR}")
-get_filename_component(COCOS_2dx_LITE_PATH "${COCOS_ROOT_PATH}/../engine/native" ABSOLUTE)
+get_filename_component(COCOS_2dx_LITE_PATH "${COCOS_ROOT_PATH}/../cocos-engine/native" ABSOLUTE)
 set(COCOS_SRC_PATH "${COCOS_2dx_LITE_PATH}/cocos")
 set(COCOS_BUILD_PATH "${PROJECT_BINARY_DIR}")
 set(COCOS_EXTERNAL_PATH "${COCOS_2dx_LITE_PATH}/external")

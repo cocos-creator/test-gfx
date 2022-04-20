@@ -17,7 +17,7 @@ System.register([], function (_export, _context) {
       var settings;
       var gfx;
       return Promise.resolve().then(function () {
-        return topLevelImport('gfx-test-case/engine/index');
+        return topLevelImport('test-gfx/engine/index');
       }).then(function (cc_gfx) {
         gfx = cc_gfx;
         return loadSettingsJson();

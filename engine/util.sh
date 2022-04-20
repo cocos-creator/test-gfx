@@ -31,7 +31,7 @@ update () {
 SERVERPID="server.pid"
 SERVERLOG="server.log"
 SERVER="live-server"
-OPENFOLDER="gfx-test-case/engine/web-desktop"
+OPENFOLDER="test-gfx/engine/web-desktop"
 WATCHFOLDER="${OPENFOLDER}"
 ROOTPATH="../../"
 

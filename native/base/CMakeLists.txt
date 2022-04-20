@@ -20,23 +20,20 @@ set(PLATFORM_SUPPORT_SOURCE
   ${COCOS_SRC_PATH}/platform/FileUtils.cpp
   ${COCOS_SRC_PATH}/platform/BasePlatform.h
   ${COCOS_SRC_PATH}/platform/BasePlatform.cpp
+  ${COCOS_SRC_PATH}/platform/SDLHelper.h
+  ${COCOS_SRC_PATH}/platform/SDLHelper.cpp
+  ${COCOS_SRC_PATH}/platform/StdC.h
   ${COCOS_SRC_PATH}/platform/UniversalPlatform.h
   ${COCOS_SRC_PATH}/platform/UniversalPlatform.cpp
   ${COCOS_SRC_PATH}/platform/interfaces/modules/Device.cpp
   ${COCOS_SRC_PATH}/platform/interfaces/modules/Device.h
-  ${COCOS_SRC_PATH}/platform/interfaces/modules/IAccelerometer.cpp
   ${COCOS_SRC_PATH}/platform/interfaces/modules/IAccelerometer.h
-  ${COCOS_SRC_PATH}/platform/interfaces/modules/IBattery.cpp
   ${COCOS_SRC_PATH}/platform/interfaces/modules/IBattery.h
-  ${COCOS_SRC_PATH}/platform/interfaces/modules/IScreen.cpp
   ${COCOS_SRC_PATH}/platform/interfaces/modules/IScreen.h
-  ${COCOS_SRC_PATH}/platform/interfaces/modules/INetwork.cpp
   ${COCOS_SRC_PATH}/platform/interfaces/modules/INetwork.h
   ${COCOS_SRC_PATH}/platform/interfaces/modules/ISystem.cpp
   ${COCOS_SRC_PATH}/platform/interfaces/modules/ISystem.h
-  ${COCOS_SRC_PATH}/platform/interfaces/modules/ISystemWindow.cpp
   ${COCOS_SRC_PATH}/platform/interfaces/modules/ISystemWindow.h
-  ${COCOS_SRC_PATH}/platform/interfaces/modules/IVibrator.cpp
   ${COCOS_SRC_PATH}/platform/interfaces/modules/IVibrator.h
   ${COCOS_SRC_PATH}/platform/interfaces/OSInterface.cpp
   ${COCOS_SRC_PATH}/platform/interfaces/OSInterface.h
