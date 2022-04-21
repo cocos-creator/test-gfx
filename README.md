@@ -16,11 +16,11 @@ _test_gfx_ should be put alongside the engine repo:
 
 Enter ./engine folder and run the following commands
 ```bash
-    $ ./util.sh build # build the ts engine.
-    $ ./util.sh update # build the ts engine.
-    $ ./util.sh server start # start http server and open test cases in your browser.
-    $ ./util.sh server stop # stop the http server. 
+    $ ./util.sh update       # build the project.
+    $ ./util.sh server start # start http server and run test cases in your browser.
 ```
+You can also run `./util.sh help` to see the help message.
+> Note: you only need to start the server at the beginning. If you can't start the server, please run `./util.sh server stop` and then `./util.sh server start`.
 
 ### native
 1. Windows
@@ -32,7 +32,7 @@ Enter ./engine folder and run the following commands
     $ cmake --build build # build the project
     ```
 
-    You can also open the project with _Visual Studio_.
+    After configuring the project, you can also open `build/test-gfx.sln` with _Visual Studio_.
 
 2. Android
     * In _Android Studio_, import the project in `./src/android/`.
