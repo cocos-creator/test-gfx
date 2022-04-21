@@ -89,7 +89,7 @@ server () {
 }
 
 all () {
-    clear
+    clean
     update
 }
 
