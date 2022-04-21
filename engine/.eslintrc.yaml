@@ -3,7 +3,7 @@ root: true
 parser: '@typescript-eslint/parser'
 
 parserOptions:
-    # This seems to be a VSC plugin bug. You should always open the 'gfx-test-case'
+    # This seems to be a VSC plugin bug. You should always open the 'test-gfx'
     # folder in VSC instead of the current directory to get proper linting.
     project: ./engine/tsconfig.json
 

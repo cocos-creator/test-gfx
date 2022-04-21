@@ -1,4 +1,4 @@
-#include "../gfx-test-case/tests/ScriptTest/jsb_chassis_auto.h"
+#include "tests/ScriptTest/jsb_chassis_auto.h"
 #include "cocos/bindings/manual/jsb_conversions.h"
 #include "cocos/bindings/manual/jsb_global.h"
 #include "Chassis.h"

@@ -3,7 +3,7 @@
 #include <type_traits>
 #include "cocos/bindings/jswrapper/SeApi.h"
 #include "cocos/bindings/manual/jsb_conversions.h"
-#include "../gfx-test-case/tests/ScriptTest/Chassis.h"
+#include "tests/ScriptTest/Chassis.h"
 
 extern se::Object* __jsb_cc_experimental_TransformView_proto;
 extern se::Class* __jsb_cc_experimental_TransformView_class;

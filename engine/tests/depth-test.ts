@@ -1,6 +1,6 @@
 import {
-    AccessType, Attribute, BufferTextureCopy, Color, CullMode, DepthStencilAttachment, DrawInfo, Filter,
-    Format, FormatFeatureBit, FramebufferInfo, IndirectBuffer, PolygonMode, PrimitiveMode, Rect,
+    AccessFlagBit, Attribute, BufferTextureCopy, Color, CullMode, DepthStencilAttachment, DrawInfo, Filter,
+    Format, FormatFeatureBit, FramebufferInfo, GeneralBarrierInfo, IndirectBuffer, PolygonMode, PrimitiveMode, Rect,
     RenderPassInfo, SampleCount, SamplerInfo, ShadeModel, ShaderStageFlagBit, TextureFlagBit, TextureInfo,
     TextureType, TextureUsageBit, TextureViewInfo, Type,
 } from 'gfx/base/define';
@@ -16,6 +16,7 @@ import { box } from '../primitive/box';
 import { NULL_HANDLE, Program, ProgramBindings, ProgramInputs, IShaderExtension, IShaderExtensionType } from '../chassis';
 import { TestBase } from '../test-base';
 import { Vec4, Vec3, Mat4, IVec3Like, IVec4Like } from '../math';
+import { GeneralBarrier } from 'gfx/base/states/general-barrier';
 
 class DepthFrameBuffer {
     private _renderPass: RenderPass = null!;
@@ -56,7 +57,10 @@ class DepthFrameBuffer {
         const depthAttachment = new DepthStencilAttachment();
 
         depthAttachment.format = Format.DEPTH;
-        depthAttachment.endAccesses = [AccessType.FRAGMENT_SHADER_READ_TEXTURE];
+        depthAttachment.barrier = device.getGeneralBarrier(new GeneralBarrierInfo(
+            AccessFlagBit.NONE,
+            AccessFlagBit.FRAGMENT_SHADER_READ_TEXTURE,
+        ));
 
         const renderPassInfo = new RenderPassInfo(
             [], depthAttachment,

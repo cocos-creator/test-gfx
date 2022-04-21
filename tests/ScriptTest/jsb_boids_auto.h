@@ -3,7 +3,7 @@
 #include <type_traits>
 #include "cocos/bindings/jswrapper/SeApi.h"
 #include "cocos/bindings/manual/jsb_conversions.h"
-#include "../gfx-test-case/tests/ScriptTest/Boids.h"
+#include "tests/ScriptTest/Boids.h"
 
 extern se::Object* __jsb_application_BoidsOptions_proto;
 extern se::Class* __jsb_application_BoidsOptions_class;
