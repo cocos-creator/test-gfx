@@ -38,7 +38,12 @@ message(STATUS "\${GFX_EXTERNAL_PATH}: ${GFX_EXTERNAL_PATH}")
 # set(NX ON)
 # set(CC_NX_WINDOWS ON)
 
+set(CC_USE_GLES2 ON)
+set(CC_USE_VULKAN ON)
+add_definitions("-DUSE_JOB_SYSTEM_TASKFLOW")
+
 include(${COCOS_2dx_LITE_PATH}/cmake/predefine.cmake)
+include(${COCOS_2dx_LITE_PATH}/CMakeLists.txt)
 
 if(MSVC)
     if(ANDROID)
@@ -59,7 +64,7 @@ if(MSVC)
 
         # compiler building setting
         # Flags used by the compiler during all build types.
-        set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /W4 /wd4819 /wd4100 /wd4201 /wd4127 /Zm256 /EHsc /GR- /fp:fast")
+        set(CMAKE_CXX_FLAGS "/DWIN32 /D_WINDOWS /W4 /wd4819 /wd4100 /wd4201 /wd4127 /Zm256 /EHsc /fp:fast")
         # Flags used by the compiler during debug builds.
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /Zi /Ob0 /Od /RTC1 /Oi /MDd /D_DEBUG")
         # set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} /Zi /Ob0 /Od /RTC1 /Oi /MD /D_ITERATOR_DEBUG_LEVEL=0")
@@ -145,12 +150,11 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${COCOS_LIB_PATH}")
 macro(use_precompiled_header PrecompiledHeader PrecompiledSource Sources)
 endmacro(use_precompiled_header)
 
-set(USE_SE_V8 ON)
-set(USE_V8_DEBUGGER ON)
-add_definitions("-DUSE_JOB_SYSTEM_TASKFLOW")
+#set(USE_SE_V8 ON)
+#set(USE_V8_DEBUGGER ON)
 
-include(${COCOS_EXTERNAL_PATH}/CMakeLists.txt)
-list(REMOVE_ITEM CC_EXTERNAL_LIBS "glfw3")
+#include(${COCOS_EXTERNAL_PATH}/CMakeLists.txt)
+#list(REMOVE_ITEM CC_EXTERNAL_LIBS "glfw3")
 
 set(GFX_INCLUDE_FILES
   ${COCOS_EXTERNAL_PATH}/sources/EGL
@@ -165,7 +169,7 @@ set(GFX_INCLUDE_FILES
 
 include_directories(${GFX_INCLUDE_FILES})
 
-add_subdirectory(native/base)
-add_subdirectory(native/bindings)
-add_subdirectory(native/renderer)
+#add_subdirectory(native/base)
+#add_subdirectory(native/bindings)
+#add_subdirectory(native/renderer)
 add_subdirectory(src)

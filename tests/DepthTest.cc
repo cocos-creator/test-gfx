@@ -131,7 +131,7 @@ struct DepthResolveFramebuffer {
     gfx::Framebuffer *framebuffer         = nullptr;
 };
 
-struct BigTriangle : public cc::Object {
+struct BigTriangle : public cc::CCObject {
     BigTriangle(gfx::Device *device, gfx::Framebuffer *fbo) : fbo(fbo), device(device) {
         createShader();
         createBuffers();
@@ -331,7 +331,7 @@ struct BigTriangle : public cc::Object {
         pipelineState = device->createPipelineState(pipelineInfo);
     }
 
-    void destroy() {
+    bool destroy() override {
         CC_SAFE_DESTROY(shader);
         CC_SAFE_DESTROY(vertexBuffer);
         CC_SAFE_DESTROY(inputAssembler);
@@ -341,6 +341,7 @@ struct BigTriangle : public cc::Object {
         CC_SAFE_DESTROY(texture);
         CC_SAFE_DESTROY(pipelineState);
         CC_SAFE_DESTROY(nearFarUniformBuffer);
+        return true;
     }
 
     gfx::Shader *             shader               = nullptr;
@@ -356,7 +357,7 @@ struct BigTriangle : public cc::Object {
     gfx::PipelineState *      pipelineState        = nullptr;
 };
 
-struct Bunny : public cc::Object {
+struct Bunny : public cc::CCObject {
     Bunny(gfx::Device *device, gfx::Framebuffer *fbo) : device(device) {
         createShader();
         createBuffers();
@@ -468,7 +469,7 @@ struct Bunny : public cc::Object {
 
         // index buffer
         const auto &     indicesInfo = obj.GetShapes()[0].mesh.indices;
-        vector<uint16_t> indices;
+        ccstd::vector<uint16_t> indices;
         indices.reserve(indicesInfo.size());
         std::transform(indicesInfo.begin(), indicesInfo.end(), std::back_inserter(indices),
                        [](auto &&info) { return static_cast<uint16_t>(info.vertex_index); });
@@ -527,7 +528,7 @@ struct Bunny : public cc::Object {
         pipelineState = device->createPipelineState(pipelineInfo);
     }
 
-    void destroy() {
+    bool destroy() override {
         CC_SAFE_DESTROY(shader);
         CC_SAFE_DESTROY(vertexBuffer);
         CC_SAFE_DESTROY(indexBuffer);
@@ -540,6 +541,7 @@ struct Bunny : public cc::Object {
         CC_SAFE_DESTROY(descriptorSetLayout);
         CC_SAFE_DESTROY(pipelineLayout);
         CC_SAFE_DESTROY(pipelineState);
+        return true;
     }
     const static uint         BUNNY_NUM                   = 2;
     gfx::Device *             device                      = nullptr;
@@ -574,9 +576,9 @@ bool DepthTexture::onInit() {
     auto *swapchain = swapchains[0];
     auto *fbo       = fbos[0];
 
-    bunnyFBO = CC_NEW(DepthResolveFramebuffer(device, swapchain));
-    bunny    = CC_NEW(Bunny(device, bunnyFBO->framebuffer));
-    bg       = CC_NEW(BigTriangle(device, fbo));
+    bunnyFBO = ccnew DepthResolveFramebuffer(device, swapchain);
+    bunny    = ccnew Bunny(device, bunnyFBO->framebuffer);
+    bg       = ccnew BigTriangle(device, fbo);
 
     gfx::SamplerInfo samplerInfo;
     samplerInfo.mipFilter = gfx::Filter::POINT;

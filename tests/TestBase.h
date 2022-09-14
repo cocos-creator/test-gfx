@@ -1,6 +1,7 @@
 #pragma once
 
-#include "base/CoreStd.h"
+#include "base/std/container/string.h"
+#include "base/std/container/vector.h"
 #include "math/Mat4.h"
 #include "math/Vec4.h"
 #include "platform/Image.h"
@@ -24,11 +25,11 @@ using WindowInfo = struct WindowInfo {
 };
 
 struct StandardShaderSource {
-    String vert;
-    String frag;
+    ccstd::string vert;
+    ccstd::string frag;
 };
 
-using ComputeShaderSource = String;
+using ComputeShaderSource = ccstd::string;
 
 template <typename T>
 struct ShaderSources {
@@ -87,14 +88,14 @@ struct FrameRate {
 
 #define DEFINE_CREATE_METHOD(className)          \
     static TestBaseI *create() {                 \
-        TestBaseI *instance = CC_NEW(className); \
+        TestBaseI *instance = ccnew className;   \
         if (instance->initialize())              \
             return instance;                     \
         CC_SAFE_DESTROY(instance);               \
         return nullptr;                          \
     }
 
-class TestBaseI : public cc::Object {
+class TestBaseI : public cc::CCObject {
 public:
     TestBaseI();
 
@@ -118,7 +119,7 @@ public:
 
         ++statistics->frameAcc;
     }
-    static void printTime(const FrameRate &statistics = logicThread, const String &prefix = "Logic thread") {
+    static void printTime(const FrameRate &statistics = logicThread, const ccstd::string &prefix = "Logic thread") {
         if (statistics.frameAcc % 6 == 0) {
             CC_LOG_INFO("%s: frame %d, avg: %.2fms (~%ld FPS)",
                         prefix.c_str(),
@@ -140,12 +141,12 @@ public:
     static void onTouchEnd();
     static void update();
 
-    static void               evalString(const String &code);
-    static void               runScript(const String &file);
+    static void               evalString(const ccstd::string &code);
+    static void               runScript(const ccstd::string &file);
     static void               tickScript();
     static void               scriptEngineGC();
     static unsigned char *    rgb2rgba(Image *img);
-    static gfx::Texture *     createTextureWithFile(const gfx::TextureInfo &partialInfo, const String &imageFile);
+    static gfx::Texture *     createTextureWithFile(const gfx::TextureInfo &partialInfo, const ccstd::string &imageFile);
     static void               modifyProjectionBasedOnDevice(Mat4 *projection, gfx::Swapchain *swapchain);
     static void               createOrthographic(float left, float right, float bottom, float top, float near, float zFar, Mat4 *dst, gfx::Swapchain *swapchain);
     static void               createPerspective(float fov, float aspect, float near, float zFar, Mat4 *dst, gfx::Swapchain *swapchain);
@@ -154,9 +155,9 @@ public:
     static uint               getUBOSize(uint size);
     static uint               getMipmapLevelCounts(uint width, uint height);
     static uint               getAlignedUBOStride(uint stride);
-    static tinyobj::ObjReader loadOBJ(const String &path);
-    static void               createUberBuffer(const vector<uint> &sizes, gfx::Buffer **pBuffer, vector<gfx::Buffer *> *pBufferViews,
-                                               vector<uint> *pBufferViewOffsets, vector<uint> *pAlignedBufferSizes = nullptr, uint instances = 1);
+    static tinyobj::ObjReader loadOBJ(const ccstd::string &path);
+    static void               createUberBuffer(const ccstd::vector<uint> &sizes, gfx::Buffer **pBuffer, ccstd::vector<gfx::Buffer *> *pBufferViews,
+                                               ccstd::vector<uint> *pBufferViewOffsets, ccstd::vector<uint> *pAlignedBufferSizes = nullptr, uint instances = 1);
 
     template <typename T>
     static T &getAppropriateShaderSource(ShaderSources<T> &sources) {
@@ -182,9 +183,9 @@ public:
 
     static gfx::Device *                device;
     static gfx::RenderPass *            renderPass;
-    static vector<gfx::CommandBuffer *> commandBuffers;
-    static vector<gfx::Swapchain *>     swapchains;
-    static vector<gfx::Framebuffer *>   fbos;
+    static std::vector<gfx::CommandBuffer *> commandBuffers;
+    static std::vector<gfx::Swapchain *>     swapchains;
+    static std::vector<gfx::Framebuffer *>   fbos;
 
     static framegraph::FrameGraph fg;
 
@@ -219,28 +220,29 @@ public:
         }
     }
 
-    inline void destroy() {
+    inline bool destroy() override {
         onDestroy();
 
         for (auto *texture : _textures) {
             CC_SAFE_DESTROY(texture)
         }
         _textures.clear();
+        return true;
     }
 
 protected:
-    static vector<WindowInfo> windowInfos;
+    static ccstd::vector<WindowInfo> windowInfos;
     static int                curTestIndex;
-    static vector<createFunc> tests;
+    static ccstd::vector<createFunc> tests;
     static TestBaseI *        test;
     static int                nextDirection;
 
     virtual void onSpacePressed() {}
 
-    vector<gfx::GeneralBarrier *> _generalBarriers;
+    ccstd::vector<gfx::GeneralBarrier *> _generalBarriers;
 
-    vector<gfx::Texture *>        _textures;
-    vector<gfx::TextureBarrier *> _textureBarriers;
+    ccstd::vector<gfx::Texture *>        _textures;
+    ccstd::vector<gfx::TextureBarrier *> _textureBarriers;
 
     float _time       = 0.F;
     uint  _frameCount = 0U;

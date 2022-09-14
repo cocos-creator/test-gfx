@@ -38,15 +38,15 @@ protected:
     gfx::Buffer *       _uniWorldBuffer = nullptr, *_uniWorldBufferView = nullptr;
     gfx::DescriptorSet *_uniDescriptorSet = nullptr;
 
-    vector<gfx::Buffer *>        _worldBuffers;
-    vector<gfx::DescriptorSet *> _descriptorSets;
+    ccstd::vector<gfx::Buffer *>        _worldBuffers;
+    ccstd::vector<gfx::DescriptorSet *> _descriptorSets;
 
     gfx::DescriptorSetLayout *_descriptorSetLayout = nullptr;
     gfx::PipelineLayout *     _pipelineLayout      = nullptr;
     gfx::PipelineState *      _pipelineState       = nullptr;
     gfx::InputAssembler *     _inputAssembler      = nullptr;
 
-    vector<gfx::CommandBuffer *> _parallelCBs;
+    ccstd::vector<gfx::CommandBuffer *> _parallelCBs;
 
     uint _worldBufferStride = 0U;
     uint _threadCount       = 1U;

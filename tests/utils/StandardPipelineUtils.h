@@ -13,9 +13,9 @@ constexpr uint MVP    = 2;
 struct StandardUniformBuffers {
     StandardUniformBuffers();
     ~StandardUniformBuffers();
-    CC_DISABLE_COPY_AND_MOVE_SEMANTICS(StandardUniformBuffers)
+    CC_DISALLOW_COPY_MOVE_ASSIGN(StandardUniformBuffers)
 
-    vector<std::unique_ptr<gfx::Buffer>> bufferViews;
+    ccstd::vector<std::unique_ptr<gfx::Buffer>> bufferViews;
 
     float *getBuffer(uint binding, uint instance = 0);
     void   update(gfx::CommandBuffer *cmdBuff = nullptr);
@@ -30,10 +30,10 @@ private:
     friend void createStandardUniformBuffers(gfx::Device *device, StandardUniformBuffers *out, uint instances);
 
     std::unique_ptr<gfx::Buffer> _rootUBO{nullptr};
-    vector<float>                _rootBuffer;
-    vector<uint>                 _bufferViewOffsets;
-    vector<uint>                 _alignedBufferSizes;
-    vector<uint>                 _dynamicOffsets;
+    ccstd::vector<float>                _rootBuffer;
+    ccstd::vector<uint>                 _bufferViewOffsets;
+    ccstd::vector<uint>                 _alignedBufferSizes;
+    ccstd::vector<uint>                 _dynamicOffsets;
     uint                         _instances{0U};
 
     static uint refCount;

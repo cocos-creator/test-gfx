@@ -31,7 +31,7 @@ bool SubpassTest::onInit() {
 
     // index buffer
     const auto &     indicesInfo = obj.GetShapes()[0].mesh.indices;
-    vector<uint16_t> indices;
+    ccstd::vector<uint16_t> indices;
     indices.reserve(indicesInfo.size());
     std::transform(indicesInfo.begin(), indicesInfo.end(), std::back_inserter(indices),
                    [](auto &&info) { return static_cast<uint16_t>(info.vertex_index); });
