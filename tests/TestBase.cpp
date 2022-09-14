@@ -146,21 +146,24 @@ void TestBaseI::tickScript() {
 }
 
 void TestBaseI::destroyGlobal() {
-    CC_SAFE_DESTROY(test)
+    CC_SAFE_DESTROY_AND_DELETE(test)
     framegraph::FrameGraph::gc(0);
 
-    se::ScriptEngine::destroyInstance();
+    auto fu = FileUtils::getInstance();
+    auto se = se::ScriptEngine::getInstance();
+    delete fu;
+    delete se;
 
     for (auto *fbo : fbos) {
-        CC_SAFE_DESTROY(fbo)
+        CC_SAFE_DESTROY_AND_DELETE(fbo)
     }
-    CC_SAFE_DESTROY(renderPass)
+    CC_SAFE_DESTROY_AND_DELETE(renderPass)
 
     for (auto *swapchain : swapchains) {
-        CC_SAFE_DESTROY(swapchain)
+        CC_SAFE_DESTROY_AND_DELETE(swapchain)
     }
 
-    CC_SAFE_DESTROY(device)
+    CC_SAFE_DESTROY_AND_DELETE(device)
 }
 
 void TestBaseI::nextTest(bool backward) {
@@ -185,7 +188,7 @@ void TestBaseI::onTouchEnd() {
 
 void TestBaseI::update() {
     if (nextDirection) {
-        CC_SAFE_DESTROY(test)
+        CC_SAFE_DESTROY_AND_DELETE(test)
         static auto testCount = static_cast<int>(tests.size());
         if (nextDirection < 0) curTestIndex += testCount;
         curTestIndex  = (curTestIndex + nextDirection) % testCount;

@@ -9,9 +9,11 @@ class SubpassTest : public TestBaseI {
 public:
     DEFINE_CREATE_METHOD(SubpassTest)
     using TestBaseI::TestBaseI;
+    ~SubpassTest() = default;
 
     bool onInit() override;
     void onTick() override;
+    void onDestroy() override;
 
 protected:
     void onSpacePressed() override;

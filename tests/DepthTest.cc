@@ -114,11 +114,11 @@ struct DepthResolveFramebuffer {
     }
 
     void destroy() {
-        CC_SAFE_DESTROY(framebuffer);
-        CC_SAFE_DESTROY(depthStencilTexView);
-        CC_SAFE_DESTROY(depthStencilTex);
-        CC_SAFE_DESTROY(depthStencilTexMSAA);
-        CC_SAFE_DESTROY(renderPass);
+        CC_SAFE_DESTROY_AND_DELETE(framebuffer);
+        CC_SAFE_DESTROY_AND_DELETE(depthStencilTexView);
+        CC_SAFE_DESTROY_AND_DELETE(depthStencilTex);
+        CC_SAFE_DESTROY_AND_DELETE(depthStencilTexMSAA);
+        CC_SAFE_DESTROY_AND_DELETE(renderPass);
     }
 
     const uint lodLevel  = 4;
@@ -332,15 +332,15 @@ struct BigTriangle : public cc::CCObject {
     }
 
     bool destroy() override {
-        CC_SAFE_DESTROY(shader);
-        CC_SAFE_DESTROY(vertexBuffer);
-        CC_SAFE_DESTROY(inputAssembler);
-        CC_SAFE_DESTROY(descriptorSet);
-        CC_SAFE_DESTROY(descriptorSetLayout);
-        CC_SAFE_DESTROY(pipelineLayout);
-        CC_SAFE_DESTROY(texture);
-        CC_SAFE_DESTROY(pipelineState);
-        CC_SAFE_DESTROY(nearFarUniformBuffer);
+        CC_SAFE_DESTROY_AND_DELETE(shader);
+        CC_SAFE_DESTROY_AND_DELETE(vertexBuffer);
+        CC_SAFE_DESTROY_AND_DELETE(inputAssembler);
+        CC_SAFE_DESTROY_AND_DELETE(descriptorSet);
+        CC_SAFE_DESTROY_AND_DELETE(descriptorSetLayout);
+        CC_SAFE_DESTROY_AND_DELETE(pipelineLayout);
+        CC_SAFE_DESTROY_AND_DELETE(texture);
+        CC_SAFE_DESTROY_AND_DELETE(pipelineState);
+        CC_SAFE_DESTROY_AND_DELETE(nearFarUniformBuffer);
         return true;
     }
 
@@ -529,18 +529,18 @@ struct Bunny : public cc::CCObject {
     }
 
     bool destroy() override {
-        CC_SAFE_DESTROY(shader);
-        CC_SAFE_DESTROY(vertexBuffer);
-        CC_SAFE_DESTROY(indexBuffer);
-        CC_SAFE_DESTROY(depthTexture);
-        CC_SAFE_DESTROY(inputAssembler);
+        CC_SAFE_DESTROY_AND_DELETE(shader);
+        CC_SAFE_DESTROY_AND_DELETE(vertexBuffer);
+        CC_SAFE_DESTROY_AND_DELETE(indexBuffer);
+        CC_SAFE_DESTROY_AND_DELETE(depthTexture);
+        CC_SAFE_DESTROY_AND_DELETE(inputAssembler);
         for (uint i = 0; i < BUNNY_NUM; i++) {
-            CC_SAFE_DESTROY(mvpUniformBuffer[i]);
-            CC_SAFE_DESTROY(descriptorSet[i]);
+            CC_SAFE_DESTROY_AND_DELETE(mvpUniformBuffer[i]);
+            CC_SAFE_DESTROY_AND_DELETE(descriptorSet[i]);
         }
-        CC_SAFE_DESTROY(descriptorSetLayout);
-        CC_SAFE_DESTROY(pipelineLayout);
-        CC_SAFE_DESTROY(pipelineState);
+        CC_SAFE_DESTROY_AND_DELETE(descriptorSetLayout);
+        CC_SAFE_DESTROY_AND_DELETE(pipelineLayout);
+        CC_SAFE_DESTROY_AND_DELETE(pipelineState);
         return true;
     }
     const static uint         BUNNY_NUM                   = 2;
@@ -563,9 +563,9 @@ DepthResolveFramebuffer *bunnyFBO{nullptr};
 } // namespace
 
 void DepthTexture::onDestroy() {
-    CC_SAFE_DESTROY(bg);
-    CC_SAFE_DESTROY(bunny);
-    CC_SAFE_DESTROY(bunnyFBO);
+    CC_SAFE_DESTROY_AND_DELETE(bg);
+    CC_SAFE_DESTROY_AND_DELETE(bunny);
+    CC_SAFE_DESTROY_AND_DELETE(bunnyFBO);
 }
 
 void DepthTexture::onResize(gfx::Swapchain *swapchain) {

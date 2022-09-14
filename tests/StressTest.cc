@@ -75,38 +75,38 @@ void hsV2Rgb(const float h, const float s, const float v, float &r, float &g, fl
 }
 
 void StressTest::onDestroy() {
-    CC_SAFE_DESTROY(_vertexBuffer);
-    CC_SAFE_DESTROY(_inputAssembler);
+    CC_SAFE_DESTROY_AND_DELETE(_vertexBuffer);
+    CC_SAFE_DESTROY_AND_DELETE(_inputAssembler);
 
 #if USE_DYNAMIC_UNIFORM_BUFFER
-    CC_SAFE_DESTROY(_uniDescriptorSet);
-    CC_SAFE_DESTROY(_uniWorldBufferView);
-    CC_SAFE_DESTROY(_uniWorldBuffer);
+    CC_SAFE_DESTROY_AND_DELETE(_uniDescriptorSet);
+    CC_SAFE_DESTROY_AND_DELETE(_uniWorldBufferView);
+    CC_SAFE_DESTROY_AND_DELETE(_uniWorldBuffer);
 #else
     for (uint i = 0u; i < _descriptorSets.size(); i++) {
-        CC_SAFE_DESTROY(_descriptorSets[i]);
+        CC_SAFE_DESTROY_AND_DELETE(_descriptorSets[i]);
     }
     _descriptorSets.clear();
 
     for (uint i = 0u; i < _worldBuffers.size(); i++) {
-        CC_SAFE_DESTROY(_worldBuffers[i]);
+        CC_SAFE_DESTROY_AND_DELETE(_worldBuffers[i]);
     }
     _worldBuffers.clear();
 #endif
 
-    CC_SAFE_DESTROY(_uniformBufferVP);
-    CC_SAFE_DESTROY(_shader);
-    CC_SAFE_DESTROY(_descriptorSetLayout);
-    CC_SAFE_DESTROY(_pipelineLayout);
-    CC_SAFE_DESTROY(_pipelineState);
+    CC_SAFE_DESTROY_AND_DELETE(_uniformBufferVP);
+    CC_SAFE_DESTROY_AND_DELETE(_shader);
+    CC_SAFE_DESTROY_AND_DELETE(_descriptorSetLayout);
+    CC_SAFE_DESTROY_AND_DELETE(_pipelineLayout);
+    CC_SAFE_DESTROY_AND_DELETE(_pipelineState);
 
     for (auto &parallelCB : _parallelCBs) {
-        CC_SAFE_DESTROY(parallelCB);
+        CC_SAFE_DESTROY_AND_DELETE(parallelCB);
     }
     _parallelCBs.clear();
 
     for (size_t i = 1U; i < commandBuffers.size(); ++i) {
-        CC_SAFE_DESTROY(commandBuffers[i]);
+        CC_SAFE_DESTROY_AND_DELETE(commandBuffers[i]);
     }
     commandBuffers.resize(1);
 }

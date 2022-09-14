@@ -17,27 +17,27 @@ static uint bgGroupSizeY = 8U;
 static FullscreenQuad *quad{nullptr};
 
 void ComputeTest::onDestroy() {
-    CC_SAFE_DESTROY(_inputAssembler);
-    CC_SAFE_DESTROY(_uniformBufferMVP);
-    CC_SAFE_DESTROY(_shader);
-    CC_SAFE_DESTROY(_descriptorSet);
-    CC_SAFE_DESTROY(_descriptorSetLayout);
-    CC_SAFE_DESTROY(_pipelineLayout);
-    CC_SAFE_DESTROY(_pipelineState);
+    CC_SAFE_DESTROY_AND_DELETE(_inputAssembler);
+    CC_SAFE_DESTROY_AND_DELETE(_uniformBufferMVP);
+    CC_SAFE_DESTROY_AND_DELETE(_shader);
+    CC_SAFE_DESTROY_AND_DELETE(_descriptorSet);
+    CC_SAFE_DESTROY_AND_DELETE(_descriptorSetLayout);
+    CC_SAFE_DESTROY_AND_DELETE(_pipelineLayout);
+    CC_SAFE_DESTROY_AND_DELETE(_pipelineState);
 
-    CC_SAFE_DESTROY(_compShader);
-    CC_SAFE_DESTROY(_compConstantsBuffer);
-    CC_SAFE_DESTROY(_compStorageBuffer);
-    CC_SAFE_DESTROY(_compDescriptorSet);
-    CC_SAFE_DESTROY(_compDescriptorSetLayout);
-    CC_SAFE_DESTROY(_compPipelineLayout);
-    CC_SAFE_DESTROY(_compPipelineState);
+    CC_SAFE_DESTROY_AND_DELETE(_compShader);
+    CC_SAFE_DESTROY_AND_DELETE(_compConstantsBuffer);
+    CC_SAFE_DESTROY_AND_DELETE(_compStorageBuffer);
+    CC_SAFE_DESTROY_AND_DELETE(_compDescriptorSet);
+    CC_SAFE_DESTROY_AND_DELETE(_compDescriptorSetLayout);
+    CC_SAFE_DESTROY_AND_DELETE(_compPipelineLayout);
+    CC_SAFE_DESTROY_AND_DELETE(_compPipelineState);
 
-    CC_SAFE_DESTROY(_compBGShader);
-    CC_SAFE_DESTROY(_compBGDescriptorSet);
-    CC_SAFE_DESTROY(_compBGDescriptorSetLayout);
-    CC_SAFE_DESTROY(_compBGPipelineLayout);
-    CC_SAFE_DESTROY(_compBGPipelineState);
+    CC_SAFE_DESTROY_AND_DELETE(_compBGShader);
+    CC_SAFE_DESTROY_AND_DELETE(_compBGDescriptorSet);
+    CC_SAFE_DESTROY_AND_DELETE(_compBGDescriptorSetLayout);
+    CC_SAFE_DESTROY_AND_DELETE(_compBGPipelineLayout);
+    CC_SAFE_DESTROY_AND_DELETE(_compBGPipelineState);
 
     CC_SAFE_DELETE(quad);
 }

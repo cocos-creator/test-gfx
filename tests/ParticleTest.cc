@@ -53,15 +53,15 @@ Vec3 vec3ScaleAndAdd(const Vec3 &a, const Vec3 &b, float scale) {
 } // namespace
 
 void ParticleTest::onDestroy() {
-    CC_SAFE_DESTROY(_shader);
-    CC_SAFE_DESTROY(_vertexBuffer);
-    CC_SAFE_DESTROY(_indexBuffer);
-    CC_SAFE_DESTROY(_inputAssembler);
-    CC_SAFE_DESTROY(_pipelineState);
-    CC_SAFE_DESTROY(_descriptorSet);
-    CC_SAFE_DESTROY(_descriptorSetLayout);
-    CC_SAFE_DESTROY(_pipelineLayout);
-    CC_SAFE_DESTROY(_uniformBuffer);
+    CC_SAFE_DESTROY_AND_DELETE(_shader);
+    CC_SAFE_DESTROY_AND_DELETE(_vertexBuffer);
+    CC_SAFE_DESTROY_AND_DELETE(_indexBuffer);
+    CC_SAFE_DESTROY_AND_DELETE(_inputAssembler);
+    CC_SAFE_DESTROY_AND_DELETE(_pipelineState);
+    CC_SAFE_DESTROY_AND_DELETE(_descriptorSet);
+    CC_SAFE_DESTROY_AND_DELETE(_descriptorSetLayout);
+    CC_SAFE_DESTROY_AND_DELETE(_pipelineLayout);
+    CC_SAFE_DESTROY_AND_DELETE(_uniformBuffer);
 }
 
 bool ParticleTest::onInit() {

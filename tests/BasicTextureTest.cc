@@ -4,18 +4,18 @@
 namespace cc {
 
 void BasicTexture::onDestroy() {
-    CC_SAFE_DESTROY(_shader);
+    CC_SAFE_DESTROY_AND_DELETE(_shader);
     for (auto *view : _textureViews) {
-        CC_SAFE_DESTROY(view);
+        CC_SAFE_DESTROY_AND_DELETE(view);
     }
     _textureViews.clear();
-    CC_SAFE_DESTROY(_vertexBuffer);
-    CC_SAFE_DESTROY(_inputAssembler);
-    CC_SAFE_DESTROY(_descriptorSet);
-    CC_SAFE_DESTROY(_descriptorSetLayout);
-    CC_SAFE_DESTROY(_pipelineLayout);
-    CC_SAFE_DESTROY(_pipelineState);
-    CC_SAFE_DESTROY(_uniformBuffer);
+    CC_SAFE_DESTROY_AND_DELETE(_vertexBuffer);
+    CC_SAFE_DESTROY_AND_DELETE(_inputAssembler);
+    CC_SAFE_DESTROY_AND_DELETE(_descriptorSet);
+    CC_SAFE_DESTROY_AND_DELETE(_descriptorSetLayout);
+    CC_SAFE_DESTROY_AND_DELETE(_pipelineLayout);
+    CC_SAFE_DESTROY_AND_DELETE(_pipelineState);
+    CC_SAFE_DESTROY_AND_DELETE(_uniformBuffer);
 }
 
 bool BasicTexture::onInit() {

@@ -24,18 +24,18 @@ struct Quad : public cc::CCObject {
     ~Quad() override = default;
 
     bool destroy() override {
-        CC_SAFE_DESTROY(shader);
-        CC_SAFE_DESTROY(vertexBuffer);
-        CC_SAFE_DESTROY(inputAssembler);
-        CC_SAFE_DESTROY(indexBuffer);
-        CC_SAFE_DESTROY(texture);
-        CC_SAFE_DESTROY(descriptorSet);
-        CC_SAFE_DESTROY(uniformBufferView);
-        CC_SAFE_DESTROY(uniformBuffer);
-        CC_SAFE_DESTROY(descriptorSetLayout);
-        CC_SAFE_DESTROY(pipelineLayout);
+        CC_SAFE_DESTROY_AND_DELETE(shader);
+        CC_SAFE_DESTROY_AND_DELETE(vertexBuffer);
+        CC_SAFE_DESTROY_AND_DELETE(inputAssembler);
+        CC_SAFE_DESTROY_AND_DELETE(indexBuffer);
+        CC_SAFE_DESTROY_AND_DELETE(texture);
+        CC_SAFE_DESTROY_AND_DELETE(descriptorSet);
+        CC_SAFE_DESTROY_AND_DELETE(uniformBufferView);
+        CC_SAFE_DESTROY_AND_DELETE(uniformBuffer);
+        CC_SAFE_DESTROY_AND_DELETE(descriptorSetLayout);
+        CC_SAFE_DESTROY_AND_DELETE(pipelineLayout);
         for (auto &i : pipelineState) {
-            CC_SAFE_DESTROY(i);
+            CC_SAFE_DESTROY_AND_DELETE(i);
         }
         return true;
     }
@@ -343,15 +343,15 @@ struct BigTriangle : public cc::CCObject {
     }
 
     bool destroy() override {
-        CC_SAFE_DESTROY(shader);
-        CC_SAFE_DESTROY(vertexBuffer);
-        CC_SAFE_DESTROY(inputAssembler);
-        CC_SAFE_DESTROY(descriptorSet);
-        CC_SAFE_DESTROY(descriptorSetLayout);
-        CC_SAFE_DESTROY(pipelineLayout);
-        CC_SAFE_DESTROY(pipelineState);
-        CC_SAFE_DESTROY(timeBuffer);
-        CC_SAFE_DESTROY(texture);
+        CC_SAFE_DESTROY_AND_DELETE(shader);
+        CC_SAFE_DESTROY_AND_DELETE(vertexBuffer);
+        CC_SAFE_DESTROY_AND_DELETE(inputAssembler);
+        CC_SAFE_DESTROY_AND_DELETE(descriptorSet);
+        CC_SAFE_DESTROY_AND_DELETE(descriptorSetLayout);
+        CC_SAFE_DESTROY_AND_DELETE(pipelineLayout);
+        CC_SAFE_DESTROY_AND_DELETE(pipelineState);
+        CC_SAFE_DESTROY_AND_DELETE(timeBuffer);
+        CC_SAFE_DESTROY_AND_DELETE(texture);
         return true;
     }
 
@@ -558,8 +558,8 @@ gfx::Rect             renderArea;
 
 void BlendTest::onDestroy() {
     _textures.clear();
-    CC_SAFE_DESTROY(bigTriangle);
-    CC_SAFE_DESTROY(quad);
+    CC_SAFE_DESTROY_AND_DELETE(bigTriangle);
+    CC_SAFE_DESTROY_AND_DELETE(quad);
     renderArea.width = renderArea.height = 1U;
     orientation                          = gfx::SurfaceTransform::IDENTITY;
 }
