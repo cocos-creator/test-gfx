@@ -95,6 +95,20 @@ void SubpassTest::onSpacePressed() {
     CC_LOG_INFO("Shading mode switched to: %s", _useDeferred ? "Deferred" : "Forward");
 }
 
+void SubpassTest::onDestroy() {
+    _vertexPositionBuffer->destroy();
+    _vertexPositionBuffer.reset();
+
+    _vertexNormalBuffer->destroy();
+    _vertexNormalBuffer.reset();
+
+    _indexBuffer->destroy();
+    _indexBuffer.reset();
+
+    _inputAssembler->destroy();
+    _inputAssembler.reset();
+}
+
 void SubpassTest::onTick() {
     uint  generalBarrierIdx = _frameCount ? 1 : 0;
     auto *commandBuffer    = commandBuffers[0];

@@ -224,7 +224,7 @@ public:
         onDestroy();
 
         for (auto *texture : _textures) {
-            CC_SAFE_DESTROY(texture)
+            CC_SAFE_DESTROY_AND_DELETE(texture)
         }
         _textures.clear();
         return true;
