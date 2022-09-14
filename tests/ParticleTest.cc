@@ -371,7 +371,6 @@ void ParticleTest::createPipeline() {
     _textureBarriers.push_back(device->getTextureBarrier({
         gfx::AccessFlagBit::TRANSFER_WRITE,
         gfx::AccessFlagBit::FRAGMENT_SHADER_READ_TEXTURE,
-        false,
     }));
 }
 
@@ -382,7 +381,6 @@ void ParticleTest::onTick() {
     printTime();
 
     uint generalBarrierIdx = _frameCount ? 1 : 0;
-    uint textureBarriers  = _frameCount ? 0 : _textureBarriers.size();
 
     gfx::Color clearColor = {0.2F, 0.2F, 0.2F, 1.0F};
 
@@ -436,7 +434,7 @@ void ParticleTest::onTick() {
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER) {
-        commandBuffer->pipelineBarrier(_generalBarriers[generalBarrierIdx], _textureBarriers.data(), _textures.data(), textureBarriers);
+        commandBuffer->pipelineBarrier(_generalBarriers[generalBarrierIdx], {}, {}, _textureBarriers, _textures);
     }
 
     commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0F, 0);

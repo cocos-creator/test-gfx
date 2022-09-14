@@ -20,7 +20,7 @@ private:
     void createInputAssembler();
     void createTexture();
 
-    vector<gfx::Texture *> _textureViews = {};
+    ccstd::vector<gfx::Texture *> _textureViews = {};
 
     gfx::Shader *             _shader              = nullptr;
     gfx::Buffer *             _vertexBuffer        = nullptr;

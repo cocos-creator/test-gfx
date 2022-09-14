@@ -1,6 +1,6 @@
 #include "TestBase.h"
 
-#include "base/AutoreleasePool.h"
+#include "base/threading/AutoreleasePool.h"
 #include "base/threading/MessageQueue.h"
 #include "platform/FileUtils.h"
 
@@ -36,7 +36,7 @@
 
 namespace cc {
 
-vector<WindowInfo> TestBaseI::windowInfos;
+ccstd::vector<WindowInfo> TestBaseI::windowInfos;
 
 int         TestBaseI::curTestIndex           = -1;
 int         TestBaseI::nextDirection          = 0;
@@ -47,9 +47,9 @@ const float TestBaseI::NANOSECONDS_PER_SECOND = 1000000000.F;
 gfx::Device *    TestBaseI::device     = nullptr;
 gfx::RenderPass *TestBaseI::renderPass = nullptr;
 
-vector<TestBaseI::createFunc> TestBaseI::tests = {
+ccstd::vector<TestBaseI::createFunc> TestBaseI::tests = {
     SubpassTest::create,
-    ScriptTest::create,
+//    ScriptTest::create,
     ComputeTest::create,
     StressTest::create,
     FrameGraphTest::create,
@@ -68,17 +68,18 @@ vector<TestBaseI::createFunc> TestBaseI::tests = {
 FrameRate                    TestBaseI::logicThread;
 FrameRate                    TestBaseI::renderThread;
 FrameRate                    TestBaseI::deviceThread;
-vector<gfx::CommandBuffer *> TestBaseI::commandBuffers;
-vector<gfx::Swapchain *>     TestBaseI::swapchains;
-vector<gfx::Framebuffer *>   TestBaseI::fbos;
+ccstd::vector<gfx::CommandBuffer *> TestBaseI::commandBuffers;
+ccstd::vector<gfx::Swapchain *>     TestBaseI::swapchains;
+ccstd::vector<gfx::Framebuffer *>   TestBaseI::fbos;
 
 framegraph::FrameGraph TestBaseI::fg;
 
 TestBaseI::TestBaseI() {
     if (!device) {
-        EventDispatcher::init();
-
+        ccnew se::ScriptEngine();
         se::ScriptEngine *se = se::ScriptEngine::getInstance();
+
+        EventDispatcher::init();
 
         jsb_set_xxtea_key("");
         jsb_init_file_operation_delegate();
@@ -196,12 +197,12 @@ void TestBaseI::update() {
     }
 }
 
-void TestBaseI::evalString(const String &code) {
+void TestBaseI::evalString(const ccstd::string &code) {
     se::AutoHandleScope hs;
     se::ScriptEngine::getInstance()->evalString(code.c_str());
 }
 
-void TestBaseI::runScript(const String &file) {
+void TestBaseI::runScript(const ccstd::string &file) {
     se::AutoHandleScope hs;
     se::ScriptEngine::getInstance()->runScript(file);
 }
@@ -229,9 +230,8 @@ unsigned char *TestBaseI::rgb2rgba(Image *img) {
     return dstData;
 }
 
-gfx::Texture *TestBaseI::createTextureWithFile(const gfx::TextureInfo &partialInfo, const String &imageFile) {
+gfx::Texture *TestBaseI::createTextureWithFile(const gfx::TextureInfo &partialInfo, const ccstd::string &imageFile) {
     auto *img = new cc::Image();
-    img->autorelease();
     if (!img->initWithImageFile(imageFile)) return nullptr;
 
     unsigned char *imgData = nullptr;
@@ -404,8 +404,8 @@ uint TestBaseI::getAlignedUBOStride(uint stride) {
     return (stride + alignment - 1) / alignment * alignment;
 }
 
-void TestBaseI::createUberBuffer(const vector<uint> &sizes, gfx::Buffer **pBuffer, vector<gfx::Buffer *> *pBufferViews,
-                                 vector<uint> *pBufferViewOffsets, vector<uint> *pAlignedBufferSizes, uint instances) {
+void TestBaseI::createUberBuffer(const ccstd::vector<uint> &sizes, gfx::Buffer **pBuffer, ccstd::vector<gfx::Buffer *> *pBufferViews,
+                                 ccstd::vector<uint> *pBufferViewOffsets, ccstd::vector<uint> *pAlignedBufferSizes, uint instances) {
     pBufferViewOffsets->assign(sizes.size() + 1, 0);
     if (pAlignedBufferSizes) pAlignedBufferSizes->resize(sizes.size());
     for (uint i = 0U; i < sizes.size(); ++i) {
@@ -427,15 +427,15 @@ void TestBaseI::createUberBuffer(const vector<uint> &sizes, gfx::Buffer **pBuffe
     }
 }
 
-tinyobj::ObjReader TestBaseI::loadOBJ(const String & /*path*/) {
-    String objFile = FileUtils::getInstance()->getStringFromFile("bunny.obj");
-    String mtlFile;
+tinyobj::ObjReader TestBaseI::loadOBJ(const ccstd::string & /*path*/) {
+    ccstd::string objFile = FileUtils::getInstance()->getStringFromFile("bunny.obj");
+    ccstd::string mtlFile;
 
     tinyobj::ObjReader       obj;
     tinyobj::ObjReaderConfig config;
     config.vertex_color = false;
     obj.ParseFromString(objFile, mtlFile, config);
-    CCASSERT(obj.Valid(), "file failed to load");
+    CC_ASSERT(obj.Valid() && "file failed to load");
 
     return obj;
 }

@@ -207,7 +207,7 @@ void BasicTexture::createTexture() {
     viewInfo.texture = _textures[1];
     _textureViews[1] = TestBaseI::device->createTexture(viewInfo);
 
-    vector<uint8_t> buffer(_textures[0]->getWidth() * _textures[0]->getHeight() * gfx::GFX_FORMAT_INFOS[toNumber(_textures[0]->getFormat())].size);
+    ccstd::vector<uint8_t> buffer(_textures[0]->getWidth() * _textures[0]->getHeight() * gfx::GFX_FORMAT_INFOS[toNumber(_textures[0]->getFormat())].size);
     uint8_t *       data = buffer.data();
 
     gfx::BufferTextureCopy region;
@@ -260,7 +260,6 @@ void BasicTexture::createPipeline() {
     _textureBarriers.push_back(device->getTextureBarrier({
         gfx::AccessFlagBit::TRANSFER_WRITE,
         gfx::AccessFlagBit::FRAGMENT_SHADER_READ_TEXTURE,
-        false,
     }));
 
     _textureBarriers.push_back(_textureBarriers.back());
@@ -284,7 +283,6 @@ void BasicTexture::onTick() {
     }
 
     uint generalBarrierIdx = _frameCount ? 1 : 0;
-    uint textureBarriers   = _frameCount ? 0 : _textureBarriers.size();
 
     gfx::Color clearColor = {0, 0, 0, 1.0F};
 
@@ -300,7 +298,7 @@ void BasicTexture::onTick() {
     commandBuffer->begin();
 
     if (TestBaseI::MANUAL_BARRIER) {
-        commandBuffer->pipelineBarrier(_generalBarriers[generalBarrierIdx], _textureBarriers.data(), _textures.data(), textureBarriers);
+        commandBuffer->pipelineBarrier(_generalBarriers[generalBarrierIdx], {}, {}, _textureBarriers, _textures);
     }
 
     commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0F, 0);

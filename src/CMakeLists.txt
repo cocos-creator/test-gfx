@@ -8,13 +8,7 @@ file(GLOB_RECURSE APP_UI_RES ${GAME_RES_FOLDER}/*)
 include(${PROJECT_SOURCE_DIR}/tests/CMakeLists.txt)
 
 set(ENGINE_BASE_LIBS
-    Core
-    ScriptEngine
-    GFXBase
-    GFXEmpty
-    GFXAgent
-    GFXValidator
-    FrameGraph
+    ${ENGINE_NAME}
 )
 
 if(NX)

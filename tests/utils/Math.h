@@ -374,7 +374,7 @@ inline Vec3<Expr> vec3TransformMat4Normal(const Vec3<Value> &v, const Mat4<Value
 ///////////////////// Debugging /////////////////////
 
 template <typename Value>
-inline void print(const Value &v, const String &prefix = "") {
+inline void print(const Value &v, const ccstd::string &prefix = "") {
     std::stringstream ss;
     ss << v;
     CC_LOG_DEBUG("%s %s\n", prefix.c_str(), ss.str().c_str());

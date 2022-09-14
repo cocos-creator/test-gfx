@@ -19,6 +19,8 @@ GameApp::GameApp() {
     GetCurrentDirectory(MAX_PATH, szRootPath);
 
     std::vector<std::string> path = {"Resources"};
+
+    createFileUtils();
     FileUtils::getInstance()->setSearchPaths(path);
 }
 
@@ -96,7 +98,7 @@ void GameApp::initialize() {
     TestBaseI::nextTest();
 }
 
-void GameApp::destroy() {
+bool GameApp::destroy() {
     for (HWND hWnd : _hWnds) {
         DestroyWindow(hWnd);
     }
@@ -109,6 +111,7 @@ void GameApp::destroy() {
 
     _hInstance = NULL;
     _instance  = nullptr;
+    return true;
 }
 
 void GameApp::Run() {

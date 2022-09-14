@@ -5,7 +5,7 @@
 
 namespace cc {
 
-class GameApp : public cc::Object {
+class GameApp : public cc::CCObject {
 public:
     static GameApp *getInstance() { return _instance; }
     GameApp();
@@ -16,7 +16,7 @@ public:
 
 private:
     void initialize();
-    void destroy();
+    bool destroy() override;
 
     void createWindow(const std::wstring &name, int width, int height, float x, float y);
 
@@ -27,8 +27,8 @@ private:
 
     HINSTANCE _hInstance = NULL;
 
-    vector<HWND> _hWnds;
-    vector<std::wstring> _windowNames;
+    ccstd::vector<HWND> _hWnds;
+    ccstd::vector<std::wstring> _windowNames;
 };
 
 } // namespace cc

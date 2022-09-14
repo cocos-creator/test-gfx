@@ -274,7 +274,7 @@ void StressTest::createVertexBuffer() {
     _uniWorldBuffer = device->createBuffer(uniformBufferWInfo);
 
     uint          stride = _worldBufferStride / sizeof(float);
-    vector<float> buffer(stride * MODELS_PER_LINE[0] * MODELS_PER_LINE[0]);
+    ccstd::vector<float> buffer(stride * MODELS_PER_LINE[0] * MODELS_PER_LINE[0]);
     uint          idx = 0U;
     for (float i = 0U; i < MODELS_PER_LINE[0]; i++) {
         for (float j = 0U; j < MODELS_PER_LINE[0]; j++, idx++) {

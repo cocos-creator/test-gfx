@@ -12,7 +12,7 @@ enum {
     TOTAL_BLEND
 };
 
-struct Quad : public cc::Object {
+struct Quad : public cc::CCObject {
     Quad(gfx::Device *device, gfx::Framebuffer *fbo) : device(device), fbo(fbo) {
         createShader();
         createVertexBuffer();
@@ -23,7 +23,7 @@ struct Quad : public cc::Object {
 
     ~Quad() override = default;
 
-    void destroy() {
+    bool destroy() override {
         CC_SAFE_DESTROY(shader);
         CC_SAFE_DESTROY(vertexBuffer);
         CC_SAFE_DESTROY(inputAssembler);
@@ -37,6 +37,7 @@ struct Quad : public cc::Object {
         for (auto &i : pipelineState) {
             CC_SAFE_DESTROY(i);
         }
+        return true;
     }
 
     void createShader() {
@@ -328,11 +329,11 @@ struct Quad : public cc::Object {
     gfx::PipelineState *      pipelineState[TOTAL_BLEND] = {nullptr};
     uint                      dynamicOffsets[TOTAL_BLEND];
 
-    vector<float> models;
+    ccstd::vector<float> models;
     uint          uboStride;
 };
 
-struct BigTriangle : public cc::Object {
+struct BigTriangle : public cc::CCObject {
     BigTriangle(gfx::Device *device, gfx::Framebuffer *fbo) : device(device), fbo(fbo) {
         createShader();
         createVertexBuffer();
@@ -341,7 +342,7 @@ struct BigTriangle : public cc::Object {
         createPipeline();
     }
 
-    void destroy() {
+    bool destroy() override {
         CC_SAFE_DESTROY(shader);
         CC_SAFE_DESTROY(vertexBuffer);
         CC_SAFE_DESTROY(inputAssembler);
@@ -351,6 +352,7 @@ struct BigTriangle : public cc::Object {
         CC_SAFE_DESTROY(pipelineState);
         CC_SAFE_DESTROY(timeBuffer);
         CC_SAFE_DESTROY(texture);
+        return true;
     }
 
     void createShader() {
@@ -565,8 +567,8 @@ void BlendTest::onDestroy() {
 bool BlendTest::onInit() {
     auto *fbo = fbos[0];
 
-    bigTriangle = CC_NEW(BigTriangle(device, fbo));
-    quad        = CC_NEW(Quad(device, fbo));
+    bigTriangle = ccnew BigTriangle(device, fbo);
+    quad        = ccnew Quad(device, fbo);
 
     _generalBarriers.push_back(device->getGeneralBarrier({
         gfx::AccessFlagBit::TRANSFER_WRITE,
@@ -585,7 +587,6 @@ bool BlendTest::onInit() {
     _textureBarriers.push_back(device->getTextureBarrier({
         gfx::AccessFlagBit::TRANSFER_WRITE,
         gfx::AccessFlagBit::FRAGMENT_SHADER_READ_TEXTURE,
-        false,
     }));
 
     _textureBarriers.push_back(_textureBarriers.back());
@@ -600,7 +601,6 @@ void BlendTest::onTick() {
     auto *fbo       = fbos[0];
 
     uint generalBarrierIdx = _frameCount ? 1 : 0;
-    uint textureBarriers  = _frameCount ? 0 : _textureBarriers.size();
 
     device->acquire(&swapchain, 1);
 
@@ -639,7 +639,7 @@ void BlendTest::onTick() {
     }
 
     if (TestBaseI::MANUAL_BARRIER) {
-        commandBuffer->pipelineBarrier(_generalBarriers[generalBarrierIdx], _textureBarriers.data(), _textures.data(), textureBarriers);
+        commandBuffer->pipelineBarrier(_generalBarriers[generalBarrierIdx], {}, {}, _textureBarriers, _textures);
     }
 
     commandBuffer->beginRenderPass(fbo->getRenderPass(), fbo, renderArea, &clearColor, 1.0F, 0);

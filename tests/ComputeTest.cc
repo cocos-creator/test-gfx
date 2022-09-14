@@ -1,5 +1,6 @@
 #include "ComputeTest.h"
 #include "base/memory/Memory.h"
+#include "base/StringUtil.h"
 #include "utils/FullscreenQuad.h"
 
 namespace cc {
@@ -50,7 +51,7 @@ bool ComputeTest::onInit() {
     createInputAssembler();
     createPipeline();
 
-    quad = CC_NEW(FullscreenQuad(device, renderPass, _textures[0]));
+    quad = ccnew FullscreenQuad(device, renderPass, _textures[0]);
 
     return true;
 }
@@ -64,7 +65,7 @@ void ComputeTest::createComputeVBPipeline() {
     });
 
     // default value for storage buffer
-    vector<Vec4> buffer{VERTEX_COUNT * 2};
+    ccstd::vector<Vec4> buffer{VERTEX_COUNT * 2};
     for (uint i = 0U; i < VERTEX_COUNT; ++i) {
         float alpha       = 2.F * math::PI * static_cast<float>(i) / VERTEX_COUNT;
         buffer[i * 2]     = Vec4(std::sin(alpha) * RADIUS, std::cos(alpha) * RADIUS, 0.F, 1.F);
@@ -395,7 +396,6 @@ void ComputeTest::createPipeline() {
     _textureBarriers.push_back(device->getTextureBarrier({
         gfx::AccessFlagBit::NONE,
         gfx::AccessFlagBit::COMPUTE_SHADER_WRITE,
-        true,
     }));
 }
 
@@ -433,7 +433,7 @@ void ComputeTest::onTick() {
     }
 
     if (device->hasFeature(gfx::Feature::COMPUTE_SHADER)) {
-        commandBuffer->pipelineBarrier(_generalBarriers[1], _textureBarriers.data(), _textures.data(), 1);
+        commandBuffer->pipelineBarrier(_generalBarriers[1], {}, {}, _textureBarriers, _textures);
 
         commandBuffer->bindPipelineState(_compPipelineState);
         commandBuffer->bindDescriptorSet(0, _compDescriptorSet);
