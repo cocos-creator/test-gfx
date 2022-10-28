@@ -1,6 +1,6 @@
 #include "TestBase.h"
 
-#include "base/threading/AutoreleasePool.h"
+#include "base/threading/AutoReleasePool.h"
 #include "base/threading/MessageQueue.h"
 #include "platform/FileUtils.h"
 
