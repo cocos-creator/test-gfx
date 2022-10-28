@@ -1,14 +1,11 @@
 macro (set_xcode_property TARGET XCODE_PROPERTY XCODE_VALUE)
     set_property (TARGET ${TARGET} PROPERTY XCODE_ATTRIBUTE_${XCODE_PROPERTY}
-                 ${XCODE_VALUE})
+        ${XCODE_VALUE})
 endmacro (set_xcode_property)
 
 message(STATUS "App: ${APP_NAME}...")
 
 option(USE_METAL "USE METAL" ON)
-
-# toggle Metal/MoltenVK
-# set(USE_METAL OFF)
 
 # ---------------------------------------------------------------------
 
@@ -18,11 +15,6 @@ file(GLOB_RECURSE SOURCE_C_FILES *.c)
 file(GLOB_RECURSE SOURCE_MM_FILES *.m *.mm)
 file(GLOB COMMON_CPP_FILES ${PROJECT_SOURCE_DIR}/src/*.cpp)
 
-list(APPEND APP_UI_RES
-    ${CMAKE_CURRENT_LIST_DIR}/Base.lproj/Main.storyboard
-    ${CMAKE_CURRENT_LIST_DIR}/Assets.xcassets/Contents.json
-)
-
 set(ALL_FILES
     ${HEADER_FILES}
     ${COMMON_CPP_FILES}
@@ -31,7 +23,6 @@ set(ALL_FILES
     ${SOURCE_MM_FILES}
     ${GFX_TESTCASE_HEADER}
     ${GFX_TESTCASE_SOURCE}
-    ${APP_UI_RES}
     ${cc_common_res}
     )
 
@@ -46,9 +37,6 @@ endif()
 add_executable(${APP_NAME} MACOSX_BUNDLE ${ALL_FILES})
 
 set_target_properties(${APP_NAME} PROPERTIES RESOURCE "${APP_UI_RES}")
-set_target_properties(${APP_NAME} PROPERTIES
-    MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_LIST_DIR}/Info.plist"
-)
 set_xcode_property(${APP_NAME} PRODUCT_BUNDLE_IDENTIFIER ${APP_NAME})
 
 # Locate system libraries on macOS
@@ -63,7 +51,7 @@ list(APPEND PLATFORM_SPECIFIC_LIBS
     ${METALKIT_LIBRARY}
     ${QUARTZCORE_LIBRARY}
     ${MPS_LIBRARY}
-)
+    )
 
 if (NOT USE_METAL)
     set_source_files_properties(${LIB_MOLTEN_VK} PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
@@ -76,7 +64,7 @@ target_link_libraries(${APP_NAME}
     ${PLATFORM_SPECIFIC_LIBS}
     ${ENGINE_BASE_LIBS}
     ${CC_EXTERNAL_LIBS}
-)
+    )
 
 target_include_directories(${APP_NAME} PUBLIC
     ${PROJECT_SOURCE_DIR}
@@ -84,13 +72,13 @@ target_include_directories(${APP_NAME} PUBLIC
     ${COCOS_EXTERNAL_PATH}/sources
     ${CC_EXTERNAL_INCLUDES}
     ${CC_EXTERNAL_INCLUDES}/v8
-)
+    )
 
 if(MACOSX)
     target_include_directories(${APP_NAME} PRIVATE
         ##FIXME: bad dependency
         ${COCOS_SRC_PATH}/platform/ios
-    )
+        )
 endif()
 
 source_group(TREE ${COCOS_SRC_PATH}/base PREFIX "Header Files/base" FILES ${CC_BASE_HEADERS})
@@ -110,14 +98,14 @@ target_compile_definitions(${APP_NAME} PUBLIC
     $<$<NOT:$<BOOL:${USE_TIFF}>>:CC_USE_TIFF=0>
     $<$<BOOL:${USE_GFX_RENDERER}>:USE_GFX_RENDERER=1>
     $<$<NOT:$<BOOL:${USE_V8_DEBUGGER}>>:USE_V8_DEBUGGER=0>
-)
+    )
 
 file(GLOB PVRDLLS ${PVRSDK_LIB_DIR}/*.dylib)
 foreach(PVRDLL ${PVRDLLS})
-  add_custom_command(TARGET ${APP_NAME} PRE_BUILD
-                     COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:${APP_NAME}>/../Frameworks
-                     COMMAND ${CMAKE_COMMAND} -E
-                         copy ${PVRDLL} $<TARGET_FILE_DIR:${APP_NAME}>/../Frameworks/)
+    add_custom_command(TARGET ${APP_NAME} PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:${APP_NAME}>/../Frameworks
+        COMMAND ${CMAKE_COMMAND} -E
+        copy ${PVRDLL} $<TARGET_FILE_DIR:${APP_NAME}>/../Frameworks/)
 endforeach()
 
 message(STATUS "${APP_NAME} configuration completed.")

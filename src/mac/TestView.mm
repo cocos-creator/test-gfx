@@ -100,7 +100,7 @@ namespace
     [self viewDidChangeBackingProperties];
 
     // Add tracking area to receive mouse move events.
-    NSRect          rect         = {0, 0, nativeSize.width, nativeSize.height};
+    NSRect          rect         = {{0, 0}, {nativeSize.width, nativeSize.height}};
     NSTrackingArea *trackingArea = [[NSTrackingArea alloc] initWithRect:rect
                                                                 options:(NSTrackingMouseEnteredAndExited | NSTrackingMouseMoved | NSTrackingActiveInKeyWindow)
                                                                   owner:self
@@ -113,7 +113,7 @@ namespace
 #else
     windowHandle = layer;
 #endif
-    cc::TestBaseI::resizeGlobal(windowHandle, nativeSize.width, nativeSize.height, gfx::SurfaceTransform::IDENTITY);
+    cc::TestBaseI::resizeGlobal(windowHandle, nativeSize.width, nativeSize.height, cc::gfx::SurfaceTransform::IDENTITY);
 }
 
 - (void)viewDidChangeBackingProperties {

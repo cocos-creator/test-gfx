@@ -2,6 +2,7 @@
 
 #include "base/std/container/string.h"
 #include "base/std/container/vector.h"
+#include "core/data/Object.h"
 #include "math/Mat4.h"
 #include "math/Vec4.h"
 #include "platform/Image.h"
