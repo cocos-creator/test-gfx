@@ -31,7 +31,6 @@
 #define DEFAULT_MATRIX_MATH
 
 #include "GFXDeviceManager.h"
-#include "bindings/event/CustomEventTypes.h"
 #include "bindings/event/EventDispatcher.h"
 
 namespace cc {
@@ -120,20 +119,8 @@ TestBaseI::TestBaseI() {
             fboInfo.renderPass          = renderPass;
             fbos.push_back(device->createFramebuffer(fboInfo));
         }
-        EventDispatcher::addCustomEventListener(EVENT_DESTROY_WINDOW, [](const CustomEvent &e) -> void {
-            for (auto *swapchain : swapchains) {
-                if (e.args->ptrVal == swapchain->getWindowHandle()) {
-                    swapchain->destroySurface();
-                }
-            }
-        });
-        EventDispatcher::addCustomEventListener(EVENT_RECREATE_WINDOW, [](const CustomEvent &e) -> void {
-            for (auto *swapchain : swapchains) {
-                if (!swapchain->getWindowHandle()) {
-                    swapchain->createSurface(e.args->ptrVal);
-                }
-            }
-        });
+        // NOTE: cocos 4.0 removed CustomEventTypes / addCustomEventListener (window
+        // destroy/recreate were mobile GL-context-loss lifecycle hooks, unused on Win32).
 
         CC_LOG_INFO(vmath::processorFeatures().c_str());
 
@@ -142,7 +129,9 @@ TestBaseI::TestBaseI() {
 }
 
 void TestBaseI::tickScript() {
-    EventDispatcher::dispatchTickEvent(0.F);
+    // cocos 4.0 made EventDispatcher::dispatchTickEvent private; broadcast the
+    // Tick event directly via the EventBus (same as Engine::tick).
+    events::Tick::broadcast(0.F);
 }
 
 void TestBaseI::destroyGlobal() {
