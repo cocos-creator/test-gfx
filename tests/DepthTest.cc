@@ -34,7 +34,7 @@ struct DepthResolveFramebuffer {
         gfx::TextureInfo depthStecnilTexMSAAInfo;
         depthStecnilTexMSAAInfo.type    = gfx::TextureType::TEX2D;
         depthStecnilTexMSAAInfo.usage   = gfx::TextureUsageBit::DEPTH_STENCIL_ATTACHMENT;
-        depthStecnilTexMSAAInfo.samples = gfx::SampleCount::MULTIPLE_BALANCE;
+        depthStecnilTexMSAAInfo.samples = gfx::SampleCount::X4;
         depthStecnilTexMSAAInfo.format  = gfx::Format::DEPTH;
         depthStecnilTexMSAAInfo.width   = swapchain->getWidth();
         depthStecnilTexMSAAInfo.height  = swapchain->getHeight();
@@ -45,7 +45,7 @@ struct DepthResolveFramebuffer {
 
             gfx::ColorAttachment &depthStencilAttachment{renderPassInfo.colorAttachments.emplace_back()};
             depthStencilAttachment.format      = gfx::Format::DEPTH;
-            depthStencilAttachment.sampleCount = gfx::SampleCount::MULTIPLE_BALANCE;
+            depthStencilAttachment.sampleCount = gfx::SampleCount::X4;
             depthStencilAttachment.storeOp     = gfx::StoreOp::DISCARD;
             depthStencilAttachment.barrier     = device->getGeneralBarrier({
                 gfx::AccessFlagBit::NONE,
