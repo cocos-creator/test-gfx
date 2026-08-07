@@ -27,6 +27,18 @@ if(ANDROID)
         "${CMAKE_SHARED_LINKER_FLAGS}")
 endif()
 
+# Cocos 4 selects ARM assembly for pvmp3dec on armeabi-v7a. With the NDK
+# CMake toolchain used by this Android test project those assembly sources are
+# not registered, so use the portable C++ implementations locally.
+if(ANDROID_ABI MATCHES "armeabi.*" AND TARGET pvmp3dec)
+    target_sources(pvmp3dec PRIVATE
+        ${COCOS_EXTERNAL_PATH}/sources/pvmp3dec/src/pvmp3_polyphase_filter_window.cpp
+        ${COCOS_EXTERNAL_PATH}/sources/pvmp3dec/src/pvmp3_mdct_18.cpp
+        ${COCOS_EXTERNAL_PATH}/sources/pvmp3dec/src/pvmp3_dct_9.cpp
+        ${COCOS_EXTERNAL_PATH}/sources/pvmp3dec/src/pvmp3_dct_16.cpp
+    )
+endif()
+
 # now build app's shared lib
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
