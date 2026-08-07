@@ -20,6 +20,9 @@ android {
                 targets "gfx_tests"
                 arguments '-DANDROID_STL=c++_static'
                 arguments '-DANDROID_ARM_NEON=ON'
+                if (project.hasProperty("COCOS_ENGINE_PATH")) {
+                    arguments "-DCOCOS_ENGINE_PATH=${rootProject.file(project.property("COCOS_ENGINE_PATH")).absolutePath.replace('\\', '/')}"
+                }
             }
         }
 
