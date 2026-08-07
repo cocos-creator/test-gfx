@@ -16,10 +16,28 @@
 
 cmake_minimum_required(VERSION 3.4.1)
 
-# build native_app_glue as a static lib
-set(${CMAKE_C_FLAGS}, "${CMAKE_C_FLAGS} -G")
-add_library(native_app_glue STATIC
-    ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
+# This test app uses Android's framework NativeActivity (see AndroidManifest.xml),
+# while Cocos 4's static engine archive also contains the GameActivity glue.
+# Do not force GameActivity_onCreate into this NativeActivity executable: once
+# the force-load flag is removed, those archive objects are not extracted and
+# the NDK glue below remains the sole activity entry point.  This configures
+# the application link only; it neither edits nor changes the Engine target.
+if(ANDROID)
+    string(REPLACE "-u GameActivity_onCreate" "" CMAKE_SHARED_LINKER_FLAGS
+        "${CMAKE_SHARED_LINKER_FLAGS}")
+endif()
+
+# Cocos 4 selects ARM assembly for pvmp3dec on armeabi-v7a. With the NDK
+# CMake toolchain used by this Android test project those assembly sources are
+# not registered, so use the portable C++ implementations locally.
+if(ANDROID_ABI MATCHES "armeabi.*" AND TARGET pvmp3dec)
+    target_sources(pvmp3dec PRIVATE
+        ${COCOS_EXTERNAL_PATH}/sources/pvmp3dec/src/pvmp3_polyphase_filter_window.cpp
+        ${COCOS_EXTERNAL_PATH}/sources/pvmp3dec/src/pvmp3_mdct_18.cpp
+        ${COCOS_EXTERNAL_PATH}/sources/pvmp3dec/src/pvmp3_dct_9.cpp
+        ${COCOS_EXTERNAL_PATH}/sources/pvmp3dec/src/pvmp3_dct_16.cpp
+    )
+endif()
 
 # now build app's shared lib
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
@@ -35,6 +53,9 @@ set(ALL_FILES
     ${GFX_TESTCASE_HEADER}
     ${GFX_TESTCASE_SOURCE}
     main.cpp
+    ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c
+    NativeActivityGameGlueStubs.cpp
+    ${COCOS_ROOT_PATH}/src/MainHack.cpp
     ${COCOS_SRC_PATH}/platform/java/jni/JniImp.cpp
     ${COCOS_SRC_PATH}/platform/java/jni/JniImp.h
     ${COCOS_SRC_PATH}/platform/java/jni/JniHelper.cpp
@@ -75,16 +96,11 @@ target_include_directories(${APP_NAME} PUBLIC
 # add lib dependencies
 target_link_libraries(${APP_NAME}
     android
-    native_app_glue
     EGL
     GLESv2
     GLESv3
     log
     ${ENGINE_BASE_LIBS}
-    GFXGLESCommon
-    GFXGLES2
-    GFXGLES3
-    GFXVulkan
     ${CC_EXTERNAL_LIBS}
 )
 

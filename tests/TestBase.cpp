@@ -101,6 +101,11 @@ TestBaseI::TestBaseI() {
         for (size_t i = 0; i < windowInfos.size(); ++i) {
             const auto &       info = windowInfos[i];
             gfx::SwapchainInfo swapchainInfo;
+            // SystemWindowManager registers the main window as ID 1; windowId 0
+            // is treated as invalid (getWindow(0) returns nullptr).  On Android
+            // Vulkan, CCVKSwapchain::doInit calls CC_GET_SYSTEM_WINDOW(_windowId)
+            // to read the view size, so we must supply the correct ID.
+            swapchainInfo.windowId     = 1; // ISystemWindow::mainWindowId
             swapchainInfo.windowHandle = info.windowHandle;
             swapchainInfo.width        = info.screen.width;
             swapchainInfo.height       = info.screen.height;

@@ -2,11 +2,18 @@
 #include <android_native_app_glue.h>
 #include <jni.h>
 #include <ctime>
+#include <memory>
 
-#include "bindings/event/CustomEventTypes.h"
-#include "bindings/event/EventDispatcher.h"
+#include "platform/BasePlatform.h"
+#include "platform/android/AndroidPlatform.h"
 #include "platform/android/FileUtils-android.h"
 #include "platform/java/jni/JniHelper.h"
+
+// Minimal Cocos Application/Engine bootstrap so that the Vulkan swapchain's
+// CC_GET_SYSTEM_WINDOW → CC_CURRENT_APPLICATION_SAFE() chain resolves.
+#include "application/ApplicationManager.h"
+#include "application/CocosApplication.h"
+#include "platform/java/modules/SystemWindowManager.h"
 
 #include "gfx-base/GFXDef-common.h"
 #include "tests/TestBase.h"
@@ -50,6 +57,47 @@ void engineHandleCmd(struct android_app* app, int32_t cmd) {
     switch (cmd) {
         case APP_CMD_INIT_WINDOW:
             if (state->app->window && !gWindowInfo.windowHandle) {
+                // ---- Bootstrap minimal Cocos Application + SystemWindow ----
+                // The Vulkan swapchain's doInit() reaches
+                //   CC_GET_SYSTEM_WINDOW(id)
+                //     → CC_GET_PLATFORM_INTERFACE(ISystemWindowManager)
+                //       → CC_CURRENT_ENGINE
+                //         → CC_CURRENT_APPLICATION_SAFE()
+                //           → ApplicationManager::getCurrentAppSafe()
+                // which asserts that a live Application exists.  The test harness
+                // intentionally bypasses the standard CC_START_APPLICATION flow,
+                // so we register a lightweight CocosApplication here (its ctor
+                // creates a BaseEngine) and create the main SystemWindow with
+                // the ANativeWindow handle so the macro chain resolves.
+                {
+                    auto *appMgr = cc::ApplicationManager::getInstance();
+                    if (!appMgr->getCurrentApp()) {
+                        appMgr->createApplication<cc::CocosApplication>(0, nullptr);
+                    }
+
+                    auto *platform = cc::BasePlatform::getPlatform();
+                    auto *windowMgr = platform->getInterface<cc::SystemWindowManager>();
+                    // NativeActivity uses this file's event loop, so invoking
+                    // AndroidPlatform::init() would replace app->userData and
+                    // app->onAppCmd. Register only the window service it would
+                    // normally install, then bind Cocos window ID 1 to the
+                    // ANativeWindow supplied by NativeActivity.
+                    if (!windowMgr) {
+                        auto manager = std::make_shared<cc::SystemWindowManager>();
+                        manager->init();
+                        platform->registerInterface(manager);
+                        windowMgr = manager.get();
+                    }
+                    if (!windowMgr->getWindow(cc::ISystemWindow::mainWindowId)) {
+                        cc::ISystemWindowInfo info;
+                        info.externalHandle = state->app->window;
+                        info.width  = ANativeWindow_getWidth(state->app->window);
+                        info.height = ANativeWindow_getHeight(state->app->window);
+                        windowMgr->createWindow(info);
+                    }
+                }
+                // ---- End bootstrap ----
+
                 gWindowInfo.windowHandle  = state->app->window;
                 gWindowInfo.screen.width  = ANativeWindow_getWidth(app->window);
                 gWindowInfo.screen.height = ANativeWindow_getHeight(app->window);
@@ -57,17 +105,9 @@ void engineHandleCmd(struct android_app* app, int32_t cmd) {
 
                 cc::TestBaseI::setWindowInfo(gWindowInfo);
                 cc::TestBaseI::nextTest();
-            } else {
-                cc::CustomEvent event;
-                event.name         = EVENT_RECREATE_WINDOW;
-                event.args->ptrVal = state->app->window;
-                cc::EventDispatcher::dispatchCustomEvent(event);
             }
             break;
         case APP_CMD_TERM_WINDOW: {
-            cc::CustomEvent event;
-            event.name = EVENT_DESTROY_WINDOW;
-            cc::EventDispatcher::dispatchCustomEvent(event);
             state->animating = 0;
             break;
         }
@@ -127,7 +167,19 @@ void android_main(android_app* app) { // NOLINT(readability-identifier-naming)
     app->activity->vm->AttachCurrentThread(&gEnv, nullptr);
     cc::JniHelper::init(gEnv, app->activity->clazz);
 
-    cc::FileUtilsAndroid::setassetmanager(app->activity->assetManager);
+    // The test harness owns the Android event loop instead of using Cocos'
+    // standard JniCocosEntry. Register the app with the platform so engine
+    // services such as AndroidPlatform::getSdkVersion() can access it.
+    auto *androidPlatform = static_cast<cc::AndroidPlatform *>(cc::BasePlatform::getPlatform());
+    androidPlatform->setAndroidApp(app);
+
+    cc::FileUtilsAndroid::setAssetManager(app->activity->assetManager);
+    // The standalone test harness does not go through Engine::init(), which
+    // normally creates the platform FileUtils before graphics initialization.
+    // Vulkan's pipeline cache needs FileUtils::getInstance() to be available.
+    if (!cc::FileUtils::getInstance()) {
+        cc::createFileUtils();
+    }
 
     while (true) {
         // Read all pending events.
@@ -147,6 +199,8 @@ void android_main(android_app* app) { // NOLINT(readability-identifier-naming)
 
         if (app->destroyRequested != 0) {
             cc::TestBaseI::destroyGlobal();
+            // Release the bootstrap Application/Engine after GFX teardown.
+            cc::ApplicationManager::getInstance()->releaseAllApplications();
             return;
         }
 
